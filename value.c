@@ -9,6 +9,10 @@ void value_add_use(Value *this, Use *U)
     use_add_to_list(U, &(this->use_list));
 }
 
+void value_init(Value* this){
+    memset(this, 0, sizeof(Value));
+}
+
 /// All values are typed, get the type of this value.
 Type *getType(Value* this) { return this->VTy; }
 
@@ -46,13 +50,25 @@ Symtab* get_sym_tab(Value *V) {
 ConstantNum* const_new_int(int num){
     ConstantNum *c = malloc(sizeof(ConstantNum));
     c->num.num_int = num;
+    value_init(&(c->value));
     return c;
 }
 
 ConstantNum* const_new_float(float num){
     ConstantNum *c = malloc(sizeof(ConstantNum));
     c->num.num_float = num;
+    value_init(&(c->value));
     return c;
+}
+
+void const_init_int(ConstantNum* c, int num){
+    c->num.num_int = num;
+    value_init(&(c->value));
+}
+
+void const_init_float(ConstantNum* c, float num){
+    c->num.num_float = num;
+    value_init(&(c->value));
 }
 
 // enum ReplaceMetadataUses { No, Yes };

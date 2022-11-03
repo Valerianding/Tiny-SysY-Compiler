@@ -40,6 +40,9 @@ struct _ConstantNum{
     }num;
 };
 
+void value_init(Value* this);
+void const_init_int(ConstantNum* c, int num);
+void const_init_float(ConstantNum* c, float num);
 
 void value_add_use(Value* this, struct _Use *U);
 Type *getType(Value* this);
