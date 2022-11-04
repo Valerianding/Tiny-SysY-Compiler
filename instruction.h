@@ -55,5 +55,5 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 //      return getOperandList() + NumUserOperands;
 //    }
 
-Instruction* new_instruction(int op_num);
-static Instruction *new_binary_operator(int Op, Value *S1, Value *S2);
+Instruction* ins_new(int op_num);
+Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);

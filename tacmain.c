@@ -2,9 +2,17 @@
 #include "use.h"
 #include "user.h"
 #include "instruction.h"
+#include "symtab.h"
 
+
+//FIXME: test purpose only!
+Symtab test_symtab;
 
 int main(){
+    
+    // 初始化工作
+    symtab_init(&test_symtab);
+    
     ConstantNum a, b;
     
     const_init_int(&a, 10);

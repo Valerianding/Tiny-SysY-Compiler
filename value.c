@@ -25,8 +25,10 @@ void value_set_name(Value* this, char* name){
     }
 }
 
+//FIXME: test purpose only!
+extern Symtab test_symtab;
 Symtab* get_sym_tab(Value *V) {
-   Symtab *ST = NULL;
+   Symtab *ST = &test_symtab;
 //    if (Instruction *I = dyn_cast<Instruction>(V)) {
 //      if (BasicBlock *P = I->getParent())
 //        if (Function *PP = P->getParent())

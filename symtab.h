@@ -5,11 +5,12 @@
 struct _Symtab
 {
     /* data */
-    //struct sc_map_value value_map;
+    struct sc_map_sv value_map;
 };
 
 typedef struct _Symtab Symtab;
 
+void symtab_init(Symtab* this);
 void* symtab_loopup(Symtab* this, char* name);
 void symtab_insert_value_name(Symtab* this, char* name, void *V);
 
