@@ -1,4 +1,6 @@
 #include "user.h"
+#ifndef INSTRUCTION_H
+#define INSTRUCTION_H
 
 struct _BasicBlock;
 struct _Instruction{
@@ -57,3 +59,6 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 
 Instruction* ins_new(int op_num);
 Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
+
+
+#endif

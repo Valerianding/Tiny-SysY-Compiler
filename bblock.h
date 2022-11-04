@@ -18,13 +18,30 @@
 #ifndef BASIC_BLOCK_H
 #define BASIC_BLOCK_H
 #include "value.h"
+#include "instruction.h"
+#include "sc_list.h"
 
 struct _Function;
+typedef struct _Function Function;
+typedef struct _BasicBlock BasicBlock;
 struct _BasicBlock
 {
     Value value;
-    _Function *Parent;
+    struct _Function *Parent;
+    struct sc_list inst_list;
 };
+
+typedef struct _InstNode InstNode;
+struct _InstNode{
+    Instruction* inst;
+    struct sc_list list;
+};
+
+void bblock_init(BasicBlock* this, Function* func);
+
+void bblock_add_inst_back(BasicBlock* this, Instruction* inst);
+
+Instruction* bblock_pop_inst_back(BasicBlock* this);
 
 
 #endif
