@@ -11,6 +11,7 @@ void value_add_use(Value *this, Use *U)
 
 void value_init(Value* this){
     memset(this, 0, sizeof(Value));
+    this->use_list = NULL;
 }
 
 /// All values are typed, get the type of this value.
