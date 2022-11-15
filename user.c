@@ -53,7 +53,8 @@ int user_get_size(int use_num){
     if(use_num > 0)
         return sizeof(User) + sizeof(Use) * use_num;
     else
-        return sizeof(User) + sizeof(Use*);
+        // return sizeof(User) + sizeof(Use*);
+        return sizeof(User);
 }
 
 Use* user_get_operand_use(User* this, unsigned i) {

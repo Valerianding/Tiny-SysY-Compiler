@@ -25,6 +25,6 @@ struct _Use{
 
 void use_create(Use *this, struct _User *Parent);
 void use_add_to_list(Use *this, Use **List);
-void use_add_value(Use *this,Value *Value);
+void use_set_value(Use* this, Value *V);
 
 #endif

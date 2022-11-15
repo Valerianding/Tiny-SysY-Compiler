@@ -29,6 +29,7 @@ struct _BasicBlock
     Value value;
     struct _Function *Parent;
     struct sc_list inst_list;
+    struct sc_list block_list;
 };
 
 typedef struct _InstNode InstNode;
@@ -42,6 +43,87 @@ void bblock_init(BasicBlock* this, Function* func);
 void bblock_add_inst_back(BasicBlock* this, Instruction* inst);
 
 Instruction* bblock_pop_inst_back(BasicBlock* this);
+
+Function *bblock_get_parent(BasicBlock* this);
+
+/// Unlink 'this' from the containing function, but do not delete it.
+void removeFromParent();
+
+/// Unlink this basic block from its current function and insert it into
+/// the function that \p MovePos lives in, right before \p MovePos.
+void moveBefore(BasicBlock *MovePos);
+
+/// Unlink this basic block from its current function and insert it
+/// right after \p MovePos in the function \p MovePos lives in.
+void moveAfter(BasicBlock *MovePos);
+
+/// Insert unlinked basic block into a function.
+///
+/// Inserts an unlinked basic block into \c Parent.  If \c InsertBefore is
+/// provided, inserts before that basic block, otherwise inserts at the end.
+///
+/// \pre \a getParent() is \c nullptr.
+void insertInto(Function *Parent, BasicBlock *InsertBefore);
+
+/// Return the predecessor of this block if it has a single predecessor
+/// block. Otherwise return a null pointer.
+BasicBlock *getSinglePredecessor();
+
+
+/// Return the predecessor of this block if it has a unique predecessor
+/// block. Otherwise return a null pointer.
+///
+/// Note that unique predecessor doesn't mean single edge, there can be
+/// multiple edges from the unique predecessor to this block (for example a
+/// switch statement with multiple cases having the same destination).
+BasicBlock *getUniquePredecessor();
+
+
+/// Return true if this block has exactly N predecessors.
+bool hasNPredecessors(unsigned N);
+
+/// Return true if this block has N predecessors or more.
+bool hasNPredecessorsOrMore(unsigned N);
+
+/// Return the successor of this block if it has a single successor.
+/// Otherwise return a null pointer.
+///
+/// This method is analogous to getSinglePredecessor above.
+BasicBlock *getSingleSuccessor();
+
+/// Return the successor of this block if it has a unique successor.
+/// Otherwise return a null pointer.
+///
+/// This method is analogous to getUniquePredecessor above.
+const BasicBlock *getUniqueSuccessor();
+
+
+/// Print the basic block to an output stream with an optional
+/// AssemblyAnnotationWriter.
+// void print(raw_ostream &OS, AssemblyAnnotationWriter *AAW = nullptr,
+//             bool ShouldPreserveUseListOrder = false,
+//             bool IsForDebug = false);
+
+/// Split the basic block into two basic blocks at the specified instruction
+/// and insert the new basic blocks as the predecessor of the current block.
+///
+/// This function ensures all instructions AFTER and including the specified
+/// iterator \p I are part of the original basic block. All Instructions
+/// BEFORE the iterator \p I are moved to the new BB and an unconditional
+/// branch is added to the new BB. The new basic block is returned.
+///
+/// Note that this only works on well formed basic blocks (must have a
+/// terminator), and \p 'I' must not be the end of instruction list (which
+/// would cause a degenerate basic block to be formed, having a terminator
+/// inside of the basic block).  \p 'I' cannot be a iterator for a PHINode
+/// with multiple incoming blocks.
+///
+/// Also note that this doesn't preserve any passes. To split blocks while
+/// keeping loop information consistent, use the SplitBlockBefore utility
+/// function.
+// BasicBlock *splitBasicBlockBefore(iterator I, const Twine &BBName = "");
+
+
 
 
 #endif

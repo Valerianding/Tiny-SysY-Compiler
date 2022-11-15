@@ -25,3 +25,7 @@ Instruction* bblock_pop_inst_back(BasicBlock* this){
 	InstNode* pnode = sc_list_entry(tmp, InstNode, list);
     return pnode->inst;
 }
+
+Function *bblock_get_parent(BasicBlock* this){ 
+    return this->Parent; 
+}

@@ -15,11 +15,11 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2){
     // 将 inst 这个 user 加入到 s1 和 s2 这两个 value 的 use_list
     Use* puse = user_get_operand_use(&inst->user, 0);
     value_add_use(S1, puse);
-    use_add_value(puse,S1);
+    use_set_value(puse, S1);
 
     puse = user_get_operand_use(&inst->user, 1);
     value_add_use(S2, puse);
-    use_add_value(puse,S2);
+    use_set_value(puse, S1);
 
     return inst;
 }
