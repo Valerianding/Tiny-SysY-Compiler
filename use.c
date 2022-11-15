@@ -41,3 +41,6 @@ void use_set_value(Use* this, Value *V) {
     value_add_use(V, this);
 }
 
+void use_add_value(Use *this,Value *Value) {
+  this->Val = Value;
+}
