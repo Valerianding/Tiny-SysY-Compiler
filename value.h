@@ -5,7 +5,7 @@
 // #include <stddef.h>
 #include "type.h"
 #include <stdint.h>
-#include "symtab.h"
+
 struct _Symtab;
 struct _Use;
 
@@ -27,29 +27,31 @@ struct _Value
     unsigned HasMetadata : 1; // Has metadata attached to this?
     unsigned HasHungOffUses : 1;
 
+
+    void *pdata;
 };
 
 // llvm 中定义了 Constant ConstantInt, ConstantFP 等类，且Constant继承于 User
 // 这里做了简化： ConstantNum 只处理常数， Function 之类的常数不在此处理，所以不用考虑 User
-typedef struct _ConstantNum ConstantNum;
-struct _ConstantNum{
-    struct _Value value;
-    union{
-        int num_int;
-        float num_float;
-    }num;
-};
+//typedef struct _ConstantNum ConstantNum;
+//struct _ConstantNum{
+//    struct _Value value;
+//    union{
+//        int num_int;
+//        float num_float;
+//    }num;
+//};
 
 void value_init(Value* this);
-void const_init_int(ConstantNum* c, int num);
-void const_init_float(ConstantNum* c, float num);
+//void const_init_int(Value* this, int num);
+//void const_init_float(Value* this, float num);
 
 void value_add_use(Value* this, struct _Use *U);
 Type *getType(Value* this);
 void value_set_name(Value* this, char* name);
-Symtab* get_sym_tab(Value *V) ;
+struct _Symtab* get_sym_tab(Value *V) ;
 
-ConstantNum* const_new_int(int num);
-ConstantNum* const_new_float(float num);
+//ConstantNum* const_new_int(int num);
+//ConstantNum* const_new_float(float num);
 
 #endif

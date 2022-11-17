@@ -11,6 +11,7 @@ void value_add_use(Value *this, Use *U)
 
 void value_init(Value* this){
     memset(this, 0, sizeof(Value));
+    this->VTy = (Type*)malloc(sizeof(Type));
     this->use_list = NULL;
 }
 
@@ -49,30 +50,30 @@ Symtab* get_sym_tab(Value *V) {
 //    }
    return ST;
  }
+//
+//ConstantNum* const_new_int(int num){
+//    ConstantNum *c = malloc(sizeof(ConstantNum));
+//    c->num.num_int = num;
+//    value_init(&(c->value));
+//    return c;
+//}
+//
+//ConstantNum* const_new_float(float num){
+//    ConstantNum *c = malloc(sizeof(ConstantNum));
+//    c->num.num_float = num;
+//    value_init(&(c->value));
+//    return c;
+//}
 
-ConstantNum* const_new_int(int num){
-    ConstantNum *c = malloc(sizeof(ConstantNum));
-    c->num.num_int = num;
-    value_init(&(c->value));
-    return c;
-}
-
-ConstantNum* const_new_float(float num){
-    ConstantNum *c = malloc(sizeof(ConstantNum));
-    c->num.num_float = num;
-    value_init(&(c->value));
-    return c;
-}
-
-void const_init_int(ConstantNum* c, int num){
-    c->num.num_int = num;
-    value_init(&(c->value));
-}
-
-void const_init_float(ConstantNum* c, float num){
-    c->num.num_float = num;
-    value_init(&(c->value));
-}
+//void const_init_int(ConstantNum* c, int num){
+//    c->num.num_int = num;
+//    value_init(&(c->value));
+//}
+//
+//void const_init_float(ConstantNum* c, float num){
+//    c->num.num_float = num;
+//    value_init(&(c->value));
+//}
 
 // enum ReplaceMetadataUses { No, Yes };
 // void doRAUW(Value* this, Value *New, enum ReplaceMetadataUses ReplaceMetaUses)
