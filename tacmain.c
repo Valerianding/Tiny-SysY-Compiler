@@ -8,13 +8,13 @@
 
 
 //FIXME: test purpose only!
-Symtab test_symtab;
+Symtab* test_symtab;
 
 
 int main(){
     
     // 初始化工作
-    symtab_init(&test_symtab);
+    symtab_init((&test_symtab));
     
     ConstantNum a, b;
     
