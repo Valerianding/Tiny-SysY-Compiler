@@ -18,8 +18,9 @@ set(CMAKE_C_STANDARD 99)
 # ADD_FLEX_BISON_DEPENDENCY(mc_lexer mc_parser)
 
 
-file(GLOB_RECURSE DIR_TAC "./*.c")
-
+#file(GLOB_RECURSE DIR_TAC "./*.c")
+file(GLOB_RECURSE DIR_LIB ./libs/sc_list.c ./libs/sc_map.c ./sc_array.h)
+file(GLOB_RECURSE DIR_TAC tacmain.c bblock.c value.c user.c use.c symtab.c instruction.c type.c)
 
 include_directories(libs)
 
@@ -27,7 +28,8 @@ add_compile_options(-g -O0)
 add_executable(compiler
         # ${FLEX_mc_lexer_OUTPUTS}
         # ${BISON_mc_parser_OUTPUTS}
-        ${DIR_TAC})
+        ${DIR_TAC}
+        ${DIR_LIB})
 
 
 
