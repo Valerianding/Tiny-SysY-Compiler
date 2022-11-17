@@ -21,3 +21,8 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2){
 
     return inst;
 }
+
+Instruction *ins_new_unary_operator(int Op,Value *S1){
+    Instruction* inst = ins_new(1);
+    Use* puse = user_get_operand_use(&inst->user,0);
+}

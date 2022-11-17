@@ -3,6 +3,14 @@
 #define INSTRUCTION_H
 
 struct _BasicBlock;
+
+//typedef enum{
+//    ADD,
+//    SUB,
+//    MUL,
+//    DIV,
+//};
+
 struct _Instruction{
     User user;
     
@@ -61,4 +69,6 @@ Instruction* ins_new(int op_num);
 Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 
 
+/* 2021090918019 */
+Instruction *ins_new_unary_operator(int op,Value *S1);
 #endif
