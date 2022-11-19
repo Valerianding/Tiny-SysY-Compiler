@@ -49,7 +49,11 @@ void value_init(Value* this);
 void value_add_use(Value* this, struct _Use *U);
 Type *getType(Value* this);
 void value_set_name(Value* this, char* name);
-struct _Symtab* get_sym_tab(Value *V) ;
+struct _Symtab* get_sym_tab(Value *V);
+
+/* 需要一个为value设置pdata的函数 */
+void value_init_int(Value *this,int num);
+void value_init_float(Value *this,float num);
 
 //ConstantNum* const_new_int(int num);
 //ConstantNum* const_new_float(float num);

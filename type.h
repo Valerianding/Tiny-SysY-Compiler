@@ -41,6 +41,8 @@ typedef struct _Type{
     /// Keeps track of how many Type*'s there are in the ContainedTys list.
     unsigned NumContainedTys;
 
+
+    /* 看不懂的代 */
     /// A pointer to the array of Types contained by this Type. For example, this
     /// includes the arguments of a function type, the elements of a structure,
     /// the pointee of a pointer, the element type of an array, etc. This pointer
@@ -49,7 +51,12 @@ typedef struct _Type{
     struct _Type * const *ContainedTys;                               
 }Type;
 
+bool isVoidTy(Type *this);
+bool isFloatTy(Type *this);
+bool isIntegerTy(Type *this);
+bool isFunctionTy(Type *this);
 bool isFloatingPointTy(Type *this);
 bool isPointerTy(Type *this);
+/* 如何设置Type存在问题 */
 
 #endif
