@@ -13,7 +13,7 @@ struct _BasicBlock;
 
 struct _Instruction{
     User user;
-    
+
     struct _BasicBlock *Parent;
     //DebugLoc DbgLoc; 
 };
@@ -71,4 +71,16 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 
 /* 2021090918019 */
 Instruction *ins_new_unary_operator(int op,Value *S1);
+/* 目前只是暂且从parent的basicblock中取出来 */
+Instruction *ins_remove_from_parent(Instruction *this);
+
+Instruction *ins_insert_after(Instruction *this,Instruction *InsertPos);
+
+
+Instruction *ins_move_before(Instruction *this,Instruction *MovePos);
+
+/// Unlink this instruction from its current basic block and insert it into
+/// the basic block that MovePos lives in, right after MovePos.
+Instruction *ins_move_after(Instruction *this,Instruction *MovePos);
+
 #endif
