@@ -24,18 +24,30 @@
 struct _Function;
 typedef struct _Function Function;
 typedef struct _BasicBlock BasicBlock;
-struct _BasicBlock
-{
-    Value value;
-    struct _Function *Parent;
-    struct sc_list inst_list;
-    struct sc_list block_list;
-};
 
+/* 这里的设计结构 */
 typedef struct _InstNode InstNode;
 struct _InstNode{
     Instruction* inst;
     struct sc_list list;
+};
+
+typedef InstNode* InstList;
+
+/* 可能用不到 */
+typedef struct _BlockNode BlockNode;
+struct _BlockNode{
+    BasicBlock *block;
+    struct sc_list list;
+};
+typedef BlockNode* BlockList;
+
+struct _BasicBlock
+{
+    Value value;
+    struct _Function *Parent;
+    InstList *inst_list; //链表
+    BlockList *block_list;  //感觉不如直接设计一个prev 和 next？？
 };
 
 void bblock_init(BasicBlock* this, Function* func);

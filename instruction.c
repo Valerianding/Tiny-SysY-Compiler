@@ -1,5 +1,4 @@
 #include "instruction.h"
-#include "stdio.h"
 
 Instruction* ins_new(int op_num){
     int user_size = user_get_size(op_num);
@@ -8,6 +7,7 @@ Instruction* ins_new(int op_num){
     uint8_t *storage = (uint8_t *)malloc(sizeof(Instruction) + use_size);
     /* 在这里已经设置了指令的操作数个数 */
     user_construct(storage, op_num);
+    // + sizeof(Use*) 去偏移
     return (Instruction*)(storage+use_size);
 }
 
@@ -18,6 +18,8 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2){
     use_set_value(puse, S1);
     puse = user_get_operand_use(&inst->user, 1);
     use_set_value(puse, S2);
+
+    inst->Opcode = Op;
     return inst;
 }
 
@@ -25,6 +27,8 @@ Instruction *ins_new_unary_operator(int Op,Value *S1){
     Instruction* inst = ins_new(1);
     Use* puse = user_get_operand_use(&inst->user,0);
     use_set_value(puse,S1);
+
+    inst->Opcode = Op;
     return inst;
 }
 

@@ -64,7 +64,7 @@ Use* user_get_operand_use(User* this, unsigned i) {
         assert(i < this->value.NumUserOperands && "user_get_operand_use() out of range!");
         return &(this->use_list[i]);
     }
-  }
+}
 
 /**
  * 再来看下User如何访问Use对象.

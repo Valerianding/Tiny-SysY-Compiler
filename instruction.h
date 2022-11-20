@@ -4,16 +4,17 @@
 
 struct _BasicBlock;
 
-//typedef enum{
-//    ADD,
-//    SUB,
-//    MUL,
-//    DIV,
-//};
+typedef enum{
+    ADD,
+    SUB,
+    MUL,
+    DIV,
+    RET,
+};
 
 struct _Instruction{
     User user;
-
+    int Opcode;
     struct _BasicBlock *Parent;
     //DebugLoc DbgLoc; 
 };

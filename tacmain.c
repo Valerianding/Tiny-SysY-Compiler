@@ -32,7 +32,9 @@ int main(){
 //
 //    Value var1;
 //    value_set_name(&var1, "var_name");
-      Instruction *op_ins = ins_new_binary_operator('+', (Value*)&a, (Value*)&b);
+      Instruction *op_ins = ins_new_binary_operator(ADD, (Value*)&a, (Value*)&b);
+
+      printf("%d\n",op_ins->Opcode);
 //
 //    BasicBlock block;
 //    bblock_init(&block, NULL);
