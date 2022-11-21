@@ -1,6 +1,8 @@
-#include "user.h"
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
+
+#include "user.h"
+#include "./ir/variable_storage_space.h"
 
 struct _BasicBlock;
 
@@ -16,6 +18,10 @@ struct _Instruction{
 
     struct _BasicBlock *Parent;
     //DebugLoc DbgLoc; 
+
+    //为三地址代码添加变量表，标记变量的存储位置
+    enum _VariableStorageSpace* storageSpace;
+    
 };
 typedef struct _Instruction Instruction;
 
