@@ -1,5 +1,5 @@
 .idea/
-camke-build-debug/
+cmake-build-debug/
 optimize.h
 optimize.c
 liveness.h
