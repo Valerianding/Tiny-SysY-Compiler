@@ -67,11 +67,12 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 //    }
 
 Instruction* ins_new(int op_num);
-Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
+Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2);
 
 
 /* 2021090918019 */
-Instruction *ins_new_unary_operator(int op,Value *S1);
+Instruction *ins_new_unary_operator(int Op,Value *S1);
+
 /* 目前只是暂且从parent的basicblock中取出来 */
 Instruction *ins_remove_from_parent(Instruction *this);
 

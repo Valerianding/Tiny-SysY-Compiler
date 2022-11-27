@@ -23,51 +23,48 @@
 
 struct _Function;
 typedef struct _Function Function;
-typedef struct _BasicBlock BasicBlock;
+//typedef struct _BasicBlock BasicBlock;
 
 /* 这里的设计结构 */
-typedef struct _InstNode InstNode;
-struct _InstNode{
+typedef struct _InstNode{
     Instruction* inst;
     struct sc_list list;
-};
-
-typedef InstNode* InstList;
+} InstNode;
 
 /* 可能用不到 */
-typedef struct _BlockNode BlockNode;
-struct _BlockNode{
-    BasicBlock *block;
-    struct sc_list list;
-};
-typedef BlockNode* BlockList;
-
-struct _BasicBlock
+typedef struct _BasicBlock
 {
-    Value value;
+    User user;
     struct _Function *Parent;
-    InstList *inst_list; //链表
-    BlockList *block_list;  //感觉不如直接设计一个prev 和 next？？
-};
+    InstNode *inst_list;
+}BasicBlock;
 
-void bblock_init(BasicBlock* this, Function* func);
+///初始化bblock
+void bblock_init(BasicBlock *this, Function *func);
 
-void bblock_add_inst_back(BasicBlock* this, Instruction* inst);
+///将inst加入到bblock的inst链表的最后
+void bblock_add_inst_back(BasicBlock *this, Instruction *inst);
 
-Instruction* bblock_pop_inst_back(BasicBlock* this);
+///将bblock的最后的inst剔除
+void bblock_pop_inst_back(BasicBlock *this);
 
-Function *bblock_get_parent(BasicBlock* this);
+///获得bblock的最后的inst
+Instruction* bblock_get_inst_back(BasicBlock *this);
+
+///获得bblock的所在的function
+Function *bblock_get_parent(BasicBlock *this);
 
 /// Unlink 'this' from the containing function, but do not delete it.
-void removeFromParent();
+void removeFromParent(BasicBlock *this);
 
 /// Unlink this basic block from its current function and insert it into
 /// the function that \p MovePos lives in, right before \p MovePos.
-void moveBefore(BasicBlock *MovePos);
+/// 现在是不涉及基本块搭建之后修改的 也就是说只是addbefore
+void moveBefore(BasicBlock *this,BasicBlock *MovePos);
 
 /// Unlink this basic block from its current function and insert it
 /// right after \p MovePos in the function \p MovePos lives in.
-void moveAfter(BasicBlock *MovePos);
+void moveAfter(BasicBlock *this,BasicBlock *MovePos);
 
 /// Insert unlinked basic block into a function.
 ///
@@ -89,7 +86,6 @@ BasicBlock *getSinglePredecessor();
 /// multiple edges from the unique predecessor to this block (for example a
 /// switch statement with multiple cases having the same destination).
 BasicBlock *getUniquePredecessor();
-
 
 /// Return true if this block has exactly N predecessors.
 bool hasNPredecessors(unsigned N);
@@ -135,7 +131,9 @@ const BasicBlock *getUniqueSuccessor();
 /// function.
 // BasicBlock *splitBasicBlockBefore(iterator I, const Twine &BBName = "");
 
+size_t bb_count_ins(BasicBlock *this);
 
+///
 
 
 #endif

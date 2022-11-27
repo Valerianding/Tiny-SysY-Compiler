@@ -30,7 +30,7 @@ void value_set_name(Value* this, char* name){
 /* 可能需要修改 */
 void value_init_int(Value *this,int num){
     value_init(this);
-    //this->VTy =  设置Type的函数有待完善
+    this->VTy->ID = ConstIntegerTyID;
     this->pdata = (int*)malloc(sizeof(int));
     int* temp = (int*)this->pdata;
     *(temp) = num;
@@ -38,7 +38,7 @@ void value_init_int(Value *this,int num){
 
 void value_init_float(Value *this,float num){
     value_init(this);
-    //this->VTy = 设置Type
+    this->VTy->ID = ConstFloatTyID;
     this->pdata = (float*)malloc(sizeof(float));
     float* temp = (float*)this->pdata;
     *(temp) = num;

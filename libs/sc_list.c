@@ -53,7 +53,7 @@ bool sc_list_is_empty(struct sc_list *l)
 
 size_t sc_list_count(struct sc_list *l)
 {
-	size_t count = 0;
+	size_t count = 1;
 	struct sc_list *elem;
 
 	sc_list_foreach (l, elem) {
@@ -70,7 +70,7 @@ struct sc_list *sc_list_head(struct sc_list *l)
 
 struct sc_list *sc_list_tail(struct sc_list *l)
 {
-	return l->prev != l ? l->prev : NULL;
+	return l->prev == l ? l : l->prev;
 }
 
 void sc_list_add_tail(struct sc_list *l, struct sc_list *elem)

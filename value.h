@@ -23,10 +23,11 @@ struct _Value
 
     // Use the same type as the bitfield above so that MSVC will pack them.
     unsigned IsUsedByMD : 1;
+
+    unsigned IsInstruction : 1;
     unsigned HasName : 1;
     unsigned HasMetadata : 1; // Has metadata attached to this?
     unsigned HasHungOffUses : 1;
-
 
     void *pdata;
 };

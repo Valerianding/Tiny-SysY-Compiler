@@ -25,7 +25,7 @@ User *user_new()
 User *user_new1(unsigned use_num)
 {
     // 另一种是 co-allocated, 在构造User对象时传入边的数量并分配连续内存同时保存User与Use,
-    assert(use_num < (1u << NumUserOperandsBits) && "Too many operands");
+    //assert(use_num < (1u << NumUserOperandsBits) && "Too many operands");
 
     uint8_t *Storage = (uint8_t *)malloc(sizeof(User) + sizeof(Use) * use_num);
     
@@ -53,7 +53,6 @@ int user_get_size(int use_num){
     if(use_num > 0)
         return sizeof(User) + sizeof(Use) * use_num;
     else
-        // return sizeof(User) + sizeof(Use*);
         return sizeof(User);
 }
 

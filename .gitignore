@@ -1,0 +1,7 @@
+.idea/
+camke-build-debug/
+optimize.h
+optimize.c
+liveness.h
+libs/.DS_Store
+.DS_Store
