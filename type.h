@@ -22,7 +22,8 @@ enum TypeID {
      X86_AMXTyID,   ///< AMX vectors (8192 bits, X86 specific)
      TokenTyID,     ///< Tokens
 
-     ConstTyID,
+     ConstIntegerTyID,
+     ConstFloatTyID,
   
      // Derived types... see DerivedTypes.h file.
      IntegerTyID,        ///< Arbitrary bit width integers
@@ -57,6 +58,7 @@ bool isIntegerTy(Type *this);
 bool isFunctionTy(Type *this);
 bool isFloatingPointTy(Type *this);
 bool isPointerTy(Type *this);
+bool isConstTy(Type *this);
 /* 如何设置Type存在问题 */
 
 #endif
