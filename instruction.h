@@ -11,6 +11,7 @@ typedef enum{
     SUB,
     MUL,
     DIV,
+    EQ,
     RET,
 };
 
@@ -18,8 +19,9 @@ struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
+    //上面的结构请不要改变了
     //DebugLoc DbgLoc; 
-
+    //
     //为三地址代码添加变量表，标记变量的存储位置
     enum _VariableStorageSpace* storageSpace;
     
@@ -28,6 +30,20 @@ typedef struct _Instruction Instruction;
 
 
 Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
+Instruction* ins_new(int op_num);
+Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2);
+/* 2021090918019 */
+Instruction *ins_new_unary_operator(int Op,Value *S1);
+/* 目前只是暂且从parent的basicblock中取出来 */
+Instruction *ins_remove_from_parent(Instruction *this);
+
+Instruction *ins_insert_after(Instruction *this,Instruction *InsertPos);
+
+Instruction *ins_move_before(Instruction *this,Instruction *MovePos);
+/// Unlink this instruction from its current basic block and insert it into
+/// the basic block that MovePos lives in, right after MovePos.
+Instruction *ins_move_after(Instruction *this,Instruction *MovePos);
+
 
 //https://llvm.org/doxygen/InstrTypes_8h_source.html
 /// Construct a binary instruction, given the opcode and the two
@@ -58,7 +74,7 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 //        ? OperandTraits<U>::op_end(const_cast<U*>(that))[Idx]
 //        : OperandTraits<U>::op_begin(const_cast<U*>(that))[Idx];
 //    }
-  
+
 //    template <int Idx> Use &Op() {
 //      return OpFrom<Idx>(this);
 //    }
@@ -71,24 +87,4 @@ Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 //    op_iterator       op_end()         {
 //      return getOperandList() + NumUserOperands;
 //    }
-
-Instruction* ins_new(int op_num);
-Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2);
-
-
-/* 2021090918019 */
-Instruction *ins_new_unary_operator(int Op,Value *S1);
-
-/* 目前只是暂且从parent的basicblock中取出来 */
-Instruction *ins_remove_from_parent(Instruction *this);
-
-Instruction *ins_insert_after(Instruction *this,Instruction *InsertPos);
-
-
-Instruction *ins_move_before(Instruction *this,Instruction *MovePos);
-
-/// Unlink this instruction from its current basic block and insert it into
-/// the basic block that MovePos lives in, right after MovePos.
-Instruction *ins_move_after(Instruction *this,Instruction *MovePos);
-
 #endif
