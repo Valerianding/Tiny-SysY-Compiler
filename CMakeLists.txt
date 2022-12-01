@@ -20,7 +20,7 @@ set(CMAKE_C_STANDARD 99)
 
 #file(GLOB_RECURSE DIR_TAC "./*.c")
 file(GLOB_RECURSE DIR_LIB ./libs/sc_list.c ./libs/sc_map.c ./sc_array.h)
-file(GLOB_RECURSE DIR_TAC tacmain.c bblock.c value.c user.c use.c symtab.c instruction.c type.c)
+file(GLOB_RECURSE DIR_TAC tacmain.c bblock.c value.c user.c use.c symtab.c instruction.c type.c function.c)
 file(GLOB_RECURSE DIR_IR ./ir/variable_storage_space.c)
 
 include_directories(libs)

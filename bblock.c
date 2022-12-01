@@ -15,7 +15,6 @@ void bblock_init(BasicBlock* this, Function* func) {
     this->inst_list = NULL;
 }
 
-
 // only used by bblock
 static InstNode* new_inst_node(Instruction* inst){
     InstNode* n = malloc(sizeof(InstNode));
@@ -38,15 +37,19 @@ void bblock_add_inst_back(BasicBlock* this, Instruction* inst){
 
 void bblock_pop_inst_back(BasicBlock* this){
     struct sc_list *tmp = sc_list_pop_tail(&(this->inst_list)->list);
-	InstNode* pnode = sc_list_entry(tmp, InstNode, list);
+	//InstNode* pnode = sc_list_entry(tmp, InstNode, list);
 
     //return pnode->inst;
 }
 
-Instruction* bblock_get_inst_back(BasicBlock* this){
+InstNode* bblock_get_inst_back(BasicBlock* this){
     struct sc_list *temp = sc_list_tail(&(this->inst_list)->list);
     InstNode* pnode = sc_list_entry(temp,InstNode,list);
-    return pnode->inst;
+    return pnode;
+}
+
+InstNode* bblock_get_inst_head(BasicBlock* this){
+    return this->inst_list;
 }
 
 Function *bblock_get_parent(BasicBlock* this){ 
@@ -81,9 +84,7 @@ void moveAfter(BasicBlock *this,BasicBlock *MovePos){
     }
 }
 
-
 size_t bb_count_ins(BasicBlock *this){
-    size_t count = 0;
     if(this->inst_list == NULL) return 0;
     else return sc_list_count(&(this->inst_list)->list);
 }

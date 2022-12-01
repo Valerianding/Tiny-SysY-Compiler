@@ -42,6 +42,7 @@ struct sc_list {
 	struct sc_list *prev;
 };
 
+//offsetof = (size_t)(&(((TYPE*)0)->MEMBER))
 #define sc_list_entry(ptr, type, elem)                                         \
 	((type *) ((char *) (ptr) -offsetof(type, elem)))
 

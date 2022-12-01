@@ -5,10 +5,8 @@
 #include "instruction.h"
 #include "symtab.h"
 #include "bblock.h"
-
+#include "function.h"
 #include "stdio.h"
-
-#include "optimize.h"
 
 //FIXME: test purpose only!
 Symtab* test_symtab;
@@ -71,6 +69,9 @@ int main(){
     printf("%p\n",block2.user.use_list + 1);
     printf("%p\n",block3.user.value.use_list);
 
+
+    Function function;
+    Function_init(&function);
 //    assert(sc_list_count(&(block.inst_list)->list) == 1);
 //    printf("%p\n",block.inst_list->inst);
 //    printf("%p\n",ins2);

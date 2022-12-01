@@ -49,7 +49,10 @@ void bblock_add_inst_back(BasicBlock *this, Instruction *inst);
 void bblock_pop_inst_back(BasicBlock *this);
 
 ///获得bblock的最后的inst
-Instruction* bblock_get_inst_back(BasicBlock *this);
+InstNode* bblock_get_inst_back(BasicBlock *this);
+
+///获得bblock的头inst
+InstNode* bblock_get_inst_head(BasicBlock *this);
 
 ///获得bblock的所在的function
 Function *bblock_get_parent(BasicBlock *this);
@@ -131,8 +134,11 @@ const BasicBlock *getUniqueSuccessor();
 /// function.
 // BasicBlock *splitBasicBlockBefore(iterator I, const Twine &BBName = "");
 
-size_t bb_count_ins(BasicBlock *this);
+/// 创建一个InstNode 注意Instruction是一定自己分配了内存的
+static InstNode* new_inst_node(Instruction* inst);
 
+
+size_t bb_count_ins(BasicBlock *this);
 ///
 
 
