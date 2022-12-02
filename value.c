@@ -127,3 +127,8 @@ Symtab* get_sym_tab(Value *V) {
 //     if (BasicBlock *BB = dyn_cast<BasicBlock>(this))
 //         BB->replaceSuccessorsPhiUsesWith(cast<BasicBlock>(New));
 // }
+
+Value *create_value(Value** v){
+    (*v) = (Value*)malloc(sizeof(Value));
+    value_init(*v);
+}

@@ -44,6 +44,7 @@ struct _Value
 //};
 
 void value_init(Value* this);
+Value *create_value(Value **v);
 //void const_init_int(Value* this, int num);
 //void const_init_float(Value* this, float num);
 

@@ -19,7 +19,6 @@ struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
-    //上面的结构请不要改变了
     //DebugLoc DbgLoc; 
     //
     //为三地址代码添加变量表，标记变量的存储位置
