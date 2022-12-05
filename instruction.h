@@ -2,6 +2,7 @@
 #define INSTRUCTION_H
 
 #include "user.h"
+#include "liveness.h"
 #include "./ir/variable_storage_space.h"
 
 struct _BasicBlock;
@@ -13,14 +14,18 @@ typedef enum{
     DIV,
     EQ,
     RET,
+    IF_GOTO,
+    GOTO,
 };
 
 struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
-    //DebugLoc DbgLoc; 
-    //
+    //DebugLoc DbgLoc;
+    int i; //指令的编号
+    livenessnode *in;
+    livenessnode *out;
     //为三地址代码添加变量表，标记变量的存储位置
     enum _VariableStorageSpace* storageSpace;
     
@@ -86,4 +91,6 @@ Instruction *ins_move_after(Instruction *this,Instruction *MovePos);
 //    op_iterator       op_end()         {
 //      return getOperandList() + NumUserOperands;
 //    }
+
+void ins_liveness_analysis(Instruction *tail);
 #endif

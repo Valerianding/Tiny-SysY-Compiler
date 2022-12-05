@@ -36,7 +36,9 @@ typedef struct _BasicBlock
 {
     User user;
     struct _Function *Parent;
-    InstNode *inst_list;
+    InstNode *head_node;  // 头节点标记
+    InstNode *tail_node;  // 尾节点标记
+    int flag;
 }BasicBlock;
 
 ///初始化bblock

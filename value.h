@@ -2,7 +2,6 @@
 #define VALUE_DEF
 #include <stdlib.h>
 #include <stdbool.h>
-// #include <stddef.h>
 #include "type.h"
 #include <stdint.h>
 
