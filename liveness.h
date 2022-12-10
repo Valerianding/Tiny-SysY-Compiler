@@ -18,5 +18,4 @@ livenessnode *ll_create(Value *this);
 void ll_add_tail(livenessnode *head,Value *this);
 
 int ll_isexsit(livenessnode *head,Value *this);
-
 #endif //C22V1_LIVENESS_H

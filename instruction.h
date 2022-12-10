@@ -8,14 +8,17 @@
 struct _BasicBlock;
 
 typedef enum{
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    EQ,
-    RET,
-    IF_GOTO,
-    GOTO,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Goto,
+    IF_Goto,
+    Call,
+    FunBegin,
+    FunEnd,
+    Return,
+    Assign,
 };
 
 struct _Instruction{
@@ -24,11 +27,9 @@ struct _Instruction{
     struct _BasicBlock *Parent;
     //DebugLoc DbgLoc;
     int i; //指令的编号
-    livenessnode *in;
     livenessnode *out;
     //为三地址代码添加变量表，标记变量的存储位置
     enum _VariableStorageSpace* storageSpace;
-    
 };
 typedef struct _Instruction Instruction;
 
@@ -36,7 +37,6 @@ typedef struct _Instruction Instruction;
 Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 Instruction* ins_new(int op_num);
 Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2);
-/* 2021090918019 */
 Instruction *ins_new_unary_operator(int Op,Value *S1);
 /* 目前只是暂且从parent的basicblock中取出来 */
 Instruction *ins_remove_from_parent(Instruction *this);
@@ -48,49 +48,12 @@ Instruction *ins_move_before(Instruction *this,Instruction *MovePos);
 /// the basic block that MovePos lives in, right after MovePos.
 Instruction *ins_move_after(Instruction *this,Instruction *MovePos);
 
+Instruction *ins_set_parent(Instruction *this,struct _BasicBlock *parent);
+
 
 //https://llvm.org/doxygen/InstrTypes_8h_source.html
 /// Construct a binary instruction, given the opcode and the two
 /// operands.  Optionally (if InstBefore is specified) insert the instruction
 /// into a BasicBlock right before the specified instruction.  The specified
 /// Instruction is allowed to be a dereferenced end iterator.
-///
-// static BinaryOperator *Create(BinaryOps Op, Value *S1, Value *S2,
-//                                 const Twine &Name = Twine(),
-//                                 Instruction *InsertBefore = nullptr);
-
-
-//  BinaryOperator::BinaryOperator(BinaryOps iType, Value *S1, Value *S2,
-//                                 Type *Ty, const Twine &Name,
-//                                 BasicBlock *InsertAtEnd)
-//    : Instruction(Ty, iType,
-//                  OperandTraits<BinaryOperator>::op_begin(this),
-//                  OperandTraits<BinaryOperator>::operands(this),
-//                  InsertAtEnd) {
-//    Op<0>() = S1;
-//    Op<1>() = S2;
-//    setName(Name);
-//    AssertOK();
-//  }
-
-//template <int Idx, typename U> static Use &OpFrom(const U *that) {
-//      return Idx < 0
-//        ? OperandTraits<U>::op_end(const_cast<U*>(that))[Idx]
-//        : OperandTraits<U>::op_begin(const_cast<U*>(that))[Idx];
-//    }
-
-//    template <int Idx> Use &Op() {
-//      return OpFrom<Idx>(this);
-//    }
-//    template <int Idx> const Use &Op() const {
-//      return OpFrom<Idx>(this);
-//    }
-
-// op_iterator       op_begin()       { return getOperandList(); }
-//    const_op_iterator op_begin() const { return getOperandList(); }
-//    op_iterator       op_end()         {
-//      return getOperandList() + NumUserOperands;
-//    }
-
-void ins_liveness_analysis(Instruction *tail);
 #endif

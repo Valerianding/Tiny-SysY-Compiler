@@ -41,8 +41,6 @@ struct _BasicBlock *ins_get_parent(Instruction *this){
     return this->Parent;
 }
 
-
-void ins_liveness_analysis(Instruction *tail){
-
+Instruction *ins_set_parent(Instruction *this,struct _BasicBlock *parent){
+    this->Parent = parent;
 }
-
