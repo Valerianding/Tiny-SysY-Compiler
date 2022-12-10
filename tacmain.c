@@ -22,16 +22,38 @@ int main(){
     /* 注意所有的value都需要初始化 */
     value_init_int(&a,10);
     value_init_int(&b,20);
-    Instruction *ins1 = ins_new_unary_operator(ADD,&a);
-    Instruction *ins2 = ins_new_binary_operator(ADD,(Value*)ins1,&b);
+    Instruction *ins1 = ins_new_unary_operator(Add,&a);
+    Instruction *ins2 = ins_new_binary_operator(Add,(Value*)ins1,&b);
 
-    //
+
+    printf("in/out: %d\n",ins1->user.value.is_in);
+    printf("in/out: %d\n",ins1->user.value.is_out);
+
     printf("pass phrase 1\n");
 
 
     BasicBlock block;
     bblock_init(&block, NULL);
     printf("block init\n");
+    printf("%d\n",ins1->Parent);
+
+
+    InstNode *temp = new_inst_node(ins1);
+    InstNode *temp1 = new_inst_node(ins2);
+
+    ins_node_add(temp,temp1);
+    printf("%p\n",temp->list.next);
+    printf("%p\n",&temp1->list);
+
+    bb_set_block(&block,temp,temp1);
+    assert(&block == temp->inst->Parent);
+    assert(&block == temp1->inst->Parent);
+
+    ins1->i = 1;
+    InstNode *ret = search_inst_node(temp,1);
+    printf("%p\n",ret);
+    printf("%p\n",temp);
+
 //    assert(sc_list_count(&(block.inst_list)->list) == 1);
 //    printf("%p\n",block.inst_list->inst);
 //    printf("%p\n",ins2);

@@ -12,7 +12,7 @@ typedef struct _BasicBlockNode{
 }BasicBlockNode;
 
 typedef struct _Function{
-    BasicBlockNode *bb_list;
+    BasicBlockNode *bb_head;
     //Function *Prev;
     Function *Next;
 }Function;

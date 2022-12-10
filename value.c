@@ -12,6 +12,7 @@ void value_add_use(Value *this, Use *U)
 void value_init(Value* this){
     memset(this, 0, sizeof(Value));
     this->VTy = (Type*)malloc(sizeof(Type));
+    this->pdata = (PData*)malloc(sizeof(PData));
     this->use_list = NULL;
 }
 
@@ -31,17 +32,13 @@ void value_set_name(Value* this, char* name){
 void value_init_int(Value *this,int num){
     value_init(this);
     this->VTy->ID = ConstIntegerTyID;
-    this->pdata = (int*)malloc(sizeof(int));
-    int* temp = (int*)this->pdata;
-    *(temp) = num;
+    this->pdata->var_pdata.iVal = num;
 }
 
 void value_init_float(Value *this,float num){
     value_init(this);
     this->VTy->ID = ConstFloatTyID;
-    this->pdata = (float*)malloc(sizeof(float));
-    float* temp = (float*)this->pdata;
-    *(temp) = num;
+    this->pdata->var_pdata.fVal = num;
 }
 
 //FIXME: test purpose only!
@@ -66,67 +63,7 @@ Symtab* get_sym_tab(Value *V) {
 //      return true;  // no name is setable for this.
 //    }
    return ST;
- }
-//
-//ConstantNum* const_new_int(int num){
-//    ConstantNum *c = malloc(sizeof(ConstantNum));
-//    c->num.num_int = num;
-//    value_init(&(c->value));
-//    return c;
-//}
-//
-//ConstantNum* const_new_float(float num){
-//    ConstantNum *c = malloc(sizeof(ConstantNum));
-//    c->num.num_float = num;
-//    value_init(&(c->value));
-//    return c;
-//}
-
-//void const_init_int(ConstantNum* c, int num){
-//    c->num.num_int = num;
-//    value_init(&(c->value));
-//}
-//
-//void const_init_float(ConstantNum* c, float num){
-//    c->num.num_float = num;
-//    value_init(&(c->value));
-//}
-
-// enum ReplaceMetadataUses { No, Yes };
-// void doRAUW(Value* this, Value *New, enum ReplaceMetadataUses ReplaceMetaUses)
-// {
-//     assert(New && "Value::replaceAllUsesWith(<null>) is invalid!");
-//     assert(!contains(New, this) &&
-//            "this->replaceAllUsesWith(expr(this)) is NOT valid!");
-//     assert(getType(New) == getType(this) &&
-//            "replaceAllUses of value with new value of different type!");
-
-//     // Notify all ValueHandles (if present) that this value is going away.
-//     if (this->HasValueHandle)
-//         ValueHandleBase::ValueIsRAUWd(this, New);
-//     if (ReplaceMetaUses == ReplaceMetadataUses::Yes && isUsedByMetadata())
-//         ValueAsMetadata::handleRAUW(this, New);
-
-//     while (!materialized_use_empty())
-//     {
-//         Use &U = *UseList;
-//         // Must handle Constants specially, we cannot call replaceUsesOfWith on a
-//         // constant because they are uniqued.
-//         if (auto *C = dyn_cast<Constant>(U.getUser()))
-//         {
-//             if (!isa<GlobalValue>(C))
-//             {
-//                 C->handleOperandChange(this, New);
-//                 continue;
-//             }
-//         }
-
-//         U.set(New);
-//     }
-
-//     if (BasicBlock *BB = dyn_cast<BasicBlock>(this))
-//         BB->replaceSuccessorsPhiUsesWith(cast<BasicBlock>(New));
-// }
+}
 
 Value *create_value(Value** v){
     (*v) = (Value*)malloc(sizeof(Value));

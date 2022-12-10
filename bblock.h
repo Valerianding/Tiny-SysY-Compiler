@@ -31,7 +31,6 @@ typedef struct _InstNode{
     struct sc_list list;
 } InstNode;
 
-/* 可能用不到 */
 typedef struct _BasicBlock
 {
     User user;
@@ -39,6 +38,8 @@ typedef struct _BasicBlock
     InstNode *head_node;  // 头节点标记
     InstNode *tail_node;  // 尾节点标记
     int flag;
+    livenessnode *in;
+    livenessnode *out;
 }BasicBlock;
 
 ///初始化bblock
@@ -137,11 +138,30 @@ const BasicBlock *getUniqueSuccessor();
 // BasicBlock *splitBasicBlockBefore(iterator I, const Twine &BBName = "");
 
 /// 创建一个InstNode 注意Instruction是一定自己分配了内存的
-static InstNode* new_inst_node(Instruction* inst);
+InstNode* new_inst_node(Instruction* inst);
 
-
-size_t bb_count_ins(BasicBlock *this);
 ///
+InstNode *get_prev_inst(InstNode *this);
 
+///
+InstNode *get_next_inst(InstNode *this);
 
+///
+InstNode *search_inst_node(InstNode *head,int id);
+
+///划分基本块
+void bblock_divide(InstNode *head);
+
+///活跃变量分析
+void ll_analysis(InstNode *tail);
+
+///将head到tail的InstNode加入this的BasicBlock中
+void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail);
+
+///计算BasicBlock里的指令数目
+size_t bb_count_ins(BasicBlock *this);
+
+/// 将this加入head
+void ins_node_add(InstNode *head,InstNode *this);
+///
 #endif

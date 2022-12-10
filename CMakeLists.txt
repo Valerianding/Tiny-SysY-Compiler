@@ -35,7 +35,7 @@ add_executable(compiler
         ${DIR_LIB})
 
 
-
+set(CMAKE_BUILD_TYPE Debug)
 #aux_source_directory(. DIR_SRC)
 
 # file(GLOB_RECURSE DIR_LIB_SRC "third_party/*.cpp")
