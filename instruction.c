@@ -37,6 +37,30 @@ Instruction *ins_new_unary_operator(int Op,Value *S1){
     return inst;
 }
 
+Instruction *ins_new_goto_operator(int pos){
+    Instruction *inst = ins_new(0);
+    inst->Opcode = Goto;
+    inst->user.value.pdata->instruction_pdata.goto_location = pos;
+    return inst;
+}
+
+Instruction *ins_new_ifgoto_operator(int pos,Value *S1,Value *S2){
+    Instruction *inst;
+    if(S2 == NULL){
+        inst = ins_new(1);
+        Use* puse = user_get_operand_use(&inst->user,0);
+        use_set_value(puse,S1);
+    }else{
+        inst = ins_new(2);
+        Use* puse = user_get_operand_use(&inst->user,0);
+        use_set_value(puse,S1);
+        puse = user_get_operand_use(&inst->user,1);
+        use_set_value(puse,S2);
+    }
+    inst->user.value.pdata->instruction_pdata.goto_location = pos;
+    inst->Opcode = IF_Goto;
+}
+
 struct _BasicBlock *ins_get_parent(Instruction *this){
     return this->Parent;
 }

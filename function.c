@@ -18,18 +18,18 @@
 //}
 //
 //void Function_add_block_back(Function *this,BasicBlock *block){
-//    //this->bb_list->list
+//    this->bb_list->list
 //    BasicBlockNode *temp = new_BasicBlockNode(block);
-//    //sc_list_add_tail(&this->bb_list->list,&temp->list);
+//    sc_list_add_tail(&this->bb_list->list,&temp->list);
 //}
 //
 //void Function_pop_block_back(Function *this){
-//    //sc_list_pop_tail(&this->bb_list->list);
+//    sc_list_pop_tail(&this->bb_list->list);
 //}
 //
 //BasicBlockNode *Function_get_block_back(Function *this){
-//   // struct sc_list *list = sc_list_tail(&this->bb_list->list);
-////    BasicBlockNode *temp = sc_list_entry(list,BasicBlockNode,list);
+//    struct sc_list *list = sc_list_tail(&this->bb_list->list);
+//    BasicBlockNode *temp = sc_list_entry(list,BasicBlockNode,list);
 //    return temp;
 //}
 //

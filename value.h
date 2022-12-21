@@ -29,7 +29,7 @@ union _PData{
         //int num;                   //可能有
     }symtab_func_pdata;            //目前只在我的符号表里用的结构，最终func结构还未完全确定
 
-}data_pdata;
+};
 typedef union _PData PData;
 typedef struct _Value Value;
 struct _Value
@@ -52,6 +52,8 @@ struct _Value
 
     unsigned is_in : 1; //入口语句
     unsigned is_out : 1; //出口语句
+
+    unsigned is_last : 1;
 
     char *name;
     PData *pdata;

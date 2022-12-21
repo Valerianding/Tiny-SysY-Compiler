@@ -35,11 +35,12 @@ typedef struct _BasicBlock
 {
     User user;
     struct _Function *Parent;
-    InstNode *head_node;  // 头节点标记
-    InstNode *tail_node;  // 尾节点标记
+    InstNode *head_node;  // 这个基本块的第一条instruction
+    InstNode *tail_node;  // 这个基本块的最后一条instruction
     int flag;
-    livenessnode *in;
-    livenessnode *out;
+    HashSet *in;
+    HashSet *out;
+    char *label;
 }BasicBlock;
 
 ///初始化bblock
@@ -152,9 +153,6 @@ InstNode *search_inst_node(InstNode *head,int id);
 ///划分基本块
 void bblock_divide(InstNode *head);
 
-///活跃变量分析
-void ll_analysis(InstNode *tail);
-
 ///将head到tail的InstNode加入this的BasicBlock中
 void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail);
 
@@ -163,5 +161,10 @@ size_t bb_count_ins(BasicBlock *this);
 
 /// 将this加入head
 void ins_node_add(InstNode *head,InstNode *this);
-///
+
+///打印三地址代码
+void print_ins_node(InstNode *head);
+
+///获得下一个BasicBlock
+BasicBlock *get_next_block(BasicBlock *this);
 #endif
