@@ -20,11 +20,11 @@ void ll_analysis(BasicBlock *this) {
     InstNode *tail = this->tail_node;
     InstNode *cur_node = tail;
     /* 从最后一个node开始分析 */
-    for (; cur_node != NULL && cur_node->inst->i >= head->inst->i; cur_node = get_prev_inst(cur_node)) {
+    for (; cur_node != NULL && cur_node->inst->i >= head->inst->i; cur_node = get_prev_inst(cur_node)){
         printf("cur_node id %d\n",cur_node->inst->i);
         int flag = 1;
         if(cur_node == tail){
-            //如果是最后一个语句就不需要
+            //如果是最后一个语句就不需要拷贝这个过程
             flag = 0;
         }
         if (NULL == cur_node->inst->value_VarSpace) {
@@ -32,6 +32,10 @@ void ll_analysis(BasicBlock *this) {
         }
         if(flag == 1){
             copy_liveness(cur_node, get_next_inst(cur_node));
+        }
+        if(flag == 0){
+            //如果是最后的话，可能会需要从block最后的地方取出来
+
         }
         //1. 先分析一下 instruction左边value*是需要
         // 用到了多少个value
@@ -64,6 +68,15 @@ void ll_analysis(BasicBlock *this) {
         }
         printf("for end\n");
     }
+
+    //分析一个块分析到了头
+    if(cur_node == head && cur_node != NULL){
+        if(cur_node->inst->Parent->in == NULL){
+            cur_node->inst->Parent->in = HashMapInit();
+            for(Pair *pair = HashMapNext();pair != NULL;pair = HashMapNext(cur_node->inst->value_VarSpace)){
+            }
+        }
+    }
 }
 
 /*将下一个instruction的in简单的赋值给上一个instruction的in之后再回到原函数进行分析*/
@@ -84,7 +97,10 @@ void do_ll_analysis(InstNode *all_end){
     BasicBlock *this = all_end->inst->Parent;
     do{
         ll_analysis(this);
-        this = get_next_block(this);
+        if(this->tail_node->inst->Opcode == Goto || this->tail_node->inst->Opcode == IF_Goto){
+
+        }
+        this = get_prev_block(this);
     }while(this != NULL);
 }
 

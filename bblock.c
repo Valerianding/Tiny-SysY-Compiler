@@ -8,10 +8,10 @@ void bblock_init(BasicBlock* this, Function* func) {
 
     Use *temp2 = (Use *) (storage) + 1;
     temp2->Parent = &this->user;
-    //
     this->user.use_list = (Use *) storage;
     value_init(&this->user.value);
-    this->Parent = func;
+    //this->Parent = func;
+
     this->head_node = NULL;
     this->tail_node = NULL;
 }
@@ -39,31 +39,32 @@ Function *bblock_get_parent(BasicBlock* this){
 }
 
 void moveBefore(BasicBlock *this,BasicBlock *MovePos){
-    Use *temp = this->user.use_list;
-    if(temp->Val == NULL){
-        use_set_value(temp,&MovePos->user.value);
-    }else{
-        temp = temp + 1;
-        if(temp->Val == NULL) {
-            use_set_value(temp,&MovePos->user.value);
-        }else{
-            printf("already have two kids!\n");
-        }
-    }
+//    Use *temp = this->user.use_list;
+//    if(temp->Val == NULL){
+//        use_set_value(temp,&MovePos->user.value);
+//    }else{
+//        temp = temp + 1;
+//        if(temp->Val == NULL) {
+//            use_set_value(temp,&MovePos->user.value);
+//        }else{
+//            printf("already have two kids!\n");
+//        }
+//    }
 }
 
 void moveAfter(BasicBlock *this,BasicBlock *MovePos){
-    Use *temp = MovePos->user.use_list;
-    if(temp->Val == NULL){
-        use_set_value(temp,&this->user.value);
-    }else{
-        temp = temp + 1;
-        if(temp->Val == NULL){
-            use_set_value(temp,&this->user.value);
-        }else{
-            printf("already have two kids!\n");
-        }
-    }
+//    Use *temp = MovePos->user.use_list;
+//    if(temp->Val == NULL){
+//        use_set_value(temp,&this->user.value);
+//    }else{
+//        temp = temp + 1;
+//        if(temp->Val == NULL){
+//            use_set_value(temp,&this->user.value);
+//        }else{
+//            printf("already have two kids!\n");
+//        }
+//    }
+//    if(this->next == )
 }
 
 InstNode *get_prev_inst(InstNode *this){
@@ -134,7 +135,6 @@ void bblock_divide(InstNode *head){
         }
         temp = get_next_inst(temp);
 }
-
     temp = head;
     BasicBlock *now = temp->inst->Parent;
     BasicBlock *next = NULL;
@@ -171,5 +171,9 @@ void ins_node_add(InstNode *head,InstNode *this){
 }
 
 BasicBlock *get_next_block(BasicBlock *this){
+
+}
+
+BasicBlock *get_prev_block(BasicBlock *this){
 
 }

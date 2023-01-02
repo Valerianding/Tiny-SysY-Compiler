@@ -51,10 +51,9 @@ struct _Instruction{
 
     HashMap *value_VarSpace;  //key: value*    value: VarSpace
 
-    HashSet out; //
+    HashSet out;
     //为三地址代码添加变量表，标记变量的存储位置
     enum _VariableStorageSpace* storageSpace;
-
     Value* dest;
 };
 typedef struct _Instruction Instruction;

@@ -23,7 +23,7 @@
 
 struct _Function;
 typedef struct _Function Function;
-//typedef struct _BasicBlock BasicBlock;
+typedef struct _BasicBlock BasicBlock;
 
 /* 这里的设计结构 */
 typedef struct _InstNode{
@@ -34,12 +34,14 @@ typedef struct _InstNode{
 typedef struct _BasicBlock
 {
     User user;
+    struct _BasicBlock *next;
+    struct _BasicBlock *jump;
     struct _Function *Parent;
     InstNode *head_node;  // 这个基本块的第一条instruction
     InstNode *tail_node;  // 这个基本块的最后一条instruction
     int flag;
-    HashSet *in;
-    HashSet *out;
+    HashMap *in;
+    HashMap *out;
     char *label;
 }BasicBlock;
 
@@ -78,7 +80,6 @@ void moveAfter(BasicBlock *this,BasicBlock *MovePos);
 /// Inserts an unlinked basic block into \c Parent.  If \c InsertBefore is
 /// provided, inserts before that basic block, otherwise inserts at the end.
 ///
-/// \pre \a getParent() is \c nullptr.
 void insertInto(Function *Parent, BasicBlock *InsertBefore);
 
 /// Return the predecessor of this block if it has a single predecessor
@@ -167,4 +168,7 @@ void print_ins_node(InstNode *head);
 
 ///获得下一个BasicBlock
 BasicBlock *get_next_block(BasicBlock *this);
+
+///获得上一个BasicBlock
+BasicBlock *get_prev_block(BasicBlock *this);
 #endif
