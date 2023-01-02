@@ -7,40 +7,12 @@
 #define nullptr 0
 
 enum TypeID {
-     PrimitiveTypes,
-     HalfTyID = 0,  ///< 16-bit floating point type
-     BFloatTyID,    ///< 16-bit floating point type (7-bit significand)
-     FloatTyID,     ///< 32-bit floating point type
-     DoubleTyID,    ///< 64-bit floating point type
-     X86_FP80TyID,  ///< 80-bit floating point type (X87)
-     FP128TyID,     ///< 128-bit floating point type (112-bit significand)
-     PPC_FP128TyID, ///< 128-bit floating point type (two 64-bits, PowerPC)
-     VoidTyID,      ///< type with no size
-     LabelTyID,     ///< Labels
-     MetadataTyID,  ///< Metadata
-     X86_MMXTyID,   ///< MMX vectors (64 bits, X86 specific)
-     X86_AMXTyID,   ///< AMX vectors (8192 bits, X86 specific)
-     TokenTyID,     ///< Tokens
-
-     ConstIntegerTyID,
-     ConstFloatTyID,
-
-     // Derived types... see DerivedTypes.h file.
-     IntegerTyID,        ///< Arbitrary bit width integers
-     FunctionTyID,       ///< Functions
-     PointerTyID,        ///< Pointers
-     StructTyID,         ///< Structures
-     ArrayTyID,          ///< Arrays
-
     Var_INT,
     Var_FLOAT,
-    Var_CONSTINT,
-    Var_CONSTFLOAT,
+    Var_initINT,
+    Var_initFLOAT,
     INT,
     FLOAT,
-    CONSTINT,
-    CONSTFLOAT,
-    UNDEF,
 };
 
 typedef struct _Type{
@@ -69,6 +41,5 @@ bool isFunctionTy(Type *this);
 bool isFloatingPointTy(Type *this);
 bool isPointerTy(Type *this);
 bool isConstTy(Type *this);
-/* 如何设置Type存在问题 */
 
 #endif

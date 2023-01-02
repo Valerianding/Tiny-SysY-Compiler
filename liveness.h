@@ -6,16 +6,11 @@
 #define C22V1_LIVENESS_H
 
 #include "instruction.h"
+#include "bblock.h"
 
-typedef struct _livenessnode{
-    Value *this;
-    struct _livenessnode *prev;
-    struct _livenessnode *next;
-}livenessnode;
+void ll_analysis(BasicBlock *this);
 
-livenessnode *ll_create(Value *this);
+void copy_liveness(InstNode *this,InstNode *next);
 
-void ll_add_tail(livenessnode *head,Value *this);
-
-int ll_isexsit(livenessnode *head,Value *this);
+void printliveness(BasicBlock *this);
 #endif //C22V1_LIVENESS_H

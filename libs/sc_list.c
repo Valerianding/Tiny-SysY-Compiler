@@ -33,10 +33,11 @@
 
 void sc_list_init(struct sc_list *l)
 {
-	l->next = l;
-	l->prev = l;
+	l->next = NULL;
+	l->prev = NULL;
 }
 
+//不会用到
 void sc_list_clear(struct sc_list *l)
 {
 	struct sc_list *tmp, *elem;
@@ -48,7 +49,7 @@ void sc_list_clear(struct sc_list *l)
 
 bool sc_list_is_empty(struct sc_list *l)
 {
-	return l->next == l;
+	return l == NULL ? true : false;
 }
 
 size_t sc_list_count(struct sc_list *l)
@@ -65,41 +66,54 @@ size_t sc_list_count(struct sc_list *l)
 
 struct sc_list *sc_list_head(struct sc_list *l)
 {
-	return l->next != l ? l->next : NULL;
+	while(l->prev != NULL){
+		l = l->prev;
+	}
+	return l;
 }
 
 struct sc_list *sc_list_tail(struct sc_list *l)
 {
-	return l->prev == l ? l : l->prev;
+	while(l->next != NULL){
+		l = l->next;
+	}
+	return l;
 }
 
 void sc_list_add_tail(struct sc_list *l, struct sc_list *elem)
 {
-	struct sc_list *prev;
+	// struct sc_list *prev;
 
-	// Delete if exists to prevent adding same item twice
-	sc_list_del(l, elem);
+	// // Delete if exists to prevent adding same item twice
+	// sc_list_del(l, elem);
 
-	prev = l->prev;
-	l->prev = elem;
-	elem->next = l;
-	elem->prev = prev;
-	prev->next = elem;
+	// prev = l->prev;
+	// l->prev = elem;
+	// elem->next = l;
+	// elem->prev = prev;
+	// prev->next = elem;
+
+	struct sc_list *temp;
+
+	struct sc_list *tail = sc_list_tail(l);
+	tail->next = elem;
+	elem->prev = tail;
 }
 
 struct sc_list *sc_list_pop_tail(struct sc_list *l)
 {
-	struct sc_list *tail = l->prev;
+	struct sc_list *tail = sc_list_tail(l);
 
-	if (sc_list_is_empty(l)) {
-		return NULL;
-	}
+	// if (sc_list_is_empty(l)) {
+	// 	return NULL;
+	// }
 
-	sc_list_del(l, l->prev);
-
+	// sc_list_del(l, l->prev);
+	tail->prev->next = NULL;
 	return tail;
 }
 
+//
 void sc_list_add_head(struct sc_list *l, struct sc_list *elem)
 {
 	struct sc_list *next;
@@ -114,6 +128,7 @@ void sc_list_add_head(struct sc_list *l, struct sc_list *elem)
 	next->prev = elem;
 }
 
+//不用
 struct sc_list *sc_list_pop_head(struct sc_list *l)
 {
 	struct sc_list *head = l->next;
@@ -127,6 +142,7 @@ struct sc_list *sc_list_pop_head(struct sc_list *l)
 	return head;
 }
 
+//不用
 void sc_list_add_after(struct sc_list *l, struct sc_list *prev,
 		       struct sc_list *elem)
 {
@@ -143,6 +159,8 @@ void sc_list_add_after(struct sc_list *l, struct sc_list *prev,
 	next->prev = elem;
 }
 
+
+//不用
 void sc_list_add_before(struct sc_list *l, struct sc_list *next,
 			struct sc_list *elem)
 {
@@ -159,6 +177,7 @@ void sc_list_add_before(struct sc_list *l, struct sc_list *next,
 	prev->next = elem;
 }
 
+//???
 void sc_list_del(struct sc_list *l, struct sc_list *elem)
 {
 	(void) (l);

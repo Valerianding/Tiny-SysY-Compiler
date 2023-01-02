@@ -13,6 +13,8 @@ struct _Stack{
 
 typedef struct _Stack Stack;
 
+//typedef struct _Stack Stack;
+
 struct _mapList{
     struct sc_map_sv map;             //key-value为name-Value*
     int scope_level;                  //当前表所在的嵌套层数

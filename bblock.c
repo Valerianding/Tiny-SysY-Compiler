@@ -8,16 +8,16 @@ void bblock_init(BasicBlock* this, Function* func) {
 
     Use *temp2 = (Use *) (storage) + 1;
     temp2->Parent = &this->user;
-    //
     this->user.use_list = (Use *) storage;
     value_init(&this->user.value);
-    this->Parent = func;
+    //this->Parent = func;
+
     this->head_node = NULL;
     this->tail_node = NULL;
 }
 
 
-//// only used by bblock
+//// 将instruction放在instnode里面
 InstNode* new_inst_node(Instruction* inst){
     InstNode* n = malloc(sizeof(InstNode));
     n->inst = inst;
@@ -39,70 +39,81 @@ Function *bblock_get_parent(BasicBlock* this){
 }
 
 void moveBefore(BasicBlock *this,BasicBlock *MovePos){
-    Use *temp = this->user.use_list;
-    if(temp->Val == NULL){
-        use_set_value(temp,&MovePos->user.value);
-    }else{
-        temp = temp + 1;
-        if(temp->Val == NULL) {
-            use_set_value(temp,&MovePos->user.value);
-        }else{
-            printf("already have two kids!\n");
-        }
-    }
+//    Use *temp = this->user.use_list;
+//    if(temp->Val == NULL){
+//        use_set_value(temp,&MovePos->user.value);
+//    }else{
+//        temp = temp + 1;
+//        if(temp->Val == NULL) {
+//            use_set_value(temp,&MovePos->user.value);
+//        }else{
+//            printf("already have two kids!\n");
+//        }
+//    }
 }
 
 void moveAfter(BasicBlock *this,BasicBlock *MovePos){
-    Use *temp = MovePos->user.use_list;
-    if(temp->Val == NULL){
-        use_set_value(temp,&this->user.value);
-    }else{
-        temp = temp + 1;
-        if(temp->Val == NULL){
-            use_set_value(temp,&this->user.value);
-        }else{
-            printf("already have two kids!\n");
-        }
-    }
+//    Use *temp = MovePos->user.use_list;
+//    if(temp->Val == NULL){
+//        use_set_value(temp,&this->user.value);
+//    }else{
+//        temp = temp + 1;
+//        if(temp->Val == NULL){
+//            use_set_value(temp,&this->user.value);
+//        }else{
+//            printf("already have two kids!\n");
+//        }
+//    }
+//    if(this->next == )
 }
 
 InstNode *get_prev_inst(InstNode *this){
     struct sc_list *list = this->list.prev;
+    if(list == NULL) return NULL;
     InstNode *temp = sc_list_entry(list,InstNode,list);
     return temp;
 }
 
 InstNode *get_next_inst(InstNode *this){
     struct sc_list *list = this->list.next;
+    if(list == NULL) return NULL;
     InstNode *temp = sc_list_entry(list,InstNode,list);
     return temp;
 }
 
 InstNode *search_inst_node(InstNode *head,int id){
     while(head != NULL){
-        if(head->inst->i == id)
+        if(head->inst->i == id){
             return head;
-        else
+        }
+        else{
+            //printf("now id %d\n",head->inst->i);
             head = get_next_inst(head);
+        }
     }
 }
 
 // 注意程序的第一条语句需要提前处理
 void bblock_divide(InstNode *head){
     InstNode *temp = head;
+    printf("first while\n");
     while(temp != NULL){
         if(temp->inst->Opcode == Goto
                 || temp->inst->Opcode == IF_Goto){
             temp->inst->user.value.is_out = 1;
             InstNode *Next = get_next_inst(temp);
-            Next->inst->user.value.is_in = 1;
-            int id = temp->inst->user.value.pdata->var_pdata.iVal;
+            if(Next != NULL){
+                Next->inst->user.value.is_in = 1;
+            }
+            int id = temp->inst->user.value.pdata->instruction_pdata.goto_location;
 
             InstNode *Go = search_inst_node(head,id);
             Go->inst->user.value.is_in = 1;
 
             InstNode *Go_Prev = get_prev_inst(Go);
-            Go_Prev->inst->user.value.is_out = 1;
+            if(Go_Prev != NULL){
+                Go_Prev->inst->user.value.is_out = 1;
+            }
         }
         if(temp->inst->Opcode == Return){
             temp->inst->user.value.is_out = 1;
@@ -110,7 +121,7 @@ void bblock_divide(InstNode *head){
         temp = get_next_inst(temp);
     }
 
-
+    printf("second while\n");
     temp = head;
     InstNode *this_in = temp;
     while(temp != NULL){
@@ -123,27 +134,30 @@ void bblock_divide(InstNode *head){
             this_in = get_next_inst(temp);
         }
         temp = get_next_inst(temp);
-    }
-
+}
     temp = head;
     BasicBlock *now = temp->inst->Parent;
     BasicBlock *next = NULL;
     BasicBlock *jump = NULL;
+    printf("third while\n");
+    printf("%d\n",temp->inst->user.value.is_out);
     /* 直接的儿子放在第一个use的第一条边，如果有Goto的话放在第二条边 */
     while(temp != NULL){
         if(temp->inst->user.value.is_out == (unsigned)1){
-            next = get_next_inst(temp)->inst->Parent;
-            moveBefore(now,next);
+            if(get_next_inst(temp) != NULL){
+                next = get_next_inst(temp)->inst->Parent;
+                moveBefore(now, next);
+            }
+            if(temp->inst->Opcode == Goto || temp->inst->Opcode == IF_Goto){
+                jump = search_inst_node(head,temp->inst->user.value.pdata->instruction_pdata.goto_location)->inst->Parent;
+                moveBefore(now,jump);
+            }
             now = next;
-        }
-        if(temp->inst->Opcode == Goto || temp->inst->Opcode == IF_Goto){
-            jump = search_inst_node(head,temp->inst->user.value.pdata->instruction_pdata.goto_location)->inst->Parent;
-            moveBefore(now,jump);
         }
         temp = get_next_inst(temp);
     }
+    printf("finished!\n");
 }
-
 
 void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail){
     for(;head != tail;head = get_next_inst(head)){
@@ -152,22 +166,14 @@ void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail){
     ins_set_parent(tail->inst,this);
 }
 
-void ll_analysis(InstNode *tail){
-//    while(tail != head){
-//         int num = tail->inst->user.value.NumUserOperands;
-//         for(int i = 0; i < num; i++){
-//             Use *temp = tail->inst->user.use_list + i;
-//             Value *this = temp->Val;
-//             Value *def = (Value*)tail->inst;
-//             ll_isexsit()
-//         }
-//         tail = get_prev_inst(tail);
-//    }
+void ins_node_add(InstNode *head,InstNode *this){
+    sc_list_add_tail(&head->list,&this->list);
 }
 
-void ins_node_add(InstNode *head,InstNode *this){
-    InstNode *temp = head;
-    for(;temp->list.next != &head->list; temp = get_next_inst(temp)){
-    }
-    sc_list_add_tail(&head->list,&this->list);
+BasicBlock *get_next_block(BasicBlock *this){
+
+}
+
+BasicBlock *get_prev_block(BasicBlock *this){
+
 }
