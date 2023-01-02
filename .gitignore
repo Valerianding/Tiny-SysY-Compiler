@@ -1,8 +1,4 @@
 .idea/
 cmake-build-debug/
-optimize.h
-optimize.c
-bblock.c
-bblock.h
 libs/.DS_Store
 .DS_Store
