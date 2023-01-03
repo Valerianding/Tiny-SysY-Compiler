@@ -1,5 +1,5 @@
 // test if-{if}-else
-int if_if_Else(int g) {
+int if_if_Else() {
     int a;
     a = 5;
     int b;
@@ -14,5 +14,5 @@ int if_if_Else(int g) {
 }
 
 int main(){
-    return (if_if_Else(1));
+    return (if_if_Else());
 }

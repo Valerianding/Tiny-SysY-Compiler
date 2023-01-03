@@ -18,7 +18,6 @@ typedef enum OpcodeType{
     FunBegin,
     FunEnd,
     Return,
-    Assign,
     IFLESS_GOTO,
     IFGREAT_GOTO,
     IF_LESSEQ_GOTO,

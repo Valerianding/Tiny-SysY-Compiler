@@ -60,7 +60,6 @@ struct _Value *create_call_func(past root)
 
     if(v_result!=NULL)
         instruction->user.value=*v_result;
-    instruction->Parent = block_one;
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -144,16 +143,17 @@ void create_return_stmt(past root) {
         else
             v=create_call_func(root->left);
 
-        instruction = ins_new_unary_operator(Return, NULL);
         if(v!=NULL)
-            instruction->user.value = *v;
-        instruction->Parent = block_one;
+            instruction = ins_new_unary_operator(Return, v);
+        else
+            instruction = ins_new_unary_operator(Return, NULL);
+
         //将这个instruction加入总list
         InstNode *node = new_inst_node(instruction);
         ins_node_add(instruction_list,node);
 
         //打印
-        printf("%d: ret %s\n",instruction->i,instruction->user.value.name);
+        printf("%d: ret %s\n",instruction->i,v->name);
     }
 }
 
@@ -167,20 +167,26 @@ void create_var_decl(past root) {
     //有初值
     if (strcmp(bstr2cstr(root->right->left->nodeType, '\0'), "VarDef_init") == 0) {
         while (vars != NULL) {
-            Instruction *instruction;
             //左值
             Value *v=symtab_dynamic_lookup(this, bstr2cstr(vars->left->sVal, '\0'));
 
             //初始化的值
+            //root->right是VarDefList
             Value *v1=NULL;
-            if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "num_int") == 0)
-                value_init_int(v1, root->right->iVal);
-            else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "num_float") == 0)
-                value_init_float(v1,root->right->fVal);
-            else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
-                v1= create_load_stmt(bstr2cstr(root->right->sVal,'\0'));
-            else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "expr") == 0)
-                v1 = cal_expr(root->right);
+            if (strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "num_int") == 0)
+            {
+                v1=(Value*) malloc(sizeof (Value));
+                value_init_int(v1, root->right->left->right->iVal);
+            }
+            else if(strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "num_float") == 0)
+            {
+                v1=(Value*) malloc(sizeof (Value));
+                value_init_float(v1,root->right->left->right->fVal);
+            }
+            else if(strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "ID") == 0)
+                v1= create_load_stmt(bstr2cstr(root->right->left->right->sVal,'\0'));
+            else if (strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "expr") == 0)
+                v1 = cal_expr(root->right->left->right);
 
             //将值store下来
             create_store_stmt(v1,v);
@@ -226,10 +232,6 @@ void create_if_stmt(past root) {
         value_init_int(v2,logic_expr->right->iVal);
     }
 
-    Value *v3=(Value*) malloc(sizeof (Value));
-    //goto到+2的地方
-    value_init_int(v3, instruction_uid + 2);
-
     if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), "<") == 0)
         instruction1= ins_new_binary_operator(IFLESS_GOTO,v1,v2);
     else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), ">") == 0)
@@ -243,11 +245,11 @@ void create_if_stmt(past root) {
     else
         instruction1= ins_new_binary_operator(IFNOTEQ_GOTO,v1,v2);
 
-    instruction1->Parent = block_one;
-    instruction1->user.value = *v3;
+    //只+1是因为创建完一条IR，instruction_uid自动+1了
+    instruction1->user.value.pdata->instruction_pdata.goto_location=instruction_uid + 1;
 
     //打印
-    printf("%d: 类型%d %s,%d goto %d\n",instruction_uid-1,instruction1->Opcode,v1->name,v2->pdata->var_pdata.iVal,v3->pdata->var_pdata.iVal);
+    printf("%d: 类型%d %s,%d goto %d\n",instruction_uid-1,instruction1->Opcode,v1->name,v2->pdata->var_pdata.iVal,instruction1->user.value.pdata->instruction_pdata.goto_location);
 
     //将这个instruction加入总list
     InstNode *node1 = new_inst_node(instruction1);
@@ -256,7 +258,6 @@ void create_if_stmt(past root) {
     //101:GOTO ____
     Instruction *instruction2;
     instruction2 = ins_new_unary_operator(Goto, NULL);
-    instruction2->Parent = block_one;
 
     //具体goto位置还没有确定下来，但是先将该指令添加到链中
     InstNode *node2 = new_inst_node(instruction2);
@@ -266,11 +267,9 @@ void create_if_stmt(past root) {
     create_instruction_list(root->right);
 
     //此时的uid应该已经指向下一条
-    Value *v4=(Value*) malloc(sizeof (Value));
-    value_init_int(v4, instruction_uid);
-    node2->inst->user.value=*v4;
+    node2->inst->user.value.pdata->instruction_pdata.goto_location=instruction_uid;
 
-    printf("%d: goto %d\n",instruction2->i,v4->pdata->var_pdata.iVal);
+    printf("%d: goto %d\n",instruction2->i,node2->inst->user.value.pdata->instruction_pdata.goto_location);
 
     if(root->next!=NULL)
         create_instruction_list(root->next);
@@ -307,10 +306,6 @@ void create_if_else_stmt(past root) {
         value_init_int(v2,logic_expr->right->iVal);
     }
 
-    Value *v3=(Value*) malloc(sizeof (Value));
-    //goto到+2的地方
-    value_init_int(v3, instruction_uid + 2);
-
     if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), "<") == 0)
         instruction1= ins_new_binary_operator(IFLESS_GOTO,v1,v2);
     else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), ">") == 0)
@@ -324,11 +319,11 @@ void create_if_else_stmt(past root) {
     else
         instruction1= ins_new_binary_operator(IFNOTEQ_GOTO,v1,v2);
 
-    instruction1->Parent = block_one;
-    instruction1->user.value = *v3;
+    //goto到+2的地方
+    instruction1->user.value.pdata->instruction_pdata.goto_location=instruction_uid+1;
 
     //打印
-    printf("%d: 类型%d %s,%d goto %d\n",instruction_uid-1,instruction1->Opcode,v1->name,v2->pdata->var_pdata.iVal,v3->pdata->var_pdata.iVal);
+    printf("%d: 类型%d %s,%d goto %d\n",instruction_uid-1,instruction1->Opcode,v1->name,v2->pdata->var_pdata.iVal,instruction1->user.value.pdata->instruction_pdata.goto_location);
 
     //将这个instruction加入总list
     InstNode *node1 = new_inst_node(instruction1);
@@ -353,22 +348,18 @@ void create_if_else_stmt(past root) {
     ins_node_add(instruction_list,node3);
 
     //if为假走else的话应该走这里
-    Value *v4=(Value*) malloc(sizeof (Value));
-    value_init_int(v4, instruction_uid);
-    instruction2->user.value=*v4;
+    instruction2->user.value.pdata->instruction_pdata.goto_location=instruction_uid;
 
     //打印
-    printf("%d: goto %d\n",instruction2->i,v4->pdata->var_pdata.iVal);
+    printf("%d: goto %d\n",instruction2->i,instruction2->user.value.pdata->instruction_pdata.goto_location);
 
     //走完else部分的语句，即可知道从if为真中出来的下一条应该goto到什么位置
     create_instruction_list(root->right->right);         //if为假走的语句
 
-    Value *v5=(Value*) malloc(sizeof (Value));
-    value_init_int(v5, instruction_uid);
-    instruction3->user.value=*v5;
+    instruction3->user.value.pdata->instruction_pdata.goto_location=instruction_uid;
 
     //打印
-    printf("%d: goto %d\n",instruction3->i,v5->pdata->var_pdata.iVal);
+    printf("%d: goto %d\n",instruction3->i,instruction3->user.value.pdata->instruction_pdata.goto_location);
 
     if(root->next!=NULL)
         create_instruction_list(root->next);
@@ -398,14 +389,11 @@ void create_func_def(past root) {
         //将参数全部生成给出来
         while(params!=NULL)
         {
-            Value *v_index=create_tmp_value();
-            //TODO 与符号表对应的绑定在一起
-            //创造栈帧中value，并加进符号表
-            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), symtab_param_map(this));
-            param->v_alias=v_index;
+            //TODO 从%0开始加参数
+            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), v->pdata->symtab_func_pdata.map);
+            //对应关系不在这里创建,后面有alloca
 
-            //打印
-            //printf("give_param %s(%s)\n",v_index->name,param->name);
+            t_index++;
             params=params->next;
         }
     }
@@ -789,8 +777,8 @@ struct _Value* create_load_stmt(char *name)
     Value *v=symtab_dynamic_lookup(this, name);
     Instruction *instruction=NULL;
 
-    instruction=ins_new_unary_operator(Load,v->v_alias);
-    instruction->Parent = block_one;
+    //还是按照load a，后端找栈帧地址自动找到v->alias
+    instruction=ins_new_unary_operator(Load,v);
     //最后会删除吧，自动创建instruction的user.value
     Value *v1=create_tmp_value();
     instruction->user.value=*v1;
@@ -800,7 +788,7 @@ struct _Value* create_load_stmt(char *name)
     ins_node_add(instruction_list,node);
 
     //打印
-    printf("%d: %s=load %s\n",instruction_uid-1,v1->name,v->v_alias->name);
+    printf("%d: %s=load %d\n",instruction_uid-1,v1->name,v->pdata->var_pdata.alias);
 
     return v1;
 }
@@ -809,8 +797,7 @@ struct _Value* create_load_stmt(char *name)
 void create_store_stmt(Value* v1,Value* v2)
 {
     Instruction *instruction=NULL;
-    instruction= ins_new_binary_operator(Store,v1,v2->v_alias);
-    instruction->Parent = block_one;
+    instruction= ins_new_binary_operator(Store,v1,v2);
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -818,12 +805,12 @@ void create_store_stmt(Value* v1,Value* v2)
 
     //打印
     if(v1->name!=NULL)
-        printf("%d: store %s %s\n",instruction_uid-1,v1->name,v2->v_alias->name);
+        printf("%d: store %s %d\n",instruction_uid-1,v1->name,v2->pdata->var_pdata.alias);
     else
-        printf("%d: store %d %s\n",instruction_uid-1,v1->pdata->var_pdata.iVal,v2->v_alias->name);
+        printf("%d: store %d %d\n",instruction_uid-1,v1->pdata->var_pdata.iVal,v2->pdata->var_pdata.alias);
 }
 
-//第一次遍历
+//第一次遍历,生成一些alloca
 void declare_all_alloca(struct _mapList* func_map,bool flag)
 {
     const char *key, *value;
@@ -831,16 +818,14 @@ void declare_all_alloca(struct _mapList* func_map,bool flag)
     sc_map_foreach (&func_map->map, key, value)
     {
         Instruction *instruction= ins_new_unary_operator(Alloca, NULL);
-        Value *v_index=create_tmp_value();
-        instruction->user.value=*v_index;
         //TODO 与符号表对应的绑定在一起
-        ((Value*)value)->v_alias=v_index;
+        ((Value*)value)->pdata->var_pdata.alias=t_index++;
         //将这个instruction加入总list
         InstNode *node = new_inst_node(instruction);
         ins_node_add(instruction_list,node);
 
         //打印
-        printf("%d: %s=alloca(%s)\n",instruction_uid-1,v_index->name,key);
+        printf("%d: %d=alloca(%s)\n",instruction_uid-1,((Value*)value)->pdata->var_pdata.alias,key);
     }
     //函数第一层，只能走child
     if(flag)

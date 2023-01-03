@@ -16,7 +16,8 @@ union _PData{
     }instruction_pdata;
 
     struct {
-        struct sc_map_sv* map;         //所指向的那张作用域的表
+        struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
+        int alias;                     //栈帧地址标识
         union {
             int iVal;
             float fVal;
@@ -25,8 +26,8 @@ union _PData{
 
     struct {
         Type return_type;            //返回类型
-        Type param_type_lists[10];   //参数的类型数组
-        struct sc_map_sv* map;         //所指向的那张作用域的表
+        Type param_type_lists[10];   //参数名数组
+        struct sc_map_sv* map;         //所指向的那张函数作用域的表
         int param_num;              //TODO 可能要，也可能不要
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
 
@@ -58,10 +59,6 @@ struct _Value
 
     char *name;
     PData *pdata;
-
-    //代表栈帧中地址%1,%2...的value
-    //TODO 暂时这样存，本来想直接在pData里加int index，但是比如后面store指令要用到%1 Value的时候，每次都要根据1创一个Value，感觉更麻烦?
-    struct _Value* v_alias;
 };
 
 void value_init(Value* this);

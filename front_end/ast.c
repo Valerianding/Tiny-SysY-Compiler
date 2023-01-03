@@ -247,7 +247,7 @@ void insert_func_into_symtab(past return_type,past pname,past params)
     value_init(v);
     v->VTy->ID=FunctionTyID;
     //!!!!!它指向的map是函数体的map，不是函数名的map,函数名永远在全局Map中
-    v->pdata->symtab_func_pdata.map= getCurMap(this);
+    v->pdata->symtab_func_pdata.map= symtab_get_latest_func_map(this);
 
     //return_type
     if(strcmp(bstr2cstr(return_type->sVal,'\0'),"float")==0)
@@ -268,7 +268,7 @@ void insert_func_into_symtab(past return_type,past pname,past params)
         params=params->next;
     }
     //TODO num不确定最终要不要
-    v->pdata->symtab_func_pdata.param_num=i+1;
+    v->pdata->symtab_func_pdata.param_num=i;
 
     v->name=(char*) malloc(sizeof(bstr2cstr(pname->sVal,0)));
     strcpy(v->name,bstr2cstr(pname->sVal,0));
