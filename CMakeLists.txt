@@ -15,7 +15,7 @@ BISON_TARGET(mc_parser ./front_end/lrparser.y ${CMAKE_CURRENT_BINARY_DIR}/lrpars
 ADD_FLEX_BISON_DEPENDENCY(mc_lexer mc_parser)
 
 file(GLOB_RECURSE DIR_LIB ./libs/*.c)
-file(GLOB_RECURSE DIR_IR ./IR/*.c)
+file(GLOB_RECURSE DIR_IR ./ir/*.c)
 file(GLOB_RECURSE DIR_CONTAINER ./src/hash_map.c ./src/hash_set.c)
 file(GLOB_RECURSE DIR_FRONT ./front_end/*.c)
 #可以不写绝对路径从而只包含文件名就可以了
@@ -23,7 +23,7 @@ include_directories(.)
 include_directories(libs)
 include_directories(math)
 include_directories(src)
-include_directories(IR)
+include_directories(ir)
 include_directories(front_end)
 include_directories(container)
 #debug必备
