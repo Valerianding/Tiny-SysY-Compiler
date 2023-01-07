@@ -131,6 +131,9 @@ InstNode *get_prev_inst(InstNode *this);
 ///
 InstNode *get_next_inst(InstNode *this);
 
+//lsy
+InstNode *get_last_inst(InstNode *this);
+
 ///
 InstNode *search_inst_node(InstNode *head,int id);
 

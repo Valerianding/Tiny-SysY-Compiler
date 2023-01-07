@@ -81,6 +81,16 @@ InstNode *get_next_inst(InstNode *this){
     return temp;
 }
 
+//lsy
+InstNode *get_last_inst(InstNode *this)
+{
+    struct sc_list *list=&this->list;
+    while(list->next!=NULL)
+        list=list->next;
+    InstNode *temp = sc_list_entry(list,InstNode,list);
+    return temp;
+}
+
 InstNode *search_inst_node(InstNode *head,int id){
     while(head != NULL){
         if(head->inst->i == id){

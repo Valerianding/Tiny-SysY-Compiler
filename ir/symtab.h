@@ -6,7 +6,6 @@
 #include "assert.h"
 
 
-
 struct _mapList{
     struct sc_map_sv map;             //key-value为name-Value*
     int scope_level;                  //当前表所在的嵌套层数
@@ -51,7 +50,11 @@ void symtab_insert_value_name(Symtab* this, char* name, struct _Value *V);
 void symtab_insert_withmap(Symtab* this, struct sc_map_sv *map,char* name, struct _Value *V);
 
 //从指定表中取出value*
+//后端与优化的同学查找对应Value*应该都用的这个（TODO 但可能意义不大，因为都知道value了？）
 struct _Value* symtab_lookup_withmap(Symtab *this,char* name,struct sc_map_sv* map);
+
+//修改最上层同一name的value值
+void symtab_update_value(Symtab* this,char *name,struct _Value *V);
 
 //创建符号表时使用，删除一层栈,但不删除该栈元素指向的map的数据
 void scope_end(Symtab* this);
@@ -65,10 +68,14 @@ void scope_forward(Symtab *this);
 //遍历ast时使用，删除一层栈，回到对应表
 struct sc_map_sv* scope_back(Symtab *this);
 
+struct sc_map_sv* symtab_param_map(Symtab *this);
+
 //得到最近的一个函数表，
 //使参数加到和函数内容一层，而不是和函数名一层
 //在将函数参数添加至符号表使用
 struct sc_map_sv *symtab_get_latest_func_map(Symtab *this);
+
+struct _mapList *symtab_get_latest_func_maplist(Symtab *this);
 
 //打印出各符号表中的所有元素
 void showAll(struct _mapList* func_map,bool flag);

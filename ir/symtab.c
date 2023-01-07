@@ -132,6 +132,20 @@ struct _Value* symtab_lookup_withmap(Symtab *this,char* name,struct sc_map_sv* m
     return sc_map_get_sv(map,name);
 }
 
+//修改最上层同一name的value值
+void symtab_update_value(Symtab* this,char *name,struct _Value *V)
+{
+    assert(symtab_dynamic_lookup(this,name)!=NULL);
+    for(int i=this->S.top;i>=0;i--)
+    {
+        if(sc_map_get_sv(&this->S.value_map[i]->map,name)!=NULL)
+        {
+            sc_map_put_sv(&this->S.value_map[i]->map,name,V);
+            return;
+        }
+    }
+}
+
 //得到最近的一个函数表，
 //使参数加到和函数内容一层，而不是和函数名一层
 struct sc_map_sv *symtab_get_latest_func_map(Symtab *this)
@@ -143,6 +157,17 @@ struct sc_map_sv *symtab_get_latest_func_map(Symtab *this)
 
     //要加入参数的那个函数一定是最近的函数
     return &func->map;
+}
+
+struct _mapList *symtab_get_latest_func_maplist(Symtab *this)
+{
+    //全局表的第一个child，即第一个函数
+    MapList *func=this->value_maps->next->child;
+    while(func->next!=NULL)
+        func=func->next;
+
+    //要加入参数的那个函数一定是最近的函数
+    return func;
 }
 
 //遍历ast时使用，增加一层栈，走到对应表
@@ -171,6 +196,18 @@ struct sc_map_sv* scope_back(Symtab *this)
     return &this->S.value_map[this->S.top]->map;
 }
 
+struct sc_map_sv* symtab_param_map(Symtab *this)
+{
+    struct sc_map_sv* param_map=NULL;
+    //目前所在的那个map
+    MapList *m=this->S.value_map[this->S.top];
+
+    if(this->S.value_map[this->S.top+1]==NULL)
+        param_map=&m->child->map;
+    else
+        param_map=&this->S.value_map[this->S.top+1]->next->map;
+    return param_map;
+}
 
 //打印出各符号表中的所有元素
 void showAll(struct _mapList* func_map,bool flag)
@@ -197,4 +234,3 @@ void showAll(struct _mapList* func_map,bool flag)
             showAll(func_map->next,false);
     }
 }
-

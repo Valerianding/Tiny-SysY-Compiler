@@ -88,8 +88,8 @@ past newFollowNode(char* nodeType, past thisNode, past follow)
         root->left = thisNode; root->left->next = follow;
     }
 
-    //已经有根节点
-    //不是第一次递归了，将下一次的follow存入next
+        //已经有根节点
+        //不是第一次递归了，将下一次的follow存入next
     else{
         root = thisNode;
         thisNode = thisNode->left;
@@ -129,91 +129,114 @@ past newIdent(bstring strVal)
     return var;
 }
 
+int get_array_total_occupy(char *name,struct sc_map_sv* map)
+{
+    Value *a= symtab_lookup_withmap(this,name,map);
+    int occupy=1;
+    for(int i=0;i<a->pdata->symtab_array_pdata.dimention_figure;i++)
+    {
+        occupy*=a->pdata->symtab_array_pdata.dimentions[i];
+    }
+    return occupy;
+}
+
 //将var插入符号表
 void insert_var_into_symtab(past type,past p)
 {
     //int a;
     if(strcmp(bstr2cstr(p->nodeType,'\0'),"ID")==0)
     {
-        while(p!=NULL)
+        Value *v=(Value*) malloc(sizeof (Value));
+        value_init(v);
+        v->name=(char*) malloc(strlen(bstr2cstr(p->sVal,0)));
+        strcpy(v->name,bstr2cstr(p->sVal,0));
+        v->pdata->var_pdata.map= getCurMap(this);
+        if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            v->VTy->ID=Var_FLOAT;
+        else
+            v->VTy->ID=Var_INT;
+        symtab_insert_value_name(this,bstr2cstr(p->sVal,0),v);
+    }
+
+        //TODO 比如a[1][2]，怎么将1,2也放进去?
+    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"IDentArray")==0)
+    {
+        Value *v=(Value*) malloc(sizeof (Value));
+        value_init(v);
+        v->name=(char*) malloc(strlen(bstr2cstr(p->left->sVal,0)));
+        strcpy(v->name,bstr2cstr(p->left->sVal,0));
+        v->pdata->symtab_array_pdata.map= getCurMap(this);
+        v->VTy->ID=ArrayTyID;
+
+        //加入维度具体数值
+        past one_dimention = p->left->next;
+        int dimention_figure=0;
+        while(one_dimention!=NULL)
         {
-            Value *v=(Value*) malloc(sizeof (Value));
-            value_init(v);
-            v->name=(char*) malloc(strlen(bstr2cstr(p->sVal,0)));
-            strcpy(v->name,bstr2cstr(p->sVal,0));
-            v->pdata->var_pdata.map= getCurMap(this);
+            //TODO 目前只考虑了num_int
+            v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
+            one_dimention=one_dimention->next;
+        }
+        v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
+
+        symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
+    }
+
+        //int a=1型,有初值并放了初值
+    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"VarDef_init")==0)
+    {
+        Value *v=(Value*) malloc(sizeof (Value));
+        value_init(v);
+        v->pdata->var_pdata.map= getCurMap(this);
+
+        //比如int a=8，为常数;其他复杂的情况在这一步暂时认为是无初值!
+        if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
+            v->pdata->var_pdata.iVal=p->right->iVal;
+            v->VTy->ID=Var_initINT;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
+            v->pdata->var_pdata.fVal=p->right->fVal;
+            v->VTy->ID=Var_initFLOAT;
+        }
+        else
+        {
             if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
             {v->VTy->ID=Var_FLOAT;}
             else
             {v->VTy->ID=Var_INT;}
-
-            symtab_insert_value_name(this,bstr2cstr(p->sVal,0),v);
-            p=p->next;
         }
-    }
 
-    //TODO 比如a[1][2]，怎么将1,2也放进去?
-    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"IDentArray")==0)
-    {
-        while(p!=NULL)
-        {
-            Value *v=(Value*) malloc(sizeof (Value));
-            value_init(v);
-            v->pdata->var_pdata.map= getCurMap(this);
-            v->VTy->ID=ArrayTyID;
-            symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
-            p=p->next;
-        }
-    }
-
-    //int a=1型,有初值并放了初值
-    //TODO 好像被我乱搞了一下，不能支持int b,a=1这种混合类型了，但问题不大到时候再改
-    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"VarDef_init")==0)
-    {
-        while(p!=NULL)
-        {
-            Value *v=(Value*) malloc(sizeof (Value));
-            value_init(v);
-            v->pdata->var_pdata.map= getCurMap(this);
-
-            //比如int a=8，为常数;其他复杂的情况在这一步暂时认为是无初值!
-            if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
-                v->pdata->var_pdata.iVal=p->right->iVal;
-                v->VTy->ID=Var_initINT;
-            }
-            else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
-                v->pdata->var_pdata.fVal=p->right->fVal;
-                v->VTy->ID=Var_initFLOAT;
-            }
-            else
-            {
-                if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-                {v->VTy->ID=Var_FLOAT;}
-                else
-                {v->VTy->ID=Var_INT;}
-            }
-
-            v->name=(char*) malloc(sizeof(bstr2cstr(p->left->sVal,0)));
-            strcpy(v->name,bstr2cstr(p->left->sVal,0));
-            symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
-            p=p->next;
-        }
+        v->name=(char*) malloc(sizeof(bstr2cstr(p->left->sVal,0)));
+        strcpy(v->name,bstr2cstr(p->left->sVal,0));
+        symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
     }
 
         //TODO 怎么存初始化的值{1,2,3,4}
     else if(strcmp(bstr2cstr(p->nodeType,'\0'),"VarDef_array_init")==0)
     {
-        while(p!=NULL)
-        {
-            Value *v=(Value*) malloc(sizeof (Value));
-            value_init(v);
-            v->VTy->ID=ArrayTyID;
-            v->pdata->var_pdata.map= getCurMap(this);
+        Value *v=(Value*) malloc(sizeof (Value));
+        value_init(v);
+        v->name=(char*) malloc(strlen(bstr2cstr(p->left->left->sVal,0)));
+        strcpy(v->name,bstr2cstr(p->left->left->sVal,0));
+        v->VTy->ID=ArrayTyID;
+        v->pdata->var_pdata.map= getCurMap(this);
 
-            symtab_insert_value_name(this,bstr2cstr(p->left->left->sVal,0),v);
-            p=p->next;
+        //加入维度具体数值
+        past one_dimention = p->left->left->next;
+        int dimention_figure=0;
+        while(one_dimention!=NULL)
+        {
+            //TODO 目前只考虑了num_int
+            v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
+            one_dimention=one_dimention->next;
         }
+        v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
+
+        symtab_insert_value_name(this,bstr2cstr(p->left->left->sVal,0),v);
     }
+
+    if(p->next!=NULL)
+        insert_var_into_symtab(type,p->next);
 }
 
 //目前还未考虑数组
@@ -227,10 +250,10 @@ void insert_func_params(past params)
         value_init(v);
         v->pdata->var_pdata.map= getCurMap(this);
         if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
-        //函数参数默认为有初始值
-        {v->VTy->ID=Var_initFLOAT;}
+            //函数参数默认为有初始值
+        {v->VTy->ID=Param_FLOAT;}
         else
-        {v->VTy->ID=Var_initINT;}
+        {v->VTy->ID=Param_INT;}
 
         v->name=(char*) malloc(sizeof(bstr2cstr(params->left->next->sVal,0)));
         strcpy(v->name,bstr2cstr(params->left->next->sVal,0));
@@ -247,7 +270,7 @@ void insert_func_into_symtab(past return_type,past pname,past params)
     value_init(v);
     v->VTy->ID=FunctionTyID;
     //!!!!!它指向的map是函数体的map，不是函数名的map,函数名永远在全局Map中
-    v->pdata->symtab_func_pdata.map= symtab_get_latest_func_map(this);
+    v->pdata->symtab_func_pdata.map_list= symtab_get_latest_func_maplist(this);
 
     //return_type
     if(strcmp(bstr2cstr(return_type->sVal,'\0'),"float")==0)

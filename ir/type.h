@@ -7,6 +7,11 @@
 #define nullptr 0
 
 enum TypeID {
+    Param_INT,
+    Param_FLOAT,
+    MAIN_INT,        //只有一个返回语句的main函数
+    MAIN_FLOAT,
+
     Var_INT,          //无初始值的int型变量
     Var_FLOAT,        //无初始值的float型变量
     Var_initINT,      //有初始值的int型变量

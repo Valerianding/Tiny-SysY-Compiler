@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "type.h"
+#include "symtab.h"
 #include <stdint.h>
 
 struct _Symtab;
@@ -28,10 +29,16 @@ union _PData{
     struct {
         Type return_type;            //返回类型
         Type param_type_lists[10];   //参数名数组
-        struct sc_map_sv* map;         //所指向的那张函数作用域的表
+        struct _mapList* map_list;         //所指向的那张函数作用域的表
         int param_num;              //TODO 可能要，也可能不要
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
 
+    struct {
+        struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
+        int alias;
+        int dimention_figure;               //一维、二维......
+        int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
+    }symtab_array_pdata;
 };
 typedef union _PData PData;
 typedef struct _Value Value;

@@ -20,6 +20,7 @@ typedef enum OpcodeType{
     Alloca,
     GIVE_PARAM,
     ALLBEGIN,
+
     LESS,
     GREAT,
     LESSEQ,
@@ -29,6 +30,11 @@ typedef enum OpcodeType{
     br_i1,
     br,
     Label,
+    tmp,
+
+    bitcast,
+    //memcpy,
+    GMP,
 };
 
 enum InstructionType{

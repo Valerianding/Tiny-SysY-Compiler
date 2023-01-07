@@ -10,35 +10,162 @@ extern struct _InstNode *instruction_list;
 extern char t[5];
 extern int return_stmt_num[10];
 extern int return_index;
+extern insnode_stack S_continue;
+extern insnode_stack S_break;
+extern insnode_stack S_return;
+extern bool c_b_flag[2];
+
 char t_num[3] = {0};
 int t_index = 0;
 
-void create_instruction_list(past root)
+void create_instruction_list(past root,Value* v_return)
 {
-    return_index=0;
     if (root != NULL) {
         if (strcmp(bstr2cstr(root->nodeType, '\0'), "VarDecl") == 0)
-            create_var_decl(root);
+            create_var_decl(root,v_return);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "FuncDef") == 0)
-        {
             create_func_def(root);
-            return_index++;
-        }
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "BlockItemList") == 0)
-            create_blockItemList(root,0,0);
+            create_blockItemList(root,v_return);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "Assign_Stmt") == 0)
-            create_assign_stmt(root);
+            create_assign_stmt(root,v_return);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "Return_Stmt") == 0)
-            create_return_stmt(root);
+            create_return_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "IF_Stmt") == 0)
-            create_if_stmt(root);
+            create_if_stmt(root,v_return);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "IfElse_Stmt") == 0)
-            create_if_else_stmt(root);
+            create_if_else_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "While_Stmt") == 0)
-            create_while_stmt(root);
+            create_while_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
+        {
             create_call_func(root);
+            if (root->next != NULL)
+                create_instruction_list(root->next,v_return);
+        }
+
+        else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Continue_Stmt") == 0)
+            create_continue_stmt(root,v_return);
+        else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Break_Stmt") == 0)
+            create_break_stmt(root,v_return);
     }
+}
+
+void create_continue_stmt(past root,Value* v_return)
+{
+    c_b_flag[0]=true;
+
+    //遇到continue,push就完事
+    InstNode *node_continue = true_location_handler(br,NULL,0);
+
+    insnode_push(&S_continue,node_continue);
+
+    if (root->next != NULL)
+        create_instruction_list(root->next,v_return);
+}
+
+void create_break_stmt(past root,Value* v_return)
+{
+    c_b_flag[1]=true;
+
+    //遇到break,push就完事
+    InstNode *node_break = true_location_handler(br,NULL,0);
+    //是0就代表是break
+    insnode_push(&S_break,node_break);
+
+    if (root->next != NULL)
+        create_instruction_list(root->next,v_return);
+}
+
+void reduce_continue()
+{
+    InstNode * gap[10];
+    int gap_index=0;
+
+    do{
+        InstNode * zero;
+        insnode_pop(&S_continue,&zero);
+
+        //1.zero如果是-1
+        if(zero->inst->user.value.pdata->instruction_pdata.true_goto_location==-1)
+        {
+            //存上所有continue
+            InstNode * store_continue[10];
+            int store_num=0;
+            InstNode *continue_point;
+            insnode_top(&S_continue,&continue_point);
+            while(continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location==0)
+            {
+                store_continue[store_num++]=continue_point;
+                insnode_pop(&S_continue,&continue_point);
+                insnode_top(&S_continue,&continue_point);
+            }
+            //离开while的时候
+            // 1.continue_point是while起点了,已经拿出来了
+            if(continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location!=-1)
+            {
+                for(int i=0;i<store_num;i++)
+                {
+                    store_continue[i]->inst->user.value.pdata->instruction_pdata.true_goto_location=continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location;
+                }
+                insnode_pop(&S_continue,&continue_point);
+            }
+            else
+            {
+                //2.是-1
+                //并将store_continue数组中的东西复制到gap数组中
+                for(int i=0;i<store_num;i++)
+                    gap[gap_index+i]=store_continue[i];
+                gap_index+=store_num;
+            }
+        }
+            //2.如果zero是while起点
+        else
+        {
+
+            for(int i=0;i<gap_index;i++)
+                gap[i]->inst->user.value.pdata->instruction_pdata.true_goto_location=zero->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            //将gap数组清0
+            gap_index=0;
+        }
+
+    } while (!insnode_is_empty(S_continue));
+}
+
+void reduce_return()
+{
+    //先取出最终要去向的label
+    InstNode * go_location;
+    insnode_pop(&S_return,&go_location);
+
+    //再为return一个一个赋值
+    while(!insnode_is_empty(S_return))
+    {
+        InstNode * return_point;
+        insnode_pop(&S_return,&return_point);
+        return_point->inst->user.value.pdata->instruction_pdata.true_goto_location=go_location->inst->user.value.pdata->instruction_pdata.true_goto_location;
+    }
+}
+
+//一次只能跳出去一层
+void reduce_break()
+{
+    do{
+        InstNode * go_location;
+        insnode_pop(&S_break,&go_location);
+
+        InstNode * break_point;
+        insnode_top(&S_break,&break_point);
+        //确定是break了，再pop出来
+        while (break_point->inst->user.value.pdata->instruction_pdata.true_goto_location==0 && !insnode_is_empty(S_break))
+        {
+            insnode_pop(&S_break,&break_point);
+            break_point->inst->user.value.pdata->instruction_pdata.true_goto_location=go_location->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            insnode_top(&S_break,&break_point);
+        }
+        go_location->inst->user.value.pdata->instruction_pdata.true_goto_location=break_point->inst->user.value.pdata->instruction_pdata.true_goto_location;
+    } while (!insnode_is_empty(S_break));
+
 }
 
 struct _Value *create_call_func(past root)
@@ -70,33 +197,22 @@ struct _Value *create_call_func(past root)
     return v_result;
 }
 
-void create_blockItemList(past root,int flag_func,int flag_main)
+void create_blockItemList(past root,Value* v_return)
 {
     scope_forward(this);
-    if(flag_func==1)
-    {
-        //是函数进来的,先声明一顿alloca
-        struct _mapList* cur_mapList= getCurMapList(this);
-        if(flag_main==1)
-        {
-            Value *v_return = declare_all_alloca(cur_mapList,true,true);
-            //main函数还立即跟着一个store 0 %1
-            Value *v0=(Value*) malloc(sizeof (Value));
-            value_init_int(v0,0);
-            create_store_stmt(v0,v_return);
-        }
-        else
-            declare_all_alloca(cur_mapList,true,false);
-    }
-    create_instruction_list(root->left);
+    create_instruction_list(root->left,v_return);
     scope_back(this);
 }
 
 //cal_expr()能使得等式右边永远只有一个值
-void create_assign_stmt(past root) {
+void create_assign_stmt(past root,Value* v_return) {
 
-    //左id,从符号表中取出之前存入的这个变量
-    Value *v = symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'));
+    Value *v=NULL;
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+        //左id,从符号表中取出之前存入的这个变量
+        v = symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'));
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0)
+        v=handle_assign_array(root->left->right->left, symtab_dynamic_lookup(this,bstr2cstr(root->left->left->sVal,'\0')));
 
     //右值value
     Value *v1=(Value*) malloc(sizeof (Value));
@@ -119,19 +235,23 @@ void create_assign_stmt(past root) {
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
         //先load出右值,要返回创建出的value
         v1=create_load_stmt(bstr2cstr(root->right->sVal,'\0'));
+        //是数组
+    else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "LValArray") == 0)
+        v1= handle_assign_array(root->right->right, symtab_dynamic_lookup(this,bstr2cstr(root->right->left->sVal,'\0')));
         //等于函数
     else
         v1= create_call_func(root->right);
 
     create_store_stmt(v1,v);
     if (root->next != NULL)
-        create_instruction_list(root->next);
+        create_instruction_list(root->next,v_return);
 }
 
 
-void create_return_stmt(past root) {
+void create_return_stmt(past root,Value* v_return) {
     Instruction *instruction;
-    if (root->left != NULL) {
+    if (root->left != NULL)
+    {
         Value *v=NULL;
 
         if (strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0) {
@@ -150,19 +270,177 @@ void create_return_stmt(past root) {
         else
             v=create_call_func(root->left);
 
-        if(v!=NULL)
-            instruction = ins_new_unary_operator(Return, v);
-        else
-            instruction = ins_new_unary_operator(Return, NULL);
+        //有多返回语句
+        if(v_return!=NULL && v_return->VTy->ID!=MAIN_INT && v_return->VTy->ID!=MAIN_FLOAT)
+        {
+            //多返回值，就先进行一波store
+            create_store_stmt(v,v_return);
 
+            //TODO 跳转到最终结束语句
+            //先生成一条，并加入return栈，和break的处理道理是一样的
+            //生成一条指令，并将其压栈
+            InstNode *return_node=true_location_handler(br,NULL,0);
+            insnode_push(&S_return,return_node);
+        }
+            //只有一条返回语句
+        else
+        {
+            if(v!=NULL)
+                instruction = ins_new_unary_operator(Return, v);
+            else
+                instruction = ins_new_unary_operator(Return, NULL);
+
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(instruction);
+            ins_node_add(instruction_list,node);
+        }
+    }
+    else
+    {
+        instruction = ins_new_unary_operator(Return, NULL);
         //将这个instruction加入总list
         InstNode *node = new_inst_node(instruction);
         ins_node_add(instruction_list,node);
     }
 }
 
+//只考虑了num_int
+past array_all_zeros(past init_val_list)
+{
+    past p=init_val_list;
+    while(p!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") != 0)
+    {
+        //不是全0就照常处理
+        if(p->iVal!=0)
+            return NULL;
+            //其他维度全0,随便返回了一个不是NULL的
+        else if(p->next==NULL)
+            return init_val_list;
+            //是全0,且是一维全0
+        else if(strcmp(bstr2cstr(p->next->nodeType, '\0'), "InitValList") == 0)
+            return p->next;
+        p=p->next;
+    }
+}
+
+//init_val_list是第一维的第一个num_int
+//dimension：是要处理第几维
+//主要需要的返回就是处理第一维的返回
+past handle_one_dimention(past init_val_list,Value *v_array,int dimension,Value* bit)
+{
+    //是一维全0,返回下一个init_val_list
+    if(array_all_zeros(init_val_list)!=NULL && dimension==1)
+        return array_all_zeros(init_val_list);
+        //其他维的全0，不处理
+    else if(array_all_zeros(init_val_list)!=NULL)
+        return NULL;
+
+    //多维数组，先处理好数组第一维
+    //TODO 目前只考虑了num_int的情况
+    //赋初值,生成亿些GMP
+    int offset=0;
+    bool first_init=true;
+    //v_last保存最内一层的上一层，只有当前维度第一个赋值才需要for轮完
+    Value *v_last_second;
+    //如果是第一维度，下一个就是initValList，如果不是第一维度，下一个就是NULL
+    while (init_val_list!=NULL && strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") != 0)
+    {
+        if(first_init==true)
+        {
+            for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure-1;i++)
+            {
+                //第二个操作数是偏移量值,每一层的offset都是从0开始
+                Value *v_offset=(Value*) malloc(sizeof (Value));
+                Value *v_gmp=create_tmp_value();
+                Instruction *gmp;
+                //第一条
+                if(i==0)
+                {
+                    value_init_int(v_offset,dimension-1);
+                    gmp= ins_new_binary_operator(GMP,bit,v_offset);
+                }
+                else
+                {
+                    Value *v_prev=&get_last_inst(instruction_list)->inst->user.value;
+                    value_init_int(v_offset,0);
+                    gmp= ins_new_binary_operator(GMP,v_prev,v_offset);
+                }
+
+                gmp->user.value=*v_gmp;
+
+                //将这个instruction加入总list
+                InstNode *node_gmp_first = new_inst_node(gmp);
+                ins_node_add(instruction_list,node_gmp_first);
+
+                v_last_second=v_gmp;
+            }
+            first_init=false;
+        }
+
+        //!如果是0就不处理
+        if(init_val_list->iVal!=0)
+        {
+            //不是这层第一次
+            Value *v_offset=(Value*) malloc(sizeof (Value));
+            value_init_int(v_offset,offset++);
+            Value *v_gmp=create_tmp_value();
+            Instruction *gmp_not_first = ins_new_binary_operator(GMP,v_last_second,v_offset);
+            gmp_not_first->user.value=*v_gmp;
+            //将这个instruction加入总list
+            InstNode *node_gmp_not_first = new_inst_node(gmp_not_first);
+            ins_node_add(instruction_list,node_gmp_not_first);
+
+            //把最后一次GMP单拎出来
+            //进行一次store
+
+            //将num_int值包装成value
+            Value *num=(Value*) malloc(sizeof (Value));
+            value_init_int(num,init_val_list->iVal);
+            create_store_stmt(num,v_gmp);
+        }
+
+        init_val_list=init_val_list->next;
+    }
+    //offset=0;
+    return init_val_list;
+}
+
+Value *handle_assign_array(past root,Value *v_array)
+{
+    Value *v_last;
+    //root是第一维值
+    for (int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+    {
+        //包装偏移的num_int为Value
+        Value *v_num=(Value*) malloc(sizeof (Value));
+        value_init_int(v_num,root->iVal);
+
+        Instruction *gmp;
+        if(i==0)
+        {
+            gmp= ins_new_binary_operator(GMP,v_array,v_num);
+        }
+        else
+        {
+            gmp= ins_new_binary_operator(GMP,v_last,v_num);
+        }
+
+        Value *v1=create_tmp_value();
+        gmp->user.value=*v1;
+
+        v_last=v1;
+
+        //将这个instruction加入总list
+        InstNode *node_gmp = new_inst_node(gmp);
+        ins_node_add(instruction_list,node_gmp);
+
+        root=root->next;
+    }
+    return v_last;
+}
+
 //还未考虑数组
-void create_var_decl(past root) {
+void create_var_decl(past root,Value* v_return) {
 
     //到达第一个var的节点
     past vars = root->right->left;
@@ -198,9 +476,60 @@ void create_var_decl(past root) {
             vars = vars->next;
         }
     }
+        //有初值数组
+    else if(strcmp(bstr2cstr(root->right->left->nodeType, '\0'), "VarDef_array_init") == 0)
+    {
+        past ident_array=root->right->left->left;         //到IdentArray结点
+        Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->left->sVal,'\0'));
+        past init_val_list = root->right->left->right->left;
+
+        //生成bitcast,使读取的内存空间通过指针i8*，i8步长读取
+        //TODO bitcast 打印不方便
+        //<result> = bitcast <ty> <value> to <ty2>
+        //The ‘bitcast’ instruction converts value to type ty2 without changing any bits.
+        Value *v1=create_tmp_value();
+        Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array);
+        ins_bitcast->user.value=*v1;
+
+        //将这个instruction加入总list
+        InstNode *node_bitcast = new_inst_node(ins_bitcast);
+        ins_node_add(instruction_list,node_bitcast);
+
+        //一维数组,拷贝式赋初值,memcpy
+        //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
+        if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
+        {
+            //TODO
+        }
+        else
+        {
+            //TODO memset是否还需要我处理?
+            //再来一条bitcast
+            //!!!后续第一条一直用v2
+            Value *v2=create_tmp_value();
+            Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
+            ins_bitcast2->user.value=*v2;
+            //将这个instruction加入总list
+            InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
+            ins_node_add(instruction_list,node_bitcast2);
+
+            //多维数组，先处理好数组第一维
+            init_val_list = handle_one_dimention(init_val_list,v_array,1,v2);
+
+            //如果init_val_list此时是InitValList，就说明还有下一维度
+            int demension=2;
+            while (init_val_list!=NULL && strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") == 0)
+            {
+                past next_dimension= init_val_list->left;
+                handle_one_dimention(next_dimension,v_array,demension++,v2);
+                init_val_list=init_val_list->next;
+
+            }
+        }
+    }
 
     if(root->next!=NULL)
-        create_instruction_list(root->next);
+        create_instruction_list(root->next,v_return);
 }
 
 InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
@@ -223,7 +552,7 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
     return node_true;
 }
 
-void create_if_stmt(past root) {
+void create_if_stmt(past root,Value* v_return) {
     //br i1 label__,label__
     //真值
     Value *v_real= cal_logic_expr(root->left);
@@ -235,22 +564,25 @@ void create_if_stmt(past root) {
     true_location_handler(Label,NULL,t_index-1);
 
     //先走完if为真的所有语句，走完后就可确定否定跳转的位置
-    create_instruction_list(root->right);
+    create_instruction_list(root->right,v_return);
 
     node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
 
-    //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
-    true_location_handler(br,NULL,t_index-1);
+    //无break或continue的话就补，有就不补了
+    if(get_last_inst(instruction_list)->inst->Opcode!=br)
+    {
+        //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
+        true_location_handler(br,NULL,t_index-1);
+    }
 
     //再补一条标号,可以理解为是false的跳转，也可以理解为是end的跳转
     true_location_handler(Label,NULL,t_index-1);
 
-
     if(root->next!=NULL)
-        create_instruction_list(root->next);
+        create_instruction_list(root->next,v_return);
 }
 
-void create_if_else_stmt(past root) {
+void create_if_else_stmt(past root,Value* v_return) {
     //100:if a>b GOTO 102
     //真值
     Value *v_real= cal_logic_expr(root->left);
@@ -263,7 +595,7 @@ void create_if_else_stmt(past root) {
 
     //走完if为真的语句，即可知道else从哪开始
     //走完if为真，目前最后一条是一个编号，示例的9:
-    create_instruction_list(root->right->left);          //if为真走的语句
+    create_instruction_list(root->right->left,v_return);          //if为真走的语句
 
     //if为假走else的话应该走这里,示例中将前面else的label 10补齐
     node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
@@ -277,24 +609,35 @@ void create_if_else_stmt(past root) {
 
 
     //走完else部分的语句，即可知道从if为真中出来的下一条应该goto到什么位置
-    create_instruction_list(root->right->right);         //if为假走的语句
+    create_instruction_list(root->right->right,v_return);         //if为假走的语句
 
     //将之前的br label__补齐，示例中补齐为br label 13
     node2->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index++;
 
-    //补一条br label，示例的br label %13，这个和后面那条都是跳到end
-    true_location_handler(br,NULL,t_index-1);
+    if(get_last_inst(instruction_list)->inst->Opcode!=br)
+    {
+        //补一条br label，示例的br label %13，这个和后面那条都是跳到end
+        true_location_handler(br,NULL,t_index-1);
+    }
 
     //再补一条标号，示例的13:
     true_location_handler(Label,NULL,t_index-1);
 
     if(root->next!=NULL)
-        create_instruction_list(root->next);
+        create_instruction_list(root->next,v_return);
 }
 
-void create_while_stmt(past root)
+void create_while_stmt(past root,Value* v_return)
 {
-    int recall=t_index;
+    //加进stack，continue用
+    Instruction *ins_tmp= ins_new_unary_operator(tmp,NULL);
+    Value *t_in=(Value*) malloc(sizeof (Value));
+    value_init(t_in);
+    t_in->pdata->instruction_pdata.true_goto_location=t_index;
+    ins_tmp->user.value=*t_in;
+    insnode_push(&S_continue, new_inst_node(ins_tmp));
+
+    int while_recall=t_index;
     //生成一条br label跳转和标号
     true_location_handler(br,NULL,t_index++);
     //标号
@@ -306,23 +649,42 @@ void create_while_stmt(past root)
     //标号
     true_location_handler(Label,NULL,t_index-1);
 
-    create_instruction_list(root->right);
+    create_instruction_list(root->right,v_return);
 
-    //生成循环，br label跳转到first_label处
-    true_location_handler(br,NULL,recall);
-
+    if(get_last_inst(instruction_list)->inst->Opcode!=br)
+    {
+        //生成循环，br label跳转到first_label处
+        true_location_handler(br,NULL,while_recall);
+    }
     node_first_bri1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
 
     //标号
     true_location_handler(Label,NULL,t_index-1);
 
+    //while结束，加进stack,break用
+    Instruction *ins_break_tmp= ins_new_unary_operator(tmp,NULL);
+    Value *t_out=(Value*) malloc(sizeof (Value));
+    value_init(t_out);
+    t_out->pdata->instruction_pdata.true_goto_location=t_index-1;
+    ins_break_tmp->user.value=*t_out;
+
+    Instruction *ins_1_tmp= ins_new_unary_operator(tmp,NULL);
+    Value *t_1=(Value*) malloc(sizeof (Value));
+    value_init(t_1);
+    t_1->pdata->instruction_pdata.true_goto_location=-1;
+    ins_1_tmp->user.value=*t_1;
+
+
+    insnode_push(&S_continue, new_inst_node(ins_1_tmp));
+    insnode_push(&S_break, new_inst_node(ins_break_tmp));
+
     if(root->next!=NULL)
-        create_instruction_list(root->next);
+        create_instruction_list(root->next,v_return);
 }
 
 //TODO 还未完成
 void create_func_def(past root) {
-    Instruction *instruction_begin,*instruction_end;
+    Instruction *instruction_begin;
     instruction_begin = ins_new_unary_operator(FunBegin, NULL);
 
     //拿出存在符号表中的函数信息
@@ -334,38 +696,136 @@ void create_func_def(past root) {
     InstNode *instNode_begin = new_inst_node(instruction_begin);
     ins_node_add(instruction_list,instNode_begin);
 
+
     //有参
     if (root->left->next->left != NULL) {
+        t_index=v->pdata->symtab_func_pdata.param_num+1;
+    }
+    else
+        t_index++;
+
+    //如果有多个返回值，则多生成一条alloca
+    Value *v_return=NULL;
+    //一定是函数里的第一条指令
+    if(return_stmt_num[return_index]>1 || strcmp(v->name,"main")==0)
+    {
+        v_return=create_tmp_value();
+        v_return->pdata->var_pdata.alias=t_index-1;
+
+        //有多个返回值
+        if(return_stmt_num[return_index]>1)
+            v_return->VTy->ID=v->pdata->symtab_func_pdata.return_type.ID;
+        else
+        {
+            if(v->pdata->symtab_func_pdata.return_type.ID==Var_INT)
+                v_return->VTy->ID=MAIN_INT;
+            else
+                v_return->VTy->ID=MAIN_FLOAT;
+        }
+
+        Instruction *instruction= ins_new_unary_operator(Alloca, v_return);
+        instruction->user.value=*v_return;
+        //将这个instruction加入总list
+        InstNode *node = new_inst_node(instruction);
+        ins_node_add(instruction_list,node);
+    }
+
+
+    //将参数从0开始对应
+    //有参
+    if (root->left->next->left != NULL) {
+        int param_map=0;
+
         //params走到第一个FuncParam处
         past params=root->left->next->left->left;
 
-        //将参数全部生成给出来
+        //先生成参数的alloca
         while(params!=NULL)
         {
-            //TODO 从%0开始加参数
-            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), v->pdata->symtab_func_pdata.map);
-            //对应关系不在这里创建,后面有alloca
+            //参数Value
+            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map);
 
-            t_index++;
+            param->pdata->var_pdata.alias=t_index++;
+            //printf("%d\t",param->pdata->var_pdata.alias);
+
+            Instruction *instruction= ins_new_unary_operator(Alloca,param);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(instruction);
+            ins_node_add(instruction_list,node);
+
+            params=params->next;
+        }
+
+        //普通变量的allcoa
+        declare_all_alloca(v->pdata->symtab_func_pdata.map_list,true);
+
+        //进行参数的store
+        params=root->left->next->left->left;
+        while(params!=NULL)
+        {
+            //参数Value
+            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map);
+
+            //TODO 怎么处理参数的%0,%1。真的要store吗；打印是肯定要的，IR呢
+            Value *num_param= (Value*) malloc(sizeof (Value));
+            value_init_int(num_param,param_map++);
+            create_store_stmt(num_param,param);
+
             params=params->next;
         }
     }
-    t_index++;
+    else
+        //普通变量的allcoa
+        //是函数进来的,先声明一顿alloca
+        declare_all_alloca(v->pdata->symtab_func_pdata.map_list,true);
 
-    //读BlockItemList
-    //flag_func为1表示是一个函数的开始
+
     if(strcmp(v->name,"main")==0)
     {
-        create_blockItemList(root->right,1,1);
+        //main函数还立即跟着一个store 0 %1
+        Value *v0=(Value*) malloc(sizeof (Value));
+        value_init_int(v0,0);
+        create_store_stmt(v0,v_return);
     }
-    else
-        create_blockItemList(root->right,1,0);
+
+    //进入func的blocklist
+    create_instruction_list(root->right,v_return);
+
+    //多return的情况下触发
+    if(v_return!=NULL && v_return->VTy->ID!=MAIN_INT && v_return->VTy->ID!=MAIN_FLOAT)
+    {
+        //不是读到return才会触发这个
+        //1.先生成标号
+        InstNode *instNode=true_location_handler(Label,NULL,t_index++);
+        //入栈
+        insnode_push(&S_return,instNode);
+        //2.再生成一条load
+        Value *final_ret = create_return_load(v_return);
+        //3.最后生成ret
+        Instruction *ins_final= ins_new_unary_operator(Return,final_ret);
+        //将这个instruction加入总list
+        InstNode *node = new_inst_node(ins_final);
+        ins_node_add(instruction_list,node);
+    }
+
 
     //清空index
     t_index=0;
 
+    //解决填充continue和break
+    if(c_b_flag[1]==true)
+        reduce_break();
+    if(c_b_flag[0]==true)
+        reduce_continue();
+    if(return_stmt_num[return_index]>1)
+        reduce_return();
+    insnode_stack_new(&S_break);
+    insnode_stack_new(&S_continue);
+
+    return_index++;
+
     if (root->next != NULL)
-        create_instruction_list(root->next);
+        create_instruction_list(root->next,v_return);
 }
 
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
@@ -733,6 +1193,22 @@ struct _Value* create_load_stmt(char *name)
 
     return v1;
 }
+struct _Value* create_return_load(Value *v_return)
+{
+    Instruction *instruction=NULL;
+
+    //还是按照load a，后端找栈帧地址自动找到v->alias
+    instruction=ins_new_unary_operator(Load,v_return);
+    //最后会删除吧，自动创建instruction的user.value
+    Value *v1=create_tmp_value();
+    instruction->user.value=*v1;
+
+    //将这个instruction加入总list
+    InstNode *node = new_inst_node(instruction);
+    ins_node_add(instruction_list,node);
+
+    return v1;
+}
 
 //将v1的值存入v2的栈帧地址中
 void create_store_stmt(Value* v1,Value* v2)
@@ -746,53 +1222,38 @@ void create_store_stmt(Value* v1,Value* v2)
 }
 
 //第一次遍历,生成一些alloca
-Value * declare_all_alloca(struct _mapList* func_map,bool flag,bool flag_main)
+void declare_all_alloca(struct _mapList* func_map,bool flag)
 {
     const char *key, *value;
-    Value *v_return;
-    //如果有多个返回值，则多生成一条alloca
-    //一定是函数里的第一条指令
-    //TODO 这个返回的Value怎么用上
-    //普通函数
-    if(return_stmt_num[return_index]>1 || flag_main==1)
-    {
-        Instruction *instruction= ins_new_unary_operator(Alloca, NULL);
-        v_return=create_tmp_value();
-        v_return->pdata->var_pdata.alias=t_index-1;
-        instruction->user.value=*v_return;
-        //将这个instruction加入总list
-        InstNode *node = new_inst_node(instruction);
-        ins_node_add(instruction_list,node);
-    }
 
-    //TODO 先遍历本表,先按顺序找出函数参数，函数参数一定在本表
+    //TODO 先遍历本表
     sc_map_foreach (&func_map->map, key, value)
         {
-            Instruction *instruction= ins_new_unary_operator(Alloca, (Value *) value);
-            //与符号表对应的绑定在一起
-            ((Value*)value)->pdata->var_pdata.alias=t_index++;
-            //将这个instruction加入总list
-            InstNode *node = new_inst_node(instruction);
-            ins_node_add(instruction_list,node);
+            if(((Value*)value)->VTy->ID != Param_INT && ((Value*)value)->VTy->ID !=Param_FLOAT)
+            {
+                Instruction *instruction= ins_new_unary_operator(Alloca, (Value *) value);
+                //与符号表对应的绑定在一起
+                ((Value*)value)->pdata->var_pdata.alias=t_index++;
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(instruction);
+                ins_node_add(instruction_list,node);
+            }
+
         }
 
     //函数第一层，只能走child
     if(flag)
     {
         if(func_map->child!=NULL)
-            declare_all_alloca(func_map->child,false,false);
+            declare_all_alloca(func_map->child,false);
     }
         //其他函数层，有child有next都可以走
     else{
         if(func_map->child!=NULL)
-            declare_all_alloca(func_map->child,false,false);
+            declare_all_alloca(func_map->child,false);
         if(func_map->next!=NULL)
-            declare_all_alloca(func_map->next,false,false);
+            declare_all_alloca(func_map->next,false);
     }
-    if(v_return!=NULL)
-        return v_return;
-    else
-        return NULL;
 }
 
 //参数传递
@@ -827,6 +1288,21 @@ void create_params_stmt(past func_params)
     }
 }
 
+void printf_array(Value *v_array, int begin_index)
+{
+    for(int i=begin_index;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+    {
+        printf("[");
+        printf("%d ",v_array->pdata->symtab_array_pdata.dimentions[i]);
+        printf("x ");
+    }
+    printf("i32");
+    for(int i=begin_index;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+    {
+        printf("]");
+    }
+}
+
 void printf_llvm_ir(struct _InstNode *instruction_node)
 {
     instruction_node= get_next_inst(instruction_node);
@@ -836,10 +1312,14 @@ void printf_llvm_ir(struct _InstNode *instruction_node)
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
-                if(instruction->user.use_list->Val!=NULL)
+                if(instruction->user.use_list->Val->VTy->ID==ArrayTyID)
+                {
+                    printf(" %%%d = alloca ",instruction->user.use_list->Val->pdata->var_pdata.alias);
+                    printf_array(instruction->user.use_list->Val,0);
+                    printf(",align 16\n");
+                }
+                else if(instruction->user.use_list->Val!=NULL)
                     printf(" %%%d = alloca i32,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.alias);
-                else
-                    printf(" %1 = alloca i32,align 4\n");
                 break;
             case Load:
                 printf(" %s = load i32,i32* %%%d,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.alias);
@@ -895,7 +1375,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node)
                 printf("define dso_local i32 @%s() #0{\n",instruction->user.value.name);
                 break;
             case Return:
-                if(instruction->user.use_list->Val->VTy->ID==Int)
+                if(instruction->user.use_list->Val==NULL)
+                    printf(" ret void\n");
+                else if(instruction->user.use_list->Val->VTy->ID==Int)
                     printf(" ret i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
                 else if(instruction->user.use_list->Val->VTy->ID==Float)
                     printf(" ret i32 %f\n",instruction->user.use_list->Val->pdata->var_pdata.fVal);
@@ -961,6 +1443,29 @@ void printf_llvm_ir(struct _InstNode *instruction_node)
                         printf(" %s= div nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                 }
                 break;
+            case bitcast:
+                //第一条bitcast
+                if(get_next_inst(instruction_node)->inst->Opcode==bitcast)
+                {
+                    printf(" %s=bitcast ",instruction->user.value.name);
+                    printf_array(instruction->user.use_list->Val,0);
+                    printf("* %%%d to i8*\n",instruction->user.use_list->Val->pdata->symtab_array_pdata.alias);
+                }
+                else
+                {
+                    printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    printf_array(instruction->user.use_list->Val,0);
+                    printf("*\n");
+                }
+                break;
+                /*
+            case GMP:
+                //是全新的第一行且第一维
+                if(get_prev_inst(instruction_node)->inst->Opcode!=GMP && (get_prev_inst(get_prev_inst(instruction_node))->inst->Opcode!=GMP || get_prev_inst(get_prev_inst(instruction_node))->inst->user.use_list->Val->name!=instruction->user.use_list->Val->name))
+                {
+                    for(int i=0;i<instruction)
+                    printf(" %s=getelementptr inbounds ")
+                }*/
             default:
                 break;
         }
