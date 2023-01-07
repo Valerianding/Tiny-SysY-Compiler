@@ -93,70 +93,49 @@ InstNode *search_inst_node(InstNode *head,int id){
     }
 }
 
-// 注意程序的第一条语句需要提前处理
+//1.ALLBegin跳过
+//2.开始语句是 FuncBegin 或者 Label
+//3.结束语句就是br br_i1 ret
 void bblock_divide(InstNode *head){
-    InstNode *temp = head;
-    printf("first while\n");
-    while(temp != NULL){
-        if(temp->inst->Opcode == Goto
-                || temp->inst->Opcode == IF_Goto){
-            temp->inst->user.value.is_out = 1;
-            InstNode *Next = get_next_inst(temp);
-            if(Next != NULL){
-                Next->inst->user.value.is_in = 1;
+    InstNode *cur = head;
+    cur = get_next_inst(cur); //跳过第一个ALLBegin
+    //第一次全部打点
+    //printf("first while\n");
+    while(cur != NULL){
+        if(cur->inst->Opcode == FunBegin || cur->inst->Opcode == Label){
+            InstNode *cur_prev = get_prev_inst(cur);
+            if(cur_prev != NULL){
+                cur_prev->inst->user.value.is_out = true;
             }
-            int id = temp->inst->user.value.pdata->instruction_pdata.goto_location;
-
-            InstNode *Go = search_inst_node(head,id);
-            Go->inst->user.value.is_in = 1;
-
-            InstNode *Go_Prev = get_prev_inst(Go);
-            if(Go_Prev != NULL){
-                Go_Prev->inst->user.value.is_out = 1;
+            cur->inst->user.value.is_in = true;
+        }
+        if(cur->inst->Opcode == Return || cur->inst->Opcode == br || cur->inst->Opcode == br_i1){
+            cur->inst->user.value.is_out = true;
+            InstNode *cur_next = get_next_inst(cur);
+            if(cur_next != NULL){
+                cur_next->inst->user.value.is_in = true;
             }
         }
-        if(temp->inst->Opcode == Return){
-            temp->inst->user.value.is_out = 1;
-        }
-        temp = get_next_inst(temp);
+        cur = get_next_inst(cur);
     }
-
-    printf("second while\n");
-    temp = head;
-    InstNode *this_in = temp;
-    while(temp != NULL){
-        if(temp->inst->user.value.is_out == (unsigned int)1){
-            BasicBlock* tempBlock = (BasicBlock*)malloc(sizeof(BasicBlock));
-            bblock_init(tempBlock,NULL);
-            tempBlock->head_node = this_in;
-            tempBlock->tail_node = temp;
-            bb_set_block(tempBlock,this_in,temp);
-            this_in = get_next_inst(temp);
+    cur = head;
+    cur = get_next_inst(cur);
+    InstNode *this_in;
+    //printf("second while\n");
+    //第二次直接套壳
+    while(cur != NULL){
+        if(cur->inst->user.value.is_in == true){
+            this_in = cur;
         }
-        temp = get_next_inst(temp);
-}
-    temp = head;
-    BasicBlock *now = temp->inst->Parent;
-    BasicBlock *next = NULL;
-    BasicBlock *jump = NULL;
-    printf("third while\n");
-    printf("%d\n",temp->inst->user.value.is_out);
-    /* 直接的儿子放在第一个use的第一条边，如果有Goto的话放在第二条边 */
-    while(temp != NULL){
-        if(temp->inst->user.value.is_out == (unsigned)1){
-            if(get_next_inst(temp) != NULL){
-                next = get_next_inst(temp)->inst->Parent;
-                moveBefore(now, next);
-            }
-            if(temp->inst->Opcode == Goto || temp->inst->Opcode == IF_Goto){
-                jump = search_inst_node(head,temp->inst->user.value.pdata->instruction_pdata.goto_location)->inst->Parent;
-                moveBefore(now,jump);
-            }
-            now = next;
+        if(cur->inst->user.value.is_out == true){
+            BasicBlock *this = (BasicBlock*)malloc(sizeof(BasicBlock));
+            this->head_node = this_in;
+            this->tail_node = cur;
+            bblock_init(this,NULL);
+            bb_set_block(this,this_in,cur);
         }
-        temp = get_next_inst(temp);
+        cur = get_next_inst(cur);
     }
-    printf("finished!\n");
 }
 
 void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail){

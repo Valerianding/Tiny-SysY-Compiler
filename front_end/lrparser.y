@@ -9,6 +9,8 @@ void yyerror(char *);
 extern char* yytext;
 extern Symtab *this;
 extern FILE* yyin;
+extern int return_index;
+extern int return_stmt_num[10];
 
 %}
 
@@ -124,11 +126,13 @@ InitValList
 FuncDef
     : BType IDent LBRACKET RBRACKET Block                 {past id=newIdent($2);past prefix=prefixNode(NULL,$1);prefix->next=id;
                                                            $$ = newAnotherNode("FuncDef",prefix,$5);
-                                                           insert_func_into_symtab(prefix,id,NULL);}
+                                                           insert_func_into_symtab(prefix,id,NULL);
+                                                           return_index++;}
     | BType IDent LBRACKET FuncFParams RBRACKET Block     {past id=newIdent($2);id->left=$4;past prefix=prefixNode(NULL,$1);prefix->next=id;
                                                           $$ = newAnotherNode("FuncDef",prefix,$6);
                                                           insert_func_into_symtab(prefix,id,$4->left);
-                                                           insert_func_params($4->left);}
+                                                           insert_func_params($4->left);
+                                                           return_index++;}
     | VOID IDent LBRACKET RBRACKET Block                 {past id=newIdent($2);past prefix=prefixNode("void",NULL);prefix->next=id;
                                                           $$ = newAnotherNode("FuncDef",prefix,$5);
                                                           insert_func_into_symtab(prefix,id,NULL);}
@@ -193,7 +197,8 @@ Stmt
     | BREAK SEMICOLON                                {$$ = newAnotherNode("Break_Stmt",NULL,NULL);}
     | CONTINUE SEMICOLON                             {$$ = newAnotherNode("Continue_Stmt",NULL,NULL);}
     | RETURN SEMICOLON                               {$$ = newAnotherNode("Return_Stmt",NULL,NULL);}
-    | RETURN Exp SEMICOLON                           {$$ = newAnotherNode("Return_Stmt",$2,NULL);}
+    | RETURN Exp SEMICOLON                           {$$ = newAnotherNode("Return_Stmt",$2,NULL);
+                                                        return_stmt_num[return_index]++;}
     ;
 
 Exp

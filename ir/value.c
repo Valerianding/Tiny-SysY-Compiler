@@ -32,11 +32,13 @@ void value_set_name(Value* this, char* name){
 void value_init_int(Value *this,int num){
     value_init(this);
     this->pdata->var_pdata.iVal = num;
+    this->VTy->ID=Int;
 }
 
 void value_init_float(Value *this,float num){
     value_init(this);
     this->pdata->var_pdata.fVal = num;
+    this->VTy->ID=Float;
 }
 
 //FIXME: test purpose only!
@@ -61,9 +63,4 @@ Symtab* get_sym_tab(Value *V) {
 //      return true;  // no name is setable for this.
 //    }
    return ST;
-}
-
-Value *create_value(Value** v){
-    (*v) = (Value*)malloc(sizeof(Value));
-    value_init(*v);
 }

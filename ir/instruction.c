@@ -44,6 +44,7 @@ Instruction *ins_new_unary_operator(int Op,Value *S1){
     return inst;
 }
 
+/*
 Instruction *ins_new_goto_operator(int pos){
     Instruction *inst = ins_new(0);
     inst->Opcode = Goto;
@@ -66,7 +67,7 @@ Instruction *ins_new_ifgoto_operator(int pos,Value *S1,Value *S2){
     }
     inst->user.value.pdata->instruction_pdata.goto_location = pos;
     inst->Opcode = IF_Goto;
-}
+}*/
 
 struct _BasicBlock *ins_get_parent(Instruction *this){
     return this->Parent;
@@ -74,4 +75,45 @@ struct _BasicBlock *ins_get_parent(Instruction *this){
 
 Instruction *ins_set_parent(Instruction *this,struct _BasicBlock *parent){
     this->Parent = parent;
+}
+
+void print_ins_opcode(Instruction *this){
+    switch (this->Opcode) {
+        case Store:
+            printf("Store");
+            break;
+        case Load:
+            printf("Load");
+            break;
+        case Alloca:
+            printf("Alloca");
+            break;
+        case Call:
+            printf("Call");
+            break;
+        case FunBegin:
+            printf("FuncBegin");
+            break;
+        case Return:
+            printf("Return");
+            break;
+        case GIVE_PARAM:
+            printf("GIVE_PARAM");
+            break;
+        case ALLBEGIN:
+            printf("ALLBegin");
+            break;
+        case br:
+            printf("Br");
+            break;
+        case br_i1:
+            printf("Br_i1");
+            break;
+        case Label:
+            printf("Label");
+            break;
+        default:
+            printf("Normal Calculation");
+            break;
+    }
 }

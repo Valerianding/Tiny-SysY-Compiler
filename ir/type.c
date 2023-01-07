@@ -17,8 +17,3 @@ void setSubclassData(Type *this, unsigned val)
     // Ensure we don't have any accidental truncation.
     // assert(getSubclassData() == val && "Subclass data too large for field");
 }
-
-//===--------------------------------------------------------------------===//
-// Accessors for working with types.
-//
-////////////////////////////////////////////////////////////////////////////////////////////

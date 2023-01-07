@@ -42,7 +42,6 @@ typedef struct _BasicBlock
     int flag;
     HashMap *in;
     HashMap *out;
-    char *label;
 }BasicBlock;
 
 ///初始化bblock
@@ -122,22 +121,6 @@ const BasicBlock *getUniqueSuccessor();
 
 /// Split the basic block into two basic blocks at the specified instruction
 /// and insert the new basic blocks as the predecessor of the current block.
-///
-/// This function ensures all instructions AFTER and including the specified
-/// iterator \p I are part of the original basic block. All Instructions
-/// BEFORE the iterator \p I are moved to the new BB and an unconditional
-/// branch is added to the new BB. The new basic block is returned.
-///
-/// Note that this only works on well formed basic blocks (must have a
-/// terminator), and \p 'I' must not be the end of instruction list (which
-/// would cause a degenerate basic block to be formed, having a terminator
-/// inside of the basic block).  \p 'I' cannot be a iterator for a PHINode
-/// with multiple incoming blocks.
-///
-/// Also note that this doesn't preserve any passes. To split blocks while
-/// keeping loop information consistent, use the SplitBlockBefore utility
-/// function.
-// BasicBlock *splitBasicBlockBefore(iterator I, const Twine &BBName = "");
 
 /// 创建一个InstNode 注意Instruction是一定自己分配了内存的
 InstNode* new_inst_node(Instruction* inst);
@@ -162,9 +145,6 @@ size_t bb_count_ins(BasicBlock *this);
 
 /// 将this加入head
 void ins_node_add(InstNode *head,InstNode *this);
-
-///打印三地址代码
-void print_ins_node(InstNode *head);
 
 ///获得下一个BasicBlock
 BasicBlock *get_next_block(BasicBlock *this);

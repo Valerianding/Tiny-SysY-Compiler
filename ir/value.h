@@ -12,7 +12,8 @@ struct _Use;
 
 union _PData{
     struct {
-        int goto_location;       //跳转位置
+        int true_goto_location;       //跳转位置
+        int false_goto_location;
     }instruction_pdata;
 
     struct {
