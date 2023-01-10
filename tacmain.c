@@ -57,7 +57,7 @@ int main(int argc, char* argv[]){
     TRoot=TRoot->left;
     stack_new(this);
     create_instruction_list(TRoot,NULL);
-    printf_llvm_ir(instruction_list);
+    printf_llvm_ir(instruction_list,argv[1]);
     //showAst(TRoot,0);
 
 
