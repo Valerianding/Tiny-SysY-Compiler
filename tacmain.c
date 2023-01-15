@@ -56,6 +56,7 @@ int main(int argc, char* argv[]){
     return_index=0;
     TRoot=TRoot->left;
     stack_new(this);
+    declare_global_alloca(this->value_maps->next);
     create_instruction_list(TRoot,NULL);
     printf_llvm_ir(instruction_list,argv[1]);
     //showAst(TRoot,0);

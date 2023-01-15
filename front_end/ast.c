@@ -129,9 +129,9 @@ past newIdent(bstring strVal)
     return var;
 }
 
-int get_array_total_occupy(char *name,struct sc_map_sv* map)
+int get_array_total_occupy(Value* a)
 {
-    Value *a= symtab_lookup_withmap(this,name,map);
+    //Value *a= symtab_lookup_withmap(this,name,map);
     int occupy=1;
     for(int i=0;i<a->pdata->symtab_array_pdata.dimention_figure;i++)
     {
@@ -148,8 +148,17 @@ void insert_var_into_symtab(past type,past p)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
-        v->name=(char*) malloc(strlen(bstr2cstr(p->sVal,0)));
-        strcpy(v->name,bstr2cstr(p->sVal,0));
+        if(is_global_map(this))
+        {
+            v->name=(char*) malloc(1+strlen(bstr2cstr(p->sVal,0)));
+            strcpy(v->name,"@");
+            strcat(v->name,bstr2cstr(p->sVal,0));
+        }
+        else
+        {
+            v->name=(char*) malloc(strlen(bstr2cstr(p->sVal,0)));
+            strcpy(v->name,bstr2cstr(p->sVal,0));
+        }
         v->pdata->var_pdata.map= getCurMap(this);
         if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
             v->VTy->ID=Var_FLOAT;
@@ -163,8 +172,19 @@ void insert_var_into_symtab(past type,past p)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
-        v->name=(char*) malloc(strlen(bstr2cstr(p->left->sVal,0)));
-        strcpy(v->name,bstr2cstr(p->left->sVal,0));
+
+        if(is_global_map(this))
+        {
+            v->name=(char*) malloc(1+strlen(bstr2cstr(p->left->sVal,0)));
+            strcpy(v->name,"@");
+            strcat(v->name,bstr2cstr(p->left->sVal,0));
+        }
+        else
+        {
+            v->name=(char*) malloc(strlen(bstr2cstr(p->left->sVal,0)));
+            strcpy(v->name,bstr2cstr(p->left->sVal,0));
+        }
+
         v->pdata->symtab_array_pdata.map= getCurMap(this);
         v->VTy->ID=ArrayTyID;
 
@@ -198,6 +218,21 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->var_pdata.fVal=p->right->fVal;
             v->VTy->ID=Var_initFLOAT;
         }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
+        {
+            Value *v_num= symtab_dynamic_lookup(this,bstr2cstr(p->right->sVal,'\0'));
+            if(v_num->VTy->ID==Const_FLOAT)
+            {
+                v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
+                v->VTy->ID=Const_FLOAT;
+            }
+                //Const_Int
+            else if(v_num->VTy->ID==Const_INT)
+            {
+                v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
+                v->VTy->ID=Const_INT;
+            }
+        }
         else
         {
             if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
@@ -206,8 +241,17 @@ void insert_var_into_symtab(past type,past p)
             {v->VTy->ID=Var_INT;}
         }
 
-        v->name=(char*) malloc(sizeof(bstr2cstr(p->left->sVal,0)));
-        strcpy(v->name,bstr2cstr(p->left->sVal,0));
+        if(is_global_map(this))
+        {
+            v->name=(char*) malloc(1+strlen(bstr2cstr(p->left->sVal,0)));
+            strcpy(v->name,"@");
+            strcat(v->name,bstr2cstr(p->left->sVal,0));
+        }
+        else
+        {
+            v->name=(char*) malloc(strlen(bstr2cstr(p->left->sVal,0)));
+            strcpy(v->name,bstr2cstr(p->left->sVal,0));
+        }
         symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
     }
 
@@ -216,9 +260,20 @@ void insert_var_into_symtab(past type,past p)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
-        v->name=(char*) malloc(strlen(bstr2cstr(p->left->left->sVal,0)));
-        strcpy(v->name,bstr2cstr(p->left->left->sVal,0));
-        v->VTy->ID=ArrayTyID;
+
+        if(is_global_map(this))
+        {
+            v->name=(char*) malloc(1+sizeof (bstr2cstr(p->left->left->sVal, '\0')));
+            strcpy(v->name,"@");
+            strcat(v->name,bstr2cstr(p->left->left->sVal,'\0'));
+        }
+        else
+        {
+            v->name=(char*) malloc(strlen(bstr2cstr(p->left->left->sVal,0)));
+            strcpy(v->name,bstr2cstr(p->left->left->sVal,0));
+        }
+
+        v->VTy->ID=ArrayTyID_Init;
         v->pdata->var_pdata.map= getCurMap(this);
 
         //加入维度具体数值
@@ -233,6 +288,55 @@ void insert_var_into_symtab(past type,past p)
         v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
 
         symtab_insert_value_name(this,bstr2cstr(p->left->left->sVal,0),v);
+    }
+    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"ConstDef")==0)
+    {
+        Value *v=(Value*) malloc(sizeof (Value));
+        value_init(v);
+        v->pdata->var_pdata.map= getCurMap(this);
+
+        if(is_global_map(this))
+        {
+            v->name=(char*) malloc(1+strlen(bstr2cstr(p->left->sVal,0)));
+            strcpy(v->name,"@");
+            strcat(v->name,bstr2cstr(p->left->sVal,0));
+        }
+        else
+        {
+            v->name=(char*) malloc(strlen(bstr2cstr(p->left->sVal,0)));
+            strcpy(v->name,bstr2cstr(p->left->sVal,0));
+        }
+
+        if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
+            v->pdata->var_pdata.iVal=p->right->iVal;
+            v->VTy->ID=Const_INT;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
+            v->pdata->var_pdata.fVal=p->right->fVal;
+            v->VTy->ID=Const_FLOAT;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
+        {
+            Value *v_num= symtab_dynamic_lookup(this,bstr2cstr(p->right->sVal,'\0'));
+            if(v_num->VTy->ID==Const_FLOAT)
+            {
+                v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
+                v->VTy->ID=Const_FLOAT;
+            }
+            //Const_Int
+            else
+            {
+                v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
+                v->VTy->ID=Const_INT;
+            }
+        }
+        /*
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
+        {
+
+        }*/
+
+        symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
     }
 
     if(p->next!=NULL)

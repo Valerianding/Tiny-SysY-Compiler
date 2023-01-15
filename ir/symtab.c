@@ -24,6 +24,7 @@ void stack_new(Symtab* this)
     for(int i=0;i<10;i++)
         this->S.value_map[i]=NULL;
     this->S.top=0;
+    //默认在全局
     this->S.value_map[this->S.top]=this->value_maps->next;
 }
 
@@ -38,6 +39,13 @@ struct sc_map_sv* getCurMap(Symtab *this)
 struct _mapList* getCurMapList(Symtab *this)
 {
     return this->S.value_map[this->S.top];
+}
+
+bool is_global_map(Symtab* this)
+{
+    if(this->S.top==0)
+        return true;
+    return false;
 }
 
 //删除一层栈,但不删除该栈元素指向的map的数据

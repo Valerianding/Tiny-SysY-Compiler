@@ -11,7 +11,7 @@ void create_blockItemList(past root,Value* v_return);
 void create_instruction_list(past root,Value* v_return);
 void  create_assign_stmt(past root,Value* v_return);
 void create_return_stmt(past root,Value* v_return);
-void create_var_decl(past root,Value* v_return);
+void create_var_decl(past root,Value* v_return,bool is_global);
 void create_if_stmt(past root,Value* v_return);
 void create_if_else_stmt(past root,Value* v_return);
 void create_func_def(past root);
@@ -24,6 +24,7 @@ void create_store_stmt(Value* v1,Value* v2);
 struct _Value* create_load_stmt(char *name);
 struct _Value* create_return_load(Value *v_return);
 void declare_all_alloca(struct _mapList* func_map, bool flag);
+void declare_global_alloca(struct _mapList* func_map);
 void create_params_stmt(past func_params);
 void printf_llvm_ir(struct _InstNode *instruction_node,char* file_name);
 void create_while_stmt(past root,Value* v_return);
@@ -33,10 +34,15 @@ void create_break_stmt(past root,Value* v_return);
 void reduce_continue();
 void reduce_break();
 void reduce_return();
+Value *get_value_by_type(past x1);
 
-void printf_array(Value *v_array, int begin_index);
-past handle_one_dimention(past init_val_list,Value *v_array,int dimension,Value* bit);
+void printf_array(Value *v_array, int begin_index,FILE* fptr);
+void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_value,int start_layer,int cur_layer,int carry[]);
+
 Value *handle_assign_array(past root,Value *v_array);
 past array_all_zeros(past init_val_list);
+
+//借位-1,比如是三维数组，返回借位的结束处的index是0,1,2
+void borrow_save(Value* v_array,int carry[]);
 
 char* c2ll(char* file_name);
