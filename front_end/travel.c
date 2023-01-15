@@ -13,16 +13,21 @@ extern int return_index;
 extern insnode_stack S_continue;
 extern insnode_stack S_break;
 extern insnode_stack S_return;
+//记录有没有需要continue和break的语句
 extern bool c_b_flag[2];
 
 char t_num[3] = {0};
 int t_index = 0;
+Value *v_cur_func;
 
 void create_instruction_list(past root,Value* v_return)
 {
+
     if (root != NULL) {
-        if (strcmp(bstr2cstr(root->nodeType, '\0'), "VarDecl") == 0)
-            create_var_decl(root,v_return);
+        if ((strcmp(bstr2cstr(root->nodeType, '\0'), "VarDecl") == 0 || strcmp(bstr2cstr(root->nodeType, '\0'), "ConstDecl") == 0) && is_global_map(this)==true)
+            create_var_decl(root,v_return,true);
+        else if((strcmp(bstr2cstr(root->nodeType, '\0'), "VarDecl") == 0 || strcmp(bstr2cstr(root->nodeType, '\0'), "ConstDecl") == 0))
+            create_var_decl(root,v_return,false);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "FuncDef") == 0)
             create_func_def(root);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "BlockItemList") == 0)
@@ -206,6 +211,8 @@ void create_blockItemList(past root,Value* v_return)
 
 //cal_expr()能使得等式右边永远只有一个值
 void create_assign_stmt(past root,Value* v_return) {
+    if(is_global_map(this))
+        return;
 
     Value *v=NULL;
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
@@ -318,91 +325,330 @@ past array_all_zeros(past init_val_list)
             return init_val_list;
             //是全0,且是一维全0
         else if(strcmp(bstr2cstr(p->next->nodeType, '\0'), "InitValList") == 0)
-            return p->next;
+            return array_all_zeros(p->next->left);
         p=p->next;
     }
 }
 
-//init_val_list是第一维的第一个num_int
-//dimension：是要处理第几维
-//主要需要的返回就是处理第一维的返回
-past handle_one_dimention(past init_val_list,Value *v_array,int dimension,Value* bit)
+//做倒数第i位的进位
+//j代表进位的最低位是数组的倒数第几位
+///与carry_save使用情景不同，所以有差别
+///不允许暂时错误，必须精准，[5][2][2][2],在tmp_carry为[0][1][0][0]时，不能暂时[0][2][0][0],必须是[1][0][0][0]
+int carry_last_i_save(Value* v_array,int carry[],int i)
 {
-    //是一维全0,返回下一个init_val_list
-    if(array_all_zeros(init_val_list)!=NULL && dimension==1)
-        return array_all_zeros(init_val_list);
-        //其他维的全0，不处理
-    else if(array_all_zeros(init_val_list)!=NULL)
-        return NULL;
+    //将后面的清0
+    for(int j=v_array->pdata->symtab_array_pdata.dimention_figure-i+1;j<v_array->pdata->symtab_array_pdata.dimention_figure;j++)
+        carry[j]=0;
 
-    //多维数组，先处理好数组第一维
-    //TODO 目前只考虑了num_int的情况
-    //赋初值,生成亿些GMP
-    int offset=0;
-    bool first_init=true;
-    //v_last保存最内一层的上一层，只有当前维度第一个赋值才需要for轮完
-    Value *v_last_second;
-    //如果是第一维度，下一个就是initValList，如果不是第一维度，下一个就是NULL
-    while (init_val_list!=NULL && strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") != 0)
+    //不用进位就可以直接加
+    if(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] < v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1)
+        carry[v_array->pdata->symtab_array_pdata.dimention_figure-i]++;
+    //要进位
+    else
     {
-        if(first_init==true)
+        while(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1)
         {
-            for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure-1;i++)
+            carry[v_array->pdata->symtab_array_pdata.dimention_figure-i]=0;
+            carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]++;
+            i++;
+        }
+    }
+    return v_array->pdata->symtab_array_pdata.dimention_figure-i;
+}
+
+//进位函数,比如是三维数组，返回进位的结束处的index是0,1,2
+///允许加完之后暂时需要再进一次位才正确的情况，（在num_int后的InitValList和需进位的下一个num_int开始处理前都会先carry_save一次解决掉）
+int carry_save(Value* v_array,int carry[])
+{
+    //不用进位就可以直接加
+    //比如[3][1],初始为[0][0]，最内层可以放一个元素，此时0<1，再放一个元素不用进位，做完变为[0][1],像这种超出的情况，
+    //再做一次，需要进位，变成[1][0],调用borrow_save，变成[0][1]
+
+    int i=1;
+    //不用进位就可以直接加
+    if(carry[v_array->pdata->symtab_array_pdata.dimention_figure-1] < v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-1])
+        carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]++;
+        //要进位
+    else
+    {
+        while(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i])
+        {
+            carry[v_array->pdata->symtab_array_pdata.dimention_figure-i]=0;
+            carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]++;
+            i++;
+        }
+    }
+    return v_array->pdata->symtab_array_pdata.dimention_figure-i;
+}
+
+
+//借位-1,比如是三维数组，返回借位的结束处的index是0,1,2
+void borrow_save(Value* v_array,int carry[])
+{
+    int i=1;
+
+    if(carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]!=0)
+    {
+        carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]--;
+        return;
+    }
+
+    //多了1,保证InitValList走到下一个num_int时一定需要进位，可从进位处carry_index继续gmp
+    carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]=v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-1];
+    while(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]==0)
+    {
+        carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]=v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]-1;
+        i++;
+    }
+    carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]--;
+}
+
+
+//init_val_list是最老的InitValList的第一个左值，是num_int或InitValList
+//初始时的Value* begin_offset_value为第二个bitcast的左值
+//cur_lpar为目前处理层次数，初始为0；每进一层递归，层次数+1
+//start_layer是gmp开始的位置，可判断要进行几次gmp
+//carry数组记录目前初始化到的位置
+void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_value,int start_layer,int cur_layer,int carry[])
+{
+    //TODO 0的情况最终处理还需斟酌
+    //元素是全0,返回下一个init_val_list
+    //if(array_all_zeros(init_val_list)!=NULL)
+      //  return;
+
+    Value *v_offset;                          //存放偏移地址的Valueobyyh
+    Instruction *ins_gmp=NULL;
+
+    bool first_init=true;                     //多个num_int连着时，只需走一次除了最终地址前的for循环；再遇到InitValList后又重置为false
+    bool come_num=false;                       //记录处理元素的上一个处理元素是num_int还是InitValList，如果是num_int则走完了一部分，要先做一次进位
+    bool have_num_before=false;                //记录该层是否遇见过num_int过，没有false,有true
+    int carry_point;                     //记录前面有num_int时，下一次InitValList从数组的第几位开始get地址
+
+    int tmp_carry[v_array->pdata->symtab_array_pdata.dimention_figure-1];         //有时会拷贝carry数组到tmp_carry作为进入handle递归前起点处的暂存，用于判断有前面有num_int时，InitValList结束后的下一个起始位置
+
+    while(init_val_list!=NULL)
+    {
+        //record数组记录着0，1，2位的左值
+        //比如三维数组，从第一维开始初始化(下标0)，使用begin_value；从第二维开始初始化(下标1)，则使用record[0]，只用走第三维，则使用record[1];record[2]闲置
+        Value *record[v_array->pdata->symtab_array_pdata.dimention_figure];
+
+        if(strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") == 0)
+        {
+            //解决空InitValList的情况，即{},将起点记录进tmp_carry，用于地址处理
+            if(init_val_list->left==NULL)
             {
-                //第二个操作数是偏移量值,每一层的offset都是从0开始
-                Value *v_offset=(Value*) malloc(sizeof (Value));
-                Value *v_gmp=create_tmp_value();
-                Instruction *gmp;
-                //第一条
-                if(i==0)
+                //将carry数组内容赋值进tmp_carry
+                for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                    tmp_carry[i]=carry[i];
+            }
+            else if(!have_num_before)
+                handle_one_dimention(init_val_list->left,v_array,begin_offset_value,start_layer,cur_layer+1, carry);
+            else if(have_num_before)
+            {
+                //到InitValList，如果**上一条**是num_int，应该走完一截了，处理一下进位问题，处理完后到下一个元素应该是的地址
+                //!!!!!如果上一条是num_int过来的才走
+                if(come_num)
                 {
-                    value_init_int(v_offset,dimension-1);
-                    gmp= ins_new_binary_operator(GMP,bit,v_offset);
+                    //come_num则一定需要进位，因为必然走完一段
+                    if(carry[v_array->pdata->symtab_array_pdata.dimention_figure-1] > v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-1]-1)
+                        carry_point=carry_save(v_array,carry);
                 }
+                //将carry数组内容赋值进tmp_carry，保存递归前起点情况，是100型还是10型......
+                for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                    tmp_carry[i]=carry[i];
+
+                //从头开始，使用begin_offset_value
+                if(carry_point==0)
+                    handle_one_dimention(init_val_list->left,v_array,begin_offset_value,carry_point,cur_layer+1, carry);
+                //不从头开始，则用record数组值
+                else
+                    handle_one_dimention(init_val_list->left,v_array,record[carry_point-1],carry_point,cur_layer+1, carry);
+            }
+
+            //遇到InitValList了，则come_num是false了
+            come_num=false;
+
+            //走完一个InitValList的进位情况
+            //前面没走过num
+            if(!have_num_before)
+            {
+                //走完进一级
+                carry[cur_layer]++;
+                for(int i=cur_layer+1;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                    carry[i]=0;
+            }
+            //前面走过num
+            //判断tmp_carry，为carry进入递归时的起点，确定carry_point
+            else
+            {
+                //看要修改的是倒数第几位
+                int change_index=0;
+                for(int i=v_array->pdata->symtab_array_pdata.dimention_figure;i>0;i--)
+                {
+                    if(tmp_carry[i-1]!=0)
+                        break;
+                    change_index++;         //有change_index个0
+                }
+                change_index++;
+
+                carry_point=carry_last_i_save(v_array,carry,change_index);
+            }
+
+            //使得进入for gmp
+            if(init_val_list->next!=NULL && strcmp(bstr2cstr(init_val_list->next->nodeType, '\0'), "InitValList") != 0)
+            {
+                //借位，使得下一次num_int走num_int的进位处理分支，保证从确定Index开始，而不一定从头开始
+                borrow_save(v_array,carry);
+                first_init=false;
+            }
+        }
+        else
+        {
+            have_num_before=true;
+            come_num=true;
+
+            if(first_init)
+            {
+                //解决到除了最后一层地址
+                for(int i=start_layer;i<v_array->pdata->symtab_array_pdata.dimention_figure-1;i++)
+                {
+                    Value *v_gmp=create_tmp_value();
+                    v_gmp->pdata->var_pdata.iVal=i;
+
+                    v_offset=(Value*) malloc(sizeof (Value));
+                    if(i==start_layer)
+                        value_init_int(v_offset,carry[start_layer]);
+                    else
+                        value_init_int(v_offset,0);
+
+                    record[i]=v_gmp;
+
+                    ins_gmp=NULL;
+
+                    if(i==start_layer)
+                    {
+                        ins_gmp= ins_new_binary_operator(GMP,begin_offset_value,v_offset);
+                    }
+                    else
+                    {
+                        Value *v_prev=&get_last_inst(instruction_list)->inst->user.value;
+                        ins_gmp= ins_new_binary_operator(GMP,v_prev,v_offset);
+                    }
+
+
+                    ins_gmp->user.value=*v_gmp;
+                    //将这个instruction加入总list
+                    InstNode *node2 = new_inst_node(ins_gmp);
+                    ins_node_add(instruction_list,node2);
+                }
+                first_init=false;
+            }
+
+            //最后一层，先判断是num_int，ID还是别的
+            //先处理如果是0
+            past p=init_val_list;
+            Value *num=NULL;
+            if(strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0)
+            {
+                num=(Value*) malloc(sizeof (Value));
+                value_init_int(num,p->iVal);
+            }
+
+            //!如果是0就不处理
+            //p->iVal是0,直接将位置+1
+            if(num!=NULL && num->pdata->var_pdata.iVal==0)
+            {
+                carry_save(v_array,carry);
+            }
+            else
+            {
+                //不会进位的情况，处理完后，carry数组最低位自动+1
+                // 最后一次走这条分支后最低位一定溢出，下次会进入进位处理分支
+                if(carry[v_array->pdata->symtab_array_pdata.dimention_figure-1] <= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-1]-1)
+                {
+                    v_offset=(Value*) malloc(sizeof (Value));
+                    //这里+1后可能溢出
+                    value_init_int(v_offset,carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]++);
+
+                    //是最后一层吧
+                    Value *v_gmp=create_tmp_value();
+                    v_gmp->pdata->var_pdata.iVal=v_array->pdata->symtab_array_pdata.dimention_figure-1;
+
+                    Instruction *gmp_last = ins_new_binary_operator(GMP,record[v_array->pdata->symtab_array_pdata.dimention_figure-2],v_offset);
+                    gmp_last->user.value=*v_gmp;
+                    //将这个instruction加入总list
+                    InstNode *node_gmp_last = new_inst_node(gmp_last);
+                    ins_node_add(instruction_list,node_gmp_last);
+
+                    //其他除num_int的情况
+                    //进行一次store
+                    //将num值包装成value
+                    if(strcmp(bstr2cstr(p->nodeType, '\0'), "LValArray") == 0)
+                    {
+                        Value *v_arr= symtab_dynamic_lookup(this,bstr2cstr(p->left->sVal, '\0'));
+                        num=handle_assign_array(p->right->left,v_arr);
+
+                    }
+                    else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
+                        num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                    create_store_stmt(num,v_gmp);
+
+                }
+                //要进位
                 else
                 {
-                    Value *v_prev=&get_last_inst(instruction_list)->inst->user.value;
-                    value_init_int(v_offset,0);
-                    gmp= ins_new_binary_operator(GMP,v_prev,v_offset);
+                    //先进一次位，进位后为本次的开始地址
+                    int carry_index= carry_save(v_array,carry);
+
+                    Value *v_start=NULL;
+                    if(carry_index!=0)
+                        v_start=record[carry_index-1];
+                    else
+                        v_start=begin_offset_value;
+                    //从变化的那一位开始gmp
+                    for(int i=carry_index;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                    {
+                        Instruction *ins=NULL;
+                        Value *v_carry_index=(Value*) malloc(sizeof (Value));
+                        value_init_int(v_carry_index,carry[i]);
+                        Value *v_gmp=create_tmp_value();
+                        v_gmp->pdata->var_pdata.iVal=i;
+
+                        //第一次只用拿v_start，不用存;注意record是岔一级使用的
+                        if(i==carry_index)
+                        {
+                            ins= ins_new_binary_operator(GMP,v_start,v_carry_index);
+                        }
+                        else
+                        {
+                            Value *v_prev=&get_last_inst(instruction_list)->inst->user.value;
+                            ins= ins_new_binary_operator(GMP,v_prev,v_carry_index);
+
+                            //更新record
+                            record[i]=v_prev;
+                        }
+                        ins->user.value=*v_gmp;
+                        //将这个instruction加入总list
+                        InstNode *node_gmp_last = new_inst_node(ins);
+                        ins_node_add(instruction_list,node_gmp_last);
+                    }
+                    //进行一波store
+                    if(strcmp(bstr2cstr(p->nodeType, '\0'), "LValArray") == 0)
+                    {
+                        Value *v_arr= symtab_dynamic_lookup(this,bstr2cstr(p->left->sVal, '\0'));
+                        num=handle_assign_array(p->right->left,v_arr);
+                    }
+                    else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
+                        num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                    create_store_stmt(num,record[v_array->pdata->symtab_array_pdata.dimention_figure-1]);
+
+                    //再做一次进位，到下一次的初始地址
+                    carry_save(v_array,carry);
                 }
-
-                gmp->user.value=*v_gmp;
-
-                //将这个instruction加入总list
-                InstNode *node_gmp_first = new_inst_node(gmp);
-                ins_node_add(instruction_list,node_gmp_first);
-
-                v_last_second=v_gmp;
             }
-            first_init=false;
         }
-
-        //!如果是0就不处理
-        if(init_val_list->iVal!=0)
-        {
-            //不是这层第一次
-            Value *v_offset=(Value*) malloc(sizeof (Value));
-            value_init_int(v_offset,offset++);
-            Value *v_gmp=create_tmp_value();
-            Instruction *gmp_not_first = ins_new_binary_operator(GMP,v_last_second,v_offset);
-            gmp_not_first->user.value=*v_gmp;
-            //将这个instruction加入总list
-            InstNode *node_gmp_not_first = new_inst_node(gmp_not_first);
-            ins_node_add(instruction_list,node_gmp_not_first);
-
-            //把最后一次GMP单拎出来
-            //进行一次store
-
-            //将num_int值包装成value
-            Value *num=(Value*) malloc(sizeof (Value));
-            value_init_int(num,init_val_list->iVal);
-            create_store_stmt(num,v_gmp);
-        }
-
         init_val_list=init_val_list->next;
     }
-    //offset=0;
-    return init_val_list;
 }
 
 Value *handle_assign_array(past root,Value *v_array)
@@ -411,11 +657,18 @@ Value *handle_assign_array(past root,Value *v_array)
     //root是第一维值
     for (int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
     {
-        //包装偏移的num_int为Value
-        Value *v_num=(Value*) malloc(sizeof (Value));
-        value_init_int(v_num,root->iVal);
-
+        Value *v_num=NULL;
         Instruction *gmp;
+        if(strcmp(bstr2cstr(root->nodeType, '\0'), "num_int") == 0)
+        {
+            //包装偏移的num_int为Value
+            v_num=(Value*) malloc(sizeof (Value));
+            value_init_int(v_num,root->iVal);
+        }
+        else if(strcmp(bstr2cstr(root->nodeType, '\0'), "expr") == 0)
+            v_num= cal_expr(root);
+
+
         if(i==0)
         {
             gmp= ins_new_binary_operator(GMP,v_array,v_num);
@@ -425,7 +678,9 @@ Value *handle_assign_array(past root,Value *v_array)
             gmp= ins_new_binary_operator(GMP,v_last,v_num);
         }
 
+
         Value *v1=create_tmp_value();
+        v1->pdata->var_pdata.iVal=i;
         gmp->user.value=*v1;
 
         v_last=v1;
@@ -436,97 +691,135 @@ Value *handle_assign_array(past root,Value *v_array)
 
         root=root->next;
     }
+    //load
+    Value *v_load=create_tmp_value();
+    Instruction *ins_load= ins_new_unary_operator(Load,v_last);
+    ins_load->user.value=*v_load;
+    v_last=v_load;
+
+    //将这个instruction加入总list
+    InstNode *node_load = new_inst_node(ins_load);
+    ins_node_add(instruction_list,node_load);
+
     return v_last;
 }
 
 //还未考虑数组
-void create_var_decl(past root,Value* v_return) {
+void create_var_decl(past root,Value* v_return,bool is_global) {
 
     //到达第一个var的节点
     past vars = root->right->left;
 
-    //纯定义语句不需要处理了
-    //有初值
-    if (strcmp(bstr2cstr(root->right->left->nodeType, '\0'), "VarDef_init") == 0) {
-        while (vars != NULL) {
+    while (vars!=NULL)
+    {
+        //纯定义语句不需要处理了
+        //有初值
+        if (strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_init") == 0 && !is_global)
+        {
             //左值
             Value *v=symtab_dynamic_lookup(this, bstr2cstr(vars->left->sVal, '\0'));
 
             //初始化的值
             //root->right是VarDefList
             Value *v1=NULL;
-            if (strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "num_int") == 0)
+            if (strcmp(bstr2cstr(vars->right->nodeType, '\0'), "num_int") == 0)
             {
                 v1=(Value*) malloc(sizeof (Value));
-                value_init_int(v1, root->right->left->right->iVal);
+                value_init_int(v1, vars->right->iVal);
             }
-            else if(strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "num_float") == 0)
+            else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "num_float") == 0)
             {
                 v1=(Value*) malloc(sizeof (Value));
-                value_init_float(v1,root->right->left->right->fVal);
+                value_init_float(v1,vars->right->fVal);
             }
-            else if(strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "ID") == 0)
-                v1= create_load_stmt(bstr2cstr(root->right->left->right->sVal,'\0'));
-            else if (strcmp(bstr2cstr(root->right->left->right->nodeType, '\0'), "expr") == 0)
-                v1 = cal_expr(root->right->left->right);
+            else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "ID") == 0)
+                v1= create_load_stmt(bstr2cstr(vars->right->sVal,'\0'));
+            else if (strcmp(bstr2cstr(vars->right->nodeType, '\0'), "expr") == 0)
+                v1 = cal_expr(vars->right);
 
             //将值store下来
             create_store_stmt(v1,v);
-
-            vars = vars->next;
         }
-    }
-        //有初值数组
-    else if(strcmp(bstr2cstr(root->right->left->nodeType, '\0'), "VarDef_array_init") == 0)
-    {
-        past ident_array=root->right->left->left;         //到IdentArray结点
-        Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->left->sVal,'\0'));
-        past init_val_list = root->right->left->right->left;
-
-        //生成bitcast,使读取的内存空间通过指针i8*，i8步长读取
-        //TODO bitcast 打印不方便
-        //<result> = bitcast <ty> <value> to <ty2>
-        //The ‘bitcast’ instruction converts value to type ty2 without changing any bits.
-        Value *v1=create_tmp_value();
-        Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array);
-        ins_bitcast->user.value=*v1;
-
-        //将这个instruction加入总list
-        InstNode *node_bitcast = new_inst_node(ins_bitcast);
-        ins_node_add(instruction_list,node_bitcast);
-
-        //一维数组,拷贝式赋初值,memcpy
-        //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
-        if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
+            //有初值数组
+        else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_array_init") == 0)
         {
-            //TODO
-        }
-        else
-        {
-            //TODO memset是否还需要我处理?
-            //再来一条bitcast
-            //!!!后续第一条一直用v2
-            Value *v2=create_tmp_value();
-            Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
-            ins_bitcast2->user.value=*v2;
-            //将这个instruction加入总list
-            InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
-            ins_node_add(instruction_list,node_bitcast2);
-
-            //多维数组，先处理好数组第一维
-            init_val_list = handle_one_dimention(init_val_list,v_array,1,v2);
-
-            //如果init_val_list此时是InitValList，就说明还有下一维度
-            int demension=2;
-            while (init_val_list!=NULL && strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") == 0)
+            if(is_global==false)
             {
-                past next_dimension= init_val_list->left;
-                handle_one_dimention(next_dimension,v_array,demension++,v2);
-                init_val_list=init_val_list->next;
+                past ident_array=vars->left;         //到IdentArray结点
+                Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->left->sVal,'\0'));
+                past init_val_list = vars->right;
+
+                //生成bitcast,使读取的内存空间通过指针i8*，i8步长读取
+                //TODO bitcast 打印不方便
+                //<result> = bitcast <ty> <value> to <ty2>
+                //The ‘bitcast’ instruction converts value to type ty2 without changing any bits.
+                Value *v1=create_tmp_value();
+                Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array);
+                ins_bitcast->user.value=*v1;
+
+                //将这个instruction加入总list
+                InstNode *node_bitcast = new_inst_node(ins_bitcast);
+                ins_node_add(instruction_list,node_bitcast);
+
+                //一维数组,拷贝式赋初值,memcpy
+                //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
+                if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
+                {
+                    //TODO,怎么保存住所有值呢,变成全局变量
+                    //创建全局变量value
+                    Value *v_global=(Value*) malloc(sizeof (Value));
+                    value_init(v_global);
+                    v_global->name=(char*) malloc(9+sizeof(v_cur_func->name)+1+sizeof (bstr2cstr(vars->left->sVal, '\0')));
+                    strcpy(v_global->name,"@__const.");
+                    strcat(v_global->name,v_cur_func->name);
+                    strcat(v_global->name,".");
+                    strcat(v_global->name,bstr2cstr(vars->left->sVal,'\0'));
+
+                    Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
+                }
+                    //
+                else
+                {
+                    //TODO memset是否还需要我处理?
+                    int mem= get_array_total_occupy(v_array);
+                    Value *v_mem=(Value*) malloc(sizeof (Value));
+                    value_init_int(v_mem,mem);
+                    Instruction *mem_set= ins_new_binary_operator(MEMSET,v1,v_mem);
+                    //将这个instruction加入总list
+                    InstNode *node_mem_set = new_inst_node(mem_set);
+                    ins_node_add(instruction_list,node_mem_set);
+
+                    if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "InitVal_Empty") != 0)
+                    {
+                        //再来一条bitcast
+                        //!!!后续第一条一直用v2
+                        Value *v2=create_tmp_value();
+                        Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
+                        ins_bitcast2->user.value=*v2;
+                        //将这个instruction加入总list
+                        InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
+                        ins_node_add(instruction_list,node_bitcast2);
+
+                        //存储num_int用的进位
+                        int carry[v_array->pdata->symtab_array_pdata.dimention_figure];
+                        for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                            carry[i]=0;
+
+                        //多维数组,挨个赋值型
+                        handle_one_dimention(init_val_list->left,v_array,v2,0,0,carry);
+                    }
+                }
+            }
+                //TODO 是全局有初始化数组
+            else
+            {
 
             }
         }
+
+        vars=vars->next;
     }
+
 
     if(root->next!=NULL)
         create_instruction_list(root->next,v_return);
@@ -690,6 +983,7 @@ void create_func_def(past root) {
     //拿出存在符号表中的函数信息
     Value *v=symtab_lookup_withmap(this, bstr2cstr(root->left->next->sVal, '\0'), &this->value_maps->next->map);
     instruction_begin->user.value=*v;
+    v_cur_func=v;
 
 
     //将这个instruction加入总list
@@ -828,6 +1122,39 @@ void create_func_def(past root) {
         create_instruction_list(root->next,v_return);
 }
 
+Value *get_value_by_type(past x1)
+{
+    Value *v1=NULL;
+    if (strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0)
+    {
+        v1=(Value*) malloc(sizeof (Value));
+        value_init_int(v1, x1->iVal);
+    }
+    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "ID") == 0)
+    {
+        //如果x1->sVal是a,b,c...需要load
+        v1=symtab_dynamic_lookup(this, bstr2cstr(x1->sVal, '\0'));
+        if(v1!=NULL)
+        {
+            v1=create_load_stmt(bstr2cstr(x1->sVal, '\0'));
+        }
+        else{
+            v1=(Value*) malloc(sizeof (Value));
+            value_init(v1);
+            v1->name = (char *) malloc(sizeof(bstr2cstr(x1->sVal, '\0')));
+            strcpy(v1->name, bstr2cstr(x1->sVal, '\0'));
+            v1->pdata->var_pdata.map= getCurMap(this);
+            v1->VTy->ID = Var_INT;
+        }
+    }
+    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "LValArray") == 0)
+    {
+        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(x1->left->sVal, '\0'));
+        v1= handle_assign_array(x1->right->left,v_array);
+    }
+    return v1;
+}
+
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
 struct _Value *cal_expr(past expr) {
@@ -871,13 +1198,31 @@ struct _Value *cal_expr(past expr) {
         if (strcmp(bstr2cstr((*pp)->nodeType, '\0'), "expr") != 0)
             push(&PS2, (*pp));
 
-        else {
+        else
+        {
             //如果读到+-*/%就从栈中弹出两个计算,算不动就给临时变量存
             pop(&PS2, &x2);
             pop(&PS2, &x1);
             //都是常数，直接算出来压进栈
-            if (strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 &&
-                strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0) {
+            Value *v_con1=NULL;Value *v_con2=NULL;
+            if(strcmp(bstr2cstr(x1->nodeType, '\0'), "ID") == 0)
+            {
+                v_con1=symtab_dynamic_lookup(this, bstr2cstr(x1->sVal, '\0'));
+                if(v_con1!=NULL && v_con1->VTy->ID==Const_INT)
+                    x1->iVal=v_con1->pdata->var_pdata.iVal;
+                else if(v_con1!=NULL && v_con1->VTy->ID==Const_FLOAT)
+                    x1->fVal=v_con1->pdata->var_pdata.fVal;
+            }
+            if(strcmp(bstr2cstr(x2->nodeType, '\0'), "ID") == 0)
+            {
+                v_con2=symtab_dynamic_lookup(this, bstr2cstr(x2->sVal, '\0'));
+                if(v_con2!=NULL && v_con2->VTy->ID==Const_INT)
+                    x2->iVal=v_con2->pdata->var_pdata.iVal;
+                else if(v_con2!=NULL && v_con2->VTy->ID==Const_FLOAT)
+                    x2->fVal=v_con2->pdata->var_pdata.fVal;
+            }
+            if ((strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 || (v_con1!=NULL && v_con1->VTy->ID==Const_INT)) &&
+                (strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0 || (v_con2!=NULL && v_con2->VTy->ID==Const_INT))) {
                 switch ((*pp)->iVal) {
                     case '+':
                         x1->iVal = x1->iVal + x2->iVal;
@@ -895,146 +1240,23 @@ struct _Value *cal_expr(past expr) {
                         x1->iVal = x1->iVal % x2->iVal;
                         break;
                 }
-                push(&PS2, x1);
-            } else if (strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 &&
-                       strcmp(bstr2cstr(x2->nodeType, '\0'), "ID") == 0) {
-                Instruction *instruction = NULL;
-                Value *v1=(Value*) malloc(sizeof (Value));
-                value_init_int(v1, x1->iVal);
-
-                Value *v2=NULL;
-
-                //如果x2->sVal是a,b,c...需要load
-                v2=symtab_dynamic_lookup(this, bstr2cstr(x2->sVal, '\0'));
-                if(v2!=NULL)
+                if(v_con1!=NULL && v_con1->VTy->ID==Const_INT)
                 {
-                    v2=create_load_stmt(bstr2cstr(x2->sVal, '\0'));
+                    past x3=newNumInt(x1->iVal);
+                    push(&PS2, x3);
                 }
-                    //是中间临时变量，默认无初值
-                else{
-                    v2=(Value*) malloc(sizeof (Value));
-                    value_init(v2);
-                    v2->name = (char *) malloc(sizeof(bstr2cstr(x2->sVal, '\0')));
-                    strcpy(v2->name, bstr2cstr(x2->sVal, '\0'));
-                    v2->pdata->var_pdata.map= getCurMap(this);
-                    v2->VTy->ID = Var_INT;
-                }
+                else
+                    push(&PS2, x1);
+            }
+            else
+            {
+                Instruction *instruction=NULL;
 
-                //临时变量左值,v_tmp的pdata是没有实际内容的
-                Value *v_tmp=create_tmp_value();
-                past tmp = newIdent(bfromcstr(v_tmp->name));
-                v_tmp->VTy->ID = Var_INT;
+                //先看v1
+                Value *v1= get_value_by_type(x1);
 
-                switch ((*pp)->iVal) {
-                    case '+':
-                        instruction = ins_new_binary_operator(Add, v1, v2);
-                        break;
-                    case '-':
-                        instruction = ins_new_binary_operator(Sub, v1, v2);
-                        break;
-                    case '*':
-                        instruction = ins_new_binary_operator(Mul, v1, v2);
-                        break;
-                    case '/':
-                        instruction = ins_new_binary_operator(Div, v1, v2);
-                        break;
-                    case '%':
-                        instruction = ins_new_binary_operator(Module, v1, v2);
-                        break;
-                }
-                instruction->user.value = *v_tmp;
-                //将这个instruction加入总list
-                InstNode *node = new_inst_node(instruction);
-                ins_node_add(instruction_list,node);
-                push(&PS2, tmp);
-            } else if (strcmp(bstr2cstr(x1->nodeType, '\0'), "ID") == 0 &&
-                       strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0) {
-                Instruction *instruction = NULL;
-
-                Value *v1=NULL;
-
-                //如果x1->sVal是a,b,c...需要load
-                v1=symtab_dynamic_lookup(this, bstr2cstr(x1->sVal, '\0'));
-                if(v1!=NULL)
-                {
-                    v1=create_load_stmt(bstr2cstr(x1->sVal, '\0'));
-                }
-                else{
-                    v1=(Value*) malloc(sizeof (Value));
-                    value_init(v1);
-                    v1->name = (char *) malloc(sizeof(bstr2cstr(x1->sVal, '\0')));
-                    strcpy(v1->name, bstr2cstr(x1->sVal, '\0'));
-                    v1->pdata->var_pdata.map= getCurMap(this);
-                    v1->VTy->ID = Var_INT;
-                }
-
-                Value *v2=(Value*) malloc(sizeof (Value));
-                value_init_int(v2, x2->iVal);
-
-
-                //临时变量左值,v_tmp的pdata是没有实际内容的
-                Value *v_tmp=create_tmp_value();
-                past tmp = newIdent(bfromcstr(v_tmp->name));
-                v_tmp->VTy->ID = Var_INT;
-
-                switch ((*pp)->iVal) {
-                    case '+':
-                        instruction = ins_new_binary_operator(Add, v1, v2);
-                        break;
-                    case '-':
-                        instruction = ins_new_binary_operator(Sub, v1, v2);
-                        break;
-                    case '*':
-                        instruction = ins_new_binary_operator(Mul, v1, v2);
-                        break;
-                    case '/':
-                        instruction = ins_new_binary_operator(Div, v1, v2);
-                        break;
-                    case '%':
-                        instruction = ins_new_binary_operator(Module, v1, v2);
-                        break;
-                }
-                instruction->user.value = *v_tmp;
-                //将这个instruction加入总list
-                InstNode *node = new_inst_node(instruction);
-                ins_node_add(instruction_list,node);
-                push(&PS2, tmp);
-            } else if (strcmp(bstr2cstr(x1->nodeType, '\0'), "ID") == 0 &&
-                       strcmp(bstr2cstr(x2->nodeType, '\0'), "ID") == 0) {
-                Instruction *instruction = NULL;
-                Value *v1=NULL;
-
-                //如果x1->sVal是a,b,c...需要load
-                v1=symtab_dynamic_lookup(this, bstr2cstr(x1->sVal, '\0'));
-                if(v1!=NULL)
-                {
-                    v1=create_load_stmt(bstr2cstr(x1->sVal, '\0'));
-                }
-                else{
-                    v1=(Value*) malloc(sizeof (Value));
-                    value_init(v1);
-                    v1->name = (char *) malloc(sizeof(bstr2cstr(x1->sVal, '\0')));
-                    strcpy(v1->name, bstr2cstr(x1->sVal, '\0'));
-                    v1->pdata->var_pdata.map= getCurMap(this);
-                    v1->VTy->ID = Var_INT;
-                }
-
-                Value *v2=NULL;
-
-                //如果x2->sVal是a,b,c...需要load
-                v2=symtab_dynamic_lookup(this, bstr2cstr(x2->sVal, '\0'));
-                if(v2!=NULL)
-                {
-                    v2=create_load_stmt(bstr2cstr(x2->sVal, '\0'));
-                }
-                else{
-                    v2=(Value*) malloc(sizeof (Value));
-                    value_init(v2);
-                    v2->name = (char *) malloc(sizeof(bstr2cstr(x2->sVal, '\0')));
-                    strcpy(v2->name, bstr2cstr(x2->sVal, '\0'));
-                    v2->pdata->var_pdata.map= getCurMap(this);
-                    v2->VTy->ID = Var_INT;
-                }
+                //v2
+                Value *v2= get_value_by_type(x2);
 
                 //临时变量左值,v_tmp的pdata是没有实际内容的
                 Value *v_tmp=create_tmp_value();
@@ -1255,6 +1477,37 @@ void declare_all_alloca(struct _mapList* func_map,bool flag)
             declare_all_alloca(func_map->next,false);
     }
 }
+void declare_global_alloca(struct _mapList* func_map)
+{
+    const char *key, *value;
+
+    //TODO 先遍历本表
+    sc_map_foreach (&func_map->map, key, value)
+        {
+            if(((Value*)value)->VTy->ID != FunctionTyID && ((Value*)value)->VTy->ID != ArrayTyID)
+            {
+                Value *v_num=(Value*) malloc(sizeof (Value));
+                if(((Value *) value)->pdata!=NULL)
+                    value_init_int(v_num,((Value *) value)->pdata->var_pdata.iVal);
+                else
+                    value_init_int(v_num,0);
+                Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR, (Value *) value,v_num);
+                //与符号表对应的绑定在一起
+                ((Value*)value)->pdata->var_pdata.alias=t_index++;
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(instruction);
+                ins_node_add(instruction_list,node);
+            }
+            else if(((Value*)value)->VTy->ID == ArrayTyID)
+            {
+                //zero
+                Instruction *ins_zero= ins_new_unary_operator(zeroinitializer,(Value *) value);
+                //将这个instruction加入总list
+                InstNode *node_zero = new_inst_node(ins_zero);
+                ins_node_add(instruction_list,node_zero);
+            }
+        }
+}
 
 //参数传递
 void create_params_stmt(past func_params)
@@ -1288,18 +1541,23 @@ void create_params_stmt(past func_params)
     }
 }
 
-void printf_array(Value *v_array, int begin_index)
+void printf_array(Value *v_array, int begin_index,FILE* fptr)
 {
     for(int i=begin_index;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
     {
         printf("[");
+        fprintf(fptr,"[");
         printf("%d ",v_array->pdata->symtab_array_pdata.dimentions[i]);
+        fprintf(fptr,"%d ",v_array->pdata->symtab_array_pdata.dimentions[i]);
         printf("x ");
+        fprintf(fptr,"x ");
     }
     printf("i32");
+    fprintf(fptr,"i32");
     for(int i=begin_index;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
     {
         printf("]");
+        fprintf(fptr,"]");
     }
 }
 
@@ -1317,12 +1575,23 @@ char* c2ll(char* file_name)
     return p;
 }
 
+bool begin_tmp(const char* name)
+{
+    char *prefix="%";
+    if(name[0]==prefix[0])
+        return true;
+    return false;
+}
+
 void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
 {
     instruction_node= get_next_inst(instruction_node);
     const char* ll_file= c2ll(file_name);
 
     FILE *fptr= fopen(ll_file,"w");
+
+    Value *v_cur_array=NULL;
+
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
@@ -1332,7 +1601,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 if(instruction->user.use_list->Val->VTy->ID==ArrayTyID)
                 {
                     printf(" %%%d = alloca ",instruction->user.use_list->Val->pdata->var_pdata.alias);
-                    printf_array(instruction->user.use_list->Val,0);
+                    printf_array(instruction->user.use_list->Val,0,fptr);
                     printf(",align 16\n");
                 }
                 else if(instruction->user.use_list->Val!=NULL)
@@ -1348,8 +1617,15 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case Store:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
                 {
-                    printf(" store i32 %d,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
-                    fprintf(fptr," store i32 %d,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
+                    if(!begin_tmp(instruction->user.use_list[1].Val->name))
+                    {
+                        printf(" store i32 %d,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
+                        fprintf(fptr," store i32 %d,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
+                    } else
+                    {
+                        printf(" store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr," store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
                 }
                 else if(instruction->user.use_list->Val->VTy->ID==Float)
                 {
@@ -1358,8 +1634,15 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 else
                 {
-                    printf(" store i32 %s,i32* %%%d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
-                    fprintf(fptr," store i32 %s,i32* %%%d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
+                    if(!begin_tmp(instruction->user.use_list[1].Val->name))
+                    {
+                        printf(" store i32 %s,i32* %%%d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
+                        fprintf(fptr," store i32 %s,i32* %%%d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
+                    } else
+                    {
+                        printf(" store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr," store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
                 }
                 break;
             case br:
@@ -1546,27 +1829,61 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
             case bitcast:
                 //第一条bitcast
-                if(get_next_inst(instruction_node)->inst->Opcode==bitcast)
+                if(get_next_inst(get_next_inst(instruction_node))->inst->Opcode==bitcast)
                 {
+                    v_cur_array=instruction->user.use_list->Val;
                     printf(" %s=bitcast ",instruction->user.value.name);
-                    printf_array(instruction->user.use_list->Val,0);
+                    fprintf(fptr," %s=bitcast ",instruction->user.value.name);
+                    printf_array(instruction->user.use_list->Val,0,fptr);
                     printf("* %%%d to i8*\n",instruction->user.use_list->Val->pdata->symtab_array_pdata.alias);
+                    fprintf(fptr,"* %%%d to i8*\n",instruction->user.use_list->Val->pdata->symtab_array_pdata.alias);
                 }
                 else
                 {
                     printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
-                    printf_array(instruction->user.use_list->Val,0);
+                    fprintf(fptr,"* %%%d to i8*\n",instruction->user.use_list->Val->pdata->symtab_array_pdata.alias);
+                    printf_array(v_cur_array,0,fptr);
                     printf("*\n");
+                    fprintf(fptr,"*\n");
                 }
                 break;
-                /*
+
             case GMP:
-                //是全新的第一行且第一维
-                if(get_prev_inst(instruction_node)->inst->Opcode!=GMP && (get_prev_inst(get_prev_inst(instruction_node))->inst->Opcode!=GMP || get_prev_inst(get_prev_inst(instruction_node))->inst->user.use_list->Val->name!=instruction->user.use_list->Val->name))
+                if(begin_tmp(instruction->user.use_list->Val->name))
                 {
-                    for(int i=0;i<instruction)
-                    printf(" %s=getelementptr inbounds ")
-                }*/
+                    printf(" %s=getelementptr inbounds ",instruction->user.value.name);
+                    fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
+                    printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                    printf(",");
+                    fprintf(fptr,",");
+                    printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                    printf("* ");
+                    fprintf(fptr,"* ");
+                    printf("%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    fprintf(fptr,"%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                }
+                //TODO，比如调用d[2][1]的打印
+                else
+                {
+                    printf(" %s=getelementptr inbounds ",instruction->user.value.name);
+                    fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
+                    printf_array(instruction->user.use_list->Val,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                    printf(",");
+                    fprintf(fptr,",");
+                    printf_array(instruction->user.use_list->Val,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                    printf("* ");
+                    fprintf(fptr,"* ");
+                    printf("%%%d, i32 0,i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.alias,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    fprintf(fptr,"%%%d, i32 0,i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.alias,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                }
+                break;
+            case MEMSET:
+                printf(" call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                fprintf(fptr," call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                break;
+            case GLOBAL_VAR:
+                printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
             default:
                 break;
         }

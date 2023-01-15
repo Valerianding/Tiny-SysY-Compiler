@@ -67,7 +67,7 @@ void insert_func_params(past params);
 void insert_func_into_symtab(past return_type,past pname,past params);
 
 //根据数组名，拿到具体数组需开辟的大小
-int get_array_total_occupy(char *name,struct sc_map_sv* map);
+int get_array_total_occupy(Value *a);
 
 
 

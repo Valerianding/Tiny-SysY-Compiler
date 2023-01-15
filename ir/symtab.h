@@ -44,6 +44,9 @@ struct sc_map_sv *getCurMap(Symtab *this);
 //获取现在指向的MapList
 struct _mapList* getCurMapList(Symtab *this);
 
+//得知是否是全局map
+bool is_global_map(Symtab* this);
+
 //在当前表增加name-value键值对
 void symtab_insert_value_name(Symtab* this, char* name, struct _Value *V);
 //在指定表中增加name-value对

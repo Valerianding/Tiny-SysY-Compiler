@@ -58,7 +58,8 @@ Decl
 ConstDecl
     : CONST BType ConstDefList SEMICOLON       {past con=prefixNode("const",NULL);past prefix_type=prefixNode(NULL,$2);
                                                 con->next=prefix_type;
-                                                $$ = newAnotherNode("ConstDecl",con,$3);}
+                                                $$ = newAnotherNode("ConstDecl",con,$3);
+                                                insert_var_into_symtab($2,$3->left);}
     ;
 
 /*新加的,形如ConstDef,ConstDef,ConstDef*/
@@ -113,13 +114,13 @@ VarDef
 
 InitVal
     : Exp                                             {$$ = $1;}
-    | LPAR RPAR                                   {$$ = newAnotherNode("InitVal_Empty",NULL,NULL);}
-    | LPAR InitValList RPAR                       {$$ = $2;}
+    | LPAR RPAR                                   {$$ = newAnotherNode("InitValList",NULL,NULL);}
+    | LPAR InitValList RPAR                       {$$=$2;}
     ;
 
 /*新加的，形如InitVal,InitVal,InitVal*/
 InitValList
-    : InitVal                                         {$$ = newFollowNode("InitValList",$1,NULL);}
+    : InitVal                                         {$$ = newAnotherNode("InitValList",$1,NULL);}
     | InitValList COMMA InitVal                     {$$ = newFollowNode("InitValList",$1,$3);}
 
 

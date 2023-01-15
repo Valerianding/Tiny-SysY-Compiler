@@ -19,7 +19,11 @@ enum TypeID {
     Int,              //int类型整数
     Float,            //float类型浮点数
 
+    Const_INT,
+    Const_FLOAT,
+
     ArrayTyID,
+    ArrayTyID_Init,
     FunctionTyID,
     VoidTyID,
 

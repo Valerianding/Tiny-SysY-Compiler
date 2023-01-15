@@ -33,8 +33,12 @@ typedef enum OpcodeType{
     tmp,
 
     bitcast,
-    //memcpy,
     GMP,
+    MEMCPY,
+    MEMSET,
+    zeroinitializer,
+    GLOBAL_VAR,
+
 };
 
 enum InstructionType{
