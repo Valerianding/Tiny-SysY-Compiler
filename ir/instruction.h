@@ -2,7 +2,7 @@
 #define INSTRUCTION_H
 
 #include "user.h"
-#include "../cds.h"
+#include "cds.h"
 
 struct _BasicBlock;
 
@@ -38,7 +38,6 @@ typedef enum OpcodeType{
     MEMSET,
     zeroinitializer,
     GLOBAL_VAR,
-
 };
 
 enum InstructionType{
@@ -61,7 +60,7 @@ typedef struct _VarSpace
 
 } VarSpace;
 
-struct _Instruction{
+typedef struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
@@ -69,23 +68,13 @@ struct _Instruction{
     int i; //指令的编号
 
     HashMap *value_VarSpace;  //key: value*    value: VarSpace
-};
-typedef struct _Instruction Instruction;
+}Instruction;
 
 
 Instruction *ins_new_binary_operator(int Op, Value *S1, Value *S2);
 Instruction* ins_new(int op_num);
 Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2);
 Instruction *ins_new_unary_operator(int Op,Value *S1);
-void print_ins_opcode(Instruction *this);
-
-
-/// Unlink this instruction from its current basic block and insert it into
-/// the basic block that MovePos lives in, right after MovePos.
 Instruction *ins_set_parent(Instruction *this,struct _BasicBlock *parent);
-//https://llvm.org/doxygen/InstrTypes_8h_source.html
-/// Construct a binary instruction, given the opcode and the two
-/// operands.  Optionally (if InstBefore is specified) insert the instruction
-/// into a BasicBlock right before the specified instruction.  The specified
-/// Instruction is allowed to be a dereferenced end iterator.
+void print_ins_opcode(Instruction *this);
 #endif

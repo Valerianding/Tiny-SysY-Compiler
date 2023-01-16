@@ -78,8 +78,6 @@ void value_set_name(Value* this, char* name);
 void value_get_name(Value* this, char* name);
 
 struct _Symtab* get_sym_tab(Value *V);
-
-/* 需要一个为value设置pdata的函数 */
 void value_init_int(Value *this,int num);
 void value_init_float(Value *this,float num);
 

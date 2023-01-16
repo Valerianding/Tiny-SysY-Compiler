@@ -16,6 +16,7 @@ ADD_FLEX_BISON_DEPENDENCY(mc_lexer mc_parser)
 
 file(GLOB_RECURSE DIR_LIB ./libs/*.c)
 file(GLOB_RECURSE DIR_IR ./ir/*.c)
+file(GLOB_RECURSE DIR_OPT ./ir/opt/*.c)
 file(GLOB_RECURSE DIR_CONTAINER ./src/hash_map.c ./src/hash_set.c)
 file(GLOB_RECURSE DIR_FRONT ./front_end/*.c)
 #可以不写绝对路径从而只包含文件名就可以了
@@ -24,6 +25,7 @@ include_directories(libs)
 include_directories(math)
 include_directories(src)
 include_directories(ir)
+include_directories(ir/opt)
 include_directories(front_end)
 include_directories(container)
 #debug必备
@@ -32,6 +34,7 @@ add_compile_options(-g -O0)
 add_executable(compiler
         ${FLEX_mc_lexer_OUTPUTS}
         ${BISON_mc_parser_OUTPUTS}
+        ${DIR_OPT}
         ${DIR_TAC}
         ${DIR_IR}
         ${DIR_LIB}

@@ -28,7 +28,6 @@ void value_set_name(Value* this, char* name){
     }
 }
 
-/* 可能需要修改 */
 void value_init_int(Value *this,int num){
     value_init(this);
     this->pdata->var_pdata.iVal = num;

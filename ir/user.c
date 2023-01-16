@@ -8,12 +8,6 @@ User *user_new()
 {
     int size = sizeof(User);
     void *Storage = malloc(size);
-    // User是如何管理Use对象的了
-    // 第一种是独立分配, 在构造User对象时额外分配一个指针用来保存Use数组, 这种情况下HasHungOffUses为true. 
-    //   然后将返回地址的起始作为Use指针并置空, 之后的地址作为User对象的地址初始化并返回.
-    //   即在每个User对象之前有一个Use指针大小的空间保存了一个默认为空的Use指针.
-    // Use **HungOffOperandList = (Use **)(Storage);
-    // User *Obj = (User *)(HungOffOperandList + 1);
     User *Obj = (User *)(Storage);
     (Obj->use_list) = Storage;
     (Obj->value).NumUserOperands = 0;
@@ -64,15 +58,6 @@ Use* user_get_operand_use(User* this, unsigned i) {
         return &(this->use_list[i]);
     }
 }
-
-/**
- * 再来看下User如何访问Use对象.
- */ 
-
-// Use *getHungOffOperands(User* this) {
-//     //return *(reinterpret_cast<const Use *const *>(this) - 1);
-//     return *((const Use **)(this) - 1);
-// }
 
 Use *getHungOffOperands(User* this) { 
     // return *(reinterpret_cast<Use **>(this) - 1); 

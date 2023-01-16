@@ -7,7 +7,7 @@
 #include "bblock.h"
 #include "function.h"
 #include "stdio.h"
-
+#include "bb_divide.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 

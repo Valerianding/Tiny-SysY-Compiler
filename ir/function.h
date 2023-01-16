@@ -8,15 +8,16 @@
 
 
 typedef struct _Function{
-
+    BasicBlock *head;
+    BasicBlock *tail;
     Function *Next;
 }Function;
 
-void Function_init(Function *this);
+void function_init(Function *this);
 
-void Function_add_block_back(Function *this,BasicBlock *block);
+Function *function_create();
 
-void Function_pop_block_back(Function *this);
+Function *get_next_func(Function *this);
 
-void Function_add_function(Function *this,Function *next);
+void func_set(Function *this,BasicBlock *head,BasicBlock *tail);
 #endif //C22V1_FUNCTION_H
