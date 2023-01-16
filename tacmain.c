@@ -61,26 +61,24 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[1]);
     //showAst(TRoot,0);
 
-
+    InstNode *temp = get_next_inst(instruction_list);
     //丁老师
     bblock_divide(instruction_list);
-    int i = 0;
+
+    /* 测试所有instruction list */
     for(;instruction_list != NULL;instruction_list = get_next_inst(instruction_list)){
-        printf("%d : opcode:",i++);
-        print_ins_opcode(instruction_list->inst);
-        if(instruction_list->inst->Opcode == br_i1){
-            printf("%d %d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location,instruction_list->inst->user.value.pdata->instruction_pdata.false_goto_location);
-        }else if(instruction_list->inst->Opcode == br){
-            printf("%d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location);
-        }else if(instruction_list->inst->Opcode == Label){
-            printf("%d",instruction_list->inst->i);
+        print_all_info(instruction_list);
+    }
+    printf("--------------\n");
+
+    /* 测试所有BasicBlock的连接 */
+    BasicBlock *prev = nullptr;
+    for(;temp != NULL;temp = get_next_inst(temp)) {
+        BasicBlock *cur = temp->inst->Parent;
+        if (cur != prev) {
+            print_block_info(cur);
+            prev = cur;
         }
-        if(instruction_list->inst->Parent != NULL){
-            printf(" parent:%p",instruction_list->inst->Parent);
-        }else{
-            printf(" parent:NULL");
-        }
-        printf("\n");
     }
     return 0;
 }

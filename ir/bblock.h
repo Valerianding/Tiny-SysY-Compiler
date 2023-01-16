@@ -54,25 +54,29 @@ InstNode* bblock_get_inst_head(BasicBlock *this);
 /// 创建一个InstNode 注意Instruction是一定自己分配了内存的
 InstNode* new_inst_node(Instruction* inst);
 
-///
+///通过this获得下一个instnode
 InstNode *get_prev_inst(InstNode *this);
 
-///
+///通过this获得下一个的instnode
 InstNode *get_next_inst(InstNode *this);
 
 //lsy
 InstNode *get_last_inst(InstNode *this);
 
-///
+///根据指令标号搜索instnode
 InstNode *search_ins_id(InstNode *head,int id);
 
-///
+///根据label搜索instnode
 InstNode *search_ins_label(InstNode *head,int label_id);
 
+///新建一个基本块
 BasicBlock *bb_create();
 
 ///获得属于trueBlock的后继节点
 BasicBlock *get_next_block(BasicBlock *this);
+
+///获得下一个前驱节点
+BlockNode *get_next_prevblock(BlockNode *this);
 
 ///获得所有的前驱节点
 BlockList get_prev_block(BasicBlock *this);
@@ -82,6 +86,17 @@ Function *bblock_get_parent(BasicBlock *this);
 
 ///计算BasicBlock里的指令数目
 size_t bb_count_ins(BasicBlock *this);
+
+///打印一条语句的信息
+void print_all_info(InstNode *instruction_list);
+
+///打印基本块的info
+void print_block_info(BasicBlock *this);
+
+
+
+
+
 
 
 /// Unlink 'this' from the containing function, but do not delete it.

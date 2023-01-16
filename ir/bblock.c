@@ -96,12 +96,75 @@ BlockList get_prev_block(BasicBlock *this){
 
 void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
     BlockNode *blockNode = (BlockNode*)malloc(sizeof(BlockNode));
+    memset(blockNode,0,sizeof(BlockNode));
     sc_list_init(&blockNode->list);
     blockNode->block = prev;
-
     if(pos->prev_blocks == nullptr) {
         pos->prev_blocks = blockNode;
     }else{
+        printf("prev list is not empty!\n");
+        printf("what : %p\n",prev);
+        printf("blocknode : %p\n",blockNode);
         sc_list_add_tail(&pos->prev_blocks->list,&blockNode->list);
     }
+}
+
+void print_all_info(InstNode *instruction_list){
+    printf("opcode:");
+    print_ins_opcode(instruction_list->inst);
+    if(instruction_list->inst->Opcode == br_i1){
+        printf("%d %d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location,instruction_list->inst->user.value.pdata->instruction_pdata.false_goto_location);
+    }else if(instruction_list->inst->Opcode == br){
+        printf("%d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location);
+    }else if(instruction_list->inst->Opcode == Label){
+        printf("%d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location);
+    }
+    if(instruction_list->inst->Parent != NULL){
+        printf(" parent:%p",instruction_list->inst->Parent);
+    }else{
+        printf(" parent:NULL");
+    }
+    printf("\n");
+}
+
+BlockNode *get_next_prevblock(BlockNode *this){
+    if(this->list.next == NULL) return NULL;
+    struct sc_list *list= this->list.next;
+    BlockNode *next = sc_list_entry(list,BlockNode,list);
+    return next;
+}
+
+void print_block_info(BasicBlock *this){
+    printf("block : %p ",this);
+    //打印后继
+    if(this->head_node){
+        printf("head : id : %d ",this->head_node->inst->i);
+    }
+    if(this->tail_node){
+        printf("tail : id : %d ",this->tail_node->inst->i);
+    }
+    //打印前驱
+    printf("prev: ");
+    if(this->prev_blocks){
+        BlockNode *temp = this->prev_blocks;
+        int i = 0;
+        while(temp != NULL){
+            printf("%d : %p ",i++,temp->block);
+            temp = get_next_prevblock(temp);
+        }
+    }else{
+        printf("NULL ");
+    }
+    if(this->true_block){
+        printf("true_block : %p ",this->true_block);
+    }
+    if(this->false_block){
+        printf("false_block : %p ",this->false_block);
+    }
+    if(this->Parent){
+        printf("parent : %p",this->Parent);
+    }else{
+        printf("parent : NULL");
+    }
+    printf("\n");
 }

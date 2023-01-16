@@ -162,7 +162,7 @@ void sc_list_del(struct sc_list *l, struct sc_list *elem);
  * }
  */
 #define sc_list_foreach(list, elem)                                            \
-	for ((elem) = (list)->next; (elem) != (list); (elem) = (elem)->next)
+	for ((elem) = (list); (elem) != (NULL); (elem) = (elem)->next)
 
 /**
  *  It is safe to delete items from the list while using this iterator.

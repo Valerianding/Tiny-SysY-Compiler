@@ -82,17 +82,6 @@ struct sc_list *sc_list_tail(struct sc_list *l)
 
 void sc_list_add_tail(struct sc_list *l, struct sc_list *elem)
 {
-	// struct sc_list *prev;
-
-	// // Delete if exists to prevent adding same item twice
-	// sc_list_del(l, elem);
-
-	// prev = l->prev;
-	// l->prev = elem;
-	// elem->next = l;
-	// elem->prev = prev;
-	// prev->next = elem;
-
 	struct sc_list *temp;
 
 	struct sc_list *tail = sc_list_tail(l);
