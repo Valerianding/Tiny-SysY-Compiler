@@ -1,10 +1,12 @@
 //
 // Created by Valerian on 2023/1/15.
 //
-
 #include "bb_divide.h"
-
+extern HashMap* value_instruction_store; // alloca(value)  ->  instruction  找到alloca指令对应的store
+extern HashMap* value_instruction_load;  // alloca(value)  ->  instructiond 找到alloca指令对应的load
 void bblock_divide(InstNode *head){
+    value_instruction_load = HashMapInit();
+    value_instruction_store = HashMapInit();
     InstNode *cur = head;
     cur = get_next_inst(cur); //跳过第一个ALLBegin
     //第一次全部打点
@@ -28,6 +30,17 @@ void bblock_divide(InstNode *head){
             BasicBlock *this = bb_create();
             bb_set_block(this,prev_in,cur);
         }
+        //为后面的mem2reg打基础
+        if(cur->inst->Opcode == Load){
+            //找到load的value 只有可能有一个
+            Value *load_value = cur->inst->user.use_list->Val;
+            HashMapPut(value_instruction_load,load_value,cur);
+        }
+        if(cur->inst->Opcode == Store){
+            //找到store的value  应该对应的是第二个value
+            Value *store_value = cur->inst->user.use_list[1].Val;
+            HashMapPut(value_instruction_store,store_value,cur);
+        }
         cur = get_next_inst(cur);
     }
     cur = head;
@@ -40,29 +53,50 @@ void bblock_divide(InstNode *head){
         if(cur->inst->Opcode == FunBegin){
             entry = cur->inst->Parent;
         }
-        if(cur->inst->Opcode == Return || cur->inst->Opcode == br || cur->inst->Opcode == br_i1){
+        if(cur->inst->Opcode == Return || cur->inst->Opcode == br || cur->inst->Opcode == br_i1) {
             BasicBlock *this = cur->inst->Parent;
-            if(cur->inst->Opcode == Return){
+            if (cur->inst->Opcode == Return) {
                 Function *cur_func = function_create();
-                if(func_prev){
+                if (func_prev) {
                     func_prev->Next = cur_func;
                 }
                 func_prev = cur_func;
-                func_set(cur_func,entry,this);
-            }else if(cur->inst->Opcode == br){
-                InstNode *true_label = search_ins_label(head,cur->inst->user.value.pdata->instruction_pdata.true_goto_location);
+                func_set(cur_func, entry, this);
+            } else if (cur->inst->Opcode == br) {
+                InstNode *true_label = search_ins_label(head,
+                                                        cur->inst->user.value.pdata->instruction_pdata.true_goto_location);
                 BasicBlock *true_block = true_label->inst->Parent;
-                bb_add_prev(this,true_block);
+                bb_add_prev(this, true_block);
                 this->true_block = true_block;
-            }else if(cur->inst->Opcode == br_i1){
-                InstNode *true_label = search_ins_label(head,cur->inst->user.value.pdata->instruction_pdata.true_goto_location);
+            } else if (cur->inst->Opcode == br_i1) {
+                InstNode *true_label = search_ins_label(head,
+                                                        cur->inst->user.value.pdata->instruction_pdata.true_goto_location);
                 BasicBlock *true_block = true_label->inst->Parent;
-                InstNode *false_label = search_ins_label(head,cur->inst->user.value.pdata->instruction_pdata.false_goto_location);
+                InstNode *false_label = search_ins_label(head,
+                                                         cur->inst->user.value.pdata->instruction_pdata.false_goto_location);
                 BasicBlock *false_block = false_label->inst->Parent;
-                bb_add_prev(this,true_block);
-                bb_add_prev(this,false_block);
+                bb_add_prev(this, true_block);
+                bb_add_prev(this, false_block);
                 this->true_block = true_block;
                 this->false_block = false_block;
+            }
+        }
+        if(cur->inst->Opcode == Alloca){
+            Value *alloca_value = cur->inst->user.use_list->Val;
+            if(!HashMapContain(value_instruction_load,alloca_value)){
+                //如果一个alloca都没有load的话 那我们就不需要这句alloca了
+                //同样的对于它进行的store指令也都是无效的了
+                // 这里我们没有考虑主函数的
+                InstNode *prev = get_prev_inst(cur);
+                InstNode *next = get_next_inst(cur);
+                if (prev && next) {
+                    prev->list.next = &next->list;
+                    next->list.prev = &prev->list;
+                }
+
+
+                //找到对应的store语句 也全部进行删除
+
             }
         }
         cur = get_next_inst(cur);

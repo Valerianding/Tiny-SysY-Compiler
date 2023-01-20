@@ -29,7 +29,7 @@ typedef struct _BasicBlock
     struct _Function *Parent;
     InstNode *head_node;  // 这个基本块的第一条instruction
     InstNode *tail_node;  // 这个基本块的最后一条instruction
-    int flag;
+    int visited;
     HashMap *in;
     HashMap *out;
 }BasicBlock;
@@ -88,16 +88,16 @@ Function *bblock_get_parent(BasicBlock *this);
 size_t bb_count_ins(BasicBlock *this);
 
 ///打印一条语句的信息
-void print_all_info(InstNode *instruction_list);
+void print_one_ins_info(InstNode *instruction_list);
 
 ///打印基本块的info
 void print_block_info(BasicBlock *this);
 
+///清除所有的block的访问标记
+void clear_visited_flag(InstNode *head);
 
-
-
-
-
+///加入到blocklist当中，仅用于dominance信息的计算
+void add_blocklist(BlockList list,BasicBlock *block);
 
 /// Unlink 'this' from the containing function, but do not delete it.
 void removeFromParent(BasicBlock *this);
