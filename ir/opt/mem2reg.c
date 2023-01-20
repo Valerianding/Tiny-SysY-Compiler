@@ -10,7 +10,7 @@ void delete_useless_store(InstNode *head,Value *value){
     InstNode *cur = head;
     while(cur != nullptr){
 
-        
+
         cur = get_next_inst(cur);
     }
 }

@@ -32,8 +32,30 @@ define dso_local i32 @if_if_Else() #0{
 
 define dso_local i32 @main() #0{
  %1 = alloca i32,align 4
+ %2 = alloca i32,align 4
+ %3 = alloca i32,align 4
  store i32 0,i32* %1,align 4
- %2 = call i32 @if_if_Else()
- ret i32 %2
+ store i32 2,i32* %2,align 4
+ store i32 3,i32* %3,align 4
+ br label %4
+
+4:
+ %5 = load i32,i32* %2,align 4
+ %6= add nsw i32 %5,1
+ store i32 %6,i32* %2,align 4
+ %7 = load i32,i32* %2,align 4
+ %8 = icmp sgt i32 %7,10
+ br i1 %8,label %9,label %10
+
+9:
+ br label %11
+
+10:
+ br label %4
+
+11:
+ %12 = load i32,i32* %2,align 4
+ store i32 %12,i32* %3,align 4
+ %13 = call i32 @if_if_Else( ret i32 %13
 }
 

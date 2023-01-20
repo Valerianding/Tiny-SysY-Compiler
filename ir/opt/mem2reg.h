@@ -16,5 +16,5 @@ HashMap name_block;
  */
 void mem2reg(InstNode *head);
 
-void delete_useless_store(InstNode *head);
+void delete_useless_store(InstNode *head,Value *value);
 #endif //C22V1_MEM2REG_H

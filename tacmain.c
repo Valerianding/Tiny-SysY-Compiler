@@ -71,7 +71,7 @@ int main(int argc, char* argv[]){
 
     /* 测试所有instruction list */
     for(;instruction_list != NULL;instruction_list = get_next_inst(instruction_list)){
-        print_all_info(instruction_list);
+        print_one_ins_info(instruction_list);
     }
     printf("--------------\n");
 
