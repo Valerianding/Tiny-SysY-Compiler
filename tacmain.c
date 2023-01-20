@@ -23,6 +23,8 @@ char t[5];
 insnode_stack S_continue;
 insnode_stack S_break;
 insnode_stack S_return;
+insnode_stack S_and;
+insnode_stack S_or;
 bool c_b_flag[2]={false,false};
 
 //都还没做初始化那些
@@ -49,6 +51,8 @@ int main(int argc, char* argv[]){
     init_insnode_stack(&S_continue);
     init_insnode_stack(&S_break);
     init_insnode_stack(&S_return);
+    init_insnode_stack(&S_and);
+    init_insnode_stack(&S_or);
 
     this=(Symtab*) malloc(sizeof(Symtab));
     symtab_init(this);

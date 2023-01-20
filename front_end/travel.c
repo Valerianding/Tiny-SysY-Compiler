@@ -13,11 +13,14 @@ extern int return_index;
 extern insnode_stack S_continue;
 extern insnode_stack S_break;
 extern insnode_stack S_return;
+extern insnode_stack S_and;
+extern insnode_stack S_or;
 //记录有没有需要continue和break的语句
 extern bool c_b_flag[2];
 
 char t_num[3] = {0};
 int t_index = 0;
+int param_map=0;
 Value *v_cur_func;
 
 void create_instruction_list(past root,Value* v_return)
@@ -170,7 +173,6 @@ void reduce_break()
         }
         go_location->inst->user.value.pdata->instruction_pdata.true_goto_location=break_point->inst->user.value.pdata->instruction_pdata.true_goto_location;
     } while (!insnode_is_empty(S_break));
-
 }
 
 struct _Value *create_call_func(past root)
@@ -179,6 +181,10 @@ struct _Value *create_call_func(past root)
     Value *v=NULL;
     //从符号表中取出之前放入的函数信息
     v= symtab_lookup_withmap(this, bstr2cstr(root->left->sVal, '\0'),&this->value_maps->next->map);
+
+    //参数传递
+    if(root->right!=NULL)
+        create_params_stmt(root->right);
 
     //按照llvm，有无返回值都生成了这个value
     Value *v_result=create_tmp_value();
@@ -194,10 +200,6 @@ struct _Value *create_call_func(past root)
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
     ins_node_add(instruction_list,node);
-
-    //参数传递
-    if(root->right!=NULL)
-        create_params_stmt(root->right);
 
     return v_result;
 }
@@ -262,7 +264,22 @@ void create_return_stmt(past root,Value* v_return) {
         Value *v=NULL;
 
         if (strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0) {
-            v = create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
+            //如果是const，直接换成const值
+            Value *v_test_const= symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal,'\0'));
+            if(v_test_const->VTy->ID==Const_INT)
+            {
+                int num=v_test_const->pdata->var_pdata.iVal;
+                v=(Value*) malloc(sizeof (Value));
+                value_init_int(v,num);
+            }
+            else if(v_test_const->VTy->ID==Const_FLOAT)
+            {
+                float num=v_test_const->pdata->var_pdata.fVal;
+                v=(Value*) malloc(sizeof (Value));
+                value_init_float(v,num);
+            }
+            else
+                v = create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
         }
             //返回表达式
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0){
@@ -343,7 +360,7 @@ int carry_last_i_save(Value* v_array,int carry[],int i)
     //不用进位就可以直接加
     if(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] < v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1)
         carry[v_array->pdata->symtab_array_pdata.dimention_figure-i]++;
-    //要进位
+        //要进位
     else
     {
         while(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1)
@@ -414,7 +431,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
     //TODO 0的情况最终处理还需斟酌
     //元素是全0,返回下一个init_val_list
     //if(array_all_zeros(init_val_list)!=NULL)
-      //  return;
+    //  return;
 
     Value *v_offset;                          //存放偏移地址的Valueobyyh
     Instruction *ins_gmp=NULL;
@@ -460,7 +477,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                 //从头开始，使用begin_offset_value
                 if(carry_point==0)
                     handle_one_dimention(init_val_list->left,v_array,begin_offset_value,carry_point,cur_layer+1, carry);
-                //不从头开始，则用record数组值
+                    //不从头开始，则用record数组值
                 else
                     handle_one_dimention(init_val_list->left,v_array,record[carry_point-1],carry_point,cur_layer+1, carry);
             }
@@ -477,8 +494,8 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                 for(int i=cur_layer+1;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
                     carry[i]=0;
             }
-            //前面走过num
-            //判断tmp_carry，为carry进入递归时的起点，确定carry_point
+                //前面走过num
+                //判断tmp_carry，为carry进入递归时的起点，确定carry_point
             else
             {
                 //看要修改的是倒数第几位
@@ -594,7 +611,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     create_store_stmt(num,v_gmp);
 
                 }
-                //要进位
+                    //要进位
                 else
                 {
                     //先进一次位，进位后为本次的开始地址
@@ -736,6 +753,8 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 v1= create_load_stmt(bstr2cstr(vars->right->sVal,'\0'));
             else if (strcmp(bstr2cstr(vars->right->nodeType, '\0'), "expr") == 0)
                 v1 = cal_expr(vars->right);
+            else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "Call_Func") == 0)
+                v1= create_call_func(vars->right);
 
             //将值store下来
             create_store_stmt(v1,v);
@@ -832,12 +851,20 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
         instruction= ins_new_unary_operator(br,NULL);
     else if(type==br_i1)
         instruction= ins_new_unary_operator(br_i1,v_real);
+    else if(type==br_i1_true)
+        instruction= ins_new_unary_operator(br_i1_true,NULL);
+    else if(type==br_i1_false)
+        instruction= ins_new_unary_operator(br_i1_false,NULL);
     else
         instruction= ins_new_unary_operator(Label,NULL);
     Value *T1=(Value*) malloc(sizeof (Value));
     value_init(T1);
     if(true_goto_location>0)
         T1->pdata->instruction_pdata.true_goto_location=true_goto_location;
+
+    //TODO 可以吗
+    T1->pdata->instruction_pdata.false_goto_location=-2;
+
     instruction->user.value=*T1;
 
     InstNode *node_true = new_inst_node(instruction);
@@ -845,9 +872,204 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
     return node_true;
 }
 
+InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
+{
+    Instruction *instruction=NULL;
+    if(type==br_i1)
+        instruction= ins_new_unary_operator(br_i1,v_real);
+    Value *f1=(Value*) malloc(sizeof (Value));
+    value_init(f1);
+    f1->pdata->instruction_pdata.false_goto_location=false_goto_location;
+    f1->pdata->instruction_pdata.true_goto_location=-2;
+
+    instruction->user.value=*f1;
+    InstNode *node_false = new_inst_node(instruction);
+    ins_node_add(instruction_list,node_false);
+    return node_false;
+}
+
+//root是&&或||,flag为是不是root为||，root->left是&&
+//结果为0是恒为假，为1是恒为真；为-1则表示没有经过短路判断
+//TODO 如果是b==1 && 0 && a==1这种常数在中间的情况，目前没有做短路，有llvm方式一样
+int handle_and_or(past root,bool flag)
+{
+    //子层是否遇到||后&&的情况的本层记录，不影响本层的flag
+    bool flag_notice=false;
+
+    int result=-1;
+
+    //左边
+    Value *v1=NULL;
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        if(strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0)
+        {
+            flag_notice=true;
+            result=handle_and_or(root->left,true);
+        }
+        else
+            result=handle_and_or(root->left,false);
+
+        //短路
+        if(result==1 && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
+            return 1;
+        if(result==0 && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0)
+            return 0;
+    }
+
+    else
+    {
+        if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0)
+            v1= cal_logic_expr(root->left);
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+        {
+            Value *v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v1=create_tmp_value();
+            ins_icmp->user.value=*v1;
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+            //num_int
+        else
+        {
+            //直接失败短路
+            if(root->left->iVal==0 && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0)
+                return 0;
+
+            //直接成功为1
+            if(root->left->iVal!=0 && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
+                return 1;
+        }
+
+        if(v1!=NULL && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0)
+        {
+            InstNode *ins1 = true_location_handler(br_i1,v1,t_index++);
+            //入栈
+            insnode_push(&S_and,ins1);
+        }
+            //  ||
+        else if(v1!=NULL)
+        {
+            InstNode *ins1= false_location_handler(br_i1,v1,t_index++);
+            insnode_push(&S_or,ins1);
+        }
+    }
+
+    //子层特殊则本层处理一下,左边递归完走到这里，处理下留下来的right，即1 && 2 || 3的2应用false_location_handler
+    if(flag_notice && v1!=NULL)
+    {
+        v1= cal_logic_expr(root->left->right);
+        //一定是在&&中但用||
+        InstNode *ins1= false_location_handler(br_i1,v1,t_index++);
+        insnode_push(&S_or,ins1);
+
+        //消调&&栈
+        reduce_and(t_index-1);
+    }
+
+    if(v1!=NULL)
+        //生成一条标号
+        true_location_handler(Label,NULL,t_index-1);
+
+
+    //特殊情况下right跟着下一步left走,就不处理了
+    if(!flag)
+    {
+        //右边
+        Value *v2=NULL;
+        if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->right->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->right->sVal, '\0'), "||") == 0))
+            handle_and_or(root->right,false);
+        else
+        {
+            if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0)
+                v2= cal_logic_expr(root->right);
+            else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
+            {
+                Value *v_load= create_load_stmt(bstr2cstr(root->right->sVal, '\0'));
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v2=create_tmp_value();
+                ins_icmp->user.value=*v2;
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
+                //num_int
+            else
+            {
+                //直接失败,生成br_i1_false
+                if(root->right->iVal==0 && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0) {
+                    InstNode *ins_false= true_location_handler(br_i1_false,NULL,t_index++);
+                    insnode_push(&S_and,ins_false);
+                }
+
+                //直接成功,生成br_i1_true
+                if(root->right->iVal!=0 && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0) {
+                    InstNode *ins_true= true_location_handler(br_i1_true,NULL,t_index++);
+                    insnode_push(&S_or,ins_true);
+                }
+            }
+
+            if(strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0 && v2!=NULL)
+            {
+                InstNode *ins1 = true_location_handler(br_i1,v2,t_index++);
+                //入栈
+                insnode_push(&S_and,ins1);
+            }
+                //  ||
+            else if(v2!=NULL)
+            {
+                InstNode *ins1= true_location_handler(br_i1,v2,t_index++);
+                insnode_push(&S_or,ins1);
+            }
+
+            //所有递归离开的最后一次不加Label，其实不能用层数判断
+            //if(v1==NULL)
+            true_location_handler(Label,NULL,t_index-1);
+        }
+
+    }
+    return -1;
+}
+
+void reduce_and(int false_index)
+{
+    while (!insnode_is_empty(S_and))
+    {
+        InstNode *node=NULL;
+        insnode_pop(&S_and,&node);
+        node->inst->user.value.pdata->instruction_pdata.false_goto_location=false_index;
+    }
+}
+
+void reduce_or(int true_index,int false_index)
+{
+    while(!insnode_is_empty(S_or))
+    {
+        InstNode *node=NULL;
+        insnode_pop(&S_or,&node);
+        if(node->inst->user.value.pdata->instruction_pdata.true_goto_location==-2)
+            node->inst->user.value.pdata->instruction_pdata.true_goto_location=true_index;
+        else if(node->inst->user.value.pdata->instruction_pdata.false_goto_location==-2)
+            node->inst->user.value.pdata->instruction_pdata.false_goto_location=false_index;
+    }
+}
+
 void create_if_stmt(past root,Value* v_return) {
     //br i1 label__,label__
     Value *v_real=NULL;
+    int result=-1;          //如果是&&,||的话，保留调用结果
     //如果是0，直接跳过
     //永真则v_real就是NULL
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0)
@@ -861,7 +1083,7 @@ void create_if_stmt(past root,Value* v_return) {
     }
 
     //真值
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
@@ -878,33 +1100,59 @@ void create_if_stmt(past root,Value* v_return) {
         InstNode *node = new_inst_node(ins_icmp);
         ins_node_add(instruction_list,node);
     }
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        result=handle_and_or(root->left,false);
+        //一定为假，不用走了
+        if(result==0)
+        {
+            if(root->next!=NULL)
+                create_instruction_list(root->next,v_return);
+            return;
+        }
+        if(result==1)
+            //后面都不用t_index，让t_index回归正轨
+            t_index--;
+    }
 
 
     InstNode *node1=NULL;
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
     {
-        //正确跳转
-        node1= true_location_handler(br_i1,v_real, t_index++);
+        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
+            //正确跳转
+            node1= true_location_handler(br_i1,v_real, t_index++);
 
-        //生成正确的那个标识IR,示例中8:
-        true_location_handler(Label,NULL,t_index-1);
+        //如果上一条不是标号则写编号，走了handle_and_or之后可能会多一条标号
+        if(get_last_inst(instruction_list)->inst->Opcode!=Label)
+            //生成正确的那个标识IR,示例中8:
+            true_location_handler(Label,NULL,t_index-1);
     }
 
+    int trur_point=t_index-1;
 
     //先走完if为真的所有语句，走完后就可确定否定跳转的位置
     create_instruction_list(root->right,v_return);
 
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    //填充&&,||的情况
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && result!=1 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        reduce_and(t_index);
+        reduce_or(trur_point,t_index);
+        t_index++;
+    }
+
+    if(result!=1 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
 
     //无break或continue的话就补，有就不补了
-    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
     {
         //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
         true_location_handler(br,NULL,t_index-1);
     }
 
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
         //再补一条标号,可以理解为是false的跳转，也可以理解为是end的跳转
         true_location_handler(Label,NULL,t_index-1);
 
@@ -914,9 +1162,10 @@ void create_if_stmt(past root,Value* v_return) {
 
 void create_if_else_stmt(past root,Value* v_return) {
     Value *v_real=NULL;
+    int result=-1;
 
     //真值
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
@@ -933,55 +1182,78 @@ void create_if_else_stmt(past root,Value* v_return) {
         InstNode *node = new_inst_node(ins_icmp);
         ins_node_add(instruction_list,node);
     }
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        result=handle_and_or(root->left,false);
+    }
 
     InstNode *node1=NULL;
     //正确跳转
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
     {
-        node1= true_location_handler(br_i1,v_real,t_index++);
+        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
+            //正确跳转
+            node1= true_location_handler(br_i1,v_real,t_index++);
 
-        //生成正确的那个标识IR
-        true_location_handler(Label,NULL,t_index-1);
+        if(get_last_inst(instruction_list)->inst->Opcode!=Label)
+            //生成正确的那个标识IR
+            true_location_handler(Label,NULL,t_index-1);
     }
 
+    int trur_point=t_index-1;       //and_or使用
 
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 || (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0) && root->left->iVal!=0)
+    if((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1) || ((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0) && root->left->iVal!=0) || result==1)
     {
         //走完if为真的语句，即可知道else从哪开始
         //走完if为真，目前最后一条是一个编号，示例的9:
         create_instruction_list(root->right->left,v_return);          //if为真走的语句
+
+        //填充&&,||的情况
+        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)
+        {
+            reduce_and(t_index);
+            reduce_or(trur_point,t_index);
+            t_index++;
+        }
     }
 
     InstNode *node2=NULL;
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
     {
-        //if为假走else的话应该走这里,示例中将前面else的label 10补齐
-        node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+        if( strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
+            //if为假走else的话应该走这里,示例中将前面else的label 10补齐
+            node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
 
-        //真的走完之后接一句跳转,跳过else的部分,示例中br label 13的，在当前是br label __
-        node2= true_location_handler(br,NULL,0);
+        //可能是return,return的话后面就没有了
+        if(get_last_inst(instruction_list)->inst->Opcode!=br)
+            //真的走完之后接一句跳转,跳过else的部分,示例中br label 13的，在当前是br label __
+            node2= true_location_handler(br,NULL,0);
 
         //再补一条标号,即示例中10:
         true_location_handler(Label,NULL,t_index-1);
     }
 
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 || (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0) && root->left->iVal==0)
+    if((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1) || ((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0) && root->left->iVal==0) || result==0)
     {
         //走完else部分的语句，即可知道从if为真中出来的下一条应该goto到什么位置
         create_instruction_list(root->right->right,v_return);         //if为假走的语句
     }
 
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1) {
         //将之前的br label__补齐，示例中补齐为br label 13
-        node2->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index++;
+        if (node2 != NULL)
+            node2->inst->user.value.pdata->instruction_pdata.true_goto_location = t_index++;
+        else
+            t_index++;                 //t_index++因为后面都用的t_index-1
+    }
 
-    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
     {
         //补一条br label，示例的br label %13，这个和后面那条都是跳到end
         true_location_handler(br,NULL,t_index-1);
     }
 
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
         //再补一条标号，示例的13:
         true_location_handler(Label,NULL,t_index-1);
 
@@ -992,6 +1264,9 @@ void create_if_else_stmt(past root,Value* v_return) {
 void create_while_stmt(past root,Value* v_return)
 {
     Value *v_real=NULL;
+    int result=-1;
+
+    InstNode *ins_false=NULL;
     //如果是0，直接跳过
     //永真则v_real就是NULL
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0)
@@ -1024,7 +1299,7 @@ void create_while_stmt(past root,Value* v_return)
     }
 
     //真值
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
@@ -1041,18 +1316,41 @@ void create_while_stmt(past root,Value* v_return)
         InstNode *node = new_inst_node(ins_icmp);
         ins_node_add(instruction_list,node);
     }
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        result=handle_and_or(root->left,false);
+
+        if(result==0)
+        {
+            //生成一条br_i1_false
+            ins_false=true_location_handler(br_i1_false,NULL,t_index++);
+        }
+    }
 
     InstNode *node_first_bri1=NULL;
-    if(v_real!=NULL)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         node_first_bri1= true_location_handler(br_i1,v_real,t_index++);
     //是常数则直接跳转
-    else
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0)
         node_first_bri1= true_location_handler(br,NULL,t_index++);
 
     //标号
-    true_location_handler(Label,NULL,t_index-1);
+    //为真的话，条件式就没有IR，可以直接沿用之前的IR
+    if(result!=1 && get_last_inst(instruction_list)->inst->Opcode!=Label)
+        true_location_handler(Label,NULL,t_index-1);
+
+    int trur_point=t_index-1;
 
     create_instruction_list(root->right,v_return);
+
+    //填充&&,||的情况
+    if(result==-1 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        reduce_and(t_index);
+        reduce_or(trur_point,t_index);
+        if(result==-1)
+            t_index++;
+    }
 
     if(get_last_inst(instruction_list)->inst->Opcode!=br)
     {
@@ -1060,9 +1358,11 @@ void create_while_stmt(past root,Value* v_return)
         true_location_handler(br,NULL,while_recall);
     }
 
-    if(v_real!=NULL)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
     {
-        node_first_bri1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+        //如果是&& ||则没有node_first_bri1这条
+        if(node_first_bri1!=NULL)
+            node_first_bri1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
 
         //标号
         true_location_handler(Label,NULL,t_index-1);
@@ -1071,6 +1371,8 @@ void create_while_stmt(past root,Value* v_return)
         //标号
         true_location_handler(Label,NULL,t_index++);
 
+    if(ins_false!=NULL)
+        ins_false->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index-1;
 
     //while结束，加进stack,break用
     Instruction *ins_break_tmp= ins_new_unary_operator(tmp,NULL);
@@ -1146,7 +1448,6 @@ void create_func_def(past root) {
     //将参数从0开始对应
     //有参
     if (root->left->next->left != NULL) {
-        int param_map=0;
 
         //params走到第一个FuncParam处
         past params=root->left->next->left->left;
@@ -1178,13 +1479,13 @@ void create_func_def(past root) {
             //参数Value
             Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map);
 
-            //TODO 怎么处理参数的%0,%1。真的要store吗；打印是肯定要的，IR呢
-            Value *num_param= (Value*) malloc(sizeof (Value));
-            value_init_int(num_param,param_map++);
-            create_store_stmt(num_param,param);
+
+            Value *v_num_param=create_param_value();
+            create_store_stmt(v_num_param,param);
 
             params=params->next;
         }
+        param_map=0;
     }
     else
         //普通变量的allcoa
@@ -1254,9 +1555,16 @@ Value *get_value_by_type(past x1)
         v1=symtab_dynamic_lookup(this, bstr2cstr(x1->sVal, '\0'));
         if(v1!=NULL)
         {
-            v1=create_load_stmt(bstr2cstr(x1->sVal, '\0'));
+            if(v1->VTy->ID==Const_INT)
+            {
+                v1=(Value*) malloc(sizeof (Value));
+                value_init_int(v1, x1->iVal);
+            }
+            else
+                v1=create_load_stmt(bstr2cstr(x1->sVal, '\0'));
         }
         else{
+            //TODO 会造成地址不同
             v1=(Value*) malloc(sizeof (Value));
             value_init(v1);
             v1->name = (char *) malloc(sizeof(bstr2cstr(x1->sVal, '\0')));
@@ -1516,6 +1824,19 @@ struct _Value *create_tmp_value()
     return v_tmp;
 }
 
+struct _Value *create_param_value()
+{
+    sprintf(t_num, "%d", param_map++);
+    strcat(t,t_num);
+    Value *v_tmp=(Value*) malloc(sizeof (Value));
+    value_init(v_tmp);
+    v_tmp->pdata->var_pdata.map= getCurMap(this);
+    v_tmp->name=(char*) malloc(strlen (t));
+    strcpy(v_tmp->name,t);
+    clear_tmp(t);
+    return v_tmp;
+}
+
 struct _Value* create_load_stmt(char *name)
 {
     Value *v=symtab_dynamic_lookup(this, name);
@@ -1569,16 +1890,18 @@ void declare_all_alloca(struct _mapList* func_map,bool flag)
     //TODO 先遍历本表
     sc_map_foreach (&func_map->map, key, value)
         {
-            if(((Value*)value)->VTy->ID != Param_INT && ((Value*)value)->VTy->ID !=Param_FLOAT)
+            if(((Value*)value)->VTy->ID !=Const_INT && ((Value*)value)->VTy->ID !=Const_FLOAT)
             {
-                Instruction *instruction= ins_new_unary_operator(Alloca, (Value *) value);
-                //与符号表对应的绑定在一起
-                ((Value*)value)->pdata->var_pdata.alias=t_index++;
-                //将这个instruction加入总list
-                InstNode *node = new_inst_node(instruction);
-                ins_node_add(instruction_list,node);
+                if(((Value*)value)->VTy->ID != Param_INT && ((Value*)value)->VTy->ID !=Param_FLOAT)
+                {
+                    Instruction *instruction= ins_new_unary_operator(Alloca, (Value *) value);
+                    //与符号表对应的绑定在一起
+                    ((Value*)value)->pdata->var_pdata.alias=t_index++;
+                    //将这个instruction加入总list
+                    InstNode *node = new_inst_node(instruction);
+                    ins_node_add(instruction_list,node);
+                }
             }
-
         }
 
     //函数第一层，只能走child
@@ -1602,29 +1925,35 @@ void declare_global_alloca(struct _mapList* func_map)
     //TODO 先遍历本表
     sc_map_foreach (&func_map->map, key, value)
         {
-            if(((Value*)value)->VTy->ID != FunctionTyID && ((Value*)value)->VTy->ID != ArrayTyID)
+            if(((Value*)value)->VTy->ID != Const_INT && ((Value*)value)->VTy->ID != Const_FLOAT)
             {
-                Value *v_num=(Value*) malloc(sizeof (Value));
-                if(((Value *) value)->pdata!=NULL)
-                    value_init_int(v_num,((Value *) value)->pdata->var_pdata.iVal);
-                else
-                    value_init_int(v_num,0);
-                Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR, (Value *) value,v_num);
-                //与符号表对应的绑定在一起
-                ((Value*)value)->pdata->var_pdata.alias=t_index++;
-                //将这个instruction加入总list
-                InstNode *node = new_inst_node(instruction);
-                ins_node_add(instruction_list,node);
+                if(((Value*)value)->VTy->ID != FunctionTyID && ((Value*)value)->VTy->ID != ArrayTyID)
+                {
+                    Value *v_num=(Value*) malloc(sizeof (Value));
+                    if(((Value *) value)->pdata!=NULL)
+                        value_init_int(v_num,((Value *) value)->pdata->var_pdata.iVal);
+                    else
+                        value_init_int(v_num,0);
+                    Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR, (Value *) value,v_num);
+                    //与符号表对应的绑定在一起
+                    ((Value*)value)->pdata->var_pdata.alias=t_index++;
+                    //将这个instruction加入总list
+                    InstNode *node = new_inst_node(instruction);
+                    ins_node_add(instruction_list,node);
+                }
+                else if(((Value*)value)->VTy->ID == ArrayTyID)
+                {
+                    //zero
+                    Instruction *ins_zero= ins_new_unary_operator(zeroinitializer,(Value *) value);
+                    //将这个instruction加入总list
+                    InstNode *node_zero = new_inst_node(ins_zero);
+                    ins_node_add(instruction_list,node_zero);
+                }
             }
-            else if(((Value*)value)->VTy->ID == ArrayTyID)
-            {
-                //zero
-                Instruction *ins_zero= ins_new_unary_operator(zeroinitializer,(Value *) value);
-                //将这个instruction加入总list
-                InstNode *node_zero = new_inst_node(ins_zero);
-                ins_node_add(instruction_list,node_zero);
-            }
+
         }
+    printf("\n");
+    t_index=0;
 }
 
 //参数传递
@@ -1647,7 +1976,7 @@ void create_params_stmt(past func_params)
         }
             //是IDent
         else
-            v= symtab_dynamic_lookup(this,bstr2cstr(params->sVal, '\0'));
+            v= create_load_stmt(bstr2cstr(params->sVal, '\0'));
 
         //传递参数的IR
         instruction= ins_new_unary_operator(GIVE_PARAM,v);
@@ -1701,6 +2030,14 @@ bool begin_tmp(const char* name)
     return false;
 }
 
+bool begin_global(const char* name)
+{
+    char *prefix="@";
+    if(name[0]==prefix[0])
+        return true;
+    return false;
+}
+
 void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
 {
     instruction_node= get_next_inst(instruction_node);
@@ -1709,6 +2046,12 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     FILE *fptr= fopen(ll_file,"w");
 
     Value *v_cur_array=NULL;
+
+    int p=0;
+    Value* params[10];
+    int give_count=0;
+    for(int i=0;i<10;i++)
+        params[i]=NULL;
 
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
@@ -1729,8 +2072,16 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 break;
             case Load:
-                printf(" %s = load i32,i32* %%%d,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.alias);
-                fprintf(fptr," %s = load i32,i32* %%%d,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.alias);
+                if(begin_global(instruction->user.use_list->Val->name))
+                {
+                    printf(" %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    fprintf(fptr," %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }
+                else
+                {
+                    printf(" %s = load i32,i32* %%%d,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.alias);
+                    fprintf(fptr," %s = load i32,i32* %%%d,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.alias);
+                }
                 break;
             case Store:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
@@ -1770,6 +2121,14 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case br_i1:
                 printf(" br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 fprintf(fptr," br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                break;
+            case br_i1_false:
+                printf(" br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                fprintf(fptr," br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                break;
+            case br_i1_true:
+                printf(" br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                fprintf(fptr," br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 break;
             case EQ:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
@@ -1942,8 +2301,25 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
             case FunBegin:
                 //TODO 暂时用#0，未考虑参数
-                printf("define dso_local i32 @%s() #0{\n",instruction->user.value.name);
-                fprintf(fptr,"define dso_local i32 @%s() #0{\n",instruction->user.value.name);
+                p=instruction->user.value.pdata->symtab_func_pdata.param_num;
+                printf("define dso_local i32 @%s(",instruction->user.value.name);
+                fprintf(fptr,"define dso_local i32 @%s(",instruction->user.value.name);
+                while (p>0)
+                {
+                    if(p==instruction->user.value.pdata->symtab_func_pdata.param_num)
+                    {
+                        printf("i32 %%0");
+                        fprintf(fptr,"i32 %%0");
+                    }
+                    else
+                    {
+                        printf(",i32 %%%d",instruction->user.value.pdata->symtab_func_pdata.param_num-p);
+                        fprintf(fptr,",i32 %%%d",instruction->user.value.pdata->symtab_func_pdata.param_num-p);
+                    }
+                    p--;
+                }
+                printf(") #0{\n");
+                fprintf(fptr,") #0{\n");
                 break;
             case Return:
                 if(instruction->user.use_list->Val==NULL)
@@ -1971,8 +2347,39 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr,"}\n\n");
                 break;
             case Call:
-                printf(" %s = call i32 @%s()\n",instruction->user.value.name,instruction->user.use_list->Val->name);
-                fprintf(fptr," %s = call i32 @%s()\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                printf(" %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                fprintf(fptr," %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                //参数
+                for(int i=0;i<give_count;i++)
+                {
+                    if(i==0)
+                    {
+                        if(params[i]->VTy->ID==Int)
+                        {
+                            printf("i32 %d",params[i]->pdata->var_pdata.iVal);
+                        }
+                        else
+                        {
+                            printf("i32 %s",params[i]->name);
+                        }
+                    }
+                    else
+                    {
+                        if(params[i]->VTy->ID==Int)
+                        {
+                            printf(",i32 %d",params[i]->pdata->var_pdata.iVal);
+                        }
+                        else
+                        {
+                            printf(",i32 %s",params[i]->name);
+                        }
+                    }
+                }
+                printf(")\n");
+
+                give_count=0;
+                for(int i=0;i<10;i++)
+                    params[i]=NULL;
                 break;
             case Label:
                 printf("%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
@@ -2093,7 +2500,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     printf("%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     fprintf(fptr,"%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 }
-                //TODO，比如调用d[2][1]的打印
+                    //TODO，比如调用d[2][1]的打印
                 else
                 {
                     printf(" %s=getelementptr inbounds ",instruction->user.value.name);
@@ -2115,6 +2522,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case GLOBAL_VAR:
                 printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                break;
+            case GIVE_PARAM:
+                params[give_count++]=instruction->user.use_list->Val;
+                break;
             default:
                 break;
         }

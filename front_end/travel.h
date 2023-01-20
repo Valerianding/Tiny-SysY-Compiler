@@ -20,6 +20,7 @@ struct _Value *cal_expr(past expr);
 struct _Value* cal_logic_expr(past logic_expr);
 void clear_tmp(char* tmp);
 struct _Value *create_tmp_value();
+struct _Value *create_param_value();
 void create_store_stmt(Value* v1,Value* v2);
 struct _Value* create_load_stmt(char *name);
 struct _Value* create_return_load(Value *v_return);
@@ -29,11 +30,14 @@ void create_params_stmt(past func_params);
 void printf_llvm_ir(struct _InstNode *instruction_node,char* file_name);
 void create_while_stmt(past root,Value* v_return);
 InstNode *true_location_handler(int type,Value *v_real,int true_goto_location);
+InstNode *false_location_handler(int type,Value *v_real,int false_goto_location);
 void create_continue_stmt(past root,Value* v_return);
 void create_break_stmt(past root,Value* v_return);
 void reduce_continue();
 void reduce_break();
 void reduce_return();
+void reduce_and(int false_index);
+void reduce_or(int true_index,int false_index);
 Value *get_value_by_type(past x1);
 
 void printf_array(Value *v_array, int begin_index,FILE* fptr);
@@ -44,5 +48,7 @@ past array_all_zeros(past init_val_list);
 
 //借位-1,比如是三维数组，返回借位的结束处的index是0,1,2
 void borrow_save(Value* v_array,int carry[]);
+
+int handle_and_or(past root,bool flag);
 
 char* c2ll(char* file_name);
