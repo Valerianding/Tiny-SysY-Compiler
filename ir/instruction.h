@@ -29,6 +29,8 @@ typedef enum OpcodeType{
     NOTEQ,
     br_i1,
     br,
+    br_i1_true,
+    br_i1_false,
     Label,
     tmp,
 

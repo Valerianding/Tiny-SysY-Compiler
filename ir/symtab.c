@@ -179,6 +179,7 @@ struct _mapList *symtab_get_latest_func_maplist(Symtab *this)
 }
 
 //遍历ast时使用，增加一层栈，走到对应表
+//进一层要把之前多余S中的删掉
 void scope_forward(Symtab *this)
 {
     //目前所在的那个map
@@ -195,6 +196,9 @@ void scope_forward(Symtab *this)
     this->S.top++;
 
     this->S.value_map[this->S.top]=m;
+
+    for(int i=this->S.top+1;i<10;i++)
+        this->S.value_map[i]=NULL;
 }
 
 //遍历ast时使用，回到对应表
