@@ -19,6 +19,9 @@ file(GLOB_RECURSE DIR_IR ./ir/*.c)
 file(GLOB_RECURSE DIR_OPT ./ir/opt/*.c)
 file(GLOB_RECURSE DIR_CONTAINER ./src/hash_map.c ./src/hash_set.c)
 file(GLOB_RECURSE DIR_FRONT ./front_end/*.c)
+
+link_libraries(m)
+
 #可以不写绝对路径从而只包含文件名就可以了
 include_directories(.)
 include_directories(libs)
