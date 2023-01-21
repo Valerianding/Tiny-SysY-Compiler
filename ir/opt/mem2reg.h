@@ -5,7 +5,6 @@
 #ifndef C22V1_MEM2REG_H
 #define C22V1_MEM2REG_H
 #include "bblock.h"
-HashMap name_block;
 /*
  * 1.def : store user : load
  * 移除没有user的alloca

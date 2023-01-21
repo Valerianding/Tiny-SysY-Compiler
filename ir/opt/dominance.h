@@ -20,7 +20,19 @@
 #include "hash_map.h"
 #include "bblock.h"
 #include "function.h"
-HashMap *dominace;  // value: block key: Dom(block)->hashset(block)
+typedef struct{
+    int size;
+    BlockNode dummpNode;
+}LinkedBlockList;
+LinkedBlockList *LinkedListCreate();
+void LinkedListInit(LinkedBlockList *list);
+void LinkedListAdd(LinkedBlockList *list,BasicBlock *block);
+BasicBlock *LinkedListPop(LinkedBlockList *list);
+bool LinkedListEmpty(LinkedBlockList *list);
+
+
+
+void HashSetPutAll(HashSet *self,BasicBlock *current,BlockList *list);
 void calculate_all_dominance(Function *head);
 void calculate_dominance(Function *currentFunction);
 #endif //C22V1_DOMINANCE_H

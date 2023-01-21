@@ -40,7 +40,7 @@ typedef enum OpcodeType{
     MEMSET,
     zeroinitializer,
     GLOBAL_VAR,
-};
+}Opcode;
 
 enum InstructionType{
     FUNCDEF,

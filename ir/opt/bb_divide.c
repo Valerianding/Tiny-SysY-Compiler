@@ -61,18 +61,21 @@ void bblock_divide(InstNode *head){
                     func_prev->Next = cur_func;
                 }
                 func_prev = cur_func;
+                printf("Set Function sucess !\n");
                 func_set(cur_func, entry, this);
             } else if (cur->inst->Opcode == br) {
-                InstNode *true_label = search_ins_label(head,
+                InstNode *function_begin = get_func_start(cur);
+                InstNode *true_label = search_ins_label(function_begin,
                                                         cur->inst->user.value.pdata->instruction_pdata.true_goto_location);
                 BasicBlock *true_block = true_label->inst->Parent;
                 bb_add_prev(this, true_block);
                 this->true_block = true_block;
             } else if (cur->inst->Opcode == br_i1) {
-                InstNode *true_label = search_ins_label(head,
+                InstNode *function_begin = get_func_start(cur);
+                InstNode *true_label = search_ins_label(function_begin,
                                                         cur->inst->user.value.pdata->instruction_pdata.true_goto_location);
                 BasicBlock *true_block = true_label->inst->Parent;
-                InstNode *false_label = search_ins_label(head,
+                InstNode *false_label = search_ins_label(function_begin,
                                                          cur->inst->user.value.pdata->instruction_pdata.false_goto_location);
                 BasicBlock *false_block = false_label->inst->Parent;
                 bb_add_prev(this, true_block);

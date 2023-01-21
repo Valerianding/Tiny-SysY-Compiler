@@ -90,6 +90,19 @@ BasicBlock *get_next_block(BasicBlock *this){
     return this->true_block;
 }
 
+BasicBlock *blocklist_pop(BlockList list){
+    if(list == nullptr){
+        return nullptr;
+    }else{
+        struct sc_list *temp = &list->list;
+        while(temp->next != nullptr){
+            temp = temp->next;
+        }
+        BlockNode *tail = sc_list_entry(temp,BlockNode,list);
+        return tail->block;
+    }
+}
+
 BlockList get_prev_block(BasicBlock *this){
     return this->prev_blocks;
 }
@@ -102,9 +115,6 @@ void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
     if(pos->prev_blocks == nullptr) {
         pos->prev_blocks = blockNode;
     }else{
-        printf("prev list is not empty!\n");
-        printf("what : %p\n",prev);
-        printf("blocknode : %p\n",blockNode);
         sc_list_add_tail(&pos->prev_blocks->list,&blockNode->list);
     }
 }
@@ -118,7 +128,7 @@ void clear_visited_flag(InstNode *head) {
     }
 }
 
-void add_blocklist(BlockList list,BasicBlock *block){
+void blocklist_add(BlockList list,BasicBlock *block){
     BlockNode *blocknode = (BlockNode*)malloc(sizeof(BlockNode));
     memset(blocknode,0,sizeof(BlockNode));
     blocknode->block = block;

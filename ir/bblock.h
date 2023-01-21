@@ -5,8 +5,9 @@
 #include "sc_list.h"
 
 struct _Function;
-typedef struct _Function Function;
+struct _BasicBlock;
 typedef struct _BasicBlock BasicBlock;
+typedef struct _Function Function;
 
 /* 这里的设计结构 */
 typedef struct _InstNode{
@@ -43,6 +44,7 @@ void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail);
 /// 将this加入head
 void ins_node_add(InstNode *head,InstNode *this);
 
+///为prev的基本块添加前驱
 void bb_add_prev(BasicBlock *prev,BasicBlock *pos);
 
 ///获得bblock的最后的inst
@@ -60,7 +62,7 @@ InstNode *get_prev_inst(InstNode *this);
 ///通过this获得下一个的instnode
 InstNode *get_next_inst(InstNode *this);
 
-//lsy
+///获取最后一条instNode
 InstNode *get_last_inst(InstNode *this);
 
 ///根据指令标号搜索instnode
@@ -74,6 +76,9 @@ BasicBlock *bb_create();
 
 ///获得属于trueBlock的后继节点
 BasicBlock *get_next_block(BasicBlock *this);
+
+///获得BlockList的最后一个节点
+BasicBlock *blocklist_pop(BlockList list);
 
 ///获得下一个前驱节点
 BlockNode *get_next_prevblock(BlockNode *this);
@@ -97,7 +102,7 @@ void print_block_info(BasicBlock *this);
 void clear_visited_flag(InstNode *head);
 
 ///加入到blocklist当中，仅用于dominance信息的计算
-void add_blocklist(BlockList list,BasicBlock *block);
+void blocklist_add(BlockList list,BasicBlock *block);
 
 /// Unlink 'this' from the containing function, but do not delete it.
 void removeFromParent(BasicBlock *this);
