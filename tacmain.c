@@ -5,7 +5,6 @@
 #include "instruction.h"
 #include "symtab.h"
 #include "bblock.h"
-#include "function.h"
 #include "stdio.h"
 #include "bb_divide.h"
 //FIXME: test purpose only!
@@ -75,14 +74,23 @@ int main(int argc, char* argv[]){
     }
     printf("--------------\n");
 
-    /* 测试所有BasicBlock的连接 */
+    /* 测试所有BasicBlock的连接 以及Function的连接 */
     BasicBlock *prev = nullptr;
+    Function *prevFunction = nullptr;
     for(;temp != NULL;temp = get_next_inst(temp)) {
         BasicBlock *cur = temp->inst->Parent;
+        Function *parent = cur->Parent;
+        if(parent != prevFunction){
+            print_function_info(parent);
+            prevFunction = parent;
+        }
         if (cur != prev) {
             print_block_info(cur);
             prev = cur;
         }
     }
+
+    /* 测试dominance的计算 */
+
     return 0;
 }
