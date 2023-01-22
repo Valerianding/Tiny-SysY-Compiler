@@ -16,7 +16,7 @@ void create_if_stmt(past root,Value* v_return);
 void create_if_else_stmt(past root,Value* v_return);
 void create_func_def(past root);
 struct _Value *create_call_func(past root);
-struct _Value *cal_expr(past expr);
+struct _Value *cal_expr(past expr,int* convert);
 struct _Value* cal_logic_expr(past logic_expr);
 void clear_tmp(char* tmp);
 struct _Value *create_tmp_value();

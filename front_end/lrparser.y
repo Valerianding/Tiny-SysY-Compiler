@@ -235,7 +235,7 @@ UnaryExp
     | IDent LBRACKET FuncRParams RBRACKET            {$$ = newAnotherNode("Call_Func",newIdent($1),$3);}
     | '+' UnaryExp                                  {$$ = newExpr(newNumInt(0),'+',$2);}
     | '-' UnaryExp                                  {$$ = newExpr(newNumInt(0),'-',$2);}
-    | '!' UnaryExp                                  {$$ = newAnotherNode("UnaryExp",newExpr(NULL,'!',$2),NULL);}
+    | '!' UnaryExp                                  {$$ = newExpr(newNumInt(0),'!',$2);}
     ;
 
 FuncRParams

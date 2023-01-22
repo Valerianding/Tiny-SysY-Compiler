@@ -70,6 +70,18 @@ past newAnotherNode(char* nodeType, past left, past right)
     return root;
 }
 
+/*
+//走入下一大步(比如离开大段递归)，创一个全新结点
+past newUnaryNode(char* nodeType, int op, past right)
+{
+    past root = newAstNode();
+    root->nodeType = bfromcstr(nodeType);
+    root->left=NULL;
+    root->iVal=op;
+    root->right = right;
+    return root;
+}*/
+
 //还处在这一大步，没有往下一大步走，适合于递归
 past newFollowNode(char* nodeType, past thisNode, past follow)
 {
@@ -413,6 +425,9 @@ void showAst(past node, int layer)
     if(strcmp(bstr2cstr(node->nodeType,'\0'), "expr") == 0){
         printf("%s  %c\n", node->nodeType->data, (char)node->iVal);
     }
+/*    else if(strcmp(bstr2cstr(node->nodeType,'\0'), "UnaryExpr") == 0){
+        printf("%s  %c\n", node->nodeType->data, (char)node->iVal);
+    }*/
     else if(strcmp(bstr2cstr(node->nodeType,'\0'),"num_int")==0){
         printf("%s  %d\n", node->nodeType->data, node->iVal);
     }
