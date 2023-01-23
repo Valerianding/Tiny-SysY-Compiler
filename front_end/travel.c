@@ -1816,7 +1816,8 @@ struct _Value *cal_expr(past expr,int* convert) {
                 //v2
                 Value *v2= get_value_by_type(x2);
 
-                if((*pp)->iVal!='!' && get_last_inst(instruction_list)->inst->Opcode==XOR)
+                //TODO 除了把'+'禁掉，还有无更好的处理
+                if((*pp)->iVal!='!' && (*pp)->iVal!='+' && get_last_inst(instruction_list)->inst->Opcode==XOR)
                 {
                     //生成一条zext
                     Instruction *ins_zext= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
@@ -1865,12 +1866,10 @@ struct _Value *cal_expr(past expr,int* convert) {
                             }
 
                             //xor
-                            Value *v_true=(Value*) malloc(sizeof (Value));
-                            value_init_int(v_true,1);
                             if(!have_icmp)
-                                instruction= ins_new_binary_operator(XOR,v_real,v_true);
+                                instruction= ins_new_unary_operator(XOR,v_real);
                             else
-                                instruction= ins_new_binary_operator(XOR,v2,v_true);
+                                instruction= ins_new_unary_operator(XOR,v2);
 
                             have_icmp=true;
                         }
