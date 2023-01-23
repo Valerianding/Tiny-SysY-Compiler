@@ -92,5 +92,36 @@ int main(int argc, char* argv[]){
 
     /* 测试dominance的计算 */
 
+
+
+    /*
+     * a = 1 + 2;
+     * b = a + 1;
+     */
+    /* value * -> get */
+    Value *v1 = (Value*)malloc(sizeof(Value));
+    value_init_int(v1,1);
+    Value *v2 = (Value*)malloc(sizeof(Value));
+    value_init_int(v2,2);
+
+    Instruction *ins1 = ins_new_binary_operator(Add,v1,v2);
+    Value *dest1 = ins_get_value(ins1);
+    int SIZE = 10;
+    dest1->name = (char*)malloc(sizeof(char) * SIZE);
+    dest1->name = "a";
+
+    /* 也可以是：
+     * Instruction *insw = ins_new_binary_operator(Add,&ins1->user.value,v1)
+     * */
+    Instruction *ins2 = ins_new_binary_operator(Add,(Value*)ins1,v1);
+    Value *dest2 = ins_get_value(ins2);
+    dest2->name = (char*)malloc(sizeof(char) * SIZE);
+    dest2->name = "b";
+
+    InstNode *instNode1 = new_inst_node(ins1);
+    InstNode *instNode2 = new_inst_node(ins2);
+    print_one_ins_info(instNode1);
+    print_one_ins_info(instNode2);
+
     return 0;
 }
