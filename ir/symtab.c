@@ -26,6 +26,13 @@ void stack_new(Symtab* this)
     this->S.top=0;
     //默认在全局
     this->S.value_map[this->S.top]=this->value_maps->next;
+
+    //给全局表的next表开一下空间，库函数信息存在这里
+    //新map m
+    MapList *m=(MapList*) malloc(sizeof(MapList));
+    sc_map_init_sv(&m->map,0,0);
+    m->scope_level=0;
+    this->value_maps->next->next=m;
 }
 
 

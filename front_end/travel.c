@@ -182,6 +182,38 @@ struct _Value *create_call_func(past root)
     //从符号表中取出之前放入的函数信息
     v= symtab_lookup_withmap(this, bstr2cstr(root->left->sVal, '\0'),&this->value_maps->next->map);
 
+    //如果是库函数，则v==NULL
+    //将库函数信息存放在全局表的next表中
+    //目前其实只存了参数个数
+    if(v==NULL)
+    {
+        //可能已经存成库函数了
+        v=symtab_lookup_withmap(this, bstr2cstr(root->left->sVal, '\0'),&this->value_maps->next->next->map);
+        if(v==NULL)
+        {
+            v=(Value*) malloc(sizeof (Value));
+            value_init(v);
+            v->VTy->ID=FunctionTyID;
+
+            int params_count=0;
+            if(root->right!=NULL)
+            {
+                past param=root->right->left;
+                while(param!=NULL)
+                {
+                    params_count++;
+                    param=param->next;
+                }
+            }
+            v->pdata->symtab_func_pdata.param_num=params_count;
+            v->pdata->symtab_func_pdata.map_list=this->value_maps->next->next;
+
+            v->name=(char*) malloc(sizeof(bstr2cstr(root->left->sVal,0)));
+            strcpy(v->name,bstr2cstr(root->left->sVal,0));
+            symtab_insert_withmap(this,&this->value_maps->next->next->map,v->name,v);
+        }
+    }
+
     //参数传递
     if(root->right!=NULL)
         create_params_stmt(root->right);
@@ -238,7 +270,7 @@ void create_assign_stmt(past root,Value* v_return) {
         //赋值右边为表达式
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "expr") == 0)
         //取出右值
-        v1 = cal_expr(root->right);
+        v1 = cal_expr(root->right,0);
 
         //赋值右边为普通a,b,c,d
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
@@ -283,7 +315,7 @@ void create_return_stmt(past root,Value* v_return) {
         }
             //返回表达式
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0){
-            v = cal_expr(root->left);
+            v = cal_expr(root->left,0);
         }
             //整数
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0){
@@ -683,7 +715,7 @@ Value *handle_assign_array(past root,Value *v_array)
             value_init_int(v_num,root->iVal);
         }
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "expr") == 0)
-            v_num= cal_expr(root);
+            v_num= cal_expr(root,0);
 
 
         if(i==0)
@@ -752,7 +784,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "ID") == 0)
                 v1= create_load_stmt(bstr2cstr(vars->right->sVal,'\0'));
             else if (strcmp(bstr2cstr(vars->right->nodeType, '\0'), "expr") == 0)
-                v1 = cal_expr(vars->right);
+                v1 = cal_expr(vars->right,0);
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "Call_Func") == 0)
                 v1= create_call_func(vars->right);
 
@@ -1082,23 +1114,35 @@ void create_if_stmt(past root,Value* v_return) {
         }
     }
 
+    int convert=0;      //0:不需要翻转br_i1的顺序,1:需要翻转
+
     //真值
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
-        Value *v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
-        //生成一条icmp ne
-        //包装0
-        Value *v_zero=(Value*) malloc(sizeof (Value));
-        value_init_int(v_zero,0);
-        Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-        //v_real
-        v_real=create_tmp_value();
-        ins_icmp->user.value=*v_real;
-        //将这个instruction加入总list
-        InstNode *node = new_inst_node(ins_icmp);
-        ins_node_add(instruction_list,node);
+        Value *v_load=NULL;
+        if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+            v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
+        else
+            v_load= cal_expr(root->left,&convert);
+
+        if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
+        {
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v_real=create_tmp_value();
+            ins_icmp->user.value=*v_real;
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+        else
+            v_real=v_load;
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
@@ -1120,8 +1164,14 @@ void create_if_stmt(past root,Value* v_return) {
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
     {
         if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
-            //正确跳转
-            node1= true_location_handler(br_i1,v_real, t_index++);
+        {
+            if(convert==0)
+                //正确跳转
+                node1= true_location_handler(br_i1,v_real, t_index++);
+            else
+                node1= false_location_handler(br_i1,v_real,t_index++);
+        }
+
 
         //如果上一条不是标号则写编号，走了handle_and_or之后可能会多一条标号
         if(get_last_inst(instruction_list)->inst->Opcode!=Label)
@@ -1143,7 +1193,12 @@ void create_if_stmt(past root,Value* v_return) {
     }
 
     if(result!=1 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
-        node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+    {
+        if(convert==0)
+            node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+        else
+            node1->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index++;
+    }
 
     //无break或continue的话就补，有就不补了
     if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
@@ -1164,23 +1219,35 @@ void create_if_else_stmt(past root,Value* v_return) {
     Value *v_real=NULL;
     int result=-1;
 
+    int convert=0;
+
     //真值
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
-        Value *v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
-        //生成一条icmp ne
-        //包装0
-        Value *v_zero=(Value*) malloc(sizeof (Value));
-        value_init_int(v_zero,0);
-        Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-        //v_real
-        v_real=create_tmp_value();
-        ins_icmp->user.value=*v_real;
-        //将这个instruction加入总list
-        InstNode *node = new_inst_node(ins_icmp);
-        ins_node_add(instruction_list,node);
+        Value *v_load=NULL;
+        if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+            v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
+        else
+            v_load= cal_expr(root->left,&convert);
+
+        if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
+        {
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v_real=create_tmp_value();
+            ins_icmp->user.value=*v_real;
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+        else
+            v_real=v_load;
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
@@ -1191,9 +1258,13 @@ void create_if_else_stmt(past root,Value* v_return) {
     //正确跳转
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
     {
-        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
-            //正确跳转
-            node1= true_location_handler(br_i1,v_real,t_index++);
+        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0) {
+            if(convert==0)
+                //正确跳转
+                node1= true_location_handler(br_i1,v_real, t_index++);
+            else
+                node1= false_location_handler(br_i1,v_real,t_index++);
+        }
 
         if(get_last_inst(instruction_list)->inst->Opcode!=Label)
             //生成正确的那个标识IR
@@ -1221,8 +1292,13 @@ void create_if_else_stmt(past root,Value* v_return) {
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
     {
         if( strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
-            //if为假走else的话应该走这里,示例中将前面else的label 10补齐
-            node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+        {
+            if(convert==0)
+                //if为假走else的话应该走这里,示例中将前面else的label 10补齐
+                node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+            else
+                node1->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index++;
+        }
 
         //可能是return,return的话后面就没有了
         if(get_last_inst(instruction_list)->inst->Opcode!=br)
@@ -1279,6 +1355,8 @@ void create_while_stmt(past root,Value* v_return)
         }
     }
 
+    int convert=0;
+
     //加进stack，continue用
     Instruction *ins_tmp= ins_new_unary_operator(tmp,NULL);
     Value *t_in=(Value*) malloc(sizeof (Value));
@@ -1301,20 +1379,30 @@ void create_while_stmt(past root,Value* v_return)
     //真值
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
-        Value *v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
-        //生成一条icmp ne
-        //包装0
-        Value *v_zero=(Value*) malloc(sizeof (Value));
-        value_init_int(v_zero,0);
-        Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-        //v_real
-        v_real=create_tmp_value();
-        ins_icmp->user.value=*v_real;
-        //将这个instruction加入总list
-        InstNode *node = new_inst_node(ins_icmp);
-        ins_node_add(instruction_list,node);
+        Value *v_load=NULL;
+        if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+            v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
+        else
+            v_load= cal_expr(root->left,&convert);
+
+        if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
+        {
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v_real=create_tmp_value();
+            ins_icmp->user.value=*v_real;
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+        else
+            v_real=v_load;
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
@@ -1329,8 +1417,13 @@ void create_while_stmt(past root,Value* v_return)
 
     InstNode *node_first_bri1=NULL;
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
-        node_first_bri1= true_location_handler(br_i1,v_real,t_index++);
-    //是常数则直接跳转
+    {
+        if(convert==0)
+            node_first_bri1= true_location_handler(br_i1,v_real,t_index++);
+        else
+            node_first_bri1= false_location_handler(br_i1,v_real,t_index++);
+    }
+        //是常数则直接跳转
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0)
         node_first_bri1= true_location_handler(br,NULL,t_index++);
 
@@ -1362,7 +1455,12 @@ void create_while_stmt(past root,Value* v_return)
     {
         //如果是&& ||则没有node_first_bri1这条
         if(node_first_bri1!=NULL)
-            node_first_bri1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+        {
+            if(convert==0)
+                node_first_bri1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+            else
+                node_first_bri1->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index++;
+        }
 
         //标号
         true_location_handler(Label,NULL,t_index-1);
@@ -1581,9 +1679,24 @@ Value *get_value_by_type(past x1)
     return v1;
 }
 
+void travel_expr(past str[100],int length)
+{
+    bool need_xor=false;
+    for(int i=length-1;i>=0;i--)
+    {
+        if(str[i]->iVal=='!')
+        {
+            if(need_xor)
+                str[i]->sVal= bfromcstr("special_!");
+        }
+        if(str[i]->iVal=='+' || str[i]->iVal=='-')
+            need_xor=true;
+    }
+}
+
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
-struct _Value *cal_expr(past expr) {
+struct _Value *cal_expr(past expr,int* convert) {
     //最后从栈中弹出的
     past final_result = newAstNode();
     //记录后缀表达式
@@ -1615,17 +1728,33 @@ struct _Value *cal_expr(past expr) {
     }
     str[i]=NULL;
 
+    travel_expr(str,i);        //TODO:check
+
     //计算后缀表达式
     past_stack PS2;
     init_past_stack(&PS2);
     past x1, x2;
     past *pp = str;
+    bool have_icmp=false;
     while (*pp) {
         if (strcmp(bstr2cstr((*pp)->nodeType, '\0'), "expr") != 0)
             push(&PS2, (*pp));
 
         else
         {
+            if((*pp)->iVal=='!')
+            {
+                if(*(pp+1))
+                {
+                    past check=*(pp+1);
+                    if(check->iVal=='!')
+                    {
+                        pp+=2;
+                        continue;
+                    }
+                }
+            }
+
             //如果读到+-*/%就从栈中弹出两个计算,算不动就给临时变量存
             pop(&PS2, &x2);
             pop(&PS2, &x1);
@@ -1665,6 +1794,9 @@ struct _Value *cal_expr(past expr) {
                     case '%':
                         x1->iVal = x1->iVal % x2->iVal;
                         break;
+                    case '!':                                     //TODO !1这种还没处理，目前无法直接判断为假,如果要处理，就定个convert值为一定真和一定假，返回后分别加入if语句那些的num_int的判断
+                        //(*convert)=!(*convert);
+                        break;
                 }
                 if(v_con1!=NULL && v_con1->VTy->ID==Const_INT)
                 {
@@ -1684,14 +1816,24 @@ struct _Value *cal_expr(past expr) {
                 //v2
                 Value *v2= get_value_by_type(x2);
 
-                //临时变量左值,v_tmp的pdata是没有实际内容的
-                Value *v_tmp=create_tmp_value();
-                past tmp = newIdent(bfromcstr(v_tmp->name));
-                v_tmp->VTy->ID = Var_INT;
+                //TODO 除了把'+'禁掉，还有无更好的处理
+                if((*pp)->iVal!='!' && (*pp)->iVal!='+' && get_last_inst(instruction_list)->inst->Opcode==XOR)
+                {
+                    //生成一条zext
+                    Instruction *ins_zext= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
+                    Value *v_zext=create_tmp_value();
+                    ins_zext->user.value=*v_zext;
+
+                    InstNode *node = new_inst_node(ins_zext);
+                    ins_node_add(instruction_list,node);
+
+                    v2=v_zext;
+                }
 
                 switch ((*pp)->iVal) {
                     case '+':
-                        instruction = ins_new_binary_operator(Add, v1, v2);
+                        if(!((strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && x1->iVal==0) || (strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0 && x2->iVal==0)))
+                            instruction = ins_new_binary_operator(Add, v1, v2);
                         break;
                     case '-':
                         instruction = ins_new_binary_operator(Sub, v1, v2);
@@ -1705,12 +1847,65 @@ struct _Value *cal_expr(past expr) {
                     case '%':
                         instruction = ins_new_binary_operator(Module, v1, v2);
                         break;
+                    case '!':
+                        if(strcmp(bstr2cstr((*pp)->sVal, '\0'), "special_!") == 0)
+                        {
+                            Value *v_real=NULL;
+                            if(!have_icmp)
+                            {
+                                //与0的icmp
+                                Value *v_zero=(Value*) malloc(sizeof (Value));
+                                value_init_int(v_zero,0);
+                                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v2,v_zero);
+                                //v_real
+                                v_real=create_tmp_value();
+                                ins_icmp->user.value=*v_real;
+                                //将这个instruction加入总list
+                                InstNode *node_icmp = new_inst_node(ins_icmp);
+                                ins_node_add(instruction_list,node_icmp);
+                            }
+
+                            //xor
+                            if(!have_icmp)
+                                instruction= ins_new_unary_operator(XOR,v_real);
+                            else
+                                instruction= ins_new_unary_operator(XOR,v2);
+
+                            have_icmp=true;
+                        }
+                            //以!开头
+                        else
+                            (*convert)=!(*convert);
+
+                        break;
                 }
-                instruction->user.value = *v_tmp;
-                //将这个instruction加入总list
-                InstNode *node = new_inst_node(instruction);
-                ins_node_add(instruction_list,node);
-                push(&PS2, tmp);
+                if(instruction!=NULL)
+                {
+                    //临时变量左值,v_tmp的pdata是没有实际内容的
+                    Value *v_tmp=create_tmp_value();
+                    past tmp = newIdent(bfromcstr(v_tmp->name));
+                    v_tmp->VTy->ID = Var_INT;
+
+                    instruction->user.value = *v_tmp;
+                    //将这个instruction加入总list
+                    InstNode *node = new_inst_node(instruction);
+                    ins_node_add(instruction_list,node);
+                    push(&PS2, tmp);
+                }
+                else if((*pp)->iVal=='!')
+                {
+                    past tmp= newIdent(bfromcstr(v2->name));
+                    //如果是!a就将a压入就好
+                    push(&PS2,tmp);
+                }
+                    //0+a或a+0这种
+                else
+                {
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && x1->iVal==0)
+                        push(&PS2,x2);
+                    else
+                        push(&PS2,x1);
+                }
             }
         }
         pp++;
@@ -1756,7 +1951,7 @@ struct _Value* cal_logic_expr(past logic_expr)
 
     //value1
     if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "expr") == 0)
-        v1= cal_expr(logic_expr->left);
+        v1= cal_expr(logic_expr->left,0);
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "ID") == 0)
         v1= create_load_stmt(bstr2cstr(logic_expr->left->sVal,'\0'));
     else
@@ -1769,7 +1964,7 @@ struct _Value* cal_logic_expr(past logic_expr)
 
     //value2
     if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "expr") == 0)
-        v2= cal_expr(logic_expr->right);
+        v2= cal_expr(logic_expr->right,0);
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "ID") == 0)
         v2= create_load_stmt(bstr2cstr(logic_expr->right->sVal,'\0'));
     else
@@ -2347,8 +2542,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr,"}\n\n");
                 break;
             case Call:
-                printf(" %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
-                fprintf(fptr," %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                //非库函数
+                if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
+                {
+                    printf(" %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    fprintf(fptr," %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }
+                else
+                {
+                    printf(" %s = call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    fprintf(fptr," %s = call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }
                 //参数
                 for(int i=0;i<give_count;i++)
                 {
@@ -2525,6 +2729,14 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction->user.use_list->Val;
+                break;
+            case zext:
+                printf(" %s = zext i1 %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                fprintf(fptr," %s = zext i1 %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                break;
+            case XOR:
+                printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
             default:
                 break;

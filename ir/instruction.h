@@ -33,6 +33,8 @@ typedef enum OpcodeType{
     br_i1_false,
     Label,
     tmp,
+    XOR,
+    zext,
 
     bitcast,
     GMP,
