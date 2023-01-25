@@ -1,5 +1,6 @@
 #include "instruction.h"
 #include "bblock.h"
+#include "value_stack.h"
 #include "past_stack.h"
 #include "insnode_stack.h"
 #include "bblock.h"
@@ -18,8 +19,6 @@ void create_func_def(past root);
 struct _Value *create_call_func(past root);
 struct _Value *cal_expr(past expr,int* convert);
 struct _Value* cal_logic_expr(past logic_expr);
-void clear_tmp(char* tmp);
-struct _Value *create_tmp_value();
 struct _Value *create_param_value();
 void create_store_stmt(Value* v1,Value* v2);
 struct _Value* create_load_stmt(char *name);
@@ -50,5 +49,7 @@ past array_all_zeros(past init_val_list);
 void borrow_save(Value* v_array,int carry[]);
 
 int handle_and_or(past root,bool flag);
+
+bool begin_tmp(const char* name);
 
 char* c2ll(char* file_name);

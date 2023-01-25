@@ -19,7 +19,6 @@ union _PData{
 
     struct {
         struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
-        int alias;                     //栈帧地址标识
         union {
             int iVal;
             float fVal;
@@ -35,7 +34,6 @@ union _PData{
 
     struct {
         struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
-        int alias;
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
     }symtab_array_pdata;
@@ -66,6 +64,7 @@ struct _Value
     unsigned is_last : 1;
 
     char *name;
+    struct _Value *alias;
     PData *pdata;
 };
 

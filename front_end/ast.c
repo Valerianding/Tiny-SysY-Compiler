@@ -244,6 +244,13 @@ void insert_var_into_symtab(past type,past p)
                 v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
                 v->VTy->ID=Const_INT;
             }
+            else
+            {
+                if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+                    v->VTy->ID=Var_FLOAT;
+                else
+                    v->VTy->ID=Var_INT;
+            }
         }
         else
         {

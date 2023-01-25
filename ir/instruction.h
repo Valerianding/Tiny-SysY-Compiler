@@ -82,4 +82,7 @@ Instruction *ins_new_unary_operator(int Op,Value *S1);
 Instruction *ins_set_parent(Instruction *this,struct _BasicBlock *parent);
 Value *ins_get_value(Instruction *ins);
 void print_ins_opcode(Instruction *this);
+
+void clear_tmp(char* tmp);
+Value *ins_get_value(Instruction *ins);
 #endif

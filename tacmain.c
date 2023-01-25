@@ -26,6 +26,9 @@ insnode_stack S_and;
 insnode_stack S_or;
 bool c_b_flag[2]={false,false};
 
+char t_num[3] = {0};
+int t_index = 0;
+
 //都还没做初始化那些
 struct _InstNode *instruction_list;
 
@@ -65,6 +68,7 @@ int main(int argc, char* argv[]){
     //showAst(TRoot,0);
 
     InstNode *temp = get_next_inst(instruction_list);
+
     //丁老师
     bblock_divide(instruction_list);
 

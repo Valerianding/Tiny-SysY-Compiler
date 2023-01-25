@@ -1,6 +1,11 @@
 #include "instruction.h"
 #include "stdio.h"
 
+extern char t_num[3];
+extern int t_index ;
+extern char t[5];
+extern Symtab *this;
+
 //全局记录instruction的编号
 int instruction_uid=0;
 
@@ -48,8 +53,28 @@ struct _BasicBlock *ins_get_parent(Instruction *this){
     return this->Parent;
 }
 
+//将临时变量t0 clear为t,或将%1 clear为%，后面跟的数量可重新赋值
+void clear_tmp(char* tmp)
+{
+    char *p=tmp;
+    p++;
+    while(*p)
+    {
+        *p='\0';
+        p++;
+    }
+}
+
+//获取instruction.user.value并赋个名字
 Value *ins_get_value(Instruction *ins){
-    return &ins->user.value;
+    Value *v_tmp=&ins->user.value;
+    sprintf(t_num, "%d", t_index++);
+    strcat(t,t_num);
+    v_tmp->pdata->var_pdata.map= getCurMap(this);
+    v_tmp->name=(char*) malloc(strlen (t));
+    strcpy(v_tmp->name,t);
+    clear_tmp(t);
+    return v_tmp;
 }
 
 Instruction *ins_set_parent(Instruction *this,struct _BasicBlock *parent){

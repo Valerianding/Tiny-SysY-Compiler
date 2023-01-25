@@ -1,4 +1,3 @@
-
 #include "travel.h"
 
 extern Symtab *this;
@@ -18,8 +17,8 @@ extern insnode_stack S_or;
 //记录有没有需要continue和break的语句
 extern bool c_b_flag[2];
 
-char t_num[3] = {0};
-int t_index = 0;
+extern char t_num[3];
+extern int t_index;
 int param_map=0;
 Value *v_cur_func;
 
@@ -218,16 +217,15 @@ struct _Value *create_call_func(past root)
     if(root->right!=NULL)
         create_params_stmt(root->right);
 
+    instruction= ins_new_unary_operator(Call,v);
+
     //按照llvm，有无返回值都生成了这个value
-    Value *v_result=create_tmp_value();
+    Value *v_result= ins_get_value(instruction);
     //有返回值
     if(v->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
     {
         v_result->VTy->ID=v->pdata->symtab_func_pdata.return_type.ID;
     }
-    instruction= ins_new_unary_operator(Call,v);
-
-    instruction->user.value=*v_result;
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -250,8 +248,16 @@ void create_assign_stmt(past root,Value* v_return) {
 
     Value *v=NULL;
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
-        //左id,从符号表中取出之前存入的这个变量
-        v = symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'));
+    {
+        //是全局变量
+        if(symtab_lookup_withmap(this,bstr2cstr(root->left->sVal, '\0'),&this->value_maps->next->map))
+        {
+            v=symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'));
+        }
+        else
+            //左id,从符号表中取出之前存入的这个变量
+            v = symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'))->alias;
+    }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0)
         v=handle_assign_array(root->left->right->left, symtab_dynamic_lookup(this,bstr2cstr(root->left->left->sVal,'\0')));
 
@@ -274,11 +280,20 @@ void create_assign_stmt(past root,Value* v_return) {
 
         //赋值右边为普通a,b,c,d
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
-        //先load出右值,要返回创建出的value
-        v1=create_load_stmt(bstr2cstr(root->right->sVal,'\0'));
+    {
+        v1= symtab_dynamic_lookup(this,bstr2cstr(root->right->sVal,'\0'));
+        if(v1->VTy->ID==Const_INT || v1->VTy->ID==Const_FLOAT)
+            ;
+        else
+            //先load出右值,要返回创建出的value
+            v1=create_load_stmt(bstr2cstr(root->right->sVal,'\0'));
+    }
         //是数组
     else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "LValArray") == 0)
-        v1= handle_assign_array(root->right->right, symtab_dynamic_lookup(this,bstr2cstr(root->right->left->sVal,'\0')));
+    {
+        Value *array=symtab_dynamic_lookup(this,bstr2cstr(root->right->left->sVal,'\0'));
+        v1= handle_assign_array(root->right->right->left, array);
+    }
         //等于函数
     else
         v1= create_call_func(root->right);
@@ -475,12 +490,12 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
 
     int tmp_carry[v_array->pdata->symtab_array_pdata.dimention_figure-1];         //有时会拷贝carry数组到tmp_carry作为进入handle递归前起点处的暂存，用于判断有前面有num_int时，InitValList结束后的下一个起始位置
 
+    //record数组记录着0，1，2位的左值
+    //比如三维数组，从第一维开始初始化(下标0)，使用begin_value；从第二维开始初始化(下标1)，则使用record[0]，只用走第三维，则使用record[1];record[2]闲置
+    Value *record[v_array->pdata->symtab_array_pdata.dimention_figure];
+
     while(init_val_list!=NULL)
     {
-        //record数组记录着0，1，2位的左值
-        //比如三维数组，从第一维开始初始化(下标0)，使用begin_value；从第二维开始初始化(下标1)，则使用record[0]，只用走第三维，则使用record[1];record[2]闲置
-        Value *record[v_array->pdata->symtab_array_pdata.dimention_figure];
-
         if(strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") == 0)
         {
             //解决空InitValList的情况，即{},将起点记录进tmp_carry，用于地址处理
@@ -561,16 +576,11 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                 //解决到除了最后一层地址
                 for(int i=start_layer;i<v_array->pdata->symtab_array_pdata.dimention_figure-1;i++)
                 {
-                    Value *v_gmp=create_tmp_value();
-                    v_gmp->pdata->var_pdata.iVal=i;
-
                     v_offset=(Value*) malloc(sizeof (Value));
                     if(i==start_layer)
                         value_init_int(v_offset,carry[start_layer]);
                     else
                         value_init_int(v_offset,0);
-
-                    record[i]=v_gmp;
 
                     ins_gmp=NULL;
 
@@ -584,8 +594,11 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         ins_gmp= ins_new_binary_operator(GMP,v_prev,v_offset);
                     }
 
+                    Value *v_gmp= ins_get_value(ins_gmp);
+                    v_gmp->pdata->var_pdata.iVal=i;
 
-                    ins_gmp->user.value=*v_gmp;
+                    record[i]=v_gmp;
+
                     //将这个instruction加入总list
                     InstNode *node2 = new_inst_node(ins_gmp);
                     ins_node_add(instruction_list,node2);
@@ -619,12 +632,10 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     //这里+1后可能溢出
                     value_init_int(v_offset,carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]++);
 
-                    //是最后一层吧
-                    Value *v_gmp=create_tmp_value();
-                    v_gmp->pdata->var_pdata.iVal=v_array->pdata->symtab_array_pdata.dimention_figure-1;
-
                     Instruction *gmp_last = ins_new_binary_operator(GMP,record[v_array->pdata->symtab_array_pdata.dimention_figure-2],v_offset);
-                    gmp_last->user.value=*v_gmp;
+                    //是最后一层吧
+                    Value *v_gmp= ins_get_value(gmp_last);
+                    v_gmp->pdata->var_pdata.iVal=v_array->pdata->symtab_array_pdata.dimention_figure-1;
                     //将这个instruction加入总list
                     InstNode *node_gmp_last = new_inst_node(gmp_last);
                     ins_node_add(instruction_list,node_gmp_last);
@@ -660,10 +671,8 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         Instruction *ins=NULL;
                         Value *v_carry_index=(Value*) malloc(sizeof (Value));
                         value_init_int(v_carry_index,carry[i]);
-                        Value *v_gmp=create_tmp_value();
-                        v_gmp->pdata->var_pdata.iVal=i;
 
-                        //第一次只用拿v_start，不用存;注意record是岔一级使用的
+                        //注意record是岔一级使用的
                         if(i==carry_index)
                         {
                             ins= ins_new_binary_operator(GMP,v_start,v_carry_index);
@@ -672,11 +681,13 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         {
                             Value *v_prev=&get_last_inst(instruction_list)->inst->user.value;
                             ins= ins_new_binary_operator(GMP,v_prev,v_carry_index);
-
                             //更新record
-                            record[i]=v_prev;
+                            //record[i]=v_prev;
                         }
-                        ins->user.value=*v_gmp;
+                        Value *v_gmp= ins_get_value(ins);
+                        v_gmp->pdata->var_pdata.iVal=i;
+                        //更新record
+                        record[i]=v_gmp;
                         //将这个instruction加入总list
                         InstNode *node_gmp_last = new_inst_node(ins);
                         ins_node_add(instruction_list,node_gmp_last);
@@ -720,7 +731,7 @@ Value *handle_assign_array(past root,Value *v_array)
 
         if(i==0)
         {
-            gmp= ins_new_binary_operator(GMP,v_array,v_num);
+            gmp= ins_new_binary_operator(GMP,v_array->alias,v_num);
         }
         else
         {
@@ -728,9 +739,8 @@ Value *handle_assign_array(past root,Value *v_array)
         }
 
 
-        Value *v1=create_tmp_value();
+        Value *v1= ins_get_value(gmp);
         v1->pdata->var_pdata.iVal=i;
-        gmp->user.value=*v1;
 
         v_last=v1;
 
@@ -741,9 +751,8 @@ Value *handle_assign_array(past root,Value *v_array)
         root=root->next;
     }
     //load
-    Value *v_load=create_tmp_value();
     Instruction *ins_load= ins_new_unary_operator(Load,v_last);
-    ins_load->user.value=*v_load;
+    Value *v_load= ins_get_value(ins_load);
     v_last=v_load;
 
     //将这个instruction加入总list
@@ -766,7 +775,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
         if (strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_init") == 0 && !is_global)
         {
             //左值
-            Value *v=symtab_dynamic_lookup(this, bstr2cstr(vars->left->sVal, '\0'));
+            Value *v=symtab_dynamic_lookup(this, bstr2cstr(vars->left->sVal, '\0'))->alias;
 
             //初始化的值
             //root->right是VarDefList
@@ -804,9 +813,8 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 //TODO bitcast 打印不方便
                 //<result> = bitcast <ty> <value> to <ty2>
                 //The ‘bitcast’ instruction converts value to type ty2 without changing any bits.
-                Value *v1=create_tmp_value();
-                Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array);
-                ins_bitcast->user.value=*v1;
+                Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array->alias);
+                Value *v1= ins_get_value(ins_bitcast);
 
                 //将这个instruction加入总list
                 InstNode *node_bitcast = new_inst_node(ins_bitcast);
@@ -844,9 +852,8 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                     {
                         //再来一条bitcast
                         //!!!后续第一条一直用v2
-                        Value *v2=create_tmp_value();
                         Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
-                        ins_bitcast2->user.value=*v2;
+                        Value *v2= ins_get_value(ins_bitcast2);
                         //将这个instruction加入总list
                         InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
                         ins_node_add(instruction_list,node_bitcast2);
@@ -962,8 +969,7 @@ int handle_and_or(past root,bool flag)
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v1=create_tmp_value();
-            ins_icmp->user.value=*v1;
+            v1= ins_get_value(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1031,8 +1037,7 @@ int handle_and_or(past root,bool flag)
                 value_init_int(v_zero,0);
                 Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
                 //v_real
-                v2=create_tmp_value();
-                ins_icmp->user.value=*v2;
+                v2= ins_get_value(ins_icmp);
                 //将这个instruction加入总list
                 InstNode *node = new_inst_node(ins_icmp);
                 ins_node_add(instruction_list,node);
@@ -1135,8 +1140,7 @@ void create_if_stmt(past root,Value* v_return) {
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v_real=create_tmp_value();
-            ins_icmp->user.value=*v_real;
+            v_real= ins_get_value(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1240,8 +1244,7 @@ void create_if_else_stmt(past root,Value* v_return) {
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v_real=create_tmp_value();
-            ins_icmp->user.value=*v_real;
+            v_real= ins_get_value(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1395,8 +1398,7 @@ void create_while_stmt(past root,Value* v_return)
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v_real=create_tmp_value();
-            ins_icmp->user.value=*v_real;
+            v_real= ins_get_value(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1496,11 +1498,10 @@ void create_while_stmt(past root,Value* v_return)
 //TODO 还未完成
 void create_func_def(past root) {
     Instruction *instruction_begin;
-    instruction_begin = ins_new_unary_operator(FunBegin, NULL);
-
     //拿出存在符号表中的函数信息
     Value *v=symtab_lookup_withmap(this, bstr2cstr(root->left->next->sVal, '\0'), &this->value_maps->next->map);
-    instruction_begin->user.value=*v;
+    instruction_begin = ins_new_unary_operator(FunBegin, v);
+
     v_cur_func=v;
 
 
@@ -1521,8 +1522,8 @@ void create_func_def(past root) {
     //一定是函数里的第一条指令
     if(return_stmt_num[return_index]>1 || strcmp(v->name,"main")==0)
     {
-        v_return=create_tmp_value();
-        v_return->pdata->var_pdata.alias=t_index-1;
+        Instruction *instruction= ins_new_unary_operator(Alloca, NULL);
+        v_return= ins_get_value(instruction);            //只有v_return没有alias
 
         //有多个返回值
         if(return_stmt_num[return_index]>1)
@@ -1534,9 +1535,6 @@ void create_func_def(past root) {
             else
                 v_return->VTy->ID=MAIN_FLOAT;
         }
-
-        Instruction *instruction= ins_new_unary_operator(Alloca, v_return);
-        instruction->user.value=*v_return;
         //将这个instruction加入总list
         InstNode *node = new_inst_node(instruction);
         ins_node_add(instruction_list,node);
@@ -1556,10 +1554,9 @@ void create_func_def(past root) {
             //参数Value
             Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map);
 
-            param->pdata->var_pdata.alias=t_index++;
-            //printf("%d\t",param->pdata->var_pdata.alias);
-
             Instruction *instruction= ins_new_unary_operator(Alloca,param);
+            Value *v_param= ins_get_value(instruction);
+            param->alias=v_param;v_param->alias=param;
             //将这个instruction加入总list
             InstNode *node = new_inst_node(instruction);
             ins_node_add(instruction_list,node);
@@ -1575,8 +1572,7 @@ void create_func_def(past root) {
         while(params!=NULL)
         {
             //参数Value
-            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map);
-
+            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map)->alias;
 
             Value *v_num_param=create_param_value();
             create_store_stmt(v_num_param,param);
@@ -1679,6 +1675,7 @@ Value *get_value_by_type(past x1)
     return v1;
 }
 
+//处理!
 void travel_expr(past str[100],int length)
 {
     bool need_xor=false;
@@ -1698,9 +1695,11 @@ void travel_expr(past str[100],int length)
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
 struct _Value *cal_expr(past expr,int* convert) {
     //最后从栈中弹出的
-    past final_result = newAstNode();
+    Value *final_result = (Value*) malloc(sizeof (Value));
+    value_init(final_result);
+
     //记录后缀表达式
-    past str[100];
+     past str[100];
     int i = 0;
 
     //后序遍历语法树
@@ -1728,18 +1727,39 @@ struct _Value *cal_expr(past expr,int* convert) {
     }
     str[i]=NULL;
 
-    travel_expr(str,i);        //TODO:check
+    travel_expr(str, i);        //TODO:check
 
     //计算后缀表达式
-    past_stack PS2;
-    init_past_stack(&PS2);
-    past x1, x2;
+    value_stack PS2;
+    init_value_stack(&PS2);
+    //存储数组需要past
+    past_stack PS3;
+    init_past_stack(&PS3);
+    Value* x1;Value *x2;
     past *pp = str;
     bool have_icmp=false;
     while (*pp) {
         if (strcmp(bstr2cstr((*pp)->nodeType, '\0'), "expr") != 0)
-            push(&PS2, (*pp));
-
+        {
+            //做成Value压栈
+            Value *v1=NULL;
+            if (strcmp(bstr2cstr((*pp)->nodeType, '\0'), "num_int") == 0)
+            {
+                v1=(Value*) malloc(sizeof (Value));
+                value_init_int(v1, (*pp)->iVal);
+            }
+            else if(strcmp(bstr2cstr((*pp)->nodeType, '\0'), "ID") == 0)
+            {
+                //如果x1->sVal是a,b,c...需要load
+                v1=symtab_dynamic_lookup(this, bstr2cstr((*pp)->sVal, '\0'));
+            }
+            else if(strcmp(bstr2cstr((*pp)->nodeType, '\0'), "LValArray") == 0)
+            {
+                v1= symtab_dynamic_lookup(this,bstr2cstr((*pp)->left->sVal, '\0'));
+                push(&PS3,(*pp)->right->left);
+            }
+            push_value(&PS2, v1);
+        }
         else
         {
             if((*pp)->iVal=='!')
@@ -1756,73 +1776,77 @@ struct _Value *cal_expr(past expr,int* convert) {
             }
 
             //如果读到+-*/%就从栈中弹出两个计算,算不动就给临时变量存
-            pop(&PS2, &x2);
-            pop(&PS2, &x1);
+            pop_value(&PS2, &x2);
+            pop_value(&PS2, &x1);
             //都是常数，直接算出来压进栈
-            Value *v_con1=NULL;Value *v_con2=NULL;
-            if(strcmp(bstr2cstr(x1->nodeType, '\0'), "ID") == 0)
-            {
-                v_con1=symtab_dynamic_lookup(this, bstr2cstr(x1->sVal, '\0'));
-                if(v_con1!=NULL && v_con1->VTy->ID==Const_INT)
-                    x1->iVal=v_con1->pdata->var_pdata.iVal;
-                else if(v_con1!=NULL && v_con1->VTy->ID==Const_FLOAT)
-                    x1->fVal=v_con1->pdata->var_pdata.fVal;
-            }
-            if(strcmp(bstr2cstr(x2->nodeType, '\0'), "ID") == 0)
-            {
-                v_con2=symtab_dynamic_lookup(this, bstr2cstr(x2->sVal, '\0'));
-                if(v_con2!=NULL && v_con2->VTy->ID==Const_INT)
-                    x2->iVal=v_con2->pdata->var_pdata.iVal;
-                else if(v_con2!=NULL && v_con2->VTy->ID==Const_FLOAT)
-                    x2->fVal=v_con2->pdata->var_pdata.fVal;
-            }
-            if ((strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 || (v_con1!=NULL && v_con1->VTy->ID==Const_INT)) &&
-                (strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0 || (v_con2!=NULL && v_con2->VTy->ID==Const_INT))) {
+            if ((x1->VTy->ID==Int || x1->VTy->ID==Const_INT) &&
+                    (x2->VTy->ID==Int || x2->VTy->ID==Const_INT)) {
+                Value *v3=(Value*) malloc(sizeof (Value));
+                value_init(v3);
+                v3->VTy->ID=Int;
                 switch ((*pp)->iVal) {
                     case '+':
-                        x1->iVal = x1->iVal + x2->iVal;
+                        v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal + x2->pdata->var_pdata.iVal;
                         break;
                     case '-':
-                        x1->iVal = x1->iVal - x2->iVal;
+                        v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal - x2->pdata->var_pdata.iVal;
                         break;
                     case '*':
-                        x1->iVal = x1->iVal * x2->iVal;
+                        v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal * x2->pdata->var_pdata.iVal;
                         break;
                     case '/':
-                        x1->iVal = x1->iVal / x2->iVal;
+                        v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal / x2->pdata->var_pdata.iVal;
                         break;
                     case '%':
-                        x1->iVal = x1->iVal % x2->iVal;
+                        v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal % x2->pdata->var_pdata.iVal;
                         break;
                     case '!':                                     //TODO !1这种还没处理，目前无法直接判断为假,如果要处理，就定个convert值为一定真和一定假，返回后分别加入if语句那些的num_int的判断
                         //(*convert)=!(*convert);
                         break;
                 }
-                if(v_con1!=NULL && v_con1->VTy->ID==Const_INT)
-                {
-                    past x3=newNumInt(x1->iVal);
-                    push(&PS2, x3);
-                }
-                else
-                    push(&PS2, x1);
+                push_value(&PS2, v3);
             }
             else
             {
                 Instruction *instruction=NULL;
 
                 //先看v1
-                Value *v1= get_value_by_type(x1);
+                Value *v1=NULL;
+                if(x1->VTy->ID==Int || x1->VTy->ID==Float)
+                    v1=x1;
+                else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==Var_initINT))
+                    v1= create_load_stmt(x1->name);
+                else if(!begin_tmp(x1->name) && (x1->VTy->ID==ArrayTyID || x1->VTy->ID==ArrayTyID_Init))
+                {
+                    past root;
+                    pop(&PS3,&root);
+                    v1= handle_assign_array(root,x1);
+                }
+                else
+                    v1=x1;
 
-                //v2
-                Value *v2= get_value_by_type(x2);
+
+                //先看v1
+                Value *v2=NULL;
+                if(x2->VTy->ID==Int || x2->VTy->ID==Float)
+                    v2=x2;
+                else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==Var_initINT))
+                    v2= create_load_stmt(x2->name);
+                else if(!begin_tmp(x2->name) && (x2->VTy->ID==ArrayTyID || x2->VTy->ID==ArrayTyID_Init))
+                {
+                    past root;
+                    pop(&PS3,&root);
+                    v2= handle_assign_array(root,x2);
+                }
+                else
+                    v2=x2;
 
                 //TODO 除了把'+'禁掉，还有无更好的处理
                 if((*pp)->iVal!='!' && (*pp)->iVal!='+' && get_last_inst(instruction_list)->inst->Opcode==XOR)
                 {
                     //生成一条zext
                     Instruction *ins_zext= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
-                    Value *v_zext=create_tmp_value();
-                    ins_zext->user.value=*v_zext;
+                    Value *v_zext= ins_get_value(ins_zext);
 
                     InstNode *node = new_inst_node(ins_zext);
                     ins_node_add(instruction_list,node);
@@ -1832,7 +1856,7 @@ struct _Value *cal_expr(past expr,int* convert) {
 
                 switch ((*pp)->iVal) {
                     case '+':
-                        if(!((strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && x1->iVal==0) || (strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0 && x2->iVal==0)))
+                        if(!((v1->VTy->ID==Int && v2->pdata->var_pdata.iVal==0) || (v2->VTy->ID==Int && v2->pdata->var_pdata.iVal==0)))
                             instruction = ins_new_binary_operator(Add, v1, v2);
                         break;
                     case '-':
@@ -1858,8 +1882,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                                 value_init_int(v_zero,0);
                                 Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v2,v_zero);
                                 //v_real
-                                v_real=create_tmp_value();
-                                ins_icmp->user.value=*v_real;
+                                v_real= ins_get_value(ins_icmp);
                                 //将这个instruction加入总list
                                 InstNode *node_icmp = new_inst_node(ins_icmp);
                                 ins_node_add(instruction_list,node_icmp);
@@ -1882,29 +1905,26 @@ struct _Value *cal_expr(past expr,int* convert) {
                 if(instruction!=NULL)
                 {
                     //临时变量左值,v_tmp的pdata是没有实际内容的
-                    Value *v_tmp=create_tmp_value();
-                    past tmp = newIdent(bfromcstr(v_tmp->name));
+                    Value *v_tmp= ins_get_value(instruction);
                     v_tmp->VTy->ID = Var_INT;
 
-                    instruction->user.value = *v_tmp;
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
                     ins_node_add(instruction_list,node);
-                    push(&PS2, tmp);
+                    push_value(&PS2, v_tmp);
                 }
                 else if((*pp)->iVal=='!')
                 {
-                    past tmp= newIdent(bfromcstr(v2->name));
                     //如果是!a就将a压入就好
-                    push(&PS2,tmp);
+                    push_value(&PS2,v2);
                 }
-                    //0+a或a+0这种
+                //0+a或a+0这种
                 else
                 {
-                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && x1->iVal==0)
-                        push(&PS2,x2);
+                    if(v1->VTy->ID==Int && v1->pdata->var_pdata.iVal==0)
+                        push_value(&PS2,v2);
                     else
-                        push(&PS2,x1);
+                        push_value(&PS2,v1);
                 }
             }
         }
@@ -1912,36 +1932,13 @@ struct _Value *cal_expr(past expr,int* convert) {
     }
 
     //弹出最终值
-    pop(&PS2, &final_result);
-    //将past类型的final_result转成value*
-    Value *v_final=(Value*) malloc(sizeof (Value));
-    value_init(v_final);
+    pop_value(&PS2, &final_result);
+    final_result->pdata->var_pdata.map= getCurMap(this);
 
-    //只可能弹出常数或临时变量tx
-    if (strcmp(bstr2cstr(final_result->nodeType, '\0'), "num_int") == 0)
-        value_init_int(v_final, final_result->iVal);
-    else {
-        v_final->VTy->ID = Var_INT;
-        v_final->name = (char *) malloc(sizeof(bstr2cstr(final_result->sVal, '\0')));
-        strcpy(v_final->name, bstr2cstr(final_result->sVal, '\0'));
-        v_final->pdata->var_pdata.map= getCurMap(this);
-    }
-
-    //pdata暂时只存了变量名
-    return v_final;
+    return final_result;
 }
 
-//将临时变量t0 clear为t,或将%1 clear为%，后面跟的数量可重新赋值
-void clear_tmp(char* tmp)
-{
-    char *p=tmp;
-    p++;
-    while(*p)
-    {
-        *p='\0';
-        p++;
-    }
-}
+
 
 //原来的直接算出真值的函数，先注释掉，以后可能还是会用到
 struct _Value* cal_logic_expr(past logic_expr)
@@ -1991,11 +1988,8 @@ struct _Value* cal_logic_expr(past logic_expr)
 
     //左值value
     //临时变量左值
-    Value *v_tmp=create_tmp_value();
+    Value *v_tmp= ins_get_value(instruction);
     v_tmp->VTy->ID=Var_INT;
-
-    //v_tmp是真值类型
-    instruction->user.value=*v_tmp;
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -2005,19 +1999,6 @@ struct _Value* cal_logic_expr(past logic_expr)
     return v_tmp;
 }
 
-//除了不能定type，其他都ok
-struct _Value *create_tmp_value()
-{
-    sprintf(t_num, "%d", t_index++);
-    strcat(t,t_num);
-    Value *v_tmp=(Value*) malloc(sizeof (Value));
-    value_init(v_tmp);
-    v_tmp->pdata->var_pdata.map= getCurMap(this);
-    v_tmp->name=(char*) malloc(strlen (t));
-    strcpy(v_tmp->name,t);
-    clear_tmp(t);
-    return v_tmp;
-}
 
 struct _Value *create_param_value()
 {
@@ -2038,10 +2019,9 @@ struct _Value* create_load_stmt(char *name)
     Instruction *instruction=NULL;
 
     //还是按照load a，后端找栈帧地址自动找到v->alias
-    instruction=ins_new_unary_operator(Load,v);
+    instruction=ins_new_unary_operator(Load,v->alias);
     //最后会删除吧，自动创建instruction的user.value
-    Value *v1=create_tmp_value();
-    instruction->user.value=*v1;
+    Value *v1= ins_get_value(instruction);
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -2056,8 +2036,7 @@ struct _Value* create_return_load(Value *v_return)
     //还是按照load a，后端找栈帧地址自动找到v->alias
     instruction=ins_new_unary_operator(Load,v_return);
     //最后会删除吧，自动创建instruction的user.value
-    Value *v1=create_tmp_value();
-    instruction->user.value=*v1;
+    Value *v1= ins_get_value(instruction);
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -2091,7 +2070,8 @@ void declare_all_alloca(struct _mapList* func_map,bool flag)
                 {
                     Instruction *instruction= ins_new_unary_operator(Alloca, (Value *) value);
                     //与符号表对应的绑定在一起
-                    ((Value*)value)->pdata->var_pdata.alias=t_index++;
+                    Value *v_alias= ins_get_value(instruction);
+                    ((Value*)value)->alias=v_alias;v_alias->alias=((Value*)value);
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
                     ins_node_add(instruction_list,node);
@@ -2131,7 +2111,8 @@ void declare_global_alloca(struct _mapList* func_map)
                         value_init_int(v_num,0);
                     Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR, (Value *) value,v_num);
                     //与符号表对应的绑定在一起
-                    ((Value*)value)->pdata->var_pdata.alias=t_index++;
+                    Value *v_alias= ins_get_value(instruction);
+                    ((Value*)value)->alias=v_alias;v_alias->alias=((Value*)value);
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
                     ins_node_add(instruction_list,node);
@@ -2254,59 +2235,39 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
-                if(instruction->user.use_list->Val->VTy->ID==ArrayTyID)
+                if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTyID || instruction->user.use_list->Val->VTy->ID==ArrayTyID_Init))
                 {
-                    printf(" %%%d = alloca ",instruction->user.use_list->Val->pdata->var_pdata.alias);
+                    printf(" %s = alloca ",instruction->user.value.name);
+                    fprintf(fptr," %s = alloca ",instruction->user.value.name);
                     printf_array(instruction->user.use_list->Val,0,fptr);
                     printf(",align 16\n");
+                    fprintf(fptr,",align 16\n");
                 }
-                else if(instruction->user.use_list->Val!=NULL)
+                else
                 {
-                    printf(" %%%d = alloca i32,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.alias);
-                    fprintf(fptr," %%%d = alloca i32,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.alias);
+                    printf(" %s = alloca i32,align 4\n",instruction->user.value.name);
+                    fprintf(fptr," %s = alloca i32,align 4\n",instruction->user.value.name);
                 }
                 break;
             case Load:
-                if(begin_global(instruction->user.use_list->Val->name))
-                {
-                    printf(" %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
-                    fprintf(fptr," %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
-                }
-                else
-                {
-                    printf(" %s = load i32,i32* %%%d,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.alias);
-                    fprintf(fptr," %s = load i32,i32* %%%d,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.alias);
-                }
+                printf(" %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                fprintf(fptr," %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
             case Store:
-                if(instruction->user.use_list->Val->VTy->ID==Int)
+                if(instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT)
                 {
-                    if(!begin_tmp(instruction->user.use_list[1].Val->name))
-                    {
-                        printf(" store i32 %d,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
-                        fprintf(fptr," store i32 %d,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
-                    } else
-                    {
-                        printf(" store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
-                        fprintf(fptr," store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
-                    }
+                    printf(" store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    fprintf(fptr," store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 }
-                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                else if(instruction->user.use_list->Val->VTy->ID==Float || instruction->user.use_list->Val->VTy->ID==Const_FLOAT)
                 {
-                    printf(" store i32 %f,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
-                    fprintf(fptr," store i32 %f,i32* %%%d,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
+                    printf(" store i32 %f,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                    fprintf(fptr," store i32 %f,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
                 }
                 else
                 {
-                    if(!begin_tmp(instruction->user.use_list[1].Val->name))
-                    {
-                        printf(" store i32 %s,i32* %%%d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
-                        fprintf(fptr," store i32 %s,i32* %%%d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.alias);
-                    } else
-                    {
-                        printf(" store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                        fprintf(fptr," store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                    }
+                    printf(" store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    fprintf(fptr," store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                 }
                 break;
             case br:
@@ -2497,8 +2458,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case FunBegin:
                 //TODO 暂时用#0，未考虑参数
                 p=instruction->user.value.pdata->symtab_func_pdata.param_num;
-                printf("define dso_local i32 @%s(",instruction->user.value.name);
-                fprintf(fptr,"define dso_local i32 @%s(",instruction->user.value.name);
+                printf("define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+                fprintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
                 while (p>0)
                 {
                     if(p==instruction->user.value.pdata->symtab_func_pdata.param_num)
@@ -2673,17 +2634,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 //第一条bitcast
                 if(get_next_inst(get_next_inst(instruction_node))->inst->Opcode==bitcast)
                 {
-                    v_cur_array=instruction->user.use_list->Val;
+                    v_cur_array=instruction->user.use_list->Val->alias;
                     printf(" %s=bitcast ",instruction->user.value.name);
                     fprintf(fptr," %s=bitcast ",instruction->user.value.name);
                     printf_array(instruction->user.use_list->Val,0,fptr);
-                    printf("* %%%d to i8*\n",instruction->user.use_list->Val->pdata->symtab_array_pdata.alias);
-                    fprintf(fptr,"* %%%d to i8*\n",instruction->user.use_list->Val->pdata->symtab_array_pdata.alias);
+                    printf("* %s to i8*\n",instruction->user.use_list->Val->name);
+                    fprintf(fptr,"* %s to i8*\n",instruction->user.use_list->Val->name);
                 }
                 else
                 {
                     printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
-                    fprintf(fptr,"* %%%d to i8*\n",instruction->user.use_list->Val->pdata->symtab_array_pdata.alias);
+                    fprintf(fptr,"* %s to i8*\n",instruction->user.use_list->Val->name);
                     printf_array(v_cur_array,0,fptr);
                     printf("*\n");
                     fprintf(fptr,"*\n");
@@ -2691,33 +2652,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
 
             case GMP:
-                if(begin_tmp(instruction->user.use_list->Val->name))
-                {
-                    printf(" %s=getelementptr inbounds ",instruction->user.value.name);
-                    fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
-                    printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                    printf(",");
-                    fprintf(fptr,",");
-                    printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                    printf("* ");
-                    fprintf(fptr,"* ");
-                    printf("%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                    fprintf(fptr,"%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                }
-                    //TODO，比如调用d[2][1]的打印
-                else
-                {
-                    printf(" %s=getelementptr inbounds ",instruction->user.value.name);
-                    fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
-                    printf_array(instruction->user.use_list->Val,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                    printf(",");
-                    fprintf(fptr,",");
-                    printf_array(instruction->user.use_list->Val,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                    printf("* ");
-                    fprintf(fptr,"* ");
-                    printf("%%%d, i32 0,i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.alias,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                    fprintf(fptr,"%%%d, i32 0,i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.alias,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                }
+                printf(" %s=getelementptr inbounds ",instruction->user.value.name);
+                fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
+                printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                printf(",");
+                fprintf(fptr,",");
+                printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                printf("* ");
+                fprintf(fptr,"* ");
+                printf("%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                fprintf(fptr,"%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                //TODO，比如调用d[2][1]的打印
                 break;
             case MEMSET:
                 printf(" call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
