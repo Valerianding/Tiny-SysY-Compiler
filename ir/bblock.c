@@ -150,9 +150,8 @@ void print_one_ins_info(InstNode *instruction_list){
         printf("%d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location);
     }else if(instruction_list->inst->Opcode == Alloca){
         if(instruction_list->inst->user.value.name != NULL){
-            printf(" name : %s",instruction_list->inst->user.value.name);
+            printf(" user.value.name : %s",instruction_list->inst->user.value.name);
         }
-        printf(" use_list上value的 name : %s ",instruction_list->inst->user.use_list[0].Val->name);
     }else if(instruction_list->inst->Opcode == Load){
         if(instruction_list->inst->user.value.name != NULL){
             printf(" name : %s",instruction_list->inst->user.value.name);
@@ -171,9 +170,10 @@ void print_one_ins_info(InstNode *instruction_list){
     if(instruction_list->inst->user.value.use_list == NULL){
         printf(" user.value.use_list : NULL");
     }else{
+        printf(" user.value.use_list :");
         Use *temp = instruction_list->inst->user.value.use_list;
         while(temp != NULL){
-            printf(" user.value.user_list: %p",temp);
+            printf(" %p",temp);
             temp = temp->Next;
         }
     }

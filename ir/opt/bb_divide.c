@@ -9,6 +9,24 @@ void bblock_divide(InstNode *head){
     value_instruction_store = HashMapInit();
     InstNode *cur = head;
     cur = get_next_inst(cur); //跳过第一个ALLBegin
+
+    BasicBlock *globalBlock;
+    InstNode *prev = cur;
+    //如果下一个不是FuncBegin代表了有全局变量
+    if(cur->inst->Opcode != FunBegin) {
+        globalBlock = bb_create();
+        globalBlock->head_node = cur;
+        cur = get_next_inst(cur);
+        while (cur->inst->Opcode != FunBegin) {
+            prev = cur;
+            cur = get_next_inst(cur);
+        }
+        globalBlock->tail_node = prev;
+        bb_set_block(globalBlock, globalBlock->head_node, globalBlock->tail_node);
+    }
+
+
+    //现在cur 为第一个函数开头
     //第一次全部打点
     //printf("first while\n");
     InstNode *prev_in;
@@ -85,22 +103,20 @@ void bblock_divide(InstNode *head){
             }
         }
         if(cur->inst->Opcode == Alloca){
-            Value *alloca_value = cur->inst->user.use_list->Val;
-            if(!HashMapContain(value_instruction_load,alloca_value)){
-                //如果一个alloca都没有load的话 那我们就不需要这句alloca了
-                //同样的对于它进行的store指令也都是无效的了
-                // 这里我们没有考虑主函数的
-                InstNode *prev = get_prev_inst(cur);
-                InstNode *next = get_next_inst(cur);
-                if (prev && next) {
-                    prev->list.next = &next->list;
-                    next->list.prev = &prev->list;
-                }
+            //            Value *alloca_value = cur->inst->user.use_list->Val;
+//            if(!HashMapContain(value_instruction_load,alloca_value)){
+//                //如果一个alloca都没有load的话 那我们就不需要这句alloca了
+//                //同样的对于它进行的store指令也都是无效的了
+//                // 这里我们没有考虑主函数的
+//                InstNode *prev = get_prev_inst(cur);
+//                InstNode *next = get_next_inst(cur);
+//                if (prev && next) {
+//                    prev->list.next = &next->list;
+//                    next->list.prev = &prev->list;
+//                }
 
 
-                //找到对应的store语句 也全部进行删除
-
-            }
+            //找到对应的store语句 也全部进行删除
         }
         cur = get_next_inst(cur);
     }
