@@ -32,7 +32,7 @@ bool LinkedListEmpty(LinkedBlockList *list);
 
 
 
-void HashSetPutAll(HashSet *self,BasicBlock *current,BlockList *list);
+void HashSetPutAll(HashSet *self,BasicBlock *current,LinkedBlockList *list);
 void calculate_all_dominance(Function *head);
 void calculate_dominance(Function *currentFunction);
 #endif //C22V1_DOMINANCE_H

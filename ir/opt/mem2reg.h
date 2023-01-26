@@ -12,6 +12,8 @@
  * 保证 1.在一个基本块 或者 能够被支配
  *
  *
+ *
+ *
  */
 void mem2reg(InstNode *head);
 

@@ -75,7 +75,7 @@ InstNode *search_ins_label(InstNode *head,int label_id);
 BasicBlock *bb_create();
 
 ///获得属于trueBlock的后继节点
-BasicBlock *get_next_block(BasicBlock *this);
+BlockNode *get_next_block(BlockNode *this);
 
 ///获得BlockList的最后一个节点
 BasicBlock *blocklist_pop(BlockList list);

@@ -62,6 +62,7 @@ InstNode *search_ins_id(InstNode *head,int id){
         }
         head = get_next_inst(head);
     }
+    return NULL;
 }
 
 InstNode *search_ins_label(InstNode *head,int label_id){
@@ -86,8 +87,10 @@ void ins_node_add(InstNode *head,InstNode *this){
     sc_list_add_tail(&head->list,&this->list);
 }
 
-BasicBlock *get_next_block(BasicBlock *this){
-    return this->true_block;
+BlockNode *get_next_block(BlockNode *this){
+    if(this->list.next == NULL) return nullptr;
+    BlockNode *next = sc_list_entry(this->list.next,BlockNode,list);
+    return next;
 }
 
 BasicBlock *blocklist_pop(BlockList list){

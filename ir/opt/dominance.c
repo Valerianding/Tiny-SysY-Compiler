@@ -3,7 +3,7 @@
 //
 
 #include "dominance.h"
-HashMap *dominace;  // value: block key: Dom(block)->hashset(block)
+HashSet *allNode;
 LinkedBlockList *LinkedListCreate(){
     LinkedBlockList *list = (LinkedBlockList*)malloc(sizeof(LinkedBlockList));
     LinkedListInit(list);
@@ -42,21 +42,22 @@ bool LinkedListEmpty(LinkedBlockList *list){
 }
 
 void calculate_dominance(Function *currentFunction) {
+    HashMap *dominace = currentFunction->dominace;
     dominace = HashMapInit();
 
     BasicBlock *entry = currentFunction->head;
     LinkedBlockList *tempList = LinkedListCreate(); // 临时存放Block
     LinkedBlockList *allNodeList = LinkedListCreate();  // 存放所有Block
     //全部链表
-    LinkedListAdd(allNodeList,entry);
+    LinkedListAdd(allNodeList, entry);
 
     if (entry->true_block) {
-        LinkedListAdd(allNodeList,entry->true_block);
-        LinkedListAdd(tempList,entry->true_block);
+        LinkedListAdd(allNodeList, entry->true_block);
+        LinkedListAdd(tempList, entry->true_block);
     }
     if (entry->false_block) {
-        LinkedListAdd(allNodeList,entry->false_block);
-        LinkedListAdd(tempList,entry->false_block);
+        LinkedListAdd(allNodeList, entry->false_block);
+        LinkedListAdd(tempList, entry->false_block);
     }
 
     while (!LinkedListEmpty(tempList)) {
@@ -64,18 +65,24 @@ void calculate_dominance(Function *currentFunction) {
         if (cur->visited) continue;
         cur->visited = true;
         if (cur->true_block) {
-            LinkedListAdd(tempList,cur->true_block);
-            LinkedListAdd(allNodeList,cur->true_block);
+            LinkedListAdd(tempList, cur->true_block);
+            LinkedListAdd(allNodeList, cur->true_block);
         }
         if (cur->false_block) {
-            LinkedListAdd(tempList,cur->false_block);
-            LinkedListAdd(allNodeList,cur->false_block);
+            LinkedListAdd(tempList, cur->false_block);
+            LinkedListAdd(allNodeList, cur->false_block);
         }
+    }
+    printf("ALLNodeList的block集合 !\n");
+    BlockNode *firstNode = sc_list_entry(allNodeList->dummpNode.list.next, BlockNode, list);
+    BasicBlock *first = firstNode->block;
+    for (; first != nullptr; first = LinkedListPop(allNodeList)) {
+        print_block_info(first);
     }
 
     HashSet *entrydom = HashSetInit();
-    HashSetAdd(entrydom,entry);
-    HashMapPut(dominace,entry,entrydom);
+    HashSetAdd(entrydom, entry);
+    HashMapPut(dominace, entry, entrydom);
 //    for(){
 //        HashSet *currentBlockDom = HashSetInit();
 //        HashSetPutALL()
@@ -88,4 +95,5 @@ void calculate_dominance(Function *currentFunction) {
 //
 //        }
 //    }
+    HashSet
 }
