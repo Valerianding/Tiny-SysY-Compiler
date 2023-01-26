@@ -37,12 +37,12 @@ add_compile_options(-g -O0)
 add_executable(compiler
         ${FLEX_mc_lexer_OUTPUTS}
         ${BISON_mc_parser_OUTPUTS}
+        ${DIR_FRONT}
         ${DIR_OPT}
         ${DIR_TAC}
         ${DIR_IR}
         ${DIR_LIB}
         ${DIR_CONTAINER}
-        ${DIR_FRONT}
         tacmain.c)
 set(CMAKE_BUILD_TYPE Debug)
 #aux_source_directory(. DIR_SRC)

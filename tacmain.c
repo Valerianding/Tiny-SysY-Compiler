@@ -76,6 +76,7 @@ int main(int argc, char* argv[]){
     for(;instruction_list != NULL;instruction_list = get_next_inst(instruction_list)){
         print_one_ins_info(instruction_list);
     }
+
     printf("--------------\n");
 
     /* 测试所有BasicBlock的连接 以及Function的连接 */
