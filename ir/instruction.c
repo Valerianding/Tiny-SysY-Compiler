@@ -67,6 +67,11 @@ void clear_tmp(char* tmp)
 
 //获取instruction.user.value并赋个名字
 Value *ins_get_value(Instruction *ins){
+    return &ins->user.value;
+}
+
+//获取instruction.user.value并赋个名字
+Value *ins_get_value_with_name(Instruction *ins){
     Value *v_tmp=&ins->user.value;
     sprintf(t_num, "%d", t_index++);
     strcat(t,t_num);
