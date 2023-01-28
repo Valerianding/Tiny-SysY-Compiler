@@ -84,5 +84,5 @@ Value *ins_get_value(Instruction *ins);
 void print_ins_opcode(Instruction *this);
 
 void clear_tmp(char* tmp);
-Value *ins_get_value(Instruction *ins);
+Value *ins_get_value_with_name(Instruction *ins);
 #endif

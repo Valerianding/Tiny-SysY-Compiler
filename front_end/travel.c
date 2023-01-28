@@ -220,7 +220,7 @@ struct _Value *create_call_func(past root)
     instruction= ins_new_unary_operator(Call,v);
 
     //按照llvm，有无返回值都生成了这个value
-    Value *v_result= ins_get_value(instruction);
+    Value *v_result= ins_get_value_with_name(instruction);
     //有返回值
     if(v->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
     {
@@ -594,7 +594,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         ins_gmp= ins_new_binary_operator(GMP,v_prev,v_offset);
                     }
 
-                    Value *v_gmp= ins_get_value(ins_gmp);
+                    Value *v_gmp= ins_get_value_with_name(ins_gmp);
                     v_gmp->pdata->var_pdata.iVal=i;
 
                     record[i]=v_gmp;
@@ -634,7 +634,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
 
                     Instruction *gmp_last = ins_new_binary_operator(GMP,record[v_array->pdata->symtab_array_pdata.dimention_figure-2],v_offset);
                     //是最后一层吧
-                    Value *v_gmp= ins_get_value(gmp_last);
+                    Value *v_gmp= ins_get_value_with_name(gmp_last);
                     v_gmp->pdata->var_pdata.iVal=v_array->pdata->symtab_array_pdata.dimention_figure-1;
                     //将这个instruction加入总list
                     InstNode *node_gmp_last = new_inst_node(gmp_last);
@@ -684,7 +684,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                             //更新record
                             //record[i]=v_prev;
                         }
-                        Value *v_gmp= ins_get_value(ins);
+                        Value *v_gmp= ins_get_value_with_name(ins);
                         v_gmp->pdata->var_pdata.iVal=i;
                         //更新record
                         record[i]=v_gmp;
@@ -739,7 +739,7 @@ Value *handle_assign_array(past root,Value *v_array)
         }
 
 
-        Value *v1= ins_get_value(gmp);
+        Value *v1= ins_get_value_with_name(gmp);
         v1->pdata->var_pdata.iVal=i;
 
         v_last=v1;
@@ -752,7 +752,7 @@ Value *handle_assign_array(past root,Value *v_array)
     }
     //load
     Instruction *ins_load= ins_new_unary_operator(Load,v_last);
-    Value *v_load= ins_get_value(ins_load);
+    Value *v_load= ins_get_value_with_name(ins_load);
     v_last=v_load;
 
     //将这个instruction加入总list
@@ -814,7 +814,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 //<result> = bitcast <ty> <value> to <ty2>
                 //The ‘bitcast’ instruction converts value to type ty2 without changing any bits.
                 Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array->alias);
-                Value *v1= ins_get_value(ins_bitcast);
+                Value *v1= ins_get_value_with_name(ins_bitcast);
 
                 //将这个instruction加入总list
                 InstNode *node_bitcast = new_inst_node(ins_bitcast);
@@ -853,7 +853,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                         //再来一条bitcast
                         //!!!后续第一条一直用v2
                         Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
-                        Value *v2= ins_get_value(ins_bitcast2);
+                        Value *v2= ins_get_value_with_name(ins_bitcast2);
                         //将这个instruction加入总list
                         InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
                         ins_node_add(instruction_list,node_bitcast2);
@@ -896,15 +896,12 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
         instruction= ins_new_unary_operator(br_i1_false,NULL);
     else
         instruction= ins_new_unary_operator(Label,NULL);
-    Value *T1=(Value*) malloc(sizeof (Value));
-    value_init(T1);
+    Value *T1= ins_get_value(instruction);
     if(true_goto_location>0)
         T1->pdata->instruction_pdata.true_goto_location=true_goto_location;
 
     //TODO 可以吗
     T1->pdata->instruction_pdata.false_goto_location=-2;
-
-    instruction->user.value=*T1;
 
     InstNode *node_true = new_inst_node(instruction);
     ins_node_add(instruction_list,node_true);
@@ -916,12 +913,10 @@ InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
     Instruction *instruction=NULL;
     if(type==br_i1)
         instruction= ins_new_unary_operator(br_i1,v_real);
-    Value *f1=(Value*) malloc(sizeof (Value));
-    value_init(f1);
+    Value *f1= ins_get_value(instruction);
     f1->pdata->instruction_pdata.false_goto_location=false_goto_location;
     f1->pdata->instruction_pdata.true_goto_location=-2;
 
-    instruction->user.value=*f1;
     InstNode *node_false = new_inst_node(instruction);
     ins_node_add(instruction_list,node_false);
     return node_false;
@@ -969,7 +964,7 @@ int handle_and_or(past root,bool flag)
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v1= ins_get_value(ins_icmp);
+            v1= ins_get_value_with_name(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1037,7 +1032,7 @@ int handle_and_or(past root,bool flag)
                 value_init_int(v_zero,0);
                 Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
                 //v_real
-                v2= ins_get_value(ins_icmp);
+                v2= ins_get_value_with_name(ins_icmp);
                 //将这个instruction加入总list
                 InstNode *node = new_inst_node(ins_icmp);
                 ins_node_add(instruction_list,node);
@@ -1140,7 +1135,7 @@ void create_if_stmt(past root,Value* v_return) {
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v_real= ins_get_value(ins_icmp);
+            v_real= ins_get_value_with_name(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1244,7 +1239,7 @@ void create_if_else_stmt(past root,Value* v_return) {
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v_real= ins_get_value(ins_icmp);
+            v_real=ins_get_value_with_name(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1362,10 +1357,8 @@ void create_while_stmt(past root,Value* v_return)
 
     //加进stack，continue用
     Instruction *ins_tmp= ins_new_unary_operator(tmp,NULL);
-    Value *t_in=(Value*) malloc(sizeof (Value));
-    value_init(t_in);
+    Value *t_in= ins_get_value(ins_tmp);
     t_in->pdata->instruction_pdata.true_goto_location=t_index;
-    ins_tmp->user.value=*t_in;
     insnode_push(&S_continue, new_inst_node(ins_tmp));
 
     int while_recall=t_index;
@@ -1398,7 +1391,7 @@ void create_while_stmt(past root,Value* v_return)
             value_init_int(v_zero,0);
             Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
-            v_real= ins_get_value(ins_icmp);
+            v_real= ins_get_value_with_name(ins_icmp);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
@@ -1476,17 +1469,12 @@ void create_while_stmt(past root,Value* v_return)
 
     //while结束，加进stack,break用
     Instruction *ins_break_tmp= ins_new_unary_operator(tmp,NULL);
-    Value *t_out=(Value*) malloc(sizeof (Value));
-    value_init(t_out);
+    Value *t_out= ins_get_value(ins_break_tmp);
     t_out->pdata->instruction_pdata.true_goto_location=t_index-1;
-    ins_break_tmp->user.value=*t_out;
 
     Instruction *ins_1_tmp= ins_new_unary_operator(tmp,NULL);
-    Value *t_1=(Value*) malloc(sizeof (Value));
-    value_init(t_1);
+    Value *t_1= ins_get_value(ins_1_tmp);
     t_1->pdata->instruction_pdata.true_goto_location=-1;
-    ins_1_tmp->user.value=*t_1;
-
 
     insnode_push(&S_continue, new_inst_node(ins_1_tmp));
     insnode_push(&S_break, new_inst_node(ins_break_tmp));
@@ -1523,7 +1511,7 @@ void create_func_def(past root) {
     if(return_stmt_num[return_index]>1 || strcmp(v->name,"main")==0)
     {
         Instruction *instruction= ins_new_unary_operator(Alloca, NULL);
-        v_return= ins_get_value(instruction);            //只有v_return没有alias
+        v_return= ins_get_value_with_name(instruction);            //只有v_return没有alias
 
         //有多个返回值
         if(return_stmt_num[return_index]>1)
@@ -1555,7 +1543,7 @@ void create_func_def(past root) {
             Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map);
 
             Instruction *instruction= ins_new_unary_operator(Alloca,param);
-            Value *v_param= ins_get_value(instruction);
+            Value *v_param= ins_get_value_with_name(instruction);
             param->alias=v_param;v_param->alias=param;
             //将这个instruction加入总list
             InstNode *node = new_inst_node(instruction);
@@ -1846,7 +1834,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                 {
                     //生成一条zext
                     Instruction *ins_zext= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
-                    Value *v_zext= ins_get_value(ins_zext);
+                    Value *v_zext= ins_get_value_with_name(ins_zext);
 
                     InstNode *node = new_inst_node(ins_zext);
                     ins_node_add(instruction_list,node);
@@ -1882,7 +1870,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                                 value_init_int(v_zero,0);
                                 Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v2,v_zero);
                                 //v_real
-                                v_real= ins_get_value(ins_icmp);
+                                v_real= ins_get_value_with_name(ins_icmp);
                                 //将这个instruction加入总list
                                 InstNode *node_icmp = new_inst_node(ins_icmp);
                                 ins_node_add(instruction_list,node_icmp);
@@ -1905,7 +1893,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                 if(instruction!=NULL)
                 {
                     //临时变量左值,v_tmp的pdata是没有实际内容的
-                    Value *v_tmp= ins_get_value(instruction);
+                    Value *v_tmp= ins_get_value_with_name(instruction);
                     v_tmp->VTy->ID = Var_INT;
 
                     //将这个instruction加入总list
@@ -1988,7 +1976,7 @@ struct _Value* cal_logic_expr(past logic_expr)
 
     //左值value
     //临时变量左值
-    Value *v_tmp= ins_get_value(instruction);
+    Value *v_tmp= ins_get_value_with_name(instruction);
     v_tmp->VTy->ID=Var_INT;
 
     //将这个instruction加入总list
@@ -2021,7 +2009,7 @@ struct _Value* create_load_stmt(char *name)
     //还是按照load a，后端找栈帧地址自动找到v->alias
     instruction=ins_new_unary_operator(Load,v->alias);
     //最后会删除吧，自动创建instruction的user.value
-    Value *v1= ins_get_value(instruction);
+    Value *v1= ins_get_value_with_name(instruction);
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -2036,7 +2024,7 @@ struct _Value* create_return_load(Value *v_return)
     //还是按照load a，后端找栈帧地址自动找到v->alias
     instruction=ins_new_unary_operator(Load,v_return);
     //最后会删除吧，自动创建instruction的user.value
-    Value *v1= ins_get_value(instruction);
+    Value *v1= ins_get_value_with_name(instruction);
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -2070,7 +2058,7 @@ void declare_all_alloca(struct _mapList* func_map,bool flag)
                 {
                     Instruction *instruction= ins_new_unary_operator(Alloca, (Value *) value);
                     //与符号表对应的绑定在一起
-                    Value *v_alias= ins_get_value(instruction);
+                    Value *v_alias= ins_get_value_with_name(instruction);
                     ((Value*)value)->alias=v_alias;v_alias->alias=((Value*)value);
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
@@ -2111,7 +2099,7 @@ void declare_global_alloca(struct _mapList* func_map)
                         value_init_int(v_num,0);
                     Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR, (Value *) value,v_num);
                     //与符号表对应的绑定在一起
-                    Value *v_alias= ins_get_value(instruction);
+                    Value *v_alias= ins_get_value_with_name(instruction);
                     ((Value*)value)->alias=v_alias;v_alias->alias=((Value*)value);
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
