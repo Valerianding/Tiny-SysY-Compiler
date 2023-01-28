@@ -20,19 +20,8 @@
 #include "hash_map.h"
 #include "bblock.h"
 #include "function.h"
-typedef struct{
-    int size;
-    BlockNode dummpNode;
-}LinkedBlockList;
-LinkedBlockList *LinkedListCreate();
-void LinkedListInit(LinkedBlockList *list);
-void LinkedListAdd(LinkedBlockList *list,BasicBlock *block);
-BasicBlock *LinkedListPop(LinkedBlockList *list);
-bool LinkedListEmpty(LinkedBlockList *list);
-
-
-
-void HashSetPutAll(HashSet *self,BasicBlock *current,LinkedBlockList *list);
 void calculate_all_dominance(Function *head);
 void calculate_dominance(Function *currentFunction);
+void HashSetCopy(HashSet *dest,HashSet *src);
+bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
 #endif //C22V1_DOMINANCE_H

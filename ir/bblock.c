@@ -106,8 +106,17 @@ BasicBlock *blocklist_pop(BlockList list){
     }
 }
 
-BlockList get_prev_block(BasicBlock *this){
-    return this->prev_blocks;
+HashSet *get_prev_block(BasicBlock *this){
+    HashSet *prevBlocks = HashSetInit();
+    if(this->prev_blocks == NULL) return NULL;
+    struct sc_list *temp = &this->prev_blocks->list;
+    while(temp != NULL){
+        BlockNode *blockNode = sc_list_entry(temp,BlockNode,list);
+        BasicBlock *block = blockNode->block;
+        HashSetAdd(prevBlocks,block);
+        temp = temp->next;
+    }
+    return prevBlocks;
 }
 
 void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
@@ -173,6 +182,7 @@ void print_one_ins_info(InstNode *instruction_list){
     if(instruction_list->inst->user.value.use_list == NULL){
         printf(" user.value.use_list : NULL");
     }else{
+        //TODO 打印user而不是use_list
         printf(" user.value.use_list :");
         Use *temp = instruction_list->inst->user.value.use_list;
         while(temp != NULL){

@@ -31,6 +31,7 @@ typedef struct _BasicBlock
     InstNode *head_node;  // 这个基本块的第一条instruction
     InstNode *tail_node;  // 这个基本块的最后一条instruction
     int visited;
+    HashSet *dom; // 记录支配该节点的集合
     HashMap *in;
     HashMap *out;
 }BasicBlock;
@@ -84,7 +85,7 @@ BasicBlock *blocklist_pop(BlockList list);
 BlockNode *get_next_prevblock(BlockNode *this);
 
 ///获得所有的前驱节点
-BlockList get_prev_block(BasicBlock *this);
+HashSet *get_prev_block(BasicBlock *this);
 
 ///获得bblock的所在的function
 Function *bblock_get_parent(BasicBlock *this);

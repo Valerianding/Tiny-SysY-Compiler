@@ -5,7 +5,6 @@
 #ifndef C22V1_FUNCTION_H
 #define C22V1_FUNCTION_H
 #include "bblock.h"
-#include "dominance.h"
 
 typedef struct _Function{
     BasicBlock *head;

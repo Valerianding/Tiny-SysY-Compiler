@@ -7,6 +7,7 @@
 #include "bblock.h"
 #include "stdio.h"
 #include "bb_divide.h"
+#include "dominance.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
