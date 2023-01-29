@@ -152,7 +152,7 @@ void blocklist_add(BlockList list,BasicBlock *block){
 }
 
 void print_one_ins_info(InstNode *instruction_list){
-    printf("opcode:");
+    printf("%d : opcode:",instruction_list->inst->i);
     print_ins_opcode(instruction_list->inst);
     if(instruction_list->inst->Opcode == br_i1){
         printf("%d %d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location,instruction_list->inst->user.value.pdata->instruction_pdata.false_goto_location);
@@ -175,7 +175,7 @@ void print_one_ins_info(InstNode *instruction_list){
         printf(" oprand name : %s",instruction_list->inst->user.use_list[1].Val->name);
     }
     if(instruction_list->inst->Parent != NULL){
-        printf(" parent:%p",instruction_list->inst->Parent);
+        printf(" parent: b%d",instruction_list->inst->Parent->id);
     }else{
         printf(" parent:NULL");
     }
@@ -201,7 +201,7 @@ BlockNode *get_next_prevblock(BlockNode *this){
 }
 
 void print_block_info(BasicBlock *this){
-    printf("block : %p ",this);
+    printf("block : b%d ",this->id);
     //打印后继
     if(this->head_node){
         printf("head : id : %d ",this->head_node->inst->i);
@@ -215,17 +215,17 @@ void print_block_info(BasicBlock *this){
         BlockNode *temp = this->prev_blocks;
         int i = 0;
         while(temp != NULL){
-            printf("%d : %p ",i++,temp->block);
+            printf("%d : b%d ",i++,temp->block->id);
             temp = get_next_prevblock(temp);
         }
     }else{
         printf("NULL ");
     }
     if(this->true_block){
-        printf("true_block : %p ",this->true_block);
+        printf("true_block : %d ",this->true_block->id);
     }
     if(this->false_block){
-        printf("false_block : %p ",this->false_block);
+        printf("false_block : %d ",this->false_block->id);
     }
     if(this->Parent){
         printf("parent : %p",this->Parent);

@@ -20,8 +20,8 @@
 #include "hash_map.h"
 #include "bblock.h"
 #include "function.h"
-void calculate_all_dominance(Function *head);
 void calculate_dominance(Function *currentFunction);
+void calculate_dominance_frontier(Function *currentFunction);
 void HashSetCopy(HashSet *dest,HashSet *src);
 bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
 #endif //C22V1_DOMINANCE_H

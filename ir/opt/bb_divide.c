@@ -2,8 +2,8 @@
 // Created by Valerian on 2023/1/15.
 //
 #include "bb_divide.h"
-extern HashMap* value_instruction_store; // alloca(value)  ->  instruction  找到alloca指令对应的store
-extern HashMap* value_instruction_load;  // alloca(value)  ->  instructiond 找到alloca指令对应的load
+extern HashMap* value_instruction_store; // 通过 instruction的value alloca(value)  ->  instruction  找到alloca指令对应的store
+extern HashMap* value_instruction_load;  // 通过 instruction的value alloca(value)  ->  instructiond 找到alloca指令对应的load
 void bblock_divide(InstNode *head){
     value_instruction_load = HashMapInit();
     value_instruction_store = HashMapInit();
@@ -16,6 +16,8 @@ void bblock_divide(InstNode *head){
     if(cur->inst->Opcode != FunBegin) {
         globalBlock = bb_create();
         globalBlock->head_node = cur;
+        globalBlock->id = count;
+        count++;
         cur = get_next_inst(cur);
         while (cur->inst->Opcode != FunBegin) {
             prev = cur;
@@ -46,6 +48,8 @@ void bblock_divide(InstNode *head){
                 cur_next->inst->user.value.is_in = true;
             }
             BasicBlock *this = bb_create();
+            this->id = count;
+            count++;
             bb_set_block(this,prev_in,cur);
         }
         //为后面的mem2reg打基础
@@ -103,6 +107,16 @@ void bblock_divide(InstNode *head){
             }
         }
         if(cur->inst->Opcode == Alloca){
+            Value *alloca_value = &cur->inst->user.value;
+            //if(!HashMapContain(value_instruction_load,alloca_value)){
+//                //如果对于一个alloca都没有load的话，我们不需要这句alloca
+//                InstNode *pInstNode = get_prev_inst(cur);
+//                InstNode *nInstNode = get_next_inst(cur);
+//                if(pInstNode && nInstNode){
+//                    pInstNode->list.next = &nInstNode->list;
+//                    nInstNode->list.next = &pInstNode->list;
+//                }
+//            }
             //            Value *alloca_value = cur->inst->user.use_list->Val;
 //            if(!HashMapContain(value_instruction_load,alloca_value)){
 //                //如果一个alloca都没有load的话 那我们就不需要这句alloca了

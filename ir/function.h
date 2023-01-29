@@ -9,7 +9,7 @@
 typedef struct _Function{
     BasicBlock *head;
     BasicBlock *tail;
-    HashMap *dominace;  // value: block key: Dom(block)->hashset(block)
+    HashMap *dominance;  // value: block key: Dom(block)->hashset(block)
     Function *Next;
 }Function;
 

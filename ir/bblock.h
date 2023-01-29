@@ -8,7 +8,7 @@ struct _Function;
 struct _BasicBlock;
 typedef struct _BasicBlock BasicBlock;
 typedef struct _Function Function;
-
+static int count = 1;
 /* 这里的设计结构 */
 typedef struct _InstNode{
     Instruction *inst;
@@ -22,8 +22,9 @@ typedef struct _BlockNode{
 
 typedef BlockNode * BlockList;
 
-typedef struct _BasicBlock
-{
+typedef struct _BasicBlock{
+
+    //TODO 我们直接保留HashSet的prevBlocks就可以了
     BlockList prev_blocks;
     struct _BasicBlock *true_block;
     struct _BasicBlock *false_block;
@@ -31,9 +32,9 @@ typedef struct _BasicBlock
     InstNode *head_node;  // 这个基本块的第一条instruction
     InstNode *tail_node;  // 这个基本块的最后一条instruction
     int visited;
-    HashSet *dom; // 记录支配该节点的集合
-    HashMap *in;
-    HashMap *out;
+    HashSet *dom; // 记录支配该节点的集合 注意是支配该节点！！
+    HashSet *df; // 记录支配边界
+    int id;
 }BasicBlock;
 
 ///初始化bblock
@@ -102,8 +103,9 @@ void print_block_info(BasicBlock *this);
 ///清除所有的block的访问标记
 void clear_visited_flag(InstNode *head);
 
-///加入到blocklist当中，仅用于dominance信息的计算
-void blocklist_add(BlockList list,BasicBlock *block);
+
+
+
 
 /// Unlink 'this' from the containing function, but do not delete it.
 void removeFromParent(BasicBlock *this);
@@ -113,11 +115,4 @@ void moveBefore(BasicBlock *this,BasicBlock *MovePos);
 
 
 void moveAfter(BasicBlock *this,BasicBlock *MovePos);
-
-
-void insertInto(Function *Parent, BasicBlock *InsertBefore);
-
-/// Return the predecessor of this block if it has a single predecessor
-/// block. Otherwise return a null`  pointer.
-BasicBlock *getSinglePredecessor();
 #endif
