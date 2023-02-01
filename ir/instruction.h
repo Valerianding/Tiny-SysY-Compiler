@@ -49,29 +49,13 @@ enum InstructionType{
     CAL,
 };
 
-typedef enum _RegorMem
-{
-    IN_REGISTERRT_TEST,
-    IN_MEMORY_TEST,
-    IN_INSTRUCTION_TEST
-} RegorMem;
-
-typedef struct _VarSpace
-{
-    bool isLive;
-    RegorMem place;
-    int order;
-
-} VarSpace;
 
 typedef struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
     enum InstructionType type;
-    int i; //指令的编号
-
-    HashMap *value_VarSpace;  //key: value*    value: VarSpace
+    int i; //指令的编
 }Instruction;
 
 

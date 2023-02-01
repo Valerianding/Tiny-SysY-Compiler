@@ -4,8 +4,7 @@
 
 /// This method should only be used by the Use class.
 // void addUse(Use &U) { U.addToList(&UseList); }
-void value_add_use(Value *this, Use *U)
-{
+void value_add_use(Value *this, Use *U){
     use_add_to_list(U, &(this->use_list));
 }
 
@@ -40,26 +39,23 @@ void value_init_float(Value *this,float num){
     this->VTy->ID=Float;
 }
 
-//FIXME: test purpose only!
-extern Symtab test_symtab;
-Symtab* get_sym_tab(Value *V) {
-   Symtab *ST = &test_symtab;
-//    if (Instruction *I = dyn_cast<Instruction>(V)) {
-//      if (BasicBlock *P = I->getParent())
-//        if (Function *PP = P->getParent())
-//          ST = PP->getValueSymbolTable();
-//    } else if (BasicBlock *BB = dyn_cast<BasicBlock>(V)) {
-//      if (Function *P = BB->getParent())
-//        ST = P->getValueSymbolTable();
-//    } else if (GlobalValue *GV = dyn_cast<GlobalValue>(V)) {
-//      if (Module *P = GV->getParent())
-//        ST = &P->getValueSymbolTable();
-//    } else if (Argument *A = dyn_cast<Argument>(V)) {
-//      if (Function *P = A->getParent())
-//        ST = P->getValueSymbolTable();
-//    } else {
-//      assert(isa<Constant>(V) && "Unknown value type!");
-//      return true;  // no name is setable for this.
-//    }
-   return ST;
+void value_delete_use(Value *value,Use *use){
+    Use * head= value->use_list;
+
+}
+
+//
+void value_replace(Value *oldValue,Value *newValue,Use *use){
+    use->Val = newValue;
+    value_add_use(newValue,use);
+    use_remove_from_list(use);
+}
+
+void value_replaceAll(Value *oldValue,Value *newValue){
+
+}
+
+//FIXME
+struct _Symtab* get_sym_tab(Value *V){
+    return NULL;
 }

@@ -8,10 +8,11 @@
 #include "stdio.h"
 #include "bb_divide.h"
 #include "dominance.h"
+#include "front_end/travel.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
-#include "front_end/travel.h"
+
 
 extern int yyparse();
 extern past TRoot;

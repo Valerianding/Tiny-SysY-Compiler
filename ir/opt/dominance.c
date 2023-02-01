@@ -117,7 +117,10 @@ void calculate_dominance(Function *currentFunction) {
                 changed = HashSetDifferent(newSet,parent->dom);
 
                 if(changed){
+                    HashSetDeinit(parent->dom);
                     parent->dom = newSet;
+                }else{
+                    HashSetDeinit(newSet);
                 }
 
                 printf(" changed : %d\n",changed);

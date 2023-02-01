@@ -1,7 +1,6 @@
 #include "use.h"
 
-void use_create(Use *this, struct _User *Parent)
-{
+void use_create(Use *this, struct _User *Parent){
     this->Parent = Parent;
 }
 
@@ -12,7 +11,6 @@ void use_add_to_list(Use *this, Use **List) {
      this->Prev = List;
      *(this->Prev) = this;
 }
-
 
 void use_remove_from_list(Use *this) {
     *(this->Prev) = this->Next;

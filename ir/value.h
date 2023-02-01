@@ -8,7 +8,7 @@
 
 struct _Symtab;
 struct _Use;
-
+typedef struct _Use Use;
 #define  NumUserOperandsBits 27
 
 union _PData{
@@ -79,5 +79,6 @@ void value_get_name(Value* this, char* name);
 struct _Symtab* get_sym_tab(Value *V);
 void value_init_int(Value *this,int num);
 void value_init_float(Value *this,float num);
-
+void value_replace(Value *oldValue,Value *newValue,Use *use);
+void value_replaceAll(Value *oldValue,Value *newValue);
 #endif

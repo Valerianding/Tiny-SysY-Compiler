@@ -7,7 +7,6 @@ typedef struct _User User;
 
 struct _User{
     Value value;
-    
     struct _Use *use_list;
 };
 

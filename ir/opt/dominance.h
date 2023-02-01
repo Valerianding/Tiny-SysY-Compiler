@@ -7,17 +7,6 @@
 #include "hash.h"
 #include "hash_set.h"
 #include "hash_map.h"
-
-/*
- * 如何求一个基本块的支配基本块？
- * Dom n = n 并 n 的 前驱节点m的支配节点的交集
- * 1.移除没有users的alloca指令
- * 2.
- */
-
-#include "hash.h"
-#include "hash_set.h"
-#include "hash_map.h"
 #include "bblock.h"
 #include "function.h"
 void calculate_dominance(Function *currentFunction);
