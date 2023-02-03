@@ -72,6 +72,7 @@ InstNode *search_ins_label(InstNode *head,int label_id){
         }
         head = get_next_inst(head);
     }
+    return nullptr;
 }
 
 void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail){
@@ -198,6 +199,18 @@ BlockNode *get_next_prevblock(BlockNode *this){
     struct sc_list *list= this->list.next;
     BlockNode *next = sc_list_entry(list,BlockNode,list);
     return next;
+}
+
+void ins_insert_after(InstNode *this,InstNode *pos){
+    printf("in ins_insert_after\n");
+    struct sc_list* posList = &pos->list;
+    struct sc_list* nextList = pos->list.next;
+    posList->next = &this->list;
+    this->list.prev = posList;
+
+    this->list.next = nextList;
+    nextList->prev = &this->list;
+    printf("after ins_insert_after\n");
 }
 
 void print_block_info(BasicBlock *this){

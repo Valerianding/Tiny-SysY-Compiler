@@ -12,7 +12,7 @@ struct _User{
 
 User *user_new();
 User *user_new1(unsigned use_num);
-int user_get_size();
+int user_get_size(int use_num);
 User* user_construct(void* place, int use_num);
 Use* user_get_operand_use(User* this, unsigned i);
 #endif

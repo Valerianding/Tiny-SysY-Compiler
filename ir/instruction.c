@@ -49,8 +49,8 @@ Instruction *ins_new_unary_operator(int Op,Value *S1){
     return inst;
 }
 
-struct _BasicBlock *ins_get_parent(Instruction *this){
-    return this->Parent;
+struct _BasicBlock *ins_get_parent(Instruction *ins){
+    return ins->Parent;
 }
 
 //将临时变量t0 clear为t,或将%1 clear为%，后面跟的数量可重新赋值
@@ -82,12 +82,12 @@ Value *ins_get_value_with_name(Instruction *ins){
     return v_tmp;
 }
 
-Instruction *ins_set_parent(Instruction *this,struct _BasicBlock *parent){
-    this->Parent = parent;
+void ins_set_parent(Instruction *ins,struct _BasicBlock *parent){
+    ins->Parent = parent;
 }
 
-void print_ins_opcode(Instruction *this){
-    switch (this->Opcode) {
+void print_ins_opcode(Instruction *ins){
+    switch (ins->Opcode) {
         case Store:
             printf("Store");
             break;

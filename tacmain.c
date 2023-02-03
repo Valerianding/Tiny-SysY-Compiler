@@ -66,6 +66,11 @@ int main(int argc, char* argv[]){
     stack_new(this);
     declare_global_alloca(this->value_maps->next);
     create_instruction_list(TRoot,NULL);
+
+//    Instruction *ins = ins_new_binary_operator(Add,nullptr,nullptr);
+//    InstNode *testNode = new_inst_node(ins);
+//    ins_insert_after(testNode,instruction_list);
+
     printf_llvm_ir(instruction_list,argv[1]);
     //showAst(TRoot,0);
 
@@ -89,8 +94,8 @@ int main(int argc, char* argv[]){
         Function *parent = cur->Parent;
         if(parent != prevFunction){
             /* 测试dominance的计算 */
-            calculate_dominance(parent);
-            calculate_dominance_frontier(parent);
+            //calculate_dominance(parent);
+            // calculate_dominance_frontier(parent);
             print_function_info(parent);
             prevFunction = parent;
         }

@@ -103,7 +103,8 @@ void print_block_info(BasicBlock *this);
 ///清除所有的block的访问标记
 void clear_visited_flag(InstNode *head);
 
-
+///在pos位置后面插入this
+void ins_insert_after(InstNode *this,InstNode *pos);
 
 
 
