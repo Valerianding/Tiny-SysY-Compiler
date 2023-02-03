@@ -66,11 +66,6 @@ int main(int argc, char* argv[]){
     stack_new(this);
     declare_global_alloca(this->value_maps->next);
     create_instruction_list(TRoot,NULL);
-
-//    Instruction *ins = ins_new_binary_operator(Add,nullptr,nullptr);
-//    InstNode *testNode = new_inst_node(ins);
-//    ins_insert_after(testNode,instruction_list);
-
     printf_llvm_ir(instruction_list,argv[1]);
     //showAst(TRoot,0);
 

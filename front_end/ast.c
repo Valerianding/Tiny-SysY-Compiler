@@ -180,7 +180,7 @@ void insert_var_into_symtab(past type,past p)
     }
 
         //TODO 比如a[1][2]，怎么将1,2也放进去?
-    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"IDentArray")==0)
+    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"IdentArray")==0)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
@@ -293,7 +293,7 @@ void insert_var_into_symtab(past type,past p)
         }
 
         v->VTy->ID=ArrayTyID_Init;
-        v->pdata->var_pdata.map= getCurMap(this);
+        v->pdata->symtab_array_pdata.map= getCurMap(this);
 
         //加入维度具体数值
         past one_dimention = p->left->left->next;

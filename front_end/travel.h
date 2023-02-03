@@ -37,7 +37,8 @@ void reduce_break();
 void reduce_return();
 void reduce_and(int false_index);
 void reduce_or(int true_index,int false_index);
-Value *get_value_by_type(past x1);
+void handle_global_array(Value* v_array,bool is_global,past vars);
+void assign_global_array(past p,Value* v_array,int i,int level);
 
 void printf_array(Value *v_array, int begin_index,FILE* fptr);
 void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_value,int start_layer,int cur_layer,int carry[]);

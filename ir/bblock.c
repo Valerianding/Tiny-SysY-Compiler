@@ -202,15 +202,16 @@ BlockNode *get_next_prevblock(BlockNode *this){
 }
 
 void ins_insert_after(InstNode *this,InstNode *pos){
-    printf("in ins_insert_after\n");
+    //printf("in ins_insert_after\n");
     struct sc_list* posList = &pos->list;
     struct sc_list* nextList = pos->list.next;
     posList->next = &this->list;
     this->list.prev = posList;
 
     this->list.next = nextList;
-    nextList->prev = &this->list;
-    printf("after ins_insert_after\n");
+    if(nextList!=NULL)
+        nextList->prev = &this->list;
+    //printf("after ins_insert_after\n");
 }
 
 void print_block_info(BasicBlock *this){

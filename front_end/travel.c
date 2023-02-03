@@ -337,6 +337,10 @@ void create_return_stmt(past root,Value* v_return) {
             v=(Value*) malloc(sizeof (Value));
             value_init_int(v,root->left->iVal);
         }
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0){
+            v = symtab_dynamic_lookup(this, bstr2cstr(root->left->left->sVal,'\0'));
+            handle_assign_array(root->left->right->left,v);
+        }
             //返回函数结果,Call_Func
         else
             v=create_call_func(root->left);
@@ -467,6 +471,77 @@ void borrow_save(Value* v_array,int carry[])
     carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]--;
 }
 
+//给全局数组初值赋值
+void assign_global_array(past p,Value* v_array,int i,int level)
+{
+    int move=v_array->pdata->symtab_array_pdata.dimentions[level];
+    while(p!=NULL)
+    {
+        if(strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0)
+        {
+            v_array->pdata->symtab_array_pdata.array[i++]=p->iVal;
+        }
+        //是InitValList
+        else
+        {
+            int p_i=i+move;
+            assign_global_array(p->left,v_array,i,level+1);
+            i=p_i;       //走过递归后的下一个起点
+        }
+        p=p->next;
+    }
+}
+
+void handle_global_array(Value* v_array,bool is_global,past vars)
+{
+    //先全部默认为0
+    int ele_num= get_array_total_occupy(v_array);
+    for(int i=0;i<ele_num;i++)
+    {
+        v_array->pdata->symtab_array_pdata.array[i]=0;
+    }
+
+    if(v_array->VTy->ID==ArrayTyID_Init)
+    {
+        //就是全局的
+        if(is_global)
+        {
+            past p=vars->right->left;
+
+            assign_global_array(p,v_array,0,0);
+        }
+
+            //不是全局的
+            //目前只有一维数组
+        else
+        {
+            //换名字
+            v_array->name=(char*) malloc(9+sizeof(v_cur_func->name)+1+sizeof (bstr2cstr(vars->left->sVal, '\0')));
+            strcpy(v_array->name,"@__const.");
+            strcat(v_array->name,v_cur_func->name);
+            strcat(v_array->name,".");
+            strcat(v_array->name,bstr2cstr(vars->left->left->sVal,'\0'));
+            if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
+            {
+                int i=0;
+                past p=vars->right->left;
+                while(p!=NULL)
+                {
+                    v_array->pdata->symtab_array_pdata.array[i++]=p->iVal;
+                    p=p->next;
+                }
+            }
+        }
+    }
+
+    //替换掉原来的value
+    //symtab_update_value(this,v_array->name,v_array);
+
+    Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR,v_array,NULL);
+    //将这个instruction加入总list
+    InstNode *instNode = new_inst_node(instruction);
+    ins_insert_after(instNode,instruction_list);
+}
 
 //init_val_list是最老的InitValList的第一个左值，是num_int或InitValList
 //初始时的Value* begin_offset_value为第二个bitcast的左值
@@ -480,7 +555,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
     //if(array_all_zeros(init_val_list)!=NULL)
     //  return;
 
-    Value *v_offset;                          //存放偏移地址的Valueobyyh
+    Value *v_offset;                          //存放偏移地址的Value
     Instruction *ins_gmp=NULL;
 
     bool first_init=true;                     //多个num_int连着时，只需走一次除了最终地址前的for循环；再遇到InitValList后又重置为false
@@ -751,13 +826,13 @@ Value *handle_assign_array(past root,Value *v_array)
         root=root->next;
     }
     //load
-    Instruction *ins_load= ins_new_unary_operator(Load,v_last);
-    Value *v_load= ins_get_value_with_name(ins_load);
-    v_last=v_load;
+    //Instruction *ins_load= ins_new_unary_operator(Load,v_last);
+    //Value *v_load= ins_get_value_with_name(ins_load);
+    //v_last=v_load;
 
     //将这个instruction加入总list
-    InstNode *node_load = new_inst_node(ins_load);
-    ins_node_add(instruction_list,node_load);
+    //InstNode *node_load = new_inst_node(ins_load);
+    //ins_node_add(instruction_list,node_load);
 
     return v_last;
 }
@@ -815,6 +890,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 //The ‘bitcast’ instruction converts value to type ty2 without changing any bits.
                 Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array->alias);
                 Value *v1= ins_get_value_with_name(ins_bitcast);
+                v1->alias=v_array;
 
                 //将这个instruction加入总list
                 InstNode *node_bitcast = new_inst_node(ins_bitcast);
@@ -824,17 +900,13 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
                 if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
                 {
-                    //TODO,怎么保存住所有值呢,变成全局变量
-                    //创建全局变量value
-                    Value *v_global=(Value*) malloc(sizeof (Value));
-                    value_init(v_global);
-                    v_global->name=(char*) malloc(9+sizeof(v_cur_func->name)+1+sizeof (bstr2cstr(vars->left->sVal, '\0')));
-                    strcpy(v_global->name,"@__const.");
-                    strcat(v_global->name,v_cur_func->name);
-                    strcat(v_global->name,".");
-                    strcat(v_global->name,bstr2cstr(vars->left->sVal,'\0'));
+                    //以全局，memcpy的方式处理
+                    handle_global_array(v_array,is_global,vars);
 
                     Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
+                    //将这个instruction加入总list
+                    InstNode *node = new_inst_node(instruction);
+                    ins_node_add(instruction_list,node);
                 }
                     //
                 else
@@ -854,6 +926,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                         //!!!后续第一条一直用v2
                         Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
                         Value *v2= ins_get_value_with_name(ins_bitcast2);
+                        v2->alias=v1->alias;
                         //将这个instruction加入总list
                         InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
                         ins_node_add(instruction_list,node_bitcast2);
@@ -871,8 +944,16 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 //TODO 是全局有初始化数组
             else
             {
-
+                past ident_array=vars->left;         //到IdentArray结点
+                Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->left->sVal,'\0'));
+                handle_global_array(v_array,true,vars);
             }
+        }
+        else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "IdentArray") == 0 && is_global)
+        {
+            past ident_array=vars->left;         //到IdentArray结点
+            Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->sVal,'\0'));
+            handle_global_array(v_array,true,vars);
         }
 
         vars=vars->next;
@@ -1694,21 +1775,34 @@ struct _Value *cal_expr(past expr,int* convert) {
     past_stack PS1;    //语法树的stack
     init_past_stack(&PS1);
 
+    bool first_not_expr=false;
+
     past p = expr;
     past q = NULL;    //记录刚刚访问过的结点
     while (p != NULL || !is_empty(PS1)) {
         if (p != NULL) {
+            if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") != 0)
+                first_not_expr=true;
+            else
+                first_not_expr=false;
+
             push(&PS1, p);
-            p = p->left;
+            if(first_not_expr && strcmp(bstr2cstr(p->nodeType, '\0'), "expr") != 0)
+            {
+                p=NULL;
+            }
+            else
+                p = p->left;
         } else {
             top(&PS1, &p);     //往上走了才pop掉
 
-            if ((p->right == NULL) || (p->right) == q) {
+            if ((p->right == NULL) || (p->right) == q || first_not_expr) {
                 //开始往上走
                 q = p;              //保存到q，作为下一次处理结点的前驱
                 pop(&PS1, &p);
                 str[i++] = p;
                 p = NULL;         //p置于NULL可继续退层，否则会重复访问刚访问结点的左子树
+                first_not_expr=false;
             } else
                 p = p->right;
         }
@@ -2090,7 +2184,7 @@ void declare_global_alloca(struct _mapList* func_map)
         {
             if(((Value*)value)->VTy->ID != Const_INT && ((Value*)value)->VTy->ID != Const_FLOAT)
             {
-                if(((Value*)value)->VTy->ID != FunctionTyID && ((Value*)value)->VTy->ID != ArrayTyID)
+                if(((Value*)value)->VTy->ID != FunctionTyID && ((Value*)value)->VTy->ID != ArrayTyID && ((Value*)value)->VTy->ID!=ArrayTyID_Init)
                 {
                     Value *v_num=(Value*) malloc(sizeof (Value));
                     if(((Value *) value)->pdata!=NULL)
@@ -2098,23 +2192,15 @@ void declare_global_alloca(struct _mapList* func_map)
                     else
                         value_init_int(v_num,0);
                     Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR, (Value *) value,v_num);
-                    //与符号表对应的绑定在一起
-                    Value *v_alias= ins_get_value_with_name(instruction);
-                    ((Value*)value)->alias=v_alias;v_alias->alias=((Value*)value);
+                    //全局
+                    ((Value*)value)->alias=((Value*)value);
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
                     ins_node_add(instruction_list,node);
                 }
-                else if(((Value*)value)->VTy->ID == ArrayTyID)
-                {
-                    //zero
-                    Instruction *ins_zero= ins_new_unary_operator(zeroinitializer,(Value *) value);
-                    //将这个instruction加入总list
-                    InstNode *node_zero = new_inst_node(ins_zero);
-                    ins_node_add(instruction_list,node_zero);
-                }
+                else
+                    ((Value*)value)->alias=((Value*)value);
             }
-
         }
     printf("\n");
     t_index=0;
@@ -2170,6 +2256,87 @@ void printf_array(Value *v_array, int begin_index,FILE* fptr)
         printf("]");
         fprintf(fptr,"]");
     }
+}
+
+bool all_zeros(Value* v_array,int begin,int move)
+{
+    for(int i=begin;i<begin+move;i++)
+    {
+        if(v_array->pdata->symtab_array_pdata.array[i]!=0)
+            return false;
+    }
+    return true;
+}
+
+void printf_global_array(Value* v_array,FILE* fptr)
+{
+    printf_array(v_array,0,fptr);
+    if(v_array->VTy->ID==ArrayTyID)
+        return;
+    printf(" [");
+    fprintf(fptr," [");
+    //一维
+    if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
+    {
+
+        for(int i=0;i<v_array->pdata->symtab_array_pdata.dimentions[0];i++)
+        {
+            if(i==0)
+            {
+                printf("i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                fprintf(fptr,"i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+            }
+            else
+            {
+                printf(", i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                fprintf(fptr,", i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+            }
+        }
+    }
+    //目前只能打印二维
+    else
+    {
+        int ele_num= get_array_total_occupy(v_array);
+        int i=0;
+        int move=v_array->pdata->symtab_array_pdata.dimentions[0];
+        while(i<ele_num)
+        {
+            printf("[%d x i32]",v_array->pdata->symtab_array_pdata.dimentions[0]);
+            fprintf(fptr,"[%d x i32]",v_array->pdata->symtab_array_pdata.dimentions[0]);
+            if(!all_zeros(v_array,i,move))
+            {
+                printf("[");
+                for(int j=i;j<i+move;j++)
+                {
+                    if(j==i)
+                    {
+                        printf("i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                        fprintf(fptr,"i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                    }
+                    else
+                    {
+                        printf(", i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                        fprintf(fptr,", i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                    }
+                }
+                printf("]");
+                fprintf(fptr,"]");
+            }
+            else
+            {
+                printf(" zeroinitializer");
+                fprintf(fptr," zeroinitializer");
+            }
+            i+=move;
+            if(i<ele_num)
+            {
+                printf(",");
+                fprintf(fptr,",");
+            }
+        }
+    }
+    printf("],");
+    fprintf(fptr,"],");
 }
 
 char* c2ll(char* file_name)
@@ -2622,7 +2789,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 //第一条bitcast
                 if(get_next_inst(get_next_inst(instruction_node))->inst->Opcode==bitcast)
                 {
-                    v_cur_array=instruction->user.use_list->Val->alias;
+                    //v_cur_array=instruction->user.use_list->Val->alias;
                     printf(" %s=bitcast ",instruction->user.value.name);
                     fprintf(fptr," %s=bitcast ",instruction->user.value.name);
                     printf_array(instruction->user.use_list->Val,0,fptr);
@@ -2633,13 +2800,15 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 {
                     printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
                     fprintf(fptr,"* %s to i8*\n",instruction->user.use_list->Val->name);
-                    printf_array(v_cur_array,0,fptr);
+                    printf_array(instruction->user.use_list->Val->alias,0,fptr);
                     printf("*\n");
                     fprintf(fptr,"*\n");
                 }
                 break;
 
             case GMP:
+                if(instruction->user.use_list->Val->alias!=NULL)
+                    v_cur_array=instruction->user.use_list->Val->alias;
                 printf(" %s=getelementptr inbounds ",instruction->user.value.name);
                 fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
                 printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
@@ -2656,9 +2825,38 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 printf(" call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 fprintf(fptr," call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 break;
+            case MEMCPY:
+                printf(" call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
+                fprintf(fptr," call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
+                printf_array(v_cur_array,0,fptr);
+                printf("* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
+                       get_array_total_occupy(v_cur_array));
+                fprintf(fptr,"* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
+                        get_array_total_occupy(v_cur_array));
+                break;
             case GLOBAL_VAR:
-                printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                if(instruction->user.use_list->Val->VTy->ID!=ArrayTyID && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Init)
+                {
+                    printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                }
+                else
+                {
+                    v_cur_array=instruction->user.use_list->Val;
+                    printf("%s=dso_local global ",instruction->user.use_list->Val->name);
+                    fprintf(fptr,"%s=dso_local global ",instruction->user.use_list->Val->name);
+                    printf_global_array(instruction->user.use_list->Val,fptr);
+                    if(instruction->user.use_list->Val->VTy->ID==ArrayTyID)
+                    {
+                        printf(" zeroinitializer, align 4\n");
+                        fprintf(fptr," zeroinitializer, align 4\n");
+                    }
+                    else
+                    {
+                        printf("align 4\n");
+                        fprintf(fptr,"align 4\n");
+                    }
+                }
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction->user.use_list->Val;

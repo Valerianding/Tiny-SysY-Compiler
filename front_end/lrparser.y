@@ -79,7 +79,7 @@ IdentArray
 
 ConstDef
     : IDent ASSIGN ConstInitVal                     {$$ = newAnotherNode("ConstDef",newIdent($1),$3);}
-    | IdentArray ASSIGN ConstInitVal               {$$ = newAnotherNode("ConstDef",$1,$3);}
+    | IdentArray ASSIGN ConstInitVal               {$$ = newAnotherNode("ConstDef_array",$1,$3);}
     ;
 
 /*形如ConstExp,ConstExp*/
