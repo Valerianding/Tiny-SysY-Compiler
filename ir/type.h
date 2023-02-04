@@ -24,6 +24,7 @@ enum TypeID {
 
     ArrayTyID,
     ArrayTyID_Init,
+    ArrayTyID_Const,
     FunctionTyID,
     VoidTyID,
 

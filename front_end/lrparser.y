@@ -79,13 +79,13 @@ IdentArray
 
 ConstDef
     : IDent ASSIGN ConstInitVal                     {$$ = newAnotherNode("ConstDef",newIdent($1),$3);}
-    | IdentArray ASSIGN ConstInitVal               {$$ = newAnotherNode("ConstDef_array",$1,$3);}
+    | IdentArray ASSIGN ConstInitVal               {$$ = newAnotherNode("ConstDef_array_init",$1,$3);}
     ;
 
 /*形如ConstExp,ConstExp*/
 ConstExpList
     : ConstExp                                        {$$ = newFollowNode("ConstExpList",$1,NULL);}
-    | ConstExpList COMMA ConstExp                   {$$ = newFollowNode("ConstExpLlist",$1,$3);}
+    | ConstExpList COMMA ConstExp                   {$$ = newFollowNode("ConstExpList",$1,$3);}
 
 ConstInitVal
     : ConstExp                                        {$$ = $1;}

@@ -275,7 +275,7 @@ void insert_var_into_symtab(past type,past p)
     }
 
         //TODO 怎么存初始化的值{1,2,3,4}
-    else if(strcmp(bstr2cstr(p->nodeType,'\0'),"VarDef_array_init")==0)
+    else if((strcmp(bstr2cstr(p->nodeType,'\0'),"VarDef_array_init")==0) || (strcmp(bstr2cstr(p->nodeType,'\0'),"ConstDef_array_init")==0))
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
@@ -292,7 +292,10 @@ void insert_var_into_symtab(past type,past p)
             strcpy(v->name,bstr2cstr(p->left->left->sVal,0));
         }
 
-        v->VTy->ID=ArrayTyID_Init;
+        if(strcmp(bstr2cstr(p->nodeType,'\0'),"ConstDef_array_init")==0)
+            v->VTy->ID=ArrayTyID_Const;
+        else
+            v->VTy->ID=ArrayTyID_Init;
         v->pdata->symtab_array_pdata.map= getCurMap(this);
 
         //加入维度具体数值

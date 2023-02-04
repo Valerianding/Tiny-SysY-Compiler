@@ -339,7 +339,7 @@ void create_return_stmt(past root,Value* v_return) {
         }
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0){
             v = symtab_dynamic_lookup(this, bstr2cstr(root->left->left->sVal,'\0'));
-            handle_assign_array(root->left->right->left,v);
+            v=handle_assign_array(root->left->right->left,v);
         }
             //返回函数结果,Call_Func
         else
@@ -501,7 +501,7 @@ void handle_global_array(Value* v_array,bool is_global,past vars)
         v_array->pdata->symtab_array_pdata.array[i]=0;
     }
 
-    if(v_array->VTy->ID==ArrayTyID_Init)
+    if(v_array->VTy->ID==ArrayTyID_Init || v_array->VTy->ID==ArrayTyID_Const)
     {
         //就是全局的
         if(is_global)
@@ -826,13 +826,13 @@ Value *handle_assign_array(past root,Value *v_array)
         root=root->next;
     }
     //load
-    //Instruction *ins_load= ins_new_unary_operator(Load,v_last);
-    //Value *v_load= ins_get_value_with_name(ins_load);
-    //v_last=v_load;
+    Instruction *ins_load= ins_new_unary_operator(Load,v_last);
+    Value *v_load= ins_get_value_with_name(ins_load);
+    v_last=v_load;
 
     //将这个instruction加入总list
-    //InstNode *node_load = new_inst_node(ins_load);
-    //ins_node_add(instruction_list,node_load);
+    InstNode *node_load = new_inst_node(ins_load);
+    ins_node_add(instruction_list,node_load);
 
     return v_last;
 }
@@ -876,7 +876,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             create_store_stmt(v1,v);
         }
             //有初值数组
-        else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_array_init") == 0)
+        else if((strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_array_init") == 0) || (strcmp(bstr2cstr(vars->nodeType,'\0'),"ConstDef_array_init")==0))
         {
             if(is_global==false)
             {
@@ -1898,7 +1898,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                     v1=x1;
                 else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==Var_initINT))
                     v1= create_load_stmt(x1->name);
-                else if(!begin_tmp(x1->name) && (x1->VTy->ID==ArrayTyID || x1->VTy->ID==ArrayTyID_Init))
+                else if(!begin_tmp(x1->name) && (x1->VTy->ID==ArrayTyID || x1->VTy->ID==ArrayTyID_Init || x1->VTy->ID==ArrayTyID_Const))
                 {
                     past root;
                     pop(&PS3,&root);
@@ -1914,7 +1914,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                     v2=x2;
                 else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==Var_initINT))
                     v2= create_load_stmt(x2->name);
-                else if(!begin_tmp(x2->name) && (x2->VTy->ID==ArrayTyID || x2->VTy->ID==ArrayTyID_Init))
+                else if(!begin_tmp(x2->name) && (x2->VTy->ID==ArrayTyID || x2->VTy->ID==ArrayTyID_Init || x2->VTy->ID==ArrayTyID_Const))
                 {
                     past root;
                     pop(&PS3,&root);
@@ -2184,7 +2184,7 @@ void declare_global_alloca(struct _mapList* func_map)
         {
             if(((Value*)value)->VTy->ID != Const_INT && ((Value*)value)->VTy->ID != Const_FLOAT)
             {
-                if(((Value*)value)->VTy->ID != FunctionTyID && ((Value*)value)->VTy->ID != ArrayTyID && ((Value*)value)->VTy->ID!=ArrayTyID_Init)
+                if(((Value*)value)->VTy->ID != FunctionTyID && ((Value*)value)->VTy->ID != ArrayTyID && ((Value*)value)->VTy->ID!=ArrayTyID_Init && ((Value*)value)->VTy->ID!=ArrayTyID_Const)
                 {
                     Value *v_num=(Value*) malloc(sizeof (Value));
                     if(((Value *) value)->pdata!=NULL)
@@ -2390,7 +2390,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
-                if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTyID || instruction->user.use_list->Val->VTy->ID==ArrayTyID_Init))
+                if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTyID || instruction->user.use_list->Val->VTy->ID==ArrayTyID_Init || instruction->user.use_list->Val->VTy->ID==ArrayTyID_Const))
                 {
                     printf(" %s = alloca ",instruction->user.value.name);
                     fprintf(fptr," %s = alloca ",instruction->user.value.name);
@@ -2835,7 +2835,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         get_array_total_occupy(v_cur_array));
                 break;
             case GLOBAL_VAR:
-                if(instruction->user.use_list->Val->VTy->ID!=ArrayTyID && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Init)
+                if(instruction->user.use_list->Val->VTy->ID!=ArrayTyID && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Init && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Const)
                 {
                     printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -2843,18 +2843,29 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 else
                 {
                     v_cur_array=instruction->user.use_list->Val;
-                    printf("%s=dso_local global ",instruction->user.use_list->Val->name);
-                    fprintf(fptr,"%s=dso_local global ",instruction->user.use_list->Val->name);
-                    printf_global_array(instruction->user.use_list->Val,fptr);
-                    if(instruction->user.use_list->Val->VTy->ID==ArrayTyID)
+                    if(instruction->user.use_list->Val->VTy->ID==ArrayTyID_Const)
                     {
-                        printf(" zeroinitializer, align 4\n");
-                        fprintf(fptr," zeroinitializer, align 4\n");
+                        printf("%s= internal constant ",instruction->user.use_list->Val->name);
+                        fprintf(fptr,"%s= internal constant ",instruction->user.use_list->Val->name);
+                        printf_global_array(instruction->user.use_list->Val,fptr);
+                        printf("align 4\n");
+                        fprintf(fptr,"align 4\n");
                     }
                     else
                     {
-                        printf("align 4\n");
-                        fprintf(fptr,"align 4\n");
+                        printf("%s=dso_local global ",instruction->user.use_list->Val->name);
+                        fprintf(fptr,"%s=dso_local global ",instruction->user.use_list->Val->name);
+                        printf_global_array(instruction->user.use_list->Val,fptr);
+                        if(instruction->user.use_list->Val->VTy->ID==ArrayTyID)
+                        {
+                            printf(" zeroinitializer, align 4\n");
+                            fprintf(fptr," zeroinitializer, align 4\n");
+                        }
+                        else
+                        {
+                            printf("align 4\n");
+                            fprintf(fptr,"align 4\n");
+                        }
                     }
                 }
                 break;
