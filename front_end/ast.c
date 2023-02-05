@@ -149,8 +149,11 @@ int get_array_total_occupy(Value* a)
     {
         occupy*=a->pdata->symtab_array_pdata.dimentions[i];
     }
+    occupy*=4;
     return occupy;
 }
+
+
 
 //将var插入符号表
 void insert_var_into_symtab(past type,past p)
@@ -179,7 +182,6 @@ void insert_var_into_symtab(past type,past p)
         symtab_insert_value_name(this,bstr2cstr(p->sVal,0),v);
     }
 
-        //TODO 比如a[1][2]，怎么将1,2也放进去?
     else if(strcmp(bstr2cstr(p->nodeType,'\0'),"IdentArray")==0)
     {
         Value *v=(Value*) malloc(sizeof (Value));
@@ -205,8 +207,28 @@ void insert_var_into_symtab(past type,past p)
         int dimention_figure=0;
         while(one_dimention!=NULL)
         {
-            //TODO 目前只考虑了num_int
-            v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
+            if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"num_int")==0)
+                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
+            else
+                //是const常数的expr
+            {
+                //TODO 暂时这样做，调用cal_expr的嵌套问题还未解决
+                //Value *v_tmp= cal_expr(one_dimention,0);
+                //v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
+                Value *v_tmp=(Value*) malloc(sizeof (Value));
+                //TODO 只考虑了单边const
+                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
+                {
+                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
+                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
+                }
+                else
+                {
+                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
+                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
+                }
+                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
+            }
             one_dimention=one_dimention->next;
         }
         v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
@@ -303,8 +325,28 @@ void insert_var_into_symtab(past type,past p)
         int dimention_figure=0;
         while(one_dimention!=NULL)
         {
-            //TODO 目前只考虑了num_int
-            v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
+            if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"num_int")==0)
+                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
+            else
+                //是const常数的expr
+            {
+                //TODO 暂时这样做，调用cal_expr的嵌套问题还未解决
+                //Value *v_tmp= cal_expr(one_dimention,0);
+                //v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
+                Value *v_tmp=(Value*) malloc(sizeof (Value));
+                //TODO 只考虑了单边const
+                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
+                {
+                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
+                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
+                }
+                else
+                {
+                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
+                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
+                }
+                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
+            }
             one_dimention=one_dimention->next;
         }
         v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
@@ -345,7 +387,7 @@ void insert_var_into_symtab(past type,past p)
                 v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
                 v->VTy->ID=Const_FLOAT;
             }
-            //Const_Int
+                //Const_Int
             else
             {
                 v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;

@@ -84,12 +84,12 @@ ConstDef
 
 /*形如ConstExp,ConstExp*/
 ConstExpList
-    : ConstExp                                        {$$ = newFollowNode("ConstExpList",$1,NULL);}
-    | ConstExpList COMMA ConstExp                   {$$ = newFollowNode("ConstExpList",$1,$3);}
+    : ConstInitVal                                        {$$ = newFollowNode("ConstExpList",$1,NULL);}
+    | ConstExpList COMMA ConstInitVal                   {$$ = newFollowNode("ConstExpList",$1,$3);}
 
 ConstInitVal
     : ConstExp                                        {$$ = $1;}
-    | LPAR RPAR                                   {$$ = newAnotherNode("ConstInitVal_Empty",NULL,NULL);}
+    | LPAR RPAR                                   {$$ = newAnotherNode("ConstExpList",NULL,NULL);}
     | LPAR ConstExpList RPAR                      {$$ = $2;}
 
 

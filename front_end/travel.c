@@ -383,7 +383,7 @@ void create_return_stmt(past root,Value* v_return) {
 past array_all_zeros(past init_val_list)
 {
     past p=init_val_list;
-    while(p!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") != 0)
+    while(p!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") != 0 && strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") != 0)
     {
         //不是全0就照常处理
         if(p->iVal!=0)
@@ -392,7 +392,7 @@ past array_all_zeros(past init_val_list)
         else if(p->next==NULL)
             return init_val_list;
             //是全0,且是一维全0
-        else if(strcmp(bstr2cstr(p->next->nodeType, '\0'), "InitValList") == 0)
+        else if(strcmp(bstr2cstr(p->next->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->next->nodeType, '\0'), "ConstExpList") == 0)
             return array_all_zeros(p->next->left);
         p=p->next;
     }
@@ -481,7 +481,7 @@ void assign_global_array(past p,Value* v_array,int i,int level)
         {
             v_array->pdata->symtab_array_pdata.array[i++]=p->iVal;
         }
-        //是InitValList
+            //是InitValList
         else
         {
             int p_i=i+move;
@@ -496,6 +496,7 @@ void handle_global_array(Value* v_array,bool is_global,past vars)
 {
     //先全部默认为0
     int ele_num= get_array_total_occupy(v_array);
+    ele_num/=4;
     for(int i=0;i<ele_num;i++)
     {
         v_array->pdata->symtab_array_pdata.array[i]=0;
@@ -571,7 +572,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
 
     while(init_val_list!=NULL)
     {
-        if(strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") == 0)
+        if((strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "InitValList") == 0) || (strcmp(bstr2cstr(init_val_list->nodeType, '\0'), "ConstExpList") == 0))
         {
             //解决空InitValList的情况，即{},将起点记录进tmp_carry，用于地址处理
             if(init_val_list->left==NULL)
@@ -581,7 +582,12 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     tmp_carry[i]=carry[i];
             }
             else if(!have_num_before)
+            {
+                //将carry数组内容赋值进tmp_carry，保存递归前起点情况，是100型还是10型......
+                for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                    tmp_carry[i]=carry[i];
                 handle_one_dimention(init_val_list->left,v_array,begin_offset_value,start_layer,cur_layer+1, carry);
+            }
             else if(have_num_before)
             {
                 //到InitValList，如果**上一条**是num_int，应该走完一截了，处理一下进位问题，处理完后到下一个元素应该是的地址
@@ -611,10 +617,14 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
             //前面没走过num
             if(!have_num_before)
             {
-                //走完进一级
-                carry[cur_layer]++;
-                for(int i=cur_layer+1;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
-                    carry[i]=0;
+                //但如果本位已经进过一次位了，就不用再进了
+                if(tmp_carry[cur_layer]==carry[cur_layer])
+                {
+                    //走完进一级
+                    carry[cur_layer]++;
+                    for(int i=cur_layer+1;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                        carry[i]=0;
+                }
             }
                 //前面走过num
                 //判断tmp_carry，为carry进入递归时的起点，确定carry_point
@@ -634,7 +644,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
             }
 
             //使得进入for gmp
-            if(init_val_list->next!=NULL && strcmp(bstr2cstr(init_val_list->next->nodeType, '\0'), "InitValList") != 0)
+            if((init_val_list->next!=NULL) && (strcmp(bstr2cstr(init_val_list->next->nodeType, '\0'), "InitValList") != 0) && (strcmp(bstr2cstr(init_val_list->next->nodeType, '\0'), "ConstExpList") != 0))
             {
                 //借位，使得下一次num_int走num_int的进位处理分支，保证从确定Index开始，而不一定从头开始
                 borrow_save(v_array,carry);
@@ -671,6 +681,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
 
                     Value *v_gmp= ins_get_value_with_name(ins_gmp);
                     v_gmp->pdata->var_pdata.iVal=i;
+                    v_gmp->alias=v_array;
 
                     record[i]=v_gmp;
 
@@ -711,6 +722,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     //是最后一层吧
                     Value *v_gmp= ins_get_value_with_name(gmp_last);
                     v_gmp->pdata->var_pdata.iVal=v_array->pdata->symtab_array_pdata.dimention_figure-1;
+                    v_gmp->alias=v_array;
                     //将这个instruction加入总list
                     InstNode *node_gmp_last = new_inst_node(gmp_last);
                     ins_node_add(instruction_list,node_gmp_last);
@@ -761,6 +773,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         }
                         Value *v_gmp= ins_get_value_with_name(ins);
                         v_gmp->pdata->var_pdata.iVal=i;
+                        v_gmp->alias=v_array;
                         //更新record
                         record[i]=v_gmp;
                         //将这个instruction加入总list
@@ -816,6 +829,7 @@ Value *handle_assign_array(past root,Value *v_array)
 
         Value *v1= ins_get_value_with_name(gmp);
         v1->pdata->var_pdata.iVal=i;
+        v1->alias=v_array;
 
         v_last=v1;
 
@@ -891,6 +905,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 Instruction *ins_bitcast = ins_new_unary_operator(bitcast,v_array->alias);
                 Value *v1= ins_get_value_with_name(ins_bitcast);
                 v1->alias=v_array;
+                v1->pdata->var_pdata.iVal=1;
 
                 //将这个instruction加入总list
                 InstNode *node_bitcast = new_inst_node(ins_bitcast);
@@ -920,7 +935,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                     InstNode *node_mem_set = new_inst_node(mem_set);
                     ins_node_add(instruction_list,node_mem_set);
 
-                    if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "InitVal_Empty") != 0)
+                    if(vars->right->left!=NULL)
                     {
                         //再来一条bitcast
                         //!!!后续第一条一直用v2
@@ -1564,7 +1579,6 @@ void create_while_stmt(past root,Value* v_return)
         create_instruction_list(root->next,v_return);
 }
 
-//TODO 还未完成
 void create_func_def(past root) {
     Instruction *instruction_begin;
     //拿出存在符号表中的函数信息
@@ -1768,7 +1782,7 @@ struct _Value *cal_expr(past expr,int* convert) {
     value_init(final_result);
 
     //记录后缀表达式
-     past str[100];
+    past str[100];
     int i = 0;
 
     //后序遍历语法树
@@ -1862,7 +1876,7 @@ struct _Value *cal_expr(past expr,int* convert) {
             pop_value(&PS2, &x1);
             //都是常数，直接算出来压进栈
             if ((x1->VTy->ID==Int || x1->VTy->ID==Const_INT) &&
-                    (x2->VTy->ID==Int || x2->VTy->ID==Const_INT)) {
+                (x2->VTy->ID==Int || x2->VTy->ID==Const_INT)) {
                 Value *v3=(Value*) malloc(sizeof (Value));
                 value_init(v3);
                 v3->VTy->ID=Int;
@@ -1897,7 +1911,12 @@ struct _Value *cal_expr(past expr,int* convert) {
                 if(x1->VTy->ID==Int || x1->VTy->ID==Float)
                     v1=x1;
                 else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==Var_initINT))
-                    v1= create_load_stmt(x1->name);
+                {
+                    if(!begin_global(x1->name))
+                        v1= create_load_stmt(x1->name);
+                    else
+                        v1= create_load_stmt(no_global_name(x1->name));
+                }
                 else if(!begin_tmp(x1->name) && (x1->VTy->ID==ArrayTyID || x1->VTy->ID==ArrayTyID_Init || x1->VTy->ID==ArrayTyID_Const))
                 {
                     past root;
@@ -1913,7 +1932,12 @@ struct _Value *cal_expr(past expr,int* convert) {
                 if(x2->VTy->ID==Int || x2->VTy->ID==Float)
                     v2=x2;
                 else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==Var_initINT))
-                    v2= create_load_stmt(x2->name);
+                {
+                    if(!begin_global(x2->name))
+                        v2= create_load_stmt(x2->name);
+                    else
+                        v2= create_load_stmt(no_global_name(x2->name));
+                }
                 else if(!begin_tmp(x2->name) && (x2->VTy->ID==ArrayTyID || x2->VTy->ID==ArrayTyID_Init || x2->VTy->ID==ArrayTyID_Const))
                 {
                     past root;
@@ -2000,7 +2024,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                     //如果是!a就将a压入就好
                     push_value(&PS2,v2);
                 }
-                //0+a或a+0这种
+                    //0+a或a+0这种
                 else
                 {
                     if(v1->VTy->ID==Int && v1->pdata->var_pdata.iVal==0)
@@ -2293,10 +2317,11 @@ void printf_global_array(Value* v_array,FILE* fptr)
             }
         }
     }
-    //目前只能打印二维
+        //目前只能打印二维
     else
     {
         int ele_num= get_array_total_occupy(v_array);
+        ele_num/=4;
         int i=0;
         int move=v_array->pdata->symtab_array_pdata.dimentions[0];
         while(i<ele_num)
@@ -2369,8 +2394,22 @@ bool begin_global(const char* name)
     return false;
 }
 
+char* no_global_name(const char *name)
+{
+    char* name2=(char*) malloc(sizeof (name)-1);
+    int i=1;
+    while(name[i])
+    {
+        name2[i-1]=name[i];
+        i++;
+    }
+    return name2;
+}
+
 void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
 {
+    bool flag_func=false;
+
     instruction_node= get_next_inst(instruction_node);
     const char* ll_file= c2ll(file_name);
 
@@ -2696,6 +2735,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     }
                 }
                 printf(")\n");
+                fprintf(fptr,")\n");
 
                 give_count=0;
                 for(int i=0;i<10;i++)
@@ -2787,19 +2827,19 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
             case bitcast:
                 //第一条bitcast
-                if(get_next_inst(get_next_inst(instruction_node))->inst->Opcode==bitcast)
+                if(instruction->user.value.pdata->var_pdata.iVal==1)
                 {
                     //v_cur_array=instruction->user.use_list->Val->alias;
                     printf(" %s=bitcast ",instruction->user.value.name);
                     fprintf(fptr," %s=bitcast ",instruction->user.value.name);
-                    printf_array(instruction->user.use_list->Val,0,fptr);
+                    printf_array(instruction->user.use_list->Val->alias,0,fptr);
                     printf("* %s to i8*\n",instruction->user.use_list->Val->name);
                     fprintf(fptr,"* %s to i8*\n",instruction->user.use_list->Val->name);
                 }
                 else
                 {
                     printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
-                    fprintf(fptr,"* %s to i8*\n",instruction->user.use_list->Val->name);
+                    fprintf(fptr," %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
                     printf_array(instruction->user.use_list->Val->alias,0,fptr);
                     printf("*\n");
                     fprintf(fptr,"*\n");
@@ -2807,8 +2847,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
 
             case GMP:
-                if(instruction->user.use_list->Val->alias!=NULL)
-                    v_cur_array=instruction->user.use_list->Val->alias;
+                if(instruction->user.value.alias!=NULL)
+                    v_cur_array=instruction->user.value.alias;
+                //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
                 printf(" %s=getelementptr inbounds ",instruction->user.value.name);
                 fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
                 printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
@@ -2819,13 +2860,14 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr,"* ");
                 printf("%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 fprintf(fptr,"%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                //TODO，比如调用d[2][1]的打印
                 break;
             case MEMSET:
+                flag_func=true;
                 printf(" call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 fprintf(fptr," call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 break;
             case MEMCPY:
+                flag_func=true;
                 printf(" call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
                 fprintf(fptr," call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
                 printf_array(v_cur_array,0,fptr);
@@ -2884,5 +2926,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
         }
         instruction_node= get_next_inst(instruction_node);
+    }
+    if(flag_func)
+    {
+        fprintf(fptr,"\n");
+        fprintf(fptr,"declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1\n");
+        fprintf(fptr,"declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #2\n");
     }
 }

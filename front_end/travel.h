@@ -52,5 +52,7 @@ void borrow_save(Value* v_array,int carry[]);
 int handle_and_or(past root,bool flag);
 
 bool begin_tmp(const char* name);
+bool begin_global(const char* name);
+char* no_global_name(const char *name);
 
 char* c2ll(char* file_name);
