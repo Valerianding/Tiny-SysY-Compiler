@@ -44,8 +44,9 @@ void create_instruction_list(past root,Value* v_return)
             create_if_else_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "While_Stmt") == 0)
             create_while_stmt(root,v_return);
-        else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Empty_Stmt") == 0)
-            create_instruction_list(root->next,v_return);
+        //与不是stmt合并
+        //else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Empty_Stmt") == 0)
+          //  create_instruction_list(root->next,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
         {
             create_call_func(root);
@@ -57,6 +58,9 @@ void create_instruction_list(past root,Value* v_return)
             create_continue_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Break_Stmt") == 0)
             create_break_stmt(root,v_return);
+        //不是stmt
+        else
+            create_instruction_list(root->next,v_return);
     }
 }
 
@@ -1096,9 +1100,27 @@ int handle_and_or(past root,bool flag)
     }
 
     //子层特殊则本层处理一下,左边递归完走到这里，处理下留下来的right，即1 && 2 || 3的2应用false_location_handler
-    if(flag_notice && v1!=NULL)
+    //TODO 删了一个&& v1!=NULL,不知道当时为什么加这条，删了可能有不良影响
+    if(flag_notice)
     {
-        v1= cal_logic_expr(root->left->right);
+        if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0)
+            v1= cal_logic_expr(root->left->right);
+        //ID
+        else
+        {
+            Value *v_load= create_load_stmt(bstr2cstr(root->left->right->sVal, '\0'));
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v1= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+
         //一定是在&&中但用||
         InstNode *ins1= false_location_handler(br_i1,v1,t_index++);
         insnode_push(&S_or,ins1);
@@ -2119,6 +2141,7 @@ struct _Value* cal_logic_expr(past logic_expr)
     //返回左值即logic_expr的真值
     return v_tmp;
 }
+
 
 
 struct _Value *create_param_value()
