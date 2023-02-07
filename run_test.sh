@@ -12,6 +12,7 @@ file_c=".c"
 file_ll=".ll"
 file_as=".s"
 file_obj=".o"
+file_in=".in"
 exp_str="expect:"
 act_str="actual:"
 exp=0
@@ -23,7 +24,15 @@ do
         filename=${file%.*}
         echo ${filename}
         gcc $filename$file_c -o test
+        FILE_IN=$filename$file_in
+        if [ ! -f "$FILE_IN" ]
+        then
+        gcc $filename$file_c -o test
         ./test
+        else
+        gcc -o test $filename$file_c -L./ libsy.a
+        ./test < $filename$file_in
+        fi
         exp=$?
         rm -rf test
         cd ../
@@ -38,6 +47,7 @@ do
         echo "$FILE_LL not exist"
         file_err[le_count]=$filename$file_c
         ll_err[le_count]=1
+        exp_err[le_count]=$exp
         continue
         fi
 
@@ -51,6 +61,7 @@ do
         file_err[le_count]=$filename$file_c
         as_err[le_count]=1
         ll_err[le_count]=0
+        exp_err[le_count]=$exp
         rm -rf $filename$file_ll
         continue
         fi
@@ -84,13 +95,13 @@ for((i=1;i<=$le_count;i++));
 do
     if [ "${ll_err[i]}" = "1" ] ;
     then
-    echo ${file_err[i]}"   生成ir失败"
+    echo ${file_err[i]}"   生成ir失败  "$exp_str${exp_err[i]}
     continue
     fi
 
     if [ "${as_err[i]}" = "1" ] ;
     then
-    echo ${file_err[i]}"   ir不符合llvm规范"
+    echo ${file_err[i]}"   ir不符合llvm规范  "$exp_str${exp_err[i]}
     continue
     fi
 
