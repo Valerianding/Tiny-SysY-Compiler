@@ -22,7 +22,6 @@ void bblock_divide(InstNode *head){
         bb_set_block(globalBlock, globalBlock->head_node, globalBlock->tail_node);
     }
 
-
     //现在cur 为第一个函数开头
     //第一次全部打点
     //printf("first while\n");
@@ -67,7 +66,7 @@ void bblock_divide(InstNode *head){
                     func_prev->Next = cur_func;
                 }
                 func_prev = cur_func;
-                printf("Set Function sucess !\n");
+                printf("Set Function success !\n");
                 func_set(cur_func, entry, this);
             } else if (cur->inst->Opcode == br) {
                 InstNode *function_begin = get_func_start(cur);

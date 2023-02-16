@@ -54,8 +54,7 @@ struct _BasicBlock *ins_get_parent(Instruction *ins){
 }
 
 //将临时变量t0 clear为t,或将%1 clear为%，后面跟的数量可重新赋值
-void clear_tmp(char* tmp)
-{
+void clear_tmp(char* tmp){
     char *p=tmp;
     p++;
     while(*p)

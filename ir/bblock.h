@@ -3,12 +3,11 @@
 #include "value.h"
 #include "instruction.h"
 #include "sc_list.h"
-
 struct _Function;
 struct _BasicBlock;
 typedef struct _BasicBlock BasicBlock;
 typedef struct _Function Function;
-static int count = 1;
+static int count = 1; //block记数
 /* 这里的设计结构 */
 typedef struct _InstNode{
     Instruction *inst;
@@ -24,7 +23,7 @@ typedef BlockNode * BlockList;
 
 typedef struct _BasicBlock{
 
-    //TODO 我们直接保留HashSet的prevBlocks就可以了
+    //TODO 我们直接保留HashSet的prevBlocks?
     BlockList prev_blocks;
     struct _BasicBlock *true_block;
     struct _BasicBlock *false_block;
@@ -34,6 +33,7 @@ typedef struct _BasicBlock{
     int visited;
     HashSet *dom; // 记录支配该节点的集合 注意是支配该节点！！
     HashSet *df; // 记录支配边界
+    BasicBlock *iDom;
     int id;
 }BasicBlock;
 
@@ -106,14 +106,4 @@ void clear_visited_flag(InstNode *head);
 ///在pos位置后面插入this
 void ins_insert_after(InstNode *this,InstNode *pos);
 
-
-
-/// Unlink 'this' from the containing function, but do not delete it.
-void removeFromParent(BasicBlock *this);
-
-
-void moveBefore(BasicBlock *this,BasicBlock *MovePos);
-
-
-void moveAfter(BasicBlock *this,BasicBlock *MovePos);
 #endif

@@ -39,20 +39,23 @@ void value_init_float(Value *this,float num){
     this->VTy->ID=Float;
 }
 
-void value_delete_use(Value *value,Use *use){
-    Use * head= value->use_list;
-
-}
-
 //
-void value_replace(Value *oldValue,Value *newValue,Use *use){
+void value_replace(Value *newValue,Use *use){
     use->Val = newValue;
-    value_add_use(newValue,use);
     use_remove_from_list(use);
+    if(newValue)
+        value_add_use(newValue,use);
 }
 
 void value_replaceAll(Value *oldValue,Value *newValue){
-
+    //
+    Use *use = oldValue->use_list;
+    while(use != nullptr){
+        use->Val = newValue;
+        value_add_use(newValue,use);
+        use = use->Next;
+    }
+    oldValue->use_list = nullptr;
 }
 
 //FIXME

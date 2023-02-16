@@ -89,8 +89,9 @@ int main(int argc, char* argv[]){
         Function *parent = cur->Parent;
         if(parent != prevFunction){
             /* 测试dominance的计算 */
-            //calculate_dominance(parent);
-            // calculate_dominance_frontier(parent);
+            calculate_dominance(parent);
+            calculate_dominance_frontier(parent);
+            calculate_iDominator(parent);
             print_function_info(parent);
             prevFunction = parent;
         }

@@ -34,7 +34,6 @@ typedef enum OpcodeType{
     tmp,
     XOR,
     zext,
-
     bitcast,
     GMP,
     MEMCPY,
@@ -65,7 +64,6 @@ Instruction *ins_new_unary_operator(int Op,Value *S1);
 void ins_set_parent(Instruction *this,struct _BasicBlock *parent);
 Value *ins_get_value(Instruction *ins);
 void print_ins_opcode(Instruction *this);
-
 void clear_tmp(char* tmp);
 Value *ins_get_value_with_name(Instruction *ins);
 #endif

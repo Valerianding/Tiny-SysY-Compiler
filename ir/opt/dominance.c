@@ -24,6 +24,19 @@ bool HashSetDifferent(HashSet *lhs,HashSet *rhs){
     return false;
 }
 
+DomTreeNode *createDomTreeNode(BasicBlock *block,BasicBlock *parent){
+    DomTreeNode *domTreeNode = (DomTreeNode*)malloc(sizeof(DomTreeNode));
+    memset(domTreeNode,0,sizeof(DomTreeNode));
+    domTreeNode->children = HashSetInit();
+    domTreeNode->block = block;
+    domTreeNode->parent = parent;
+    return domTreeNode;
+}
+
+void addDomTreeChild(){
+
+}
+
 void calculate_dominance(Function *currentFunction) {
     //currentFunction->dominance = HashMapInit();
     BasicBlock *entry = currentFunction->head;
@@ -176,6 +189,85 @@ void calculate_dominance_frontier(Function *currentFunction){
             printf(" b%d",key->id);
         }
         printf("\n");
+        curNode = get_next_inst(curNode);
+    }
+}
+
+void calculate_iDominator(Function *currentFunction){
+    BasicBlock *entry = currentFunction->head;
+    BasicBlock *end = currentFunction->tail;
+
+    printf("entryBlock : %d",entry->id);
+    printf(" endBlock : %d",end->id);
+    printf("\n");
+    //不动的
+    InstNode *head = entry->head_node;
+    InstNode *tail = end->tail_node;
+
+    clear_visited_flag(head);
+    //从头来计算
+    InstNode *curNode = head;
+    while(curNode != get_next_inst(tail)){
+        BasicBlock *curBlock = curNode->inst->Parent;
+
+        if(curBlock->visited) {
+            curNode = get_next_inst(curNode);
+        }else{
+            curBlock->visited = true;
+            HashSet *tempSet = HashSetInit();
+            HashSetCopy(tempSet,curBlock->dom);
+            //去掉本身
+            HashSetRemove(tempSet,curBlock);
+            HashSetFirst(curBlock->dom);
+            for(BasicBlock *key = HashSetNext(curBlock->dom);key != NULL; key = HashSetNext(curBlock->dom)){
+                //除去现在这个
+                if(key == curBlock) continue;
+
+                HashSet *keySet = key->dom;
+                HashSetFirst(tempSet);
+                for(BasicBlock *key1 = HashSetNext(tempSet); key1 != NULL; key1 = HashSetNext(tempSet)){
+                    if(key1 != key && HashSetFind(keySet,key1)){
+                        HashSetRemove(tempSet,key1);
+                    }
+                }
+            }
+            HashSetFirst(tempSet);
+            curBlock->iDom = NULL;
+            for(BasicBlock *key = HashSetNext(tempSet); key != NULL; key = HashSetNext(tempSet)){
+                printf("b%d, idom: b%d\n",curBlock->id,key->id);
+                curBlock->iDom = key;
+            }
+
+            HashSetDeinit(tempSet);
+            curNode = get_next_inst(curNode);
+        }
+    }
+}
+
+void calculate_DomTree(Function *currentFunction){
+    BasicBlock *entry = currentFunction->head;
+    BasicBlock *end = currentFunction->tail;
+
+    printf("entryBlock : %d",entry->id);
+    printf(" endBlock : %d",end->id);
+    printf("\n");
+    //不动的
+    InstNode *head = entry->head_node;
+    InstNode *tail = end->tail_node;
+
+    clear_visited_flag(head);
+    //从头来计算
+    InstNode *curNode = head;
+    while(curNode != get_next_inst(tail)){
+        BasicBlock *block = curNode->inst->Parent;
+        if(block->visited == false){
+            block->visited = true;
+            BasicBlock *iDom = block->iDom;
+            DomTreeNode *domTreeNode = createDomTreeNode(block,iDom);
+            if(iDom != NULL){
+
+            }
+        }
         curNode = get_next_inst(curNode);
     }
 }

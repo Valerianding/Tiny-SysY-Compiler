@@ -5,11 +5,12 @@
 #ifndef C22V1_FUNCTION_H
 #define C22V1_FUNCTION_H
 #include "bblock.h"
-
+struct DomTreeNode;
 typedef struct _Function{
     BasicBlock *head;
     BasicBlock *tail;
     HashMap *dominance;  // value: block key: Dom(block)->hashset(block)
+    struct DomTreeNode *domTree;
     HashMap *loadSet;
     HashMap *storeSet;
     Function *Next;

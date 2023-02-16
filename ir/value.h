@@ -49,21 +49,16 @@ struct _Value
     struct _Use *use_list;
 
     unsigned char HasValueHandle : 1; // Has a ValueHandle pointing to this?
-
     unsigned NumUserOperands : NumUserOperandsBits;
 
     // Use the same type as the bitfield above so that MSVC will pack them.
     unsigned IsUsedByMD : 1;
-
     unsigned IsInstruction : 1;
     unsigned HasName : 1;
     unsigned HasMetadata : 1; // Has metadata attached to this?
     unsigned HasHungOffUses : 1;
-
-
     unsigned is_in : 1; //入口语句
     unsigned is_out : 1; //出口语句
-
     unsigned is_last : 1;
 
     char *name;
@@ -73,15 +68,11 @@ struct _Value
 
 void value_init(Value* this);
 Value *create_value(Value **v);
-
 void value_add_use(Value* this, struct _Use *U);
 Type *getType(Value* this);
-void value_set_name(Value* this, char* name);
-void value_get_name(Value* this, char* name);
-
 struct _Symtab* get_sym_tab(Value *V);
 void value_init_int(Value *this,int num);
 void value_init_float(Value *this,float num);
-void value_replace(Value *oldValue,Value *newValue,Use *use);
+void value_replace(Value *newValue,Use *use);
 void value_replaceAll(Value *oldValue,Value *newValue);
 #endif

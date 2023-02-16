@@ -35,6 +35,7 @@ void mem2reg(Function *currentFunction){
                 HashSet *loadSet = HashSetInit();
                 HashSetAdd(loadSet, parent);
                 HashMapPut(currentFunction->loadSet, loadValue, loadSet);
+
             }
         }
 
@@ -104,7 +105,7 @@ void mem2reg(Function *currentFunction){
                         //OK现在我要将load直接变成赋值 注意这里需要做添加value的use_list
                         //并且注意我们不能直接new一个instruction 所以目前我们先暂时的更改Opcode和value就行
                         //应该错误
-                        value_replace(&keyBlockCur->inst->user.use_list[0].Val,storeValue,&keyBlockCur->inst->user.use_list[0]);
+
                     }
                     keyBlockCur = get_next_inst(keyBlockCur);
                 }
@@ -122,5 +123,5 @@ void mem2reg(Function *currentFunction){
 
     //如果支配的话那么就写上去
 
-    //如果不支配的话就
+    //
 }

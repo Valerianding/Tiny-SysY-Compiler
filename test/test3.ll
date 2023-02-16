@@ -1,5 +1,5 @@
 @b=dso_local global i32 999,align 4
-define dso_local i32 @test() #0{
+define dso_local i32 @test(i32 %0) #0{
  %2 = alloca i32,align 4
  %3 = alloca i32,align 4
  %4 = alloca i32,align 4
@@ -53,10 +53,9 @@ define dso_local i32 @main() #0{
  %2 = alloca [4 x [2 x i32]],align 16
  %3 = alloca i32,align 4
  store i32 0,i32* %1,align 4
- %4=bitcast i32* %2 to i8*
- call void @llvm.memset.p0i8.i64(i8* align 16 %4, i8 0, i64 8, i1 false)
-* %4 to i8*
-[4 x [2 x i32]]*
+ %4=bitcast [4 x [2 x i32]]* %2 to i8*
+ call void @llvm.memset.p0i8.i64(i8* align 16 %4, i8 0, i64 32, i1 false)
+ %5=bitcast i8* %4 to [4 x [2 x i32]]*
  %6=getelementptr inbounds [4 x [2 x i32]],[4 x [2 x i32]]* %5, i32 0,i32 0
  %7=getelementptr inbounds [2 x i32],[2 x i32]* %6, i32 0,i32 0
  store i32 1,i32* %7,align 4
@@ -78,6 +77,10 @@ define dso_local i32 @main() #0{
  %18 = load i32,i32* %17,align 4
  store i32 %18,i32* %3,align 4
  %19 = load i32,i32* %3,align 4
- %20 = call i32 @test( ret i32 %20
+ %20 = call i32 @test(i32 %19)
+ ret i32 %20
 }
 
+
+declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #2

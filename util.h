@@ -9,11 +9,11 @@
 #include <limits.h>
 #include <assert.h>
 
-
 /** The key value pair for associative data structures. */
 typedef struct _Pair {
     void* key;
     void* value;
 } Pair;
+
 
 #endif

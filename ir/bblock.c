@@ -181,13 +181,15 @@ void print_one_ins_info(InstNode *instruction_list){
         printf(" parent:NULL");
     }
     if(instruction_list->inst->user.value.use_list == NULL){
-        printf(" user.value.use_list : NULL");
+        printf(" used by: NULL");
     }else{
         //TODO 打印user而不是use_list
-        printf(" user.value.use_list :");
+        printf(" used by: ");
         Use *temp = instruction_list->inst->user.value.use_list;
         while(temp != NULL){
-            printf(" %p",temp);
+            User *parent = temp->Parent;
+            Instruction *ins = (Instruction*)parent;
+            printf("%d ",ins->i);
             temp = temp->Next;
         }
     }
