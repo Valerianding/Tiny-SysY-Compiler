@@ -37,7 +37,7 @@ do
         rm -rf test
         cd ../
         # ./compiler >a.log
-        ./compiler test_cases/$filename$file_c
+        ./cmake-build-debug/compiler test_cases/$filename$file_c
         cd test_cases
         #记录生成ll文件失败的用例
         FILE_LL=$filename$file_ll
