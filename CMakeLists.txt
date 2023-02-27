@@ -46,6 +46,7 @@ add_executable(compiler
         ${DIR_CONTAINER}
         ${DIR_BACK}
         tacmain.c)
+
 set(CMAKE_BUILD_TYPE Debug)
 #aux_source_directory(. DIR_SRC)
 

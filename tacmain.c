@@ -104,5 +104,6 @@ int main(int argc, char* argv[]){
 
 //    ljf
     arm_translate_ins(temp2);
+
     return 0;
 }
