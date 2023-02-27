@@ -12,14 +12,15 @@ enum TypeID {
     MAIN_INT,        //只有一个返回语句的main函数
     MAIN_FLOAT,
 
-    Var_INT,          //无初始值的int型变量
-    Var_FLOAT,        //无初始值的float型变量
-    Var_initINT,      //有初始值的int型变量
-    Var_initFLOAT,    //有初始值的float型变量
+                        // 即使有初始化 值也可能改变
+    Var_INT,          //无初始值的int型    变量
+    Var_FLOAT,        //无初始值的float型  变量
+    Var_initINT,      //有初始值的int型    变量
+    Var_initFLOAT,    //有初始值的float型  变量
     Int,              //int类型整数
     Float,            //float类型浮点数
 
-    Const_INT,
+    Const_INT,        //立即数
     Const_FLOAT,
 
     ArrayTyID,
@@ -36,12 +37,7 @@ typedef struct _Type{
 //    struct _Type * const *ContainedTys;
 }Type;
 
-bool isVoidTy(Type *this);
-bool isFloatTy(Type *this);
-bool isIntegerTy(Type *this);
-bool isFunctionTy(Type *this);
-bool isFloatingPointTy(Type *this);
-bool isPointerTy(Type *this);
-bool isConstTy(Type *this);
-
+bool isIntType(Type *type);
+bool isVarType(Type *type);
+bool isImmType(Type *type);
 #endif

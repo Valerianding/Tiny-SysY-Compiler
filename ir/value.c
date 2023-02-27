@@ -62,3 +62,12 @@ void value_replaceAll(Value *oldValue,Value *newValue){
 struct _Symtab* get_sym_tab(Value *V){
     return NULL;
 }
+
+
+bool isVar(Value *val){
+    return isVarType(val->VTy);
+}
+
+bool isImm(Value *val){
+    return isImmType(val->VTy);
+}

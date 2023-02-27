@@ -1,19 +1,29 @@
 #include "type.h"
 
-void new_type(Type *this, enum TypeID tid)
-{
-    this->ID = tid;
-    this->SubclassData = 0;
+bool isIntType(Type *type){
+    if(type->ID == Int || type->ID == Var_INT || type->ID == Var_initINT)
+        return true;
+    else
+        return false;
 }
 
-unsigned getSubclassData(Type *this)
-{
-    return this->SubclassData;
+bool isFloatType(Type *type){
+    if(type->ID == Float || type->ID == Var_FLOAT || type->ID == Var_initFLOAT)
+        return true;
+    else
+        return false;
 }
 
-void setSubclassData(Type *this, unsigned val)
-{
-    this->SubclassData = val;
-    // Ensure we don't have any accidental truncation.
-    // assert(getSubclassData() == val && "Subclass data too large for field");
+bool isVar(Type *type){
+    if(type->ID == Var_initFLOAT || type->ID == Var_FLOAT || type->ID == Var_initINT || type->ID == Var_INT)
+        return true;
+    else
+        return false;
+}
+
+bool isImm(Type *type){
+    if(type->ID == Int || type->ID == Float)
+        return true;
+    else
+        return false;
 }

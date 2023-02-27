@@ -41,6 +41,7 @@ struct _Value * symtab_dynamic_lookup(Symtab* this, char* name);
 
 //获取现在所在的表,应该也只有前端会用到
 struct sc_map_sv *getCurMap(Symtab *this);
+
 //获取现在指向的MapList
 struct _mapList* getCurMapList(Symtab *this);
 
@@ -49,6 +50,7 @@ bool is_global_map(Symtab* this);
 
 //在当前表增加name-value键值对
 void symtab_insert_value_name(Symtab* this, char* name, struct _Value *V);
+
 //在指定表中增加name-value对
 void symtab_insert_withmap(Symtab* this, struct sc_map_sv *map,char* name, struct _Value *V);
 

@@ -2,9 +2,10 @@
 #define VALUE_DEF
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "type.h"
 #include "symtab.h"
-#include <stdint.h>
+
 
 struct _Symtab;
 struct _Use;
@@ -39,7 +40,6 @@ union _PData{
 
         int array[100];
     }symtab_array_pdata;
-
 };
 typedef union _PData PData;
 typedef struct _Value Value;
@@ -75,4 +75,7 @@ void value_init_int(Value *this,int num);
 void value_init_float(Value *this,float num);
 void value_replace(Value *newValue,Use *use);
 void value_replaceAll(Value *oldValue,Value *newValue);
+
+bool isVar(Value *val);
+bool isImm(Value *val);
 #endif
