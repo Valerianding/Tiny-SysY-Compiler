@@ -71,7 +71,7 @@ int main(int argc, char* argv[]){
     //showAst(TRoot,0);
 
     InstNode *temp = get_next_inst(instruction_list);
-    InstNode *temp2=instruction_list;
+    InstNode *temp2 = instruction_list;
 
     //丁老师
     bblock_divide(instruction_list);

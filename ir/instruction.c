@@ -11,7 +11,7 @@ int instruction_uid=0;
 
 Instruction* ins_new(int op_num){
     int user_size = user_get_size(op_num);
-    int use_size = user_size - sizeof(User);
+    unsigned int use_size = user_size - sizeof(User);
     // use 是额外的，所以要单独计算大小 
     uint8_t *storage = (uint8_t *)malloc(sizeof(Instruction) + use_size);
     /* 为Instruction的Value初始化 */
@@ -25,10 +25,10 @@ Instruction* ins_new(int op_num){
 Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2){
     Instruction* inst = ins_new(2);
     // 将 inst 这个 user 加入到 s1 和 s2 这两个 value 的 use_list
-    Use* puse = user_get_operand_use(&inst->user, 0);
-    use_set_value(puse, S1);
-    puse = user_get_operand_use(&inst->user, 1);
-    use_set_value(puse, S2);
+    Use* pUse = user_get_operand_use(&inst->user, 0);
+    use_set_value(pUse, S1);
+    pUse = user_get_operand_use(&inst->user, 1);
+    use_set_value(pUse, S2);
 
     inst->Opcode = Op;
     inst->i=instruction_uid;
@@ -39,8 +39,8 @@ Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2){
 
 Instruction *ins_new_unary_operator(int Op,Value *S1){
     Instruction* inst = ins_new(1);
-    Use* puse = user_get_operand_use(&inst->user,0);
-    use_set_value(puse,S1);
+    Use* pUse = user_get_operand_use(&inst->user,0);
+    use_set_value(pUse,S1);
 
     inst->Opcode = Op;
     inst->i=instruction_uid;
@@ -71,11 +71,11 @@ Value *ins_get_value(Instruction *ins){
 
 //获取instruction.user.value并赋个名字
 Value *ins_get_value_with_name(Instruction *ins){
-    Value *v_tmp=&ins->user.value;
+    Value *v_tmp = &ins->user.value;
     sprintf(t_num, "%d", t_index++);
     strcat(t,t_num);
-    v_tmp->pdata->var_pdata.map= getCurMap(this);
-    v_tmp->name=(char*) malloc(strlen (t));
+    v_tmp->pdata->var_pdata.map = getCurMap(this);
+    v_tmp->name = (char*) malloc(strlen (t));
     strcpy(v_tmp->name,t);
     clear_tmp(t);
     return v_tmp;

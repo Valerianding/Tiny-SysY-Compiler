@@ -14,14 +14,14 @@ bool isFloatType(Type *type){
         return false;
 }
 
-bool isVar(Type *type){
+bool isVarType(Type *type){
     if(type->ID == Var_initFLOAT || type->ID == Var_FLOAT || type->ID == Var_initINT || type->ID == Var_INT)
         return true;
     else
         return false;
 }
 
-bool isImm(Type *type){
+bool isImmType(Type *type){
     if(type->ID == Int || type->ID == Float)
         return true;
     else

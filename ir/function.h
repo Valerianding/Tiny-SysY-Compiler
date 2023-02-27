@@ -6,15 +6,17 @@
 #define C22V1_FUNCTION_H
 #include "bblock.h"
 struct DomTreeNode;
-typedef struct _Function{
+struct _Function{
     BasicBlock *head;
     BasicBlock *tail;
+
     HashMap *dominance;  // value: block key: Dom(block)->hashset(block)
-    struct DomTreeNode *domTree;
+    struct DomTreeNode *root;
+
     HashMap *loadSet;
     HashMap *storeSet;
     Function *Next;
-}Function;
+};
 
 void function_init(Function *this);
 

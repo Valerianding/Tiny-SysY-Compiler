@@ -21,7 +21,7 @@ typedef struct _BlockNode{
 
 typedef BlockNode * BlockList;
 
-typedef struct _BasicBlock{
+struct _BasicBlock{
 
     //TODO 我们直接保留HashSet的prevBlocks?
     BlockList prev_blocks;
@@ -35,7 +35,7 @@ typedef struct _BasicBlock{
     HashSet *df; // 记录支配边界
     BasicBlock *iDom;
     int id;
-}BasicBlock;
+};
 
 ///初始化bblock
 void bblock_init(BasicBlock *this);

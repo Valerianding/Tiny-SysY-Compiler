@@ -38,6 +38,7 @@ typedef struct _Type{
 }Type;
 
 bool isIntType(Type *type);
+bool isFloatType(Type *type);
 bool isVarType(Type *type);
 bool isImmType(Type *type);
 #endif
