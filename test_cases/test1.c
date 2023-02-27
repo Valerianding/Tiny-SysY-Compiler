@@ -1,5 +1,3 @@
-int main()
-{
-    int a=1;
-    return a+4;
+int main(){
+    return 3;
 }

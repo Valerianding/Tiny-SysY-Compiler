@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "./back_end/arm.h"
 #include "value.h"
 #include "use.h"
 #include "user.h"
@@ -70,6 +71,7 @@ int main(int argc, char* argv[]){
     //showAst(TRoot,0);
 
     InstNode *temp = get_next_inst(instruction_list);
+    InstNode *temp2=instruction_list;
 
     //丁老师
     bblock_divide(instruction_list);
@@ -100,5 +102,9 @@ int main(int argc, char* argv[]){
             prev = cur;
         }
     }
+
+//    ljf
+    arm_translate_ins(temp2);
+
     return 0;
 }
