@@ -19,6 +19,7 @@ file(GLOB_RECURSE DIR_IR ./ir/*.c)
 file(GLOB_RECURSE DIR_OPT ./ir/opt/*.c)
 file(GLOB_RECURSE DIR_CONTAINER ./src/hash_map.c ./src/hash_set.c)
 file(GLOB_RECURSE DIR_FRONT ./front_end/*.c)
+file(GLOB_RECURSE DIR_BACK ./back_end/*.c)
 
 link_libraries(m)
 
@@ -43,6 +44,7 @@ add_executable(compiler
         ${DIR_IR}
         ${DIR_LIB}
         ${DIR_CONTAINER}
+        ${DIR_BACK}
         tacmain.c)
 set(CMAKE_BUILD_TYPE Debug)
 #aux_source_directory(. DIR_SRC)
