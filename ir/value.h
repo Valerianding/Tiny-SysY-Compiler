@@ -64,6 +64,7 @@ struct _Value
     char *name;
     struct _Value *alias;
     PData *pdata;
+
 };
 
 void value_init(Value* this);

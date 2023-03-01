@@ -30,12 +30,10 @@ DomTreeNode *createDomTreeNode(BasicBlock *block,BasicBlock *parent){
     domTreeNode->children = HashSetInit();
     domTreeNode->block = block;
     domTreeNode->parent = parent;
+    block->domTreeNode = domTreeNode;
     return domTreeNode;
 }
 
-void addDomTreeChild(){
-
-}
 
 void calculate_dominance(Function *currentFunction) {
     //currentFunction->dominance = HashMapInit();
@@ -244,6 +242,10 @@ void calculate_iDominator(Function *currentFunction){
     }
 }
 
+void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child){
+    HashSetAdd(parent->children, child);
+}
+
 void calculate_DomTree(Function *currentFunction){
     BasicBlock *entry = currentFunction->head;
     BasicBlock *end = currentFunction->tail;
@@ -265,9 +267,38 @@ void calculate_DomTree(Function *currentFunction){
             BasicBlock *iDom = block->iDom;
             DomTreeNode *domTreeNode = createDomTreeNode(block,iDom);
             if(iDom != NULL){
-
+                DomTreeNode *prevNode = iDom->domTreeNode;
+                assert(prevNode != NULL);
+                DomTreeAddChild(prevNode, domTreeNode);
+                printf("b%d add child b%d\n",iDom->id,block->id);
             }
         }
         curNode = get_next_inst(curNode);
+    }
+
+
+    // 检查DomTree的构建是否成功
+    InstNode *checkNode = head;
+
+    //Function的跟节点保留
+    currentFunction->root = entry->domTreeNode;
+
+    clear_visited_flag(checkNode);
+    while(checkNode != get_next_inst(tail)){
+        BasicBlock *parent = checkNode->inst->Parent;
+        if(parent->visited == false){
+            parent->visited = true;
+            DomTreeNode *domTreeNode = parent->domTreeNode;
+            printf("b%d, DomNode : ",parent->id);
+            if(parent->iDom != nullptr)
+                printf("idom : b%d ",parent->iDom->id);
+            HashSet *childSet = domTreeNode->children;
+            HashSetFirst(childSet);
+            for(DomTreeNode *childNode = HashSetNext(childSet); childNode != NULL; childNode = HashSetNext(childSet)){
+                printf("b%d ",childNode->block->id);
+            }
+            printf("\n");
+        }
+        checkNode = get_next_inst(checkNode);
     }
 }

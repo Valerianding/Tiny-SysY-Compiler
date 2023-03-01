@@ -45,9 +45,8 @@ InstNode *get_next_inst(InstNode *this){
     return temp;
 }
 
-//lsy
-InstNode *get_last_inst(InstNode *this)
-{
+
+InstNode *get_last_inst(InstNode *this){
     struct sc_list *list=&this->list;
     while(list->next!=NULL)
         list=list->next;

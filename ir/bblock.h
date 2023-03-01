@@ -5,8 +5,10 @@
 #include "sc_list.h"
 struct _Function;
 struct _BasicBlock;
+struct _DomNode;
 typedef struct _BasicBlock BasicBlock;
 typedef struct _Function Function;
+typedef struct _DomNode DomTreeNode;
 static int count = 1; //block记数
 /* 这里的设计结构 */
 typedef struct _InstNode{
@@ -21,6 +23,7 @@ typedef struct _BlockNode{
 
 typedef BlockNode * BlockList;
 
+
 struct _BasicBlock{
 
     //TODO 我们直接保留HashSet的prevBlocks?
@@ -34,6 +37,7 @@ struct _BasicBlock{
     HashSet *dom; // 记录支配该节点的集合 注意是支配该节点！！
     HashSet *df; // 记录支配边界
     BasicBlock *iDom;
+    DomTreeNode *domTreeNode;
     int id;
 };
 
@@ -105,5 +109,6 @@ void clear_visited_flag(InstNode *head);
 
 ///在pos位置后面插入this
 void ins_insert_after(InstNode *this,InstNode *pos);
+
 
 #endif

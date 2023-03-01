@@ -7,4 +7,6 @@
 #include "bblock.h"
 #include "function.h"
 void mem2reg(Function *currentFunction);
+void insert_phi(BasicBlock *block,Value *val);
+void updateReachingDef();
 #endif //C22V1_MEM2REG_H
