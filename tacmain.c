@@ -9,6 +9,7 @@
 #include "stdio.h"
 #include "bb_divide.h"
 #include "dominance.h"
+#include "mem2reg.h"
 #include "front_end/travel.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
@@ -94,6 +95,8 @@ int main(int argc, char* argv[]){
             calculate_dominance(parent);
             calculate_dominance_frontier(parent);
             calculate_iDominator(parent);
+            calculate_DomTree(parent);
+            mem2reg(parent);
             print_function_info(parent);
             prevFunction = parent;
         }

@@ -11,7 +11,7 @@ void insert_phi(BasicBlock *block,Value *val){
     //插入空的phi函数
     Instruction *phiInstruction = ins_new_phi();
     InstNode *phiInsNode = new_inst_node(phiInstruction);
-    ins_insert_after(phiInsNode,)
+    ins_insert_before(phiInsNode,)
 }
 
 void mem2reg(Function *currentFunction){

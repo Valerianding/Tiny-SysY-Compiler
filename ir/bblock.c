@@ -215,6 +215,17 @@ void ins_insert_after(InstNode *this,InstNode *pos){
     //printf("after ins_insert_after\n");
 }
 
+void ins_insert_before(InstNode *this, InstNode *pos){
+    //获得前一个节点
+    InstNode *prevNode = get_prev_inst(pos);
+    if(prevNode != nullptr){
+        this->list.prev = &prevNode->list;
+        prevNode->list.next = &this->list;
+    }
+    this->list.next = &pos->list;
+    pos->list.prev = &this->list;
+}
+
 void print_block_info(BasicBlock *this){
     printf("block : b%d ",this->id);
     //打印后继

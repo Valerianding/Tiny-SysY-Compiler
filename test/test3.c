@@ -19,6 +19,7 @@ int main()
     int k;
     int d[4][2] = {1, 2, {3}, {5}, 7, 8};
     k=d[1][1];
+    d[k][1] = 1;
     return test(k);
 }
 
@@ -116,7 +117,7 @@ define dso_local i32 @main() #0{
  %2 = Alloca NULL                     //保存返回值（是有多个return语句的情况）
  %3 = Alloca NULL                     //参数
  %4 = Alloca a
- store %0, %3                         //将传入参数赋值, TODO 这里%0的处理还需再考虑
+ store %0, %3                         //将传入参数赋值, TODO 这里%0的处理还需再考虑  这里是什么意思？？？
  store 8, %4                          //const则直接将变量用值取代
  %5 = load %4
  %6 = NOTEQ %5,0
