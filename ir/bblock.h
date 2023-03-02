@@ -110,5 +110,8 @@ void clear_visited_flag(InstNode *head);
 ///在pos位置后面插入this
 void ins_insert_after(InstNode *this,InstNode *pos);
 
+///在pos位置前面插入
+void ins_insert_before(InstNode *this, InstNode *pos);
+
 
 #endif

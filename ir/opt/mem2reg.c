@@ -4,14 +4,29 @@
 
 #include "mem2reg.h"
 #include "vector.h"
+InstNode* new_phi(Value *val){
+    Instruction *phiIns = ins_new(0);
+    phiIns->Opcode = Phi;
+
+    InstNode *phiNode = new_inst_node(phiIns);
+    return phiNode;
+}
+
 void insert_phi(BasicBlock *block,Value *val){
     //头指令
-    Instruction *ins = block->head_node->inst;
+    InstNode *instNode = block->head_node;
+
+
+    //如果当前的基本块内已经存在了对应phi指令的话那我们就不需要再次添加了
+
 
     //插入空的phi函数
-    Instruction *phiInstruction = ins_new_phi();
-    InstNode *phiInsNode = new_inst_node(phiInstruction);
-    ins_insert_before(phiInsNode,)
+    InstNode *phiInstNode = new_phi(val);
+    ins_insert_before(phiInstNode,instNode);
+
+    //调整block的头节点的位置 和 属于的block
+    block->head_node = instNode;
+    phiInstNode->inst->Parent = block;
 }
 
 void mem2reg(Function *currentFunction){
@@ -100,7 +115,7 @@ void mem2reg(Function *currentFunction){
     for(Pair *pair = HashMapNext(currentFunction->storeSet); pair != NULL; pair = HashMapNext(currentFunction->storeSet)){
         //先看一下我们的这个是否是正确的
         Value *val = pair->key;
-        HashSet *storeSet = pair->value;
+        HashSet *storeSet = pair->value;  //这个value对应的所有defBlocks
         HashSetFirst(storeSet);
 
         printf("value : %s store(defBlocks) : ", val->name);
@@ -123,33 +138,29 @@ void mem2reg(Function *currentFunction){
             for(BasicBlock *key = HashSetNext(df); key != nullptr; key = HashSetNext(df)){
                 if(!HashSetFind(phiBlocks,key)){
                     //在key上面放置phi函数
-                    //insert_phi();
-
-                }else{
-                    HashSetAdd(storeSet,key);
+                    insert_phi(key,NULL);
+                    HashSetAdd(phiBlocks,key);
+                    if(!HashSetFind(storeSet,key)){
+                        HashSetAdd(storeSet,key);
+                    }
                 }
             }
             printf("1");
         }
         HashSetDeinit(phiBlocks);
     }
-    //
 
-    //对于每一个store 支配的load 替换！！
-
-    //去hashmap中找对应的store语句
-
-    //如果只有一个store 那么将所有store支配的load直接换成对应的值
-
-    //如果支配的话那么就写上去
-
-
-    //计算迭代支配边界  easy
-
-
-    // place phi函数
-
-
+    //变量重新命名
+    DomTreeNode *root = currentFunction->root;
+    //foreach v : Variable do
+    // v.reachingDef <- Undefined
 
     //
+
+    //应该就不需要栈了因为我们的变量对应的都是一样的
+
+
+
+    //重新遍历
+
 }
