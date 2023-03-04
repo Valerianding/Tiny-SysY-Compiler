@@ -44,9 +44,9 @@ void create_instruction_list(past root,Value* v_return)
             create_if_else_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "While_Stmt") == 0)
             create_while_stmt(root,v_return);
-        //与不是stmt合并
-        //else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Empty_Stmt") == 0)
-          //  create_instruction_list(root->next,v_return);
+            //与不是stmt合并
+            //else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Empty_Stmt") == 0)
+            //  create_instruction_list(root->next,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
         {
             create_call_func(root);
@@ -58,7 +58,7 @@ void create_instruction_list(past root,Value* v_return)
             create_continue_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Break_Stmt") == 0)
             create_break_stmt(root,v_return);
-        //不是stmt
+            //不是stmt
         else
             create_instruction_list(root->next,v_return);
     }
@@ -1105,7 +1105,7 @@ int handle_and_or(past root,bool flag)
     {
         if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0)
             v1= cal_logic_expr(root->left->right);
-        //ID
+            //ID
         else
         {
             Value *v_load= create_load_stmt(bstr2cstr(root->left->right->sVal, '\0'));
@@ -3020,11 +3020,11 @@ void fix_array(struct _InstNode *instruction_node)
         switch (instruction_node->inst->Opcode)
         {
             case GMP:
-                 /** 1. 先取出第一个操作数的value的iVal，是当前累积量
-                 * 2. 算出左值的累积量，替换左值的iVal*/
+                /** 1. 先取出第一个操作数的value的iVal，是当前累积量
+                * 2. 算出左值的累积量，替换左值的iVal*/
                 v_array=instruction->user.value.alias;
                 dimension=instruction->user.value.pdata->var_pdata.iVal;
-                if(dimension==0)
+                if(dimension+1!=v_array->pdata->symtab_array_pdata.dimention_figure && dimension==0)
                 {
                     offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4);
                 }
