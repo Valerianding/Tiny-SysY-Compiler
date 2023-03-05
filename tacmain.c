@@ -9,6 +9,7 @@
 #include "stdio.h"
 #include "bb_divide.h"
 #include "dominance.h"
+#include "mem2reg.h"
 #include "front_end/travel.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
@@ -32,7 +33,6 @@ bool c_b_flag[2]={false,false};
 char t_num[3] = {0};
 int t_index = 0;
 
-//都还没做初始化那些
 struct _InstNode *instruction_list;
 
 void yyerror(char *s)
@@ -68,6 +68,8 @@ int main(int argc, char* argv[]){
     declare_global_alloca(this->value_maps->next);
     create_instruction_list(TRoot,NULL);
     printf_llvm_ir(instruction_list,argv[1]);
+//    fix_array(instruction_list);
+    //print_array(instruction_list);
     //showAst(TRoot,0);
 
     InstNode *temp = get_next_inst(instruction_list);
@@ -94,6 +96,8 @@ int main(int argc, char* argv[]){
             calculate_dominance(parent);
             calculate_dominance_frontier(parent);
             calculate_iDominator(parent);
+            calculate_DomTree(parent);
+            mem2reg(parent);
             print_function_info(parent);
             prevFunction = parent;
         }

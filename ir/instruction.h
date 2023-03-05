@@ -40,6 +40,8 @@ typedef enum OpcodeType{
     MEMSET,
     zeroinitializer,
     GLOBAL_VAR,
+
+    Phi,
 }Opcode;
 
 

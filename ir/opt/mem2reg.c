@@ -3,6 +3,31 @@
 //
 
 #include "mem2reg.h"
+#include "vector.h"
+InstNode* new_phi(Value *val){
+    Instruction *phiIns = ins_new(0);
+    phiIns->Opcode = Phi;
+
+    InstNode *phiNode = new_inst_node(phiIns);
+    return phiNode;
+}
+
+void insert_phi(BasicBlock *block,Value *val){
+    //头指令
+    InstNode *instNode = block->head_node;
+
+
+    //如果当前的基本块内已经存在了对应phi指令的话那我们就不需要再次添加了
+
+
+    //插入空的phi函数
+    InstNode *phiInstNode = new_phi(val);
+    ins_insert_before(phiInstNode,instNode);
+
+    //调整block的头节点的位置 和 属于的block
+    block->head_node = instNode;
+    phiInstNode->inst->Parent = block;
+}
 
 void mem2reg(Function *currentFunction){
     //对于现在的Function初始化
@@ -17,6 +42,7 @@ void mem2reg(Function *currentFunction){
     InstNode *tail = end->tail_node;
 
     InstNode *curNode = head;
+    // 第一次循环去扫描一遍 记录loadSet 和 storeSet
     //(Value*)instruction -> HashSet
     while(curNode != get_next_inst(tail)) {
         BasicBlock *parent = curNode->inst->Parent;
@@ -57,10 +83,14 @@ void mem2reg(Function *currentFunction){
         }
         curNode = get_next_inst(curNode);
     }
+
+//
+
     curNode = head;
 
     //做一些基本的优化
 
+    // 删除无用的alloca
     while(curNode != get_next_inst(tail)){
         //如果alloca没有load就删除这个alloca
         //首先找到对应的value
@@ -77,51 +107,60 @@ void mem2reg(Function *currentFunction){
         curNode = get_next_inst(curNode);
     }
 
-
+    //mem2reg的主要过程
     //如果只有一个store的话 被store支配的load转换
+    //Function里面去找
     HashMapFirst(currentFunction->storeSet);
+    //对里面所有的variable进行查找
     for(Pair *pair = HashMapNext(currentFunction->storeSet); pair != NULL; pair = HashMapNext(currentFunction->storeSet)){
-        Value* value = pair->value;
-        Instruction *ins = (Instruction*)value;
-        //将value转换成instruction去找对应的
-        Value* storeValue = (Value*)(ins->user.use_list[1].Val);
-        HashSet *storeSet = pair->value;
-        if(HashSetSize(storeSet) == 1){
-            //找到对应的基本块 求出其对应的
+        //先看一下我们的这个是否是正确的
+        Value *val = pair->key;
+        HashSet *storeSet = pair->value;  //这个value对应的所有defBlocks
+        HashSetFirst(storeSet);
+
+        printf("value : %s store(defBlocks) : ", val->name);
+        for(BasicBlock *key = HashSetNext(storeSet); key != NULL; key = HashSetNext(storeSet)){
+            printf("b%d ",key->id);
+        }
+
+        printf("\n");
+
+        //place phi
+
+        HashSet *phiBlocks = HashSetInit();
+        while(HashSetSize(storeSet) != 0){
             HashSetFirst(storeSet);
             BasicBlock *block = HashSetNext(storeSet);
-            //找到对应支配基本块
-            HashSet *dom = block->dom;
-            HashSetFirst(dom);
-            for(BasicBlock *key = HashSetNext(dom); key != NULL; key = HashSetNext(dom)){
-                //如果这个基本块有load
-                InstNode *keyBlockHead = key->head_node;
-                InstNode *keyBlockTail = key->tail_node;
-
-                InstNode *keyBlockCur = keyBlockHead;
-                while(keyBlockCur != keyBlockTail){
-                    //找到对应的load了
-                    if(keyBlockCur->inst->Opcode == Load && (Value*)keyBlockCur->inst == value){
-                        //OK现在我要将load直接变成赋值 注意这里需要做添加value的use_list
-                        //并且注意我们不能直接new一个instruction 所以目前我们先暂时的更改Opcode和value就行
-                        //应该错误
-
+            HashSetRemove(storeSet,block);
+            assert(block != nullptr);
+            HashSet *df = block->df;
+            HashSetFirst(df);
+            for(BasicBlock *key = HashSetNext(df); key != nullptr; key = HashSetNext(df)){
+                if(!HashSetFind(phiBlocks,key)){
+                    //在key上面放置phi函数
+                    insert_phi(key,NULL);
+                    HashSetAdd(phiBlocks,key);
+                    if(!HashSetFind(storeSet,key)){
+                        HashSetAdd(storeSet,key);
                     }
-                    keyBlockCur = get_next_inst(keyBlockCur);
                 }
             }
-            //如果支配基本块中有相应的load的话
-
-            //替换
+            printf("1");
         }
+        HashSetDeinit(phiBlocks);
     }
-    //对于每一个store 支配的load 替换！！
 
-    //去hashmap中找对应的store语句
-
-    //如果只有一个store 那么将所有store支配的load直接换成对应的值
-
-    //如果支配的话那么就写上去
+    //变量重新命名
+    DomTreeNode *root = currentFunction->root;
+    //foreach v : Variable do
+    // v.reachingDef <- Undefined
 
     //
+
+    //应该就不需要栈了因为我们的变量对应的都是一样的
+
+
+
+    //重新遍历
+
 }

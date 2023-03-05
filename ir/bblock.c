@@ -45,9 +45,8 @@ InstNode *get_next_inst(InstNode *this){
     return temp;
 }
 
-//lsy
-InstNode *get_last_inst(InstNode *this)
-{
+
+InstNode *get_last_inst(InstNode *this){
     struct sc_list *list=&this->list;
     while(list->next!=NULL)
         list=list->next;
@@ -214,6 +213,17 @@ void ins_insert_after(InstNode *this,InstNode *pos){
     if(nextList!=NULL)
         nextList->prev = &this->list;
     //printf("after ins_insert_after\n");
+}
+
+void ins_insert_before(InstNode *this, InstNode *pos){
+    //获得前一个节点
+    InstNode *prevNode = get_prev_inst(pos);
+    if(prevNode != nullptr){
+        this->list.prev = &prevNode->list;
+        prevNode->list.next = &this->list;
+    }
+    this->list.next = &pos->list;
+    pos->list.prev = &this->list;
 }
 
 void print_block_info(BasicBlock *this){

@@ -16,10 +16,7 @@ User *user_new(){
 
 
 User *user_new1(unsigned use_num){
-    // 另一种是 co-allocated, 在构造User对象时传入边的数量并分配连续内存同时保存User与Use,
-
     uint8_t *Storage = (uint8_t *)malloc(sizeof(User) + sizeof(Use) * use_num);
-    
     return user_construct(Storage, use_num);
 }
 

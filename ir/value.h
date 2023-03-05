@@ -38,7 +38,7 @@ union _PData{
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
 
-        int array[100];
+        int array[100];                 //memcpy使用
     }symtab_array_pdata;
 };
 typedef union _PData PData;
@@ -64,6 +64,7 @@ struct _Value
     char *name;
     struct _Value *alias;
     PData *pdata;
+
 };
 
 void value_init(Value* this);
