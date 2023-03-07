@@ -31,9 +31,12 @@ define dso_local i32 @if_if_Else() #0{
 }
 
 define dso_local i32 @main() #0{
- %1 = alloca i32,align 4
  store i32 0,i32* %1,align 4
  %2 = call i32 @if_if_Else()
+ ret i32 %2
+}
+
+if_Else()
  ret i32 %2
 }
 

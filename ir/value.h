@@ -68,7 +68,7 @@ struct _Value
 };
 
 void value_init(Value* this);
-Value *create_value(Value **v);
+Value *value_create();
 void value_add_use(Value* this, struct _Use *U);
 Type *getType(Value* this);
 struct _Symtab* get_sym_tab(Value *V);

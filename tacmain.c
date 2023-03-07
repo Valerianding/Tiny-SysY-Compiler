@@ -106,8 +106,25 @@ int main(int argc, char* argv[]){
         }
     }
 
-//    ljf
+    // mem2reg 之后的
+    printf_llvm_ir(temp2,argv[1]);
+    //    ljf
     arm_translate_ins(temp2);
+
+
+    //
+    HashMap *test = HashMapInit();
+
+    Value *val = value_create();
+    HashMapPut(test,val,nullptr);
+    //看看是不是能够找到
+    if(HashMapContain(test,val))
+        printf("Yes");
+    if(HashMapGet(test,val) == nullptr)
+        printf("Yes");
+
+
+
 
     return 0;
 }

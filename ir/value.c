@@ -2,8 +2,12 @@
 #include "use.h"
 #include "symtab.h"
 
-/// This method should only be used by the Use class.
-// void addUse(Use &U) { U.addToList(&UseList); }
+Value *value_create(){
+    Value *val = (Value*)malloc(sizeof(Value));
+    memset(val,0,sizeof(Value));
+    return val;
+}
+
 void value_add_use(Value *this, Use *U){
     use_add_to_list(U, &(this->use_list));
 }

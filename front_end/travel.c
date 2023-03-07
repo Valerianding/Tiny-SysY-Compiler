@@ -2994,6 +2994,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
+            case Phi:
+                printf("A phi instruction\n");
+                break;
             default:
                 break;
         }

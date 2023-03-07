@@ -3,7 +3,7 @@
 //
 
 #include "mem2reg.h"
-#include "vector.h"
+
 InstNode* new_phi(Value *val){
     Instruction *phiIns = ins_new(0);
     phiIns->Opcode = Phi;
@@ -16,16 +16,18 @@ void insert_phi(BasicBlock *block,Value *val){
     //头指令
     InstNode *instNode = block->head_node;
 
+    //注意第一条语句是label 所以我们一定要插入到label的后面
+    //
 
+    // 这个好像不存在这种情况
     //如果当前的基本块内已经存在了对应phi指令的话那我们就不需要再次添加了
 
 
     //插入空的phi函数
     InstNode *phiInstNode = new_phi(val);
-    ins_insert_before(phiInstNode,instNode);
+    ins_insert_after(phiInstNode,instNode);
 
-    //调整block的头节点的位置 和 属于的block
-    block->head_node = instNode;
+    // 让这个语句属于Basicblock
     phiInstNode->inst->Parent = block;
 }
 
@@ -33,6 +35,8 @@ void mem2reg(Function *currentFunction){
     //对于现在的Function初始化
     currentFunction->loadSet = HashMapInit();
     currentFunction->storeSet = HashMapInit();
+
+    HashSet *allocas = HashSetInit();
 
     BasicBlock *entry = currentFunction->head;
     BasicBlock *end = currentFunction->tail;
@@ -65,6 +69,10 @@ void mem2reg(Function *currentFunction){
             }
         }
 
+        if(curNode->inst->Opcode == Alloca){
+            //需要存一下
+            HashSetAdd();
+        }
 
         if (curNode->inst->Opcode == Store) {
             //一定对应的是第二个
@@ -150,17 +158,58 @@ void mem2reg(Function *currentFunction){
         HashSetDeinit(phiBlocks);
     }
 
+
+
     //变量重新命名
     DomTreeNode *root = currentFunction->root;
     //foreach v : Variable do
     // v.reachingDef <- Undefined
 
+    //利用一个HashMap alloca的value*  ->  到的这里的value*
+
+
+    // 还需要栈吗？？
+    //(a) A hash table of IncomingVals which is a map from a alloca to its most recent name is created// Most recent name of each alloca is an undef value to start with
+    HashMap *IncomingVals = HashMapInit();
+
     //
 
-    //应该就不需要栈了因为我们的变量对应的都是一样的
+    // 对树做一个DFS
+    //dfsTravelDomTree(root)
+
+
+    // OK 记得释放内存哦
+}
+
+void dfsTravelDomTree(DomTreeNode *node){
+    if(HashSetSize(node->children) == 0){
+        return;
+    }
+
+    // 先根处理
+    BasicBlock *block = node->block;
+    InstNode *head = block->head_node;
+    InstNode *tail = block->tail_node;
+
+    InstNode *curr = head;
+
+    while(curr != get_next_inst(tail)){
 
 
 
-    //重新遍历
 
+        curr = get_next_inst(curr);
+    }
+
+
+
+
+
+    // 递归遍历
+    HashSetFirst(node->children);
+    for(DomTreeNode *key = HashSetNext(node->children); key != nullptr; key = HashSetNext(node->children)){
+        dfsTravelDomTree(key);
+    }
+
+    //
 }
