@@ -1,4 +1,3 @@
-
 #！/bin/bash
 # 测试前端部分正确性
 cd test_cases
@@ -20,7 +19,7 @@ act=0
 ljw=1
 le_count=0
 for file in $(ls *[.c])
-do 
+do
         filename=${file%.*}
         echo ${filename}
         gcc $filename$file_c -o test
@@ -67,8 +66,13 @@ do
         fi
 
         gcc -c $filename$file_as -o $filename$file_obj
-        gcc $filename$file_obj -o test
+        gcc $filename$file_obj sylib.o -o test
+        if [ ! -f "$FILE_IN" ]
+        then
         ./test
+        else
+        ./test < $filename$file_in
+        fi
         act=$?
 
 
@@ -78,9 +82,9 @@ do
         rm -rf $filename$file_obj
         # echo $exp_str$exp
         # echo $act_str$act
-    
+
         if [ $exp -ne $act ]
-        then    
+        then
         let le_count+=1
         file_err[le_count]=$filename$file_c
         exp_err[le_count]=$exp
@@ -109,4 +113,3 @@ do
     echo $exp_str${exp_err[i]}
     echo $act_str${act_err[i]}
 done
-
