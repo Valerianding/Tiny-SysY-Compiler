@@ -141,11 +141,11 @@ past newIdent(bstring strVal)
     return var;
 }
 
-int get_array_total_occupy(Value* a)
+int get_array_total_occupy(Value* a,int begin)
 {
     //Value *a= symtab_lookup_withmap(this,name,map);
     int occupy=1;
-    for(int i=0;i<a->pdata->symtab_array_pdata.dimention_figure;i++)
+    for(int i=begin;i<a->pdata->symtab_array_pdata.dimention_figure;i++)
     {
         occupy*=a->pdata->symtab_array_pdata.dimentions[i];
     }

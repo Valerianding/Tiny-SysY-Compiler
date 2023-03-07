@@ -2,11 +2,57 @@
 // Created by tom on 23-2-25.
 //
 #include "arm.h"
-//InstNode *head=NULL;
-
-
-
-//int i_ins=0;
+int regi=0;
+InstNode * arm_trans_Add(InstNode *ins,offset*offset_head);
+InstNode * arm_trans_Sub(InstNode *ins,offset*offset_head);
+InstNode * arm_trans_Mul(InstNode *ins,offset*offset_head);
+InstNode * arm_trans_Div(InstNode *ins,offset*offset_head);
+InstNode * arm_trans_Module(InstNode *ins);
+InstNode * arm_trans_Call(InstNode *ins);
+InstNode * arm_trans_FunBegin(InstNode *ins,offset*offset_head);
+InstNode * arm_trans_Return(InstNode *ins,InstNode *head);
+InstNode * arm_trans_Store(InstNode *ins,offset*offset_head);
+InstNode * arm_trans_Load(InstNode *ins,offset*offset_head);
+InstNode * arm_trans_Alloca(InstNode *ins);
+InstNode * arm_trans_GIVE_PARAM(InstNode *ins);
+InstNode * arm_trans_ALLBEGIN(InstNode *ins);
+InstNode * arm_trans_LESS(InstNode *ins);
+InstNode * arm_trans_GREAT(InstNode *ins);
+InstNode * arm_trans_LESSEQ(InstNode *ins);
+InstNode * arm_trans_GREATEQ(InstNode *ins);
+InstNode * arm_trans_EQ(InstNode *ins);
+InstNode * arm_trans_NOTEQ(InstNode *ins);
+InstNode * arm_trans_br_i1(InstNode *ins);
+InstNode * arm_trans_br(InstNode *ins);
+InstNode * arm_trans_br_i1_true(InstNode *ins);
+InstNode * arm_trans_br_i1_false(InstNode *ins);
+InstNode * arm_trans_Label(InstNode *ins);
+InstNode * arm_trans_tmp(InstNode *ins);
+InstNode * arm_trans_XOR(InstNode *ins);
+InstNode * arm_trans_zext(InstNode *ins);
+InstNode * arm_trans_bitcast(InstNode *ins);
+InstNode * arm_trans_GMP(InstNode *ins,offset*head);
+InstNode * arm_trans_MEMCPY(InstNode *ins);
+InstNode * arm_trans_zeroinitializer(InstNode *ins);
+InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
+InstNode *arm_trans_Phi(InstNode *ins);
+InstNode *arm_trans_MEMSET(InstNode *ins);
+bool is_int(Value*value){
+    return isIntType(value->VTy);
+}
+bool is_float(Value*value){
+    return isFloatType(value->VTy);
+}
+int get_value_offset(offset*head,Value*value){
+    int i=-1;
+    for(;head!=NULL;head=head->next){
+        i++;
+        if(head->value==value){
+            return i*4;
+        }
+    }
+    return -1;
+}
 int get_siezof_sp(InstNode*ins){
     int x=0;
     ins= get_next_inst(ins);
@@ -32,10 +78,8 @@ float get_value_pdata_varpdata_fval(Value*value){
     return value->pdata->var_pdata.iVal;
 }
 int get_value_alias(Value*value){
-//    这个是需要取到alias里面保存的%i的i值
     return 0;
 }
-
 void get_value_name(Value*value,char name[]){
     name=value->name;
     return;
@@ -43,63 +87,167 @@ void get_value_name(Value*value,char name[]){
 void arm_translate_ins(InstNode *ins){
 //    int x=1;
     InstNode *head=(InstNode*) malloc(sizeof(InstNode*));
+    offset *offset_head=NULL;
     for(;ins!=NULL;ins= get_next_inst(ins)) {
 //        printf("%d\n",x++);
         if(ins->inst->Opcode==FunBegin){
             head=ins;
+//            在进入函数时将offset初始化好，以供load指令使用
+            offset_head= offset_init(ins);
+            regi=0;
+
         }
-        ins=_arm_translate_ins(ins,head);
+        if(ins->inst->Opcode==Return){
+
+            offset_head_free(offset_head);
+            offset_head=NULL;
+
+        }
+        ins=_arm_translate_ins(ins,head,offset_head);
     }
-    free(head);
+
     return;
 }
-InstNode * arm_trans_Add(InstNode *ins){
-//    假设两个数都存在内存中，之后要考虑a+15这种立即书的情况
+InstNode * arm_trans_Add(InstNode *ins,offset*offset_head){
 
-    printf("    add r0,r0,r1\n");
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==Store){
-        ins=temp;
-        int y= user_get_operand_use(&ins->inst->user,1)->Val->pdata->var_pdata.iVal;
-        printf("    str r0,[sp,#%d]\n",y);
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    add r0,#%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    add r0,#%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    add r0,r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    add r0,r0,r1\n");
     }
 
     return  ins;
 
 }
-InstNode * arm_trans_Sub(InstNode *ins){
+InstNode * arm_trans_Sub(InstNode *ins,offset*offset_head){
 
-    printf("    sub r0,r0,r1\n");
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==Store){
-        ins=temp;
-        int y= user_get_operand_use(&ins->inst->user,1)->Val->pdata->var_pdata.iVal;
-        printf("    str r0,[sp,#%d]\n",y);
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    sub r0,#%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
     }
-    //    printf("%d: str,r0,[sp,#%d]\n",i,x3);
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    sub r0,#%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    sub r0,r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    sub r0,r0,r1\n");
+    }
     return  ins;
 }
-InstNode * arm_trans_Mul(InstNode *ins){
+InstNode * arm_trans_Mul(InstNode *ins,offset*offset_head){
 
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==Store){
-        ins=temp;
-        int y= user_get_operand_use(&ins->inst->user,1)->Val->pdata->var_pdata.iVal;
-        printf("    str r0,[sp,#%d]\n",y);
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    mul r0,#%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
     }
-    printf("    mul r0,r1,r2\n");
-    //    printf("%d: str,r0,[sp,#%d]\n",i,x3);
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    mul r0,#%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    mul r0,r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    mul r0,r0,r1\n");
+    }
     return  ins;
 }
-InstNode * arm_trans_Div(InstNode *ins){
-
-//除法指令需要跳转到相应的微处理程序
-//    printf("\n");
+InstNode * arm_trans_Div(InstNode *ins,offset*offset_head){
+    printf("    bl __aeabi_idiv\n");
     return ins;
-
 }
 InstNode * arm_trans_Module(InstNode *ins){
-    printf("\n");
+    printf("arm_trans_Module\n");
     return ins;
 }
 InstNode * arm_trans_Call(InstNode *ins){
@@ -107,21 +255,33 @@ InstNode * arm_trans_Call(InstNode *ins){
     printf("    bl %s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     return ins;
 }
-InstNode * arm_trans_FunBegin(InstNode *ins){
+InstNode * arm_trans_FunBegin(InstNode *ins,offset*offset_head){
 
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
-//    printf("    bl  %s\n",user_get_operand_use(&ins->inst->user,0)->Val->name);
+
     if(!strcmp("main", user_get_operand_use(&ins->inst->user,0)->Val->name)){
+//        printf("hehe\n");
         printf("    push {r11,lr}\n");
         printf("    mov r1,sp\n");
     }
     int x= get_siezof_sp(ins);
     printf("    sub sp,sp,#%d\n",x);
+    int param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
+    if(param_num!=0){
+        ;
+//              进行含参数函数的store指令的处理
+        ins= get_next_inst(ins);
+        for(;ins->inst->Opcode==Alloca;ins= get_next_inst(ins));
+
+        for(int i=0;i<param_num;i++){
+            int x=get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,1)->Val->alias);
+            printf("    str r%d,[sp,#%d]\n",i,x);
+            ins= get_next_inst(ins);
+        }
+    }
     return ins;
 }
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head){
-//    return语句的翻译流程是将要返回的参数存放在r0里面，之后进行栈帧的调整工作
-
 
     if(!strcmp("main", user_get_operand_use(&head->inst->user,0)->Val->name)){
         printf("    mov r11,sp\n");
@@ -129,72 +289,90 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head){
         printf("    bx lr\n");
         return ins;
     }
-    int x1= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
 
-    printf("    ldr r0,[sp,#%d]\n",x1);
-    x1= get_siezof_sp(head);
-//    printf("%s\n", user_get_operand_use(&head->inst->user,0)->Val->name);
-//    printf("    mov sp,r11\n");
-//    printf("    pop {r11,lr}\n");
+    int x1= get_siezof_sp(head);
+
     printf("    add sp,sp,#%d\n",x1);
     printf("    bx lr\n");
     return ins;
 }
-InstNode * arm_trans_Store(InstNode *ins){
+InstNode * arm_trans_Store(InstNode *ins,offset*offset_head){
 
-//这是立即数的翻译方案就是a=5，另外还有一种a=b的情况，
-    int x= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
-    int y= user_get_operand_use(&ins->inst->user,1)->Val->pdata->var_pdata.iVal;
-//    这个跳转的位置是存在value2的那个地方
-    printf("    mov r0,#%d\n",x);
-//  r0?
-    printf("    str r0,[sp,#%d]\n",y);
-    return ins;
-}
-InstNode * arm_trans_Load(InstNode *ins){
-//    int i=ins->inst->i;
-    int x=0;
-    printf("    ldr r0,[sp,#%d]\n",x);
-//    printf("***************LOAD1\n");
-    if(get_next_inst(ins)->inst->Opcode==Load){
-        ins= get_next_inst(ins);
-        printf("    ldr r1,[sp,#%d]\n",x);
-//        printf("***************LOAD2\n");
-        InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==LESSEQ){
-            ins=temp;
-            ins= arm_trans_LESSEQ(ins);
+    if(isImm(user_get_operand_use(&ins->inst->user,0)->Val)){
+        if(isIntType(user_get_operand_use(&ins->inst->user,0)->Val->VTy)){
+            printf("    mov r0,#%d\n",user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal);
+            int x=get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,1)->Val->alias);
+            printf("    str r0,[sp,#%d]\n",x);
         }
-        if(temp->inst->Opcode==LESS){
-            ins=temp;
-            ins= arm_trans_LESS(ins);
-        }
-        if(temp->inst->Opcode==GREAT){
-            ins=temp;
-            ins= arm_trans_GREAT(ins);
-        }
-        if(temp->inst->Opcode==GREATEQ){
-            ins=temp;
-            ins= arm_trans_GREATEQ(ins);
-        }
-        if(temp->inst->Opcode==EQ){
-            ins=temp;
-            ins= arm_trans_EQ(ins);
-        }
-        if(temp->inst->Opcode==NOTEQ){
-            ins=temp;
-            ins= arm_trans_NOTEQ(ins);
+        else if(isFloatType(user_get_operand_use(&ins->inst->user,0)->Val->VTy)){
+            ;
         }
     }
+    else{
+        int x=get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,1)->Val->alias);
+//        printf("%s\n",user_get_operand_use(&ins->inst->user,1)->Val->alias->name);
+            printf("    str r0,[sp,#%d]\n",x);
+    }
+
+    return ins;
+}
+InstNode * arm_trans_Load(InstNode *ins,offset*offset_head){
+    if(get_next_inst(ins)->inst->Opcode==GIVE_PARAM){
+        int x= get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,0)->Val->alias);
+
+        printf("    ldr r%d,[sp,#%d]\n",regi++,x);
+    }
+//    int i=ins->inst->i;
+    else{
+        int x= get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,0)->Val->alias);
+//        printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->alias->name);
+//        printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->name);
+        printf("    ldr r0,[sp,#%d]\n",x);
+
+        if(get_next_inst(ins)->inst->Opcode==Load){
+            ins= get_next_inst(ins);
+//            printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->alias->name);
+//            printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->name);
+            x= get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,0)->Val->alias);
+            printf("    ldr r1,[sp,#%d]\n",x);
+//        printf("***************LOAD2\n");
+            InstNode *temp= get_next_inst(ins);
+            if(temp->inst->Opcode==LESSEQ){
+                ins=temp;
+                ins= arm_trans_LESSEQ(ins);
+            }
+            if(temp->inst->Opcode==LESS){
+                ins=temp;
+                ins= arm_trans_LESS(ins);
+            }
+            if(temp->inst->Opcode==GREAT){
+                ins=temp;
+                ins= arm_trans_GREAT(ins);
+            }
+            if(temp->inst->Opcode==GREATEQ){
+                ins=temp;
+                ins= arm_trans_GREATEQ(ins);
+            }
+            if(temp->inst->Opcode==EQ){
+                ins=temp;
+                ins= arm_trans_EQ(ins);
+            }
+            if(temp->inst->Opcode==NOTEQ){
+                ins=temp;
+                ins= arm_trans_NOTEQ(ins);
+            }
+        }
+    }
+//    printf("Load success\n");
     return ins;
 }
 InstNode * arm_trans_Alloca(InstNode *ins){
-
+//    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
     return ins;
 }
 InstNode * arm_trans_GIVE_PARAM(InstNode *ins){
-//  这个是参数传递的，暂时先不处理
-    printf("\n");
+//  这个是用来标定参数传递的，仅仅是一个指示作用
+//    printf("\n");
     return ins;
 }
 InstNode * arm_trans_ALLBEGIN(InstNode *ins){
@@ -204,7 +382,47 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 }
 InstNode * arm_trans_LESS(InstNode *ins){
 //a<b  a,b
-    printf("    cmp r0,r1\n");
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp #%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    cmp #%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    cmp r0,r1\n");
+    }
+//    printf("    cmp r0,r1\n");
     InstNode *temp= get_next_inst(ins);
     if(temp->inst->Opcode==br_i1){
         ins= temp;
@@ -215,9 +433,51 @@ InstNode * arm_trans_LESS(InstNode *ins){
     }
     return ins;
 
+
 }
 InstNode * arm_trans_GREAT(InstNode *ins){
-    printf("    cmp r0,r1\n");
+
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp #%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    cmp #%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    cmp r0,r1\n");
+    }
+
     InstNode *temp= get_next_inst(ins);
     if(temp->inst->Opcode==br_i1){
         ins= temp;
@@ -231,7 +491,48 @@ InstNode * arm_trans_GREAT(InstNode *ins){
 //    return ins;
 }
 InstNode * arm_trans_LESSEQ(InstNode *ins){
-    printf("    cmp r0,r1\n");
+
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp #%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    cmp #%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    cmp r0,r1\n");
+    }
+//    printf("    cmp r0,r1\n");
     InstNode *temp= get_next_inst(ins);
     if(temp->inst->Opcode==br_i1){
         ins= temp;
@@ -241,11 +542,53 @@ InstNode * arm_trans_LESSEQ(InstNode *ins){
         printf("    b %d\n",x);
     }
     return ins;
+
 //    printf("\n");
 //    return ins;
 }
 InstNode * arm_trans_GREATEQ(InstNode *ins){
-    printf("    cmp r0,r1\n");
+
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp #%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    cmp #%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    cmp r0,r1\n");
+    }
+//    printf("    cmp r0,r1\n");
     InstNode *temp= get_next_inst(ins);
     if(temp->inst->Opcode==br_i1){
         ins= temp;
@@ -259,7 +602,48 @@ InstNode * arm_trans_GREATEQ(InstNode *ins){
 //    return ins;
 }
 InstNode * arm_trans_EQ(InstNode *ins){
-    printf("    cmp r0,r1\n");
+
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp #%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    cmp #%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    cmp r0,r1\n");
+    }
+//    printf("    cmp r0,r1\n");
     InstNode *temp= get_next_inst(ins);
     if(temp->inst->Opcode==br_i1){
 //        printf("***************EQ\n");
@@ -274,7 +658,47 @@ InstNode * arm_trans_EQ(InstNode *ins){
 //    return ins;
 }
 InstNode * arm_trans_NOTEQ(InstNode *ins){
-    printf("    cmp r0,r1\n");
+
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp #%d,#%d\n",x1,x2);
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            ;
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            ;
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            printf("    cmp #%d,r0\n",x1);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            printf("    cmp r0,#%d\n",x2);
+        }
+        else if(isFloatType((value1->VTy))){
+            ;
+        }
+
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        printf("    cmp r0,r1\n");
+    }
     InstNode *temp= get_next_inst(ins);
     if(temp->inst->Opcode==br_i1){
         ins= temp;
@@ -296,81 +720,103 @@ InstNode * arm_trans_br_i1(InstNode *ins){
     return  ins;
 }
 InstNode * arm_trans_br(InstNode *ins){
-//    int i=ins->inst->i;
-//    int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
     printf("    b %d\n",x);
     return ins;
 }
 InstNode * arm_trans_br_i1_true(InstNode *ins){
 
-//    printf("\n");
+    printf("arm_trans_br_i1_true\n");
     return ins;
 }
 InstNode * arm_trans_br_i1_false(InstNode *ins){
 
-//    printf("\n");
+    printf("arm_trans_br_i1_false\n");
     return ins;
 }
 InstNode * arm_trans_Label(InstNode *ins){
-
+//强制跳转的位置
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
     printf("%d：\n",x);
     return ins;
 }
 InstNode * arm_trans_tmp(InstNode *ins){
 
-//    printf("\n");
+    printf("arm_trans_tmp\n");
     return ins;
 }
 InstNode * arm_trans_XOR(InstNode *ins){
-//    printf("\n");
+    printf("arm_trans_XOR\n");
     return ins;
 }
 InstNode * arm_trans_zext(InstNode *ins){
-//    printf("\n");
+//i1扩展为i32
+    printf("arm_trans_zext\n");
     return ins;
 }
 InstNode * arm_trans_bitcast(InstNode *ins){
-
-//    printf("\n");
+//类型转换
+    printf("arm_trans_bitcast\n");
     return ins;
 }
-InstNode * arm_trans_GMP(InstNode *ins){
-
+InstNode * arm_trans_GMP(InstNode *ins,offset*head){
+//数组初始化
+    if(get_next_inst((ins))->inst->Opcode==Store){
+        InstNode *next= get_next_inst(ins);
+        int off= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
+        int x= user_get_operand_use(&next->inst->user,0)->Val->pdata->var_pdata.iVal;
+        printf("    mov r0,#%d\n",x);
+        int off_sp= get_value_offset(head, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
+        printf("    store r0,[sp,#%d]\n",off_sp*4);
+        return next;
+    }
 //    printf("\n");
     return ins;
 }
 InstNode * arm_trans_MEMCPY(InstNode *ins){
 
-//    printf("\n");
+//    涉及到数组的内容
+    printf("arm_trans_MEMCPY\n");
     return ins;
 }
 InstNode * arm_trans_zeroinitializer(InstNode *ins){
 
-//    printf("\n");
+    printf("arm_trans_zeroinitializer\n");
     return ins;
 }
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 
-//    printf("\n");
+//全局变量声明
+    printf("arm_trans_GLOBAL_VAR\n");
+    return ins;
+}
+InstNode *arm_trans_Phi(InstNode *ins){
+
+    printf("arm_trans_Phi\n");
+    return ins;
+}
+InstNode *arm_trans_MEMSET(InstNode *ins){
+
+    printf("arm_trans_MEMSET\n");
     return ins;
 }
 
-InstNode *_arm_translate_ins(InstNode *ins,InstNode *head){
+InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,offset*offset_head){
+
     int x=ins->inst->Opcode;
     switch(x){
         case Add:
-            return arm_trans_Add(ins);
+            return arm_trans_Add(ins,offset_head);
             break;
         case Sub:
-            return arm_trans_Sub(ins);
+            return arm_trans_Sub(ins,offset_head);
             break;
         case Mul:
-            return arm_trans_Mul(ins);
+            return arm_trans_Mul(ins,offset_head);
             break;
         case Div:
-            return arm_trans_Div(ins);
+            return arm_trans_Div(ins,offset_head);
             break;
         case Module:
             return arm_trans_Module(ins);
@@ -379,17 +825,16 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head){
             return arm_trans_Call(ins);
             break;
         case FunBegin:
-//            head =ins;
-            return arm_trans_FunBegin(ins);
+            return arm_trans_FunBegin(ins,offset_head);
             break;
         case Return:
             return arm_trans_Return(ins,head);
             break;
         case Store:
-            return arm_trans_Store(ins);
+            return arm_trans_Store(ins,offset_head);
             break;
         case Load:
-            return arm_trans_Load(ins);
+            return arm_trans_Load(ins,offset_head);
             break;
         case Alloca:
             return arm_trans_Alloca(ins);
@@ -446,7 +891,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head){
             return arm_trans_bitcast(ins);
             break;
         case GMP:
-            return arm_trans_GMP(ins);
+            return arm_trans_GMP(ins,offset_head);
             break;
         case MEMCPY:
             return arm_trans_MEMCPY(ins);
@@ -456,6 +901,12 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head){
             break;
         case GLOBAL_VAR:
             return arm_trans_GLOBAL_VAR(ins);
+            break;
+        case Phi:
+            return arm_trans_Phi(ins);
+            break;
+        case MEMSET:
+            return arm_trans_MEMSET(ins);
             break;
     }
 }

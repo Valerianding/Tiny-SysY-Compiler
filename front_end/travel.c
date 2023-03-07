@@ -44,9 +44,9 @@ void create_instruction_list(past root,Value* v_return)
             create_if_else_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "While_Stmt") == 0)
             create_while_stmt(root,v_return);
-        //与不是stmt合并
-        //else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Empty_Stmt") == 0)
-          //  create_instruction_list(root->next,v_return);
+            //与不是stmt合并
+            //else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Empty_Stmt") == 0)
+            //  create_instruction_list(root->next,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
         {
             create_call_func(root);
@@ -58,7 +58,7 @@ void create_instruction_list(past root,Value* v_return)
             create_continue_stmt(root,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Break_Stmt") == 0)
             create_break_stmt(root,v_return);
-        //不是stmt
+            //不是stmt
         else
             create_instruction_list(root->next,v_return);
     }
@@ -501,7 +501,7 @@ void assign_global_array(past p,Value* v_array,int i,int level)
 void handle_global_array(Value* v_array,bool is_global,past vars)
 {
     //先全部默认为0
-    int ele_num= get_array_total_occupy(v_array);
+    int ele_num= get_array_total_occupy(v_array,0);
     ele_num/=4;
     for(int i=0;i<ele_num;i++)
     {
@@ -935,7 +935,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 else
                 {
                     //TODO memset是否还需要我处理?
-                    int mem= get_array_total_occupy(v_array);
+                    int mem= get_array_total_occupy(v_array,0);
                     Value *v_mem=(Value*) malloc(sizeof (Value));
                     value_init_int(v_mem,mem);
                     Instruction *mem_set= ins_new_binary_operator(MEMSET,v1,v_mem);
@@ -1105,7 +1105,7 @@ int handle_and_or(past root,bool flag)
     {
         if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0)
             v1= cal_logic_expr(root->left->right);
-        //ID
+            //ID
         else
         {
             Value *v_load= create_load_stmt(bstr2cstr(root->left->right->sVal, '\0'));
@@ -2360,7 +2360,7 @@ void printf_global_array(Value* v_array,FILE* fptr)
         //目前只能打印二维
     else
     {
-        int ele_num= get_array_total_occupy(v_array);
+        int ele_num= get_array_total_occupy(v_array,0);
         ele_num/=4;
         int i=0;
         int move=v_array->pdata->symtab_array_pdata.dimentions[0];
@@ -2944,9 +2944,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr," call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
                 printf_array(v_cur_array,0,fptr);
                 printf("* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
-                       get_array_total_occupy(v_cur_array));
+                       get_array_total_occupy(v_cur_array,0));
                 fprintf(fptr,"* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
-                        get_array_total_occupy(v_cur_array));
+                        get_array_total_occupy(v_cur_array,0));
                 break;
             case GLOBAL_VAR:
                 if(instruction->user.use_list->Val->VTy->ID!=ArrayTyID && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Init && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Const)
@@ -3007,5 +3007,50 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
         fprintf(fptr,"\n");
         fprintf(fptr,"declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1\n");
         fprintf(fptr,"declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #2\n");
+    }
+}
+
+
+void fix_array(struct _InstNode *instruction_node)
+{
+    instruction_node= get_next_inst(instruction_node);
+    int offset=0;
+    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
+        Instruction *instruction = instruction_node->inst;
+        int dimension;
+        Value *v_array=NULL;
+        //
+        switch (instruction_node->inst->Opcode)
+        {
+            case GMP:
+                /** 1. 先取出第一个操作数的value的iVal，是当前累积量
+                * 2. 算出左值的累积量，替换左值的iVal*/
+                v_array=instruction->user.value.alias;
+                dimension=instruction->user.value.pdata->var_pdata.iVal;
+                if(dimension+1!=v_array->pdata->symtab_array_pdata.dimention_figure && dimension==0)
+                {
+                    offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4);
+                }
+                else if(dimension+1==v_array->pdata->symtab_array_pdata.dimention_figure)
+                    offset+=instruction->user.use_list[1].Val->pdata->var_pdata.iVal;
+                else
+                {
+                    offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4)+instruction->user.use_list->Val->pdata->var_pdata.iVal;
+                }
+                //将左值的iVal替换为本层增加的偏移量
+                instruction->user.value.pdata->var_pdata.iVal=offset;
+        }
+        instruction_node= get_next_inst(instruction_node);
+    }
+}
+
+
+void print_array(struct _InstNode *instruction_node)
+{
+    instruction_node= get_next_inst(instruction_node);
+    int offset=0;
+    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
+        printf("%d\n",instruction_node->inst->user.value.pdata->var_pdata.iVal);
+        instruction_node= get_next_inst(instruction_node);
     }
 }
