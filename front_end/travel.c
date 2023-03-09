@@ -2743,10 +2743,16 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     printf(" %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
                     fprintf(fptr," %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
                 }
-                else
+                //是库函数
+                else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
                 {
                     printf(" %s = call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.value.name,instruction->user.use_list->Val->name);
                     fprintf(fptr," %s = call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }
+                else
+                {
+                    printf(" %s = call i32 (...) @%s (",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    fprintf(fptr," %s = call i32 (...) @%s (",instruction->user.value.name,instruction->user.use_list->Val->name);
                 }
                 //参数
                 for(int i=0;i<give_count;i++)
@@ -3008,6 +3014,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
         fprintf(fptr,"declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1\n");
         fprintf(fptr,"declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #2\n");
     }
+    printf("declare dso_local i32 @getint(...) #1\n");
+    printf("declare dso_local i32 @putint(...) #1\n");
+
+    fprintf(fptr,"declare dso_local i32 @getint(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @putint(...) #1\n");
 }
 
 

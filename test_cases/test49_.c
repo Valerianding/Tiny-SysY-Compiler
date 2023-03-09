@@ -1,4 +1,3 @@
-// Use complex expression in assign structure
 int main () {
     int a;
     int b;
@@ -9,10 +8,13 @@ int main () {
     b = 5;
     c = 1;
     d = -2;
-    result = (d * 1 / 2)  + (a - b) - -(c + 3) % 2;
-    //putint(result);
-    result = ((d % 2 + 67) + -(a - b) - -((c + 2) % 2));
-    result = result + 3;
-    //putint(result);
-    return result;
+    result = 2;
+    if ((d * 1 / 2) < 0 || (a - b) != 0 && (c + 3) % 2 != 0) {
+        putint(result);
+    }
+    if ((d % 2 + 67) < 0 || (a - b) != 0 && (c + 2) % 2 != 0) {
+        result = 4;
+        putint(result);
+    }
+    return 0;
 }
