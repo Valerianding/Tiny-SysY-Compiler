@@ -90,14 +90,21 @@ do
             if [ ! -f "$FILE_IN" ]
             then
             ./test -al | tee $FILE_TEMP_OUT
+            echo $? -al | tee $FILE_TEMP_OUT
             else
             ./test < $filename$file_in -al | tee $FILE_TEMP_OUT
+            echo $? -al | tee $FILE_TEMP_OUT
             fi
         cd ../
         ./judge test_cases/$FILE_OUT  test_cases/$FILE_TEMP_OUT
         out_value=$?
         cd test_cases
         rm -rf $FILE_TEMP_OUT
+        rm -rf test
+        rm -rf $filename$file_ll
+        rm -rf $filename$file_as
+        rm -rf $filename$file_obj
+        continue
         fi
 
         if [ $out_value -ne $ljw ]
