@@ -1,5 +1,7 @@
 #！/bin/bash
 # 测试前端部分正确性
+gcc judge_out.c -o judge
+#用于判断标准输出的结果是否正确
 cd test_cases
 file_list=()
 file_err=()
@@ -7,19 +9,24 @@ exp_err=()
 act_err=()
 ll_err=()
 as_err=()
+out_err=()
 file_c=".c"
 file_ll=".ll"
 file_as=".s"
 file_obj=".o"
 file_in=".in"
+file_out=".out"
+file_temp_out="_temp.out"
 exp_str="expect:"
 act_str="actual:"
 exp=0
 act=0
+out_value=0
 ljw=1
 le_count=0
 for file in $(ls *[.c])
 do
+        out_value=1
         filename=${file%.*}
         echo ${filename}
         gcc $filename$file_c -o test
@@ -60,6 +67,7 @@ do
         file_err[le_count]=$filename$file_c
         as_err[le_count]=1
         ll_err[le_count]=0
+        out_err[le_count]=0
         exp_err[le_count]=$exp
         rm -rf $filename$file_ll
         continue
@@ -67,14 +75,46 @@ do
 
         gcc -c $filename$file_as -o $filename$file_obj
         gcc $filename$file_obj sylib.o -o test
+        FILE_OUT=$filename$file_out
+        FILE_TEMP_OUT=$filename$file_temp_out
         if [ ! -f "$FILE_IN" ]
         then
         ./test
         else
-        ./test < $filename$file_in
+        ./test < $filename$file_in 
         fi
         act=$?
 
+        if [ -f "$FILE_OUT" ]
+        then
+            if [ ! -f "$FILE_IN" ]
+            then
+            ./test -al | tee $FILE_TEMP_OUT
+            else
+            ./test < $filename$file_in -al | tee $FILE_TEMP_OUT
+            fi
+        cd ../
+        ./judge test_cases/$FILE_OUT  test_cases/$FILE_TEMP_OUT
+        out_value=$?
+        cd test_cases
+        rm -rf $FILE_TEMP_OUT
+        fi
+
+        if [ $out_value -ne $ljw ]
+        then
+        let le_count+=1
+        file_err[le_count]=$filename$file_c
+        exp_err[le_count]=$exp
+        act_err[le_count]=$act
+        ll_err[le_count]=0
+        as_err[le_count]=0
+        out_err[le_count]=1
+        rm -rf test
+        rm -rf $filename$file_ll
+        rm -rf $filename$file_as
+        rm -rf $filename$file_obj
+        continue
+        fi
 
         rm -rf test
         rm -rf $filename$file_ll
@@ -91,7 +131,7 @@ do
         act_err[le_count]=$act
         ll_err[le_count]=0
         as_err[le_count]=0
-
+        out_err[le_count]=0
         fi
 done
 echo "还有问题的测试用例数："$le_count
@@ -108,8 +148,17 @@ do
     echo ${file_err[i]}"   ir不符合llvm规范  "$exp_str${exp_err[i]}
     continue
     fi
+    
+    if [ "${out_err[i]}" = "1" ] ;
+    then
+    echo ${file_err[i]}"    标准输出与out存在差异"
+    continue
+    fi
 
-    echo ${file_err[i]}"   期望值与实际值不匹配"
+    echo ${file_err[i]}"   返回的期望值与实际值不匹配"
     echo $exp_str${exp_err[i]}
     echo $act_str${act_err[i]}
 done
+
+cd ../
+rm -rf judge
