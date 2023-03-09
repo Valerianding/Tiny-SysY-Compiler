@@ -1,7 +1,14 @@
 #！/bin/bash
 # 测试前端部分正确性
-gcc judge_out.c -o judge
 #用于判断标准输出的结果是否正确
+gcc run_test_src/judge_out.c -o judge
+#生成静态链接库文件
+gcc -c run_test_src/sylib.c
+ar rcs sylib.a sylib.o
+cp sylib.a test_cases
+cp sylib.o test_cases
+rm -rf sylib.a
+rm -rf sylib.o
 cd test_cases
 file_list=()
 file_err=()
@@ -36,7 +43,7 @@ do
         gcc $filename$file_c -o test
         ./test
         else
-        gcc -o test $filename$file_c -L./ libsy.a
+        gcc -o test $filename$file_c -L./ sylib.a
         ./test < $filename$file_in
         fi
         exp=$?
@@ -167,5 +174,7 @@ do
     echo $act_str${act_err[i]}
 done
 
+rm -rf sylib.a
+rm -rf sylib.o
 cd ../
 rm -rf judge
