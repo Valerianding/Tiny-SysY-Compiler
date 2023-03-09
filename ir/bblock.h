@@ -113,5 +113,6 @@ void ins_insert_after(InstNode *this,InstNode *pos);
 ///在pos位置前面插入
 void ins_insert_before(InstNode *this, InstNode *pos);
 
-
+/// 删除某个inst
+void delete_inst(InstNode *this);
 #endif

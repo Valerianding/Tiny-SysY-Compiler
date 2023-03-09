@@ -226,6 +226,16 @@ void ins_insert_before(InstNode *this, InstNode *pos){
     pos->list.prev = &this->list;
 }
 
+void delete_inst(InstNode *this){
+    InstNode *prev = get_prev_inst(this);
+    InstNode *next = get_next_inst(this);
+    if(prev == NULL){
+        next->list.prev = NULL;
+    }
+    next->list.prev = &(prev->list);
+    prev->list.next = &(next->list);
+}
+
 void print_block_info(BasicBlock *this){
     printf("block : b%d ",this->id);
     //打印后继

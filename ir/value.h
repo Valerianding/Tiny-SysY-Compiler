@@ -10,6 +10,13 @@
 struct _Symtab;
 struct _Use;
 typedef struct _Use Use;
+
+// 为了phi指令设计的
+typedef struct pair{
+    Value *define; // 变量的到达
+    BasicBlock *from; //从哪个基本块来的
+}pair;
+
 #define  NumUserOperandsBits 27
 
 union _PData{
@@ -40,6 +47,8 @@ union _PData{
 
         int array[100];                 //memcpy使用
     }symtab_array_pdata;
+
+    HashSet *pairSet; // 为了phi指令设计的 存pair类型的数据
 };
 typedef union _PData PData;
 typedef struct _Value Value;

@@ -29,6 +29,9 @@ void insert_phi(BasicBlock *block,Value *val){
 
     // 让这个语句属于Basicblock
     phiInstNode->inst->Parent = block;
+
+    //做一个映射 记录现在对应的是哪个alloca
+    phiInstNode->inst->user.value.alias = val;
 }
 
 void mem2reg(Function *currentFunction){
@@ -67,11 +70,6 @@ void mem2reg(Function *currentFunction){
                 HashMapPut(currentFunction->loadSet, loadValue, loadSet);
 
             }
-        }
-
-        if(curNode->inst->Opcode == Alloca){
-            //需要存一下
-            HashSetAdd();
         }
 
         if (curNode->inst->Opcode == Store) {
@@ -146,6 +144,8 @@ void mem2reg(Function *currentFunction){
             for(BasicBlock *key = HashSetNext(df); key != nullptr; key = HashSetNext(df)){
                 if(!HashSetFind(phiBlocks,key)){
                     //在key上面放置phi函数
+
+                    //这里的value还没有确定
                     insert_phi(key,NULL);
                     HashSetAdd(phiBlocks,key);
                     if(!HashSetFind(storeSet,key)){
@@ -162,18 +162,25 @@ void mem2reg(Function *currentFunction){
 
     //变量重新命名
     DomTreeNode *root = currentFunction->root;
-    //foreach v : Variable do
-    // v.reachingDef <- Undefined
 
     //利用一个HashMap alloca的value*  ->  到的这里的value*
 
-
-    // 还需要栈吗？？
-    //(a) A hash table of IncomingVals which is a map from a alloca to its most recent name is created// Most recent name of each alloca is an undef value to start with
+    //(a) A hash table of IncomingVals which is a map from a alloca to its most recent name is created
+    // Most recent name of each alloca is an undef value to start with
     HashMap *IncomingVals = HashMapInit();
 
-    //
+    // 在entry 上保存allocas
+    // foreach v : Variable do
+    // v.reachingDef <- Undefined
+    curNode = entry->head_node;
+    while(curNode != get_next_inst(entry->tail_node)){
+        if(curNode->inst->Opcode == Alloca){
+            HashMapPut(IncomingVals,&(curNode->inst->user.value),nullptr);
+        }
+        curNode = get_next_inst(curNode);
+    }
 
+    //变量重命名 pass
     // 对树做一个DFS
     //dfsTravelDomTree(root)
 
@@ -181,7 +188,8 @@ void mem2reg(Function *currentFunction){
     // OK 记得释放内存哦
 }
 
-void dfsTravelDomTree(DomTreeNode *node){
+void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
+    // 递归结束 返回
     if(HashSetSize(node->children) == 0){
         return;
     }
@@ -193,23 +201,49 @@ void dfsTravelDomTree(DomTreeNode *node){
 
     InstNode *curr = head;
 
+    // 变量重命名
     while(curr != get_next_inst(tail)){
+        switch(curr->inst->Opcode){
+            case Load:{
+                //删除load指令
+                delete_inst(curr);
+                // 需要被替换的
+                Value *value = ins_get_value(curr->inst);
+                // 对应的allocas
+                Value *alloca =  ins_get_lhs(curr->inst);
+                // 去incomingVals里面找
+                Value *replace = HashMapGet(IncomingVals,alloca);
 
+                value_replaceAll(value,replace);
+                break;
+            }
+            case Store:{
+                //更新变量的使用与
+                //对应的{}
+                //Value *ins = ins_get_value(curr->inst);
+                Value *data = ins_get_lhs(curr->inst);
+                Value *store  = ins_get_rhs(curr->inst); // 对应的allocas
+                //可以直接这样更新
+                HashMapPut(IncomingVals,store,data);
 
-
-
+                delete_inst(curr);
+                break;
+            }
+            case Phi:{
+                // 找到对应的allocas
+                Value *alloca = curr->inst->user.value.alias;
+                // 如果是phi节点的话我们就设置为-1
+                HashMapPut(IncomingVals,alloca,-1);
+                break;
+            }
+        }
         curr = get_next_inst(curr);
     }
 
-
-
-
-
+    // 维护该基本块所有的后继基本块中的phi指令
     // 递归遍历
     HashSetFirst(node->children);
     for(DomTreeNode *key = HashSetNext(node->children); key != nullptr; key = HashSetNext(node->children)){
-        dfsTravelDomTree(key);
+        dfsTravelDomTree(key,IncomingVals);
     }
-
-    //
 }

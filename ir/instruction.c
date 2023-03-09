@@ -81,6 +81,23 @@ Value *ins_get_value_with_name(Instruction *ins){
     return v_tmp;
 }
 
+Value *ins_get_lhs(Instruction *ins){
+    User *user = &ins->user;
+    Use *use1 = user_get_operand_use(user,0);
+    Value *lhs = use1->Val;
+    return lhs;
+}
+
+Value *ins_get_rhs(Instruction *ins){
+    Value *dest = (Value*)ins;
+    // 如果没有两个就报错
+    assert(dest->NumUserOperands == 2);
+    User *user = &ins->user;
+    Use *use2 = user_get_operand_use(user,1);
+    Value *rhs = use2->Val;
+    return rhs;
+}
+
 void ins_set_parent(Instruction *ins,struct _BasicBlock *parent){
     ins->Parent = parent;
 }
