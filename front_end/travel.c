@@ -256,11 +256,8 @@ void create_assign_stmt(past root,Value* v_return) {
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
         //是全局变量
-        if(symtab_lookup_withmap(this,bstr2cstr(root->left->sVal, '\0'),&this->value_maps->next->map))
-        {
-            v=symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'));
-        }
-        else
+        v=symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'));
+        if(!begin_global(v->name))
             //左id,从符号表中取出之前存入的这个变量
             v = symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'))->alias;
     }
@@ -281,8 +278,11 @@ void create_assign_stmt(past root,Value* v_return) {
 
         //赋值右边为表达式
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "expr") == 0)
+    {
         //取出右值
-        v1 = cal_expr(root->right,0);
+        int convert=0;
+        v1 = cal_expr(root->right,&convert);
+    }
 
         //赋值右边为普通a,b,c,d
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
@@ -336,7 +336,8 @@ void create_return_stmt(past root,Value* v_return) {
         }
             //返回表达式
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0){
-            v = cal_expr(root->left,0);
+            int convert=0;
+            v = cal_expr(root->left,&convert);
         }
             //整数
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0){
@@ -820,7 +821,10 @@ Value *handle_assign_array(past root,Value *v_array)
             value_init_int(v_num,root->iVal);
         }
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "expr") == 0)
-            v_num= cal_expr(root,0);
+        {
+            int convert=0;
+            v_num= cal_expr(root,&convert);
+        }
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "ID") == 0)
             v_num= create_load_stmt(bstr2cstr(root->sVal, '\0'));
 
@@ -890,7 +894,10 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "ID") == 0)
                 v1= create_load_stmt(bstr2cstr(vars->right->sVal,'\0'));
             else if (strcmp(bstr2cstr(vars->right->nodeType, '\0'), "expr") == 0)
-                v1 = cal_expr(vars->right,0);
+            {
+                int convert=0;
+                v1 = cal_expr(vars->right,&convert);
+            }
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "Call_Func") == 0)
                 v1= create_call_func(vars->right);
 
@@ -1073,6 +1080,20 @@ int handle_and_or(past root,bool flag)
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
         }
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
+        {
+            Value *v_load= create_call_func(root->left);
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v1= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
             //num_int
         else
         {
@@ -1148,6 +1169,20 @@ int handle_and_or(past root,bool flag)
             else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
             {
                 Value *v_load= create_load_stmt(bstr2cstr(root->right->sVal, '\0'));
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v2= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
+            else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "Call_Func") == 0)
+            {
+                Value *v_load= create_call_func(root->right);
                 //生成一条icmp ne
                 //包装0
                 Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -1713,7 +1748,13 @@ void create_func_def(past root) {
     {
         //不是读到return才会触发这个
         //1.先生成标号
-        InstNode *instNode=true_location_handler(Label,NULL,t_index++);
+        InstNode *instNode=NULL;
+        if(get_last_inst(instruction_list)->inst->Opcode!=Label)
+        {
+            instNode=true_location_handler(Label,NULL,t_index++);
+        }
+        else
+            instNode= get_last_inst(instruction_list);
         //入栈
         insnode_push(&S_return,instNode);
         //2.再生成一条load
@@ -2091,7 +2132,10 @@ struct _Value* cal_logic_expr(past logic_expr)
 
     //value1
     if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "expr") == 0)
-        v1= cal_expr(logic_expr->left,0);
+    {
+        int convert=0;
+        v1= cal_expr(logic_expr->left,&convert);
+    }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "ID") == 0)
         v1= create_load_stmt(bstr2cstr(logic_expr->left->sVal,'\0'));
     else
@@ -2104,7 +2148,10 @@ struct _Value* cal_logic_expr(past logic_expr)
 
     //value2
     if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "expr") == 0)
-        v2= cal_expr(logic_expr->right,0);
+    {
+        int convert=0;
+        v2= cal_expr(logic_expr->right,&convert);
+    }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "ID") == 0)
         v2= create_load_stmt(bstr2cstr(logic_expr->right->sVal,'\0'));
     else
@@ -3011,11 +3058,18 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
         fprintf(fptr,"declare void @llvm.memset.p0i8.i64(i8* nocapture writeonly, i8, i64, i1 immarg) #1\n");
         fprintf(fptr,"declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #2\n");
     }
-    printf("declare dso_local i32 @getint(...) #1\n");
-    printf("declare dso_local i32 @putint(...) #1\n");
 
     fprintf(fptr,"declare dso_local i32 @getint(...) #1\n");
     fprintf(fptr,"declare dso_local i32 @putint(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @getch(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @getarray(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @getfloat(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @getfarray(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @putch(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @putarray(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @putfloat(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @putfarray(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @putf(...) #1\n");
 }
 
 
