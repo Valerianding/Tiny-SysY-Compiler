@@ -245,6 +245,8 @@ void create_blockItemList(past root,Value* v_return)
     scope_forward(this);
     create_instruction_list(root->left,v_return);
     scope_back(this);
+    if(root->next!=NULL)
+        create_instruction_list(root->next,v_return);
 }
 
 //cal_expr()能使得等式右边永远只有一个值
@@ -1276,6 +1278,26 @@ void create_if_stmt(past root,Value* v_return) {
     //真值
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0)
+    {
+        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->left->left->sVal, '\0'));
+        Value *v_load= handle_assign_array(root->left->right->left,v_array);
+        if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
+        {
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v_real= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+        else
+            v_real=v_load;
+    }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
         Value *v_load=NULL;
@@ -1319,7 +1341,7 @@ void create_if_stmt(past root,Value* v_return) {
     InstNode *node1=NULL;
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
     {
-        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
+        if(!(root->left->sVal!=NULL && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)))
         {
             if(convert==0)
                 //正确跳转
@@ -1348,7 +1370,7 @@ void create_if_stmt(past root,Value* v_return) {
         t_index++;
     }
 
-    if(result!=1 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
+    if(result!=1 && ((root->left->sVal==NULL) || strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0))
     {
         if(convert==0)
             node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
@@ -1380,6 +1402,26 @@ void create_if_else_stmt(past root,Value* v_return) {
     //真值
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0)
+    {
+        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->left->left->sVal, '\0'));
+        Value *v_load= handle_assign_array(root->left->right->left,v_array);
+        if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
+        {
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v_real= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+        else
+            v_real=v_load;
+    }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
         Value *v_load=NULL;
@@ -1532,6 +1574,26 @@ void create_while_stmt(past root,Value* v_return)
     //真值
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
         v_real= cal_logic_expr(root->left);
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0)
+    {
+        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->left->left->sVal, '\0'));
+        Value *v_load= handle_assign_array(root->left->right->left,v_array);
+        if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
+        {
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v_real= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+        else
+            v_real=v_load;
+    }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
         Value *v_load=NULL;
@@ -2138,6 +2200,11 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "ID") == 0)
         v1= create_load_stmt(bstr2cstr(logic_expr->left->sVal,'\0'));
+    else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "LValArray") == 0)
+    {
+        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->left->left->sVal, '\0'));
+        v1= handle_assign_array(logic_expr->left->right->left,v_array);
+    }
     else
     {
         //TODO num_int,目前还都没有考虑float
@@ -2154,6 +2221,11 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "ID") == 0)
         v2= create_load_stmt(bstr2cstr(logic_expr->right->sVal,'\0'));
+    else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "LValArray") == 0)
+    {
+        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->right->left->sVal, '\0'));
+        v2= handle_assign_array(logic_expr->right->right->left,v_array);
+    }
     else
     {
         //num_int
@@ -2335,6 +2407,11 @@ void create_params_stmt(past func_params)
         }
         else if(strcmp(bstr2cstr(params->nodeType, '\0'), "Call_Func") == 0)
             v= create_call_func(params);
+        else if(strcmp(bstr2cstr(params->nodeType, '\0'), "LValArray") == 0)
+        {
+            Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(params->left->sVal, '\0'));
+            v= handle_assign_array(params->right->left,v_array);
+        }
             //是IDent
         else
             v= create_load_stmt(bstr2cstr(params->sVal, '\0'));
