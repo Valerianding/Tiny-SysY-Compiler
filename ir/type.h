@@ -29,6 +29,7 @@ enum TypeID {
     FunctionTyID,
     VoidTyID,
 
+    AddressTyID,       //地址
 };
 
 typedef struct _Type{

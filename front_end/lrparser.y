@@ -153,7 +153,7 @@ FuncFParam
     : BType IDent                                      {past prefix=prefixNode(NULL,$1);past id=newIdent($2);prefix->next=id;
                                                        $$ = newAnotherNode("FuncFParam",prefix,NULL);}
     | BType IDent LSQUARE RSQUARE                  {past prefix=prefixNode(NULL,$1);past id=newIdent($2);prefix->next=id;
-                                                    $$ = newAnotherNode("FuncFParam",prefix,NULL);}
+                                                    $$ = newAnotherNode("FuncFParam",prefix,newNumInt(1));}
     | BType IDent LSQUARE RSQUARE ExpArray         {past prefix=prefixNode(NULL,$1);past id=newIdent($2);prefix->next=id;
                                                      $$ = newAnotherNode("FuncFParam",prefix,$5);}
     ;
