@@ -2,113 +2,72 @@
 // Created by tom on 23-2-25.
 //
 #include "arm.h"
+
 int regi=0;
-InstNode * arm_trans_Add(InstNode *ins,offset*offset_head);
-InstNode * arm_trans_Sub(InstNode *ins,offset*offset_head);
-InstNode * arm_trans_Mul(InstNode *ins,offset*offset_head);
-InstNode * arm_trans_Div(InstNode *ins,offset*offset_head);
-InstNode * arm_trans_Module(InstNode *ins);
-InstNode * arm_trans_Call(InstNode *ins);
-InstNode * arm_trans_FunBegin(InstNode *ins,offset*offset_head);
-InstNode * arm_trans_Return(InstNode *ins,InstNode *head);
-InstNode * arm_trans_Store(InstNode *ins,offset*offset_head);
-InstNode * arm_trans_Load(InstNode *ins,offset*offset_head);
-InstNode * arm_trans_Alloca(InstNode *ins);
-InstNode * arm_trans_GIVE_PARAM(InstNode *ins);
-InstNode * arm_trans_ALLBEGIN(InstNode *ins);
-InstNode * arm_trans_LESS(InstNode *ins);
-InstNode * arm_trans_GREAT(InstNode *ins);
-InstNode * arm_trans_LESSEQ(InstNode *ins);
-InstNode * arm_trans_GREATEQ(InstNode *ins);
-InstNode * arm_trans_EQ(InstNode *ins);
-InstNode * arm_trans_NOTEQ(InstNode *ins);
-InstNode * arm_trans_br_i1(InstNode *ins);
-InstNode * arm_trans_br(InstNode *ins);
-InstNode * arm_trans_br_i1_true(InstNode *ins);
-InstNode * arm_trans_br_i1_false(InstNode *ins);
-InstNode * arm_trans_Label(InstNode *ins);
-InstNode * arm_trans_tmp(InstNode *ins);
-InstNode * arm_trans_XOR(InstNode *ins);
-InstNode * arm_trans_zext(InstNode *ins);
-InstNode * arm_trans_bitcast(InstNode *ins);
-InstNode * arm_trans_GMP(InstNode *ins,offset*head);
-InstNode * arm_trans_MEMCPY(InstNode *ins);
-InstNode * arm_trans_zeroinitializer(InstNode *ins);
-InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
-InstNode *arm_trans_Phi(InstNode *ins);
-InstNode *arm_trans_MEMSET(InstNode *ins);
-bool is_int(Value*value){
-    return isIntType(value->VTy);
+
+int get_value_offset(HashMap *hashMap,Value*value){
+    offset *node= HashMapGet(hashMap, value);
+    return node->offset_sp;
 }
-bool is_float(Value*value){
-    return isFloatType(value->VTy);
-}
-int get_value_offset(offset*head,Value*value){
-    int i=-1;
-    for(;head!=NULL;head=head->next){
-        i++;
-        if(head->value==value){
-            return i*4;
+
+void give_param_str(HashMap*hashMap,Value*value,char *name,int *ri){
+    if(!isImm(value)){
+        if(!HashMapContain(hashMap, value)){
+            ;
+        }else{
+            if((strcmp(name,value->name)>0)&& (strlen(name)>= strlen(value->name))){
+//                    表示该参数为传递过来的参数
+//                printf("namelen:%d value_namelen:%d\n", strlen(name), strlen(value->name));
+                int x= get_value_offset(hashMap,value);
+                printf("    str r%d,[sp,#%d]\n",(*ri)++,x);
+                HashMapRemove(hashMap,value);
+            }
         }
     }
-    return -1;
+    return;
 }
-int get_siezof_sp(InstNode*ins){
-    int x=0;
-    ins= get_next_inst(ins);
-    for(;ins!=NULL;ins= get_next_inst(ins)){
-        int opcode=ins->inst->Opcode;
-        if(opcode==Alloca)
-            x+=1;
-        if(opcode==FunBegin)
-            break;
-    }
-    return x*4;
+
+int get_siezof_sp(HashMap*hashMap){
+    return HashMapSize(hashMap);
 }
+
 int get_value_pdata_inspdata_true(Value*value){
     return value->pdata->instruction_pdata.true_goto_location;
 }
+
 int get_value_pdata_inspdata_false(Value*value){
     return value->pdata->instruction_pdata.false_goto_location;
 }
-int get_value_pdata_varpdata_ival(Value*value){
-    return value->pdata->var_pdata.iVal;
-}
-float get_value_pdata_varpdata_fval(Value*value){
-    return value->pdata->var_pdata.iVal;
-}
-int get_value_alias(Value*value){
-    return 0;
-}
-void get_value_name(Value*value,char name[]){
-    name=value->name;
-    return;
-}
+
 void arm_translate_ins(InstNode *ins){
 //    int x=1;
-    InstNode *head=(InstNode*) malloc(sizeof(InstNode*));
-    offset *offset_head=NULL;
-    for(;ins!=NULL;ins= get_next_inst(ins)) {
+    InstNode *head;
+    HashMap *hashMap;
+    for(;ins!=NULL;ins=get_next_inst(ins)) {
 //        printf("%d\n",x++);
         if(ins->inst->Opcode==FunBegin){
             head=ins;
 //            在进入函数时将offset初始化好，以供load指令使用
-            offset_head= offset_init(ins);
+            hashMap=offset_init(ins);
             regi=0;
+            ins= arm_trans_FunBegin(ins,hashMap);
+            offset_free(hashMap);
+            hashMap=NULL;
 
+            hashMap= offset_init(ins);
+            ins= get_next_inst(ins);
         }
+        ins=_arm_translate_ins(ins,head,hashMap);
         if(ins->inst->Opcode==Return){
-
-            offset_head_free(offset_head);
-            offset_head=NULL;
-
+            offset_free(hashMap);
+            hashMap=NULL;
         }
-        ins=_arm_translate_ins(ins,head,offset_head);
     }
 
     return;
 }
-InstNode * arm_trans_Add(InstNode *ins,offset*offset_head){
+
+InstNode * arm_trans_Add(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
@@ -154,7 +113,8 @@ InstNode * arm_trans_Add(InstNode *ins,offset*offset_head){
     return  ins;
 
 }
-InstNode * arm_trans_Sub(InstNode *ins,offset*offset_head){
+
+InstNode * arm_trans_Sub(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
@@ -198,7 +158,8 @@ InstNode * arm_trans_Sub(InstNode *ins,offset*offset_head){
     }
     return  ins;
 }
-InstNode * arm_trans_Mul(InstNode *ins,offset*offset_head){
+
+InstNode * arm_trans_Mul(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
@@ -242,46 +203,208 @@ InstNode * arm_trans_Mul(InstNode *ins,offset*offset_head){
     }
     return  ins;
 }
-InstNode * arm_trans_Div(InstNode *ins,offset*offset_head){
+
+InstNode * arm_trans_Div(InstNode *ins){
     printf("    bl __aeabi_idiv\n");
     return ins;
 }
+
 InstNode * arm_trans_Module(InstNode *ins){
     printf("arm_trans_Module\n");
     return ins;
 }
+
 InstNode * arm_trans_Call(InstNode *ins){
 //    printf("CALL\n");
     printf("    bl %s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     return ins;
 }
-InstNode * arm_trans_FunBegin(InstNode *ins,offset*offset_head){
+
+InstNode * arm_trans_FunBegin(InstNode *ins,HashMap*hashMap){
 
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
 
     if(!strcmp("main", user_get_operand_use(&ins->inst->user,0)->Val->name)){
-//        printf("hehe\n");
         printf("    push {r11,lr}\n");
         printf("    mov r1,sp\n");
     }
-    int x= get_siezof_sp(ins);
-    printf("    sub sp,sp,#%d\n",x);
+    int x= get_siezof_sp(hashMap);
+    printf("    sub sp,sp,#%d\n",4*x);
+    //    在函数开始的时候要进行参数传递的str的处理
     int param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
-    if(param_num!=0){
-        ;
-//              进行含参数函数的store指令的处理
-        ins= get_next_inst(ins);
-        for(;ins->inst->Opcode==Alloca;ins= get_next_inst(ins));
+    if(param_num!=0) {
+        char name[20];
+        sprintf(name, "%c", '%');
+        sprintf(name + 1, "%d", param_num);
+        InstNode *temp=ins;
+        int ri=0;
+        for (; ins != NULL && ins->inst->Opcode != Return; ins = get_next_inst(ins)) {
+            Value *value0, *value1, *value2;
+            switch (ins->inst->Opcode) {
+                case Add:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case Sub:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case Mul:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case Div:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case Call:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    break;
+                case Store:
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case Load:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    break;
+                case GIVE_PARAM:
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    give_param_str(hashMap,value1,name,&ri);
+                    break;
+                case LESS:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case GREAT:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case LESSEQ:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case GREATEQ:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case EQ:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case NOTEQ:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case XOR:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    break;
+                case zext:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    break;
+                case bitcast:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    break;
+                case GMP:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case MEMCPY:
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case GLOBAL_VAR:
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value0,name,&ri);
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                case MEMSET:
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                    give_param_str(hashMap,value1,name,&ri);
+                    give_param_str(hashMap,value2,name,&ri);
+                    break;
+                default:
+                    break;
+            }
 
-        for(int i=0;i<param_num;i++){
-            int x=get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,1)->Val->alias);
-            printf("    str r%d,[sp,#%d]\n",i,x);
-            ins= get_next_inst(ins);
         }
+        ins=temp;
+        for(ins= get_next_inst(ins);ins->inst->Opcode==Alloca||ins->inst->Opcode==Store;ins= get_next_inst(ins)){
+            temp=ins;
+        }
+        ins=temp;
     }
+
     return ins;
 }
-InstNode * arm_trans_Return(InstNode *ins,InstNode *head){
+
+InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap){
 
     if(!strcmp("main", user_get_operand_use(&head->inst->user,0)->Val->name)){
         printf("    mov r11,sp\n");
@@ -290,18 +413,19 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head){
         return ins;
     }
 
-    int x1= get_siezof_sp(head);
+    int x1= get_siezof_sp(hashMap);
 
-    printf("    add sp,sp,#%d\n",x1);
+    printf("    add sp,sp,#%d\n",4*x1);
     printf("    bx lr\n");
     return ins;
 }
-InstNode * arm_trans_Store(InstNode *ins,offset*offset_head){
+
+InstNode * arm_trans_Store(InstNode *ins,HashMap*hashMap){
 
     if(isImm(user_get_operand_use(&ins->inst->user,0)->Val)){
         if(isIntType(user_get_operand_use(&ins->inst->user,0)->Val->VTy)){
             printf("    mov r0,#%d\n",user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal);
-            int x=get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,1)->Val->alias);
+            int x=get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,1)->Val);
             printf("    str r0,[sp,#%d]\n",x);
         }
         else if(isFloatType(user_get_operand_use(&ins->inst->user,0)->Val->VTy)){
@@ -309,22 +433,28 @@ InstNode * arm_trans_Store(InstNode *ins,offset*offset_head){
         }
     }
     else{
-        int x=get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,1)->Val->alias);
+        int x=get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,1)->Val);
 //        printf("%s\n",user_get_operand_use(&ins->inst->user,1)->Val->alias->name);
             printf("    str r0,[sp,#%d]\n",x);
     }
 
     return ins;
 }
-InstNode * arm_trans_Load(InstNode *ins,offset*offset_head){
-    if(get_next_inst(ins)->inst->Opcode==GIVE_PARAM){
-        int x= get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,0)->Val->alias);
 
+InstNode * arm_trans_Load(InstNode *ins,HashMap*hashMap){
+    if(get_next_inst(ins)->inst->Opcode==GIVE_PARAM&&regi<4){
+        int x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
         printf("    ldr r%d,[sp,#%d]\n",regi++,x);
     }
 //    int i=ins->inst->i;
+    else if(get_next_inst(ins)->inst->Opcode==GIVE_PARAM){
+        int x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
+        printf("    ldr r12,[sp,#%d]\n",x);
+        printf("    str r12,[sp,#-%d]\n",regi);
+        regi+=4;
+    }
     else{
-        int x= get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,0)->Val->alias);
+        int x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
 //        printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->alias->name);
 //        printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->name);
         printf("    ldr r0,[sp,#%d]\n",x);
@@ -333,7 +463,7 @@ InstNode * arm_trans_Load(InstNode *ins,offset*offset_head){
             ins= get_next_inst(ins);
 //            printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->alias->name);
 //            printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->name);
-            x= get_value_offset(offset_head,user_get_operand_use(&ins->inst->user,0)->Val->alias);
+            x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
             printf("    ldr r1,[sp,#%d]\n",x);
 //        printf("***************LOAD2\n");
             InstNode *temp= get_next_inst(ins);
@@ -366,20 +496,24 @@ InstNode * arm_trans_Load(InstNode *ins,offset*offset_head){
 //    printf("Load success\n");
     return ins;
 }
+
 InstNode * arm_trans_Alloca(InstNode *ins){
 //    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
     return ins;
 }
+
 InstNode * arm_trans_GIVE_PARAM(InstNode *ins){
 //  这个是用来标定参数传递的，仅仅是一个指示作用
 //    printf("\n");
     return ins;
 }
+
 InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //    int i=ins->inst->i;
     printf("**********ALLBEGIN**************\n");
     return ins;
 }
+
 InstNode * arm_trans_LESS(InstNode *ins){
 //a<b  a,b
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -435,6 +569,7 @@ InstNode * arm_trans_LESS(InstNode *ins){
 
 
 }
+
 InstNode * arm_trans_GREAT(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -490,6 +625,7 @@ InstNode * arm_trans_GREAT(InstNode *ins){
 //    printf("\n");
 //    return ins;
 }
+
 InstNode * arm_trans_LESSEQ(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -546,6 +682,7 @@ InstNode * arm_trans_LESSEQ(InstNode *ins){
 //    printf("\n");
 //    return ins;
 }
+
 InstNode * arm_trans_GREATEQ(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -601,6 +738,7 @@ InstNode * arm_trans_GREATEQ(InstNode *ins){
 //    printf("\n");
 //    return ins;
 }
+
 InstNode * arm_trans_EQ(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -657,6 +795,7 @@ InstNode * arm_trans_EQ(InstNode *ins){
 //    printf("\n");
 //    return ins;
 }
+
 InstNode * arm_trans_NOTEQ(InstNode *ins){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -711,6 +850,7 @@ InstNode * arm_trans_NOTEQ(InstNode *ins){
 //    printf("\n");
 //    return ins;
 }
+
 InstNode * arm_trans_br_i1(InstNode *ins){
 //    int i=ins->inst->i;
     int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
@@ -719,104 +859,118 @@ InstNode * arm_trans_br_i1(InstNode *ins){
     printf("    b %d\n",x);
     return  ins;
 }
+
 InstNode * arm_trans_br(InstNode *ins){
 
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
     printf("    b %d\n",x);
     return ins;
 }
+
 InstNode * arm_trans_br_i1_true(InstNode *ins){
 
     printf("arm_trans_br_i1_true\n");
     return ins;
 }
+
 InstNode * arm_trans_br_i1_false(InstNode *ins){
 
     printf("arm_trans_br_i1_false\n");
     return ins;
 }
+
 InstNode * arm_trans_Label(InstNode *ins){
 //强制跳转的位置
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
     printf("%d：\n",x);
     return ins;
 }
+
 InstNode * arm_trans_tmp(InstNode *ins){
 
     printf("arm_trans_tmp\n");
     return ins;
 }
+
 InstNode * arm_trans_XOR(InstNode *ins){
     printf("arm_trans_XOR\n");
     return ins;
 }
+
 InstNode * arm_trans_zext(InstNode *ins){
 //i1扩展为i32
     printf("arm_trans_zext\n");
     return ins;
 }
+
 InstNode * arm_trans_bitcast(InstNode *ins){
 //类型转换
     printf("arm_trans_bitcast\n");
     return ins;
 }
-InstNode * arm_trans_GMP(InstNode *ins,offset*head){
+
+InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //数组初始化
     if(get_next_inst((ins))->inst->Opcode==Store){
         InstNode *next= get_next_inst(ins);
         int off= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
         int x= user_get_operand_use(&next->inst->user,0)->Val->pdata->var_pdata.iVal;
         printf("    mov r0,#%d\n",x);
-        int off_sp= get_value_offset(head, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
+        int off_sp= get_value_offset(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
         printf("    store r0,[sp,#%d]\n",off_sp*4);
         return next;
     }
 //    printf("\n");
     return ins;
 }
+
 InstNode * arm_trans_MEMCPY(InstNode *ins){
 
 //    涉及到数组的内容
     printf("arm_trans_MEMCPY\n");
     return ins;
 }
+
 InstNode * arm_trans_zeroinitializer(InstNode *ins){
 
     printf("arm_trans_zeroinitializer\n");
     return ins;
 }
+
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 
 //全局变量声明
     printf("arm_trans_GLOBAL_VAR\n");
     return ins;
 }
+
 InstNode *arm_trans_Phi(InstNode *ins){
 
     printf("arm_trans_Phi\n");
     return ins;
 }
+
 InstNode *arm_trans_MEMSET(InstNode *ins){
 
     printf("arm_trans_MEMSET\n");
     return ins;
 }
 
-InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,offset*offset_head){
+InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
 
     int x=ins->inst->Opcode;
     switch(x){
         case Add:
-            return arm_trans_Add(ins,offset_head);
+            return arm_trans_Add(ins);
             break;
         case Sub:
-            return arm_trans_Sub(ins,offset_head);
+            return arm_trans_Sub(ins);
             break;
         case Mul:
-            return arm_trans_Mul(ins,offset_head);
+            return arm_trans_Mul(ins);
             break;
         case Div:
-            return arm_trans_Div(ins,offset_head);
+            return arm_trans_Div(ins);
             break;
         case Module:
             return arm_trans_Module(ins);
@@ -825,16 +979,16 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,offset*offset_head){
             return arm_trans_Call(ins);
             break;
         case FunBegin:
-            return arm_trans_FunBegin(ins,offset_head);
+            return arm_trans_FunBegin(ins,hashMap);
             break;
         case Return:
-            return arm_trans_Return(ins,head);
+            return arm_trans_Return(ins,head,hashMap);
             break;
         case Store:
-            return arm_trans_Store(ins,offset_head);
+            return arm_trans_Store(ins,hashMap);
             break;
         case Load:
-            return arm_trans_Load(ins,offset_head);
+            return arm_trans_Load(ins,hashMap);
             break;
         case Alloca:
             return arm_trans_Alloca(ins);
@@ -891,7 +1045,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,offset*offset_head){
             return arm_trans_bitcast(ins);
             break;
         case GMP:
-            return arm_trans_GMP(ins,offset_head);
+            return arm_trans_GMP(ins,hashMap);
             break;
         case MEMCPY:
             return arm_trans_MEMCPY(ins);
@@ -907,6 +1061,8 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,offset*offset_head){
             break;
         case MEMSET:
             return arm_trans_MEMSET(ins);
+            break;
+        default:
             break;
     }
 }

@@ -49,7 +49,7 @@ typedef struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
-    int i; //指令的编
+    int i; //指令的编号
 }Instruction;
 
 
