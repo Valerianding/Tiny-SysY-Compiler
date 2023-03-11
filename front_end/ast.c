@@ -474,7 +474,9 @@ void insert_func_into_symtab(past return_type,past pname,past params)
     int i=0;
     while(params!=NULL)
     {
-        if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
+        if(params->right!=NULL)
+            v->pdata->symtab_func_pdata.param_type_lists[i++].ID=AddressTyID;
+        else if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
         {v->pdata->symtab_func_pdata.param_type_lists[i++].ID=Var_FLOAT;}
         else
         {v->pdata->symtab_func_pdata.param_type_lists[i++].ID=Var_INT;}
