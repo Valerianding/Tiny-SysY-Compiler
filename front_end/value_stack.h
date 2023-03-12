@@ -2,6 +2,8 @@
 // Created by 12167 on 2022-11-28.
 //
 
+#ifndef value_stack_H
+#define value_stack_H
 
 #include <stdbool.h>
 #include "value.h"
@@ -22,4 +24,4 @@ bool pop_value(value_stack* S, Value **px); //出栈，元素保存到px所指�
 bool top_value(value_stack* S, Value **px); //获取栈顶元素，将其保存到px所指的单元，函数返回true，栈满时返回 false
 bool is_empty_value(value_stack S);  // 栈为空时返回 true，否则返回 false
 
-
+#endif
