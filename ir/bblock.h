@@ -9,7 +9,7 @@ struct _DomNode;
 typedef struct _BasicBlock BasicBlock;
 typedef struct _Function Function;
 typedef struct _DomNode DomTreeNode;
-static int count = 1; //block记数
+static int count; // 记录全局基本块
 /* 这里的设计结构 */
 typedef struct _InstNode{
     Instruction *inst;

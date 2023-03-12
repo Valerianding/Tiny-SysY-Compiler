@@ -213,6 +213,9 @@ void mem2reg(Function *currentFunction){
     // delete load 和 store
     deleteLoadStore(currentFunction);
 
+
+    // 让LLVM IR符合标准
+    renameVariabels(currentFunction);
     // OK 记得释放内存哦
     //先释放栈的内存再释放HashMap的内存
     HashMapFirst(IncomingVals);
@@ -431,4 +434,50 @@ void deleteLoadStore(Function *currentFunction){
             }
         }
     }
+}
+
+void renameVariabels(Function *currentFunction){
+
+    //开始时候为1
+    int countVariable = 1;
+    BasicBlock *entry = currentFunction->head;
+    BasicBlock *end = currentFunction->tail;
+
+
+    InstNode *currNode = entry->head_node;
+
+    while(currNode != get_next_inst(end->tail_node)){
+
+        // 只用考虑修改左边的并且我们暂时不修改alloc指令
+        if(currNode->inst->Opcode != Alloca){
+            if(currNode->inst->Opcode == Label){
+                //
+                currNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
+                countVariable++;
+
+            }else{
+
+                //普通的instruction语句
+                char *insName = currNode->inst->user.value.name;
+
+                //如果不为空那我们可以进行重命名
+                if(insName != NULL && insName[0] == '%'){
+                    char newName[10];
+                    int index = 1;
+                    while(countVariable){
+                        newName[index] = (countVariable % 10) + '0';
+                        countVariable /= 10;
+                        index++;
+                    }
+                    for(int i = 1; i < index; i++){
+                        insName[i] = newName[i];
+                    }
+                }
+                countVariable++;
+            }
+        }
+
+        currNode = get_next_inst(currNode);
+    }
+
 }
