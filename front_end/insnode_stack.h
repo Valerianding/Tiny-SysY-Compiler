@@ -1,7 +1,7 @@
 //
 // Created by 12167 on 2023-01-07.
 //
-
+//
 #ifndef C22V1_INSNODE_STACK_H
 #define C22V1_INSNODE_STACK_H
 
@@ -24,4 +24,4 @@ bool insnode_is_empty(insnode_stack S);  // 栈为空时返回 true，否则返�
 void insnode_stack_new(insnode_stack *S);
 
 
-#endif //C22V1_INSNODE_STACK_H
+#endif

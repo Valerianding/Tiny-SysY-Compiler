@@ -136,11 +136,13 @@ FuncDef
                                                            return_index++;}
     | VOID IDent LBRACKET RBRACKET Block                 {past id=newIdent($2);past prefix=prefixNode("void",NULL);prefix->next=id;
                                                           $$ = newAnotherNode("FuncDef",prefix,$5);
-                                                          insert_func_into_symtab(prefix,id,NULL);}
+                                                          insert_func_into_symtab(prefix,id,NULL);
+                                                          return_index++;}
     | VOID IDent LBRACKET FuncFParams RBRACKET Block     {past id=newIdent($2);id->left=$4;past prefix=prefixNode("void",NULL);prefix->next=id;
                                                                $$ = newAnotherNode("FuncDef",prefix,$6);
                                                                insert_func_into_symtab(prefix,id,$4->left);
-                                                               insert_func_params($4->left);}
+                                                               insert_func_params($4->left);
+                                                               return_index++;}
     ;
 
 FuncFParams
@@ -197,7 +199,8 @@ Stmt
     | WHILE LBRACKET Cond RBRACKET Stmt            {$$ = newAnotherNode("While_Stmt",$3,$5);}
     | BREAK SEMICOLON                                {$$ = newAnotherNode("Break_Stmt",NULL,NULL);}
     | CONTINUE SEMICOLON                             {$$ = newAnotherNode("Continue_Stmt",NULL,NULL);}
-    | RETURN SEMICOLON                               {$$ = newAnotherNode("Return_Stmt",NULL,NULL);}
+    | RETURN SEMICOLON                               {$$ = newAnotherNode("Return_Stmt",NULL,NULL);
+                                                        return_stmt_num[return_index]++;}
     | RETURN Exp SEMICOLON                           {$$ = newAnotherNode("Return_Stmt",$2,NULL);
                                                         return_stmt_num[return_index]++;}
     ;

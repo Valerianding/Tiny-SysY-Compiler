@@ -213,9 +213,13 @@ void insert_var_into_symtab(past type,past p)
                 //是const常数的expr
             {
                 //TODO 暂时这样做，调用cal_expr的嵌套问题还未解决
-                //Value *v_tmp= cal_expr(one_dimention,0);
-                //v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
                 Value *v_tmp=(Value*) malloc(sizeof (Value));
+
+//                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
+//                {
+//                    v_tmp= cal_expr(one_dimention,0);
+//                    v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
+//                }
                 //TODO 只考虑了单边const
                 if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
                 {
@@ -255,17 +259,29 @@ void insert_var_into_symtab(past type,past p)
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
             Value *v_num= symtab_dynamic_lookup(this,bstr2cstr(p->right->sVal,'\0'));
-            if(v_num->VTy->ID==Const_FLOAT)
+            //非参数
+            if(v_num!=NULL)
             {
-                v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
-                v->VTy->ID=Const_FLOAT;
+                if(v_num->VTy->ID==Const_FLOAT)
+                {
+                    v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
+                    v->VTy->ID=Const_FLOAT;
+                }
+                    //Const_Int
+                else if(v_num->VTy->ID==Const_INT)
+                {
+                    v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
+                    v->VTy->ID=Const_INT;
+                }
+                else
+                {
+                    if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+                        v->VTy->ID=Var_FLOAT;
+                    else
+                        v->VTy->ID=Var_INT;
+                }
             }
-                //Const_Int
-            else if(v_num->VTy->ID==Const_INT)
-            {
-                v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
-                v->VTy->ID=Const_INT;
-            }
+            //参数
             else
             {
                 if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
@@ -273,6 +289,14 @@ void insert_var_into_symtab(past type,past p)
                 else
                     v->VTy->ID=Var_INT;
             }
+        }
+        //是expr
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
+        {
+            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+                v->VTy->ID=Var_FLOAT;
+            else
+                v->VTy->ID=Var_INT;
         }
         else
         {
@@ -327,12 +351,15 @@ void insert_var_into_symtab(past type,past p)
         {
             if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"num_int")==0)
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
+//            else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"expr")==0)
+//            {
+//                Value *v_result= cal_expr(one_dimention,0);
+//                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_result->pdata->var_pdata.iVal;
+//            }
             else
                 //是const常数的expr
             {
                 //TODO 暂时这样做，调用cal_expr的嵌套问题还未解决
-                //Value *v_tmp= cal_expr(one_dimention,0);
-                //v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
                 Value *v_tmp=(Value*) malloc(sizeof (Value));
                 //TODO 只考虑了单边const
                 if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
@@ -467,8 +494,10 @@ void insert_func_into_symtab(past return_type,past pname,past params)
     if(strcmp(bstr2cstr(return_type->sVal,'\0'),"float")==0)
         //TODO 分不清var_constint和var_int了
     {v->pdata->symtab_func_pdata.return_type.ID=Var_FLOAT;}
-    else
+    else if(strcmp(bstr2cstr(return_type->sVal,'\0'),"int")==0)
     {v->pdata->symtab_func_pdata.return_type.ID=Var_INT;}
+    else
+        v->pdata->symtab_func_pdata.return_type.ID=VoidTyID;
 
     //将参数全部添加完毕,加入参数的类型
     int i=0;

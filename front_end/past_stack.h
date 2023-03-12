@@ -24,4 +24,4 @@ bool top(past_stack* S, past *px); //获取栈顶元素，将其保存到px所�
 bool is_empty(past_stack S);  // 栈为空时返回 true，否则返回 false
 
 
-#endif //LABT_PAST_past_stack_H
+#endif
