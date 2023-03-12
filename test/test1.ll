@@ -5,11 +5,11 @@ define dso_local i32 @if_if_Else() #0{
  br i1 %2,label %5,label %8
 
 2:
- %3= sub nsw i32 10,(null)
+ %3= sub nsw i32 10,1
  br label %11
 
 2:
- %30= add nsw i32 10,(null)
+ %30= add nsw i32 10,1
  br label %11
 
 2:
@@ -32,7 +32,7 @@ declare dso_local i32 @putarray(...) #1
 declare dso_local i32 @putfloat(...) #1
 declare dso_local i32 @putfarray(...) #1
 declare dso_local i32 @putf(...) #1
-tarray(...) #1
+al i32 @getarray(...) #1
 declare dso_local i32 @getfloat(...) #1
 declare dso_local i32 @getfarray(...) #1
 declare dso_local i32 @putch(...) #1
