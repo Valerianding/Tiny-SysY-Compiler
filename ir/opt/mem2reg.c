@@ -17,7 +17,7 @@ InstNode* new_phi(Value *val){
     phiNode->inst->user.value.alias = val;
     // 添加一个默认的名字
     phiIns->user.value.name = (char *)malloc(sizeof(char) * 4);
-    phiIns->user.value.name = "%phi";
+    strcpy(phiIns->user.value.name,"%phi");
     return phiNode;
 }
 
@@ -522,10 +522,6 @@ void renameVariabels(Function *currentFunction){
         }
         else if(currNode->inst->Opcode==Phi)
         {
-            //TODO 目前是手动给的名字，丁老师看着再调整一下
-            currNode->inst->user.value.name= malloc(5);
-            strcpy(currNode->inst->user.value.name,"%phi");
-
             //1.取出hashSet
             HashSet *phiSet=currNode->inst->user.value.pdata->pairSet;
             HashSetFirst(phiSet);

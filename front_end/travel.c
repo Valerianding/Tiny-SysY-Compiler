@@ -3477,10 +3477,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case Phi:{
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
-                //暂时的给phi函数一个名字
-                //最多四个字节
-//                instruction->user.value.name = (char *)malloc(sizeof(char) * 4);
-//                instruction->user.value.name = "%phi";
                 printf(" %s = phi i32 ",instruction->user.value.name);
                 unsigned int size=HashSetSize(phiSet);
                 int i=0;
