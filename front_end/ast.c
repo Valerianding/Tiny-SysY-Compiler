@@ -417,12 +417,35 @@ void insert_func_params(past params)
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
         v->pdata->var_pdata.map= getCurMap(this);
-        if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
-            //函数参数默认为有初始值
-        {v->VTy->ID=Param_FLOAT;}
+        //right不为NULL，则说明参数是数组
+        if(params->right!=NULL)
+        {
+            //一维数组
+            if(strcmp(bstr2cstr(params->right->nodeType,'\0'),"num_int")==0)
+            {
+                v->VTy->ID=AddressTyID;
+                v->pdata->symtab_array_pdata.dimention_figure=1;
+            }
+            //多维数组
+            else{
+                v->pdata->symtab_array_pdata.dimention_figure=1;
+                past get_dimension=params->right->left;        //到达num_int
+                while(get_dimension!=NULL)
+                {
+                    v->pdata->symtab_array_pdata.dimentions[v->pdata->symtab_array_pdata.dimention_figure]=get_dimension->iVal;
+                    v->pdata->symtab_array_pdata.dimention_figure++;
+                    get_dimension=get_dimension->next;
+                }
+            }
+        }
         else
-        {v->VTy->ID=Param_INT;}
-
+        {
+            if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
+                //函数参数默认为有初始值
+            {v->VTy->ID=Param_FLOAT;}
+            else
+            {v->VTy->ID=Param_INT;}
+        }
         v->name=(char*) malloc(sizeof(bstr2cstr(params->left->next->sVal,0)));
         strcpy(v->name,bstr2cstr(params->left->next->sVal,0));
         symtab_insert_withmap(this,func_map,bstr2cstr(params->left->next->sVal,0),v);
@@ -451,7 +474,9 @@ void insert_func_into_symtab(past return_type,past pname,past params)
     int i=0;
     while(params!=NULL)
     {
-        if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
+        if(params->right!=NULL)
+            v->pdata->symtab_func_pdata.param_type_lists[i++].ID=AddressTyID;
+        else if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
         {v->pdata->symtab_func_pdata.param_type_lists[i++].ID=Var_FLOAT;}
         else
         {v->pdata->symtab_func_pdata.param_type_lists[i++].ID=Var_INT;}

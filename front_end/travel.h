@@ -44,7 +44,7 @@ void fix_array(struct _InstNode *instruction_node);
 void printf_array(Value *v_array, int begin_index,FILE* fptr);
 void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_value,int start_layer,int cur_layer,int carry[]);
 
-Value *handle_assign_array(past root,Value *v_array);
+Value *handle_assign_array(past root,Value *v_array,int location);      //0是只要地址，1是要取值
 past array_all_zeros(past init_val_list);
 
 //借位-1,比如是三维数组，返回借位的结束处的index是0,1,2

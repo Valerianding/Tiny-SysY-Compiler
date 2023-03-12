@@ -153,7 +153,7 @@ FuncFParam
     : BType IDent                                      {past prefix=prefixNode(NULL,$1);past id=newIdent($2);prefix->next=id;
                                                        $$ = newAnotherNode("FuncFParam",prefix,NULL);}
     | BType IDent LSQUARE RSQUARE                  {past prefix=prefixNode(NULL,$1);past id=newIdent($2);prefix->next=id;
-                                                    $$ = newAnotherNode("FuncFParam",prefix,NULL);}
+                                                    $$ = newAnotherNode("FuncFParam",prefix,newNumInt(1));}
     | BType IDent LSQUARE RSQUARE ExpArray         {past prefix=prefixNode(NULL,$1);past id=newIdent($2);prefix->next=id;
                                                      $$ = newAnotherNode("FuncFParam",prefix,$5);}
     ;
@@ -172,7 +172,7 @@ ScopeEnd
     ;
 
 Block
-    : LPAR RPAR                                    {$$ = newAnotherNode("Block",NULL,NULL);}
+    : LPAR RPAR                                    {$$ = newAnotherNode("Block_EMPTY",NULL,NULL);}
     | ScopeStart BlockItemList ScopeEnd                       {$$ = $2;}
     ;
 
@@ -183,7 +183,7 @@ BlockItem
 
 /*新加的,形如BlockItem BlockItem BlockItem*/
 BlockItemList
-    : BlockItem                                          {$$ = newFollowNode("BlockItemList",$1,NULL);}
+    : BlockItem                                          {$$ = newAnotherNode("BlockItemList",$1,NULL);}
     | BlockItemList BlockItem                            {$$ = newFollowNode("BlockItemList",$1,$2);}
     ;
 
