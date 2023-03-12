@@ -65,6 +65,7 @@ InstNode *search_ins_id(InstNode *head,int id){
 }
 
 InstNode *search_ins_label(InstNode *head,int label_id){
+    // 需要满足在一个function里面
     while(head != NULL){
         if(head->inst->Opcode == Label && head->inst->user.value.pdata->instruction_pdata.true_goto_location == label_id){
             return head;
@@ -226,14 +227,29 @@ void ins_insert_before(InstNode *this, InstNode *pos){
     pos->list.prev = &this->list;
 }
 
+InstNode *ins_get_funcHead(InstNode *this){
+    if(this->inst->Opcode == FunBegin) return this;
+    InstNode *prev = get_prev_inst(this);
+    while(prev != nullptr){
+        if(prev->inst->Opcode == FunBegin) return prev;
+        prev = get_prev_inst(prev);
+    }
+    return nullptr;
+}
+
 void delete_inst(InstNode *this){
     InstNode *prev = get_prev_inst(this);
     InstNode *next = get_next_inst(this);
-    if(prev == NULL){
+    if(prev == NULL && next != NULL){
         next->list.prev = NULL;
     }
+    if(prev != NULL && next == NULL){
+        prev->list.next = NULL;
+    }
+    // 要么就都不为空
     next->list.prev = &(prev->list);
     prev->list.next = &(next->list);
+    free(this);
 }
 
 void print_block_info(BasicBlock *this){

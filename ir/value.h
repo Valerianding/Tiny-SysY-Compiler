@@ -5,16 +5,18 @@
 #include <stdint.h>
 #include "type.h"
 #include "symtab.h"
+#include "hash_set.h"
 
-
+struct _BasicBlock;
+struct _Value;
 struct _Symtab;
 struct _Use;
 typedef struct _Use Use;
 
 // 为了phi指令设计的
 typedef struct pair{
-    Value *define; // 变量的到达
-    BasicBlock *from; //从哪个基本块来的
+    struct _Value *define; // 变量的到达
+    struct _BasicBlock *from; //从哪个基本块来的
 }pair;
 
 #define  NumUserOperandsBits 27

@@ -52,14 +52,19 @@ void value_replace(Value *newValue,Use *use){
 }
 
 void value_replaceAll(Value *oldValue,Value *newValue){
-    //
-    Use *use = oldValue->use_list;
-    while(use != nullptr){
-        use->Val = newValue;
-        value_add_use(newValue,use);
-        use = use->Next;
+    // 使用两个Use的原因是需要维护Next的正确性
+    if(oldValue->use_list != NULL){
+        Use *use1 = oldValue->use_list;
+        Use *use2 = use1->Next;
+        while(use1 != NULL){
+            printf("at use : %p, replace by : %p\n",use1,newValue);
+            value_add_use(newValue,use1);
+            use1->Val = newValue;
+            use1 = use2;
+            use2 = (use2 == NULL ? NULL : use2->Next);
+        }
     }
-    oldValue->use_list = nullptr;
+    oldValue->use_list = NULL;
 }
 
 //FIXME

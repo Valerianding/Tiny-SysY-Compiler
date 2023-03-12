@@ -115,4 +115,6 @@ void ins_insert_before(InstNode *this, InstNode *pos);
 
 /// 删除某个inst
 void delete_inst(InstNode *this);
+
+InstNode *ins_get_funcHead(InstNode *this);
 #endif

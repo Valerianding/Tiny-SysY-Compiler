@@ -52,6 +52,6 @@ InstNode *get_func_start(InstNode *cur){
 }
 
 void print_function_info(Function *this){
-    printf("------------------------\n");
     printf("function : %p head : b%d tail : b%d\n",this,this->head->id,this->tail->id);
+    printf("------------------------\n");
 }

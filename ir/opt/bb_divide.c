@@ -26,6 +26,7 @@ void bblock_divide(InstNode *head){
     //第一次全部打点
     //printf("first while\n");
     InstNode *prev_in;
+    int curBlockLabel = 0;
     while(cur != NULL){
         if(cur->inst->Opcode == FunBegin || cur->inst->Opcode == Label){
             InstNode *cur_prev = get_prev_inst(cur);
@@ -34,6 +35,10 @@ void bblock_divide(InstNode *head){
             }
             cur->inst->user.value.is_in = true;
             prev_in = cur;
+
+            if(cur->inst->Opcode == Label){
+                curBlockLabel = cur->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            }
         }
         if(cur->inst->Opcode == Return || cur->inst->Opcode == br || cur->inst->Opcode == br_i1){
             cur->inst->user.value.is_out = true;
@@ -42,8 +47,7 @@ void bblock_divide(InstNode *head){
                 cur_next->inst->user.value.is_in = true;
             }
             BasicBlock *this = bb_create();
-            this->id = count;
-            count++;
+            this->id = curBlockLabel;
             bb_set_block(this,prev_in,cur);
         }
         cur = get_next_inst(cur);

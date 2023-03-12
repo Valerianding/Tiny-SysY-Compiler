@@ -14,7 +14,11 @@
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
-
+void test(HashSet *set){
+    int *a = (int*)malloc(sizeof(int));
+    set = HashSetInit();
+    HashSetAdd(set,(void*)a);
+}
 
 extern int yyparse();
 extern past TRoot;
@@ -93,13 +97,16 @@ int main(int argc, char* argv[]){
         Function *parent = cur->Parent;
         if(parent != prevFunction){
             /* 测试dominance的计算 */
+            printf("-------function  start---------\n");
+            print_function_info(parent);
             calculate_dominance(parent);
             calculate_dominance_frontier(parent);
             calculate_iDominator(parent);
             calculate_DomTree(parent);
             mem2reg(parent);
-            print_function_info(parent);
+
             prevFunction = parent;
+            printf("------after a function------\n");
         }
         if (cur != prev) {
             print_block_info(cur);
@@ -111,8 +118,5 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(temp2,argv[1]);
     //    ljf
     arm_translate_ins(temp2);
-
-
-
     return 0;
 }

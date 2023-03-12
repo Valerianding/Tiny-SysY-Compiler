@@ -3000,9 +3000,27 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
-            case Phi:
-                printf("A phi instruction\n");
+            case Phi:{
+                HashSet *phiSet = instruction->user.value.pdata->pairSet;
+                HashSetFirst(phiSet);
+                //暂时的给phi函数一个名字
+                //最多四个字节
+                instruction->user.value.name = (char *)malloc(sizeof(char) * 4);
+                instruction->user.value.name = "%phi";
+                printf(" %s = phi i32 ",instruction->user.value.name);
+                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                    BasicBlock *from = phiInfo->from;
+                    Value *incomingVal = phiInfo->define;
+                    if(isImm(incomingVal)){
+                        printf("[ %d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+                    }else{
+                        printf("[ %s , %%%d], ",incomingVal->name,from->id);
+                    }
+                }
+                printf("\n");
+                //printf("A phi instruction\n");
                 break;
+            }
             default:
                 break;
         }

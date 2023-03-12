@@ -195,9 +195,6 @@ void calculate_iDominator(Function *currentFunction){
     BasicBlock *entry = currentFunction->head;
     BasicBlock *end = currentFunction->tail;
 
-    printf("entryBlock : %d",entry->id);
-    printf(" endBlock : %d",end->id);
-    printf("\n");
     //不动的
     InstNode *head = entry->head_node;
     InstNode *tail = end->tail_node;
@@ -270,7 +267,8 @@ void calculate_DomTree(Function *currentFunction){
                 DomTreeNode *prevNode = iDom->domTreeNode;
                 assert(prevNode != NULL);
                 DomTreeAddChild(prevNode, domTreeNode);
-                printf("b%d add child b%d\n",iDom->id,block->id);
+                //printf("b%d add child b%d\n",prevNode->block->id,block->id);
+                assert(HashSetFind(prevNode->children,domTreeNode));
             }
         }
         curNode = get_next_inst(curNode);
@@ -282,7 +280,9 @@ void calculate_DomTree(Function *currentFunction){
 
     //Function的跟节点保留
     currentFunction->root = entry->domTreeNode;
+    assert(entry->domTreeNode != nullptr);
 
+    DomTreePrinter(entry->domTreeNode);
     clear_visited_flag(checkNode);
     while(checkNode != get_next_inst(tail)){
         BasicBlock *parent = checkNode->inst->Parent;
@@ -295,10 +295,24 @@ void calculate_DomTree(Function *currentFunction){
             HashSet *childSet = domTreeNode->children;
             HashSetFirst(childSet);
             for(DomTreeNode *childNode = HashSetNext(childSet); childNode != NULL; childNode = HashSetNext(childSet)){
-                printf("b%d ",childNode->block->id);
+                //printf("b%d ",childNode->block->id);
             }
-            printf("\n");
+            //printf("\n");
         }
         checkNode = get_next_inst(checkNode);
     }
+}
+
+void DomTreePrinter(DomTreeNode *root){
+    if(HashSetSize(root->children) == 0){
+        printf("opps\n");
+        return;
+    }
+    HashSetFirst(root->children);
+    for(DomTreeNode *key = HashSetNext(root->children); key != nullptr; key = HashSetNext(root->children)){
+        BasicBlock *block = key->block;
+        printf("block:%d",block->id);
+        DomTreePrinter(key);
+    }
+    return;
 }

@@ -7,8 +7,12 @@
 #include "bblock.h"
 #include "function.h"
 #include "dominance.h"
+#include "stack.h"
+
 void mem2reg(Function *currentFunction);
-InstNode* new_phi(Value *val);
 void insert_phi(BasicBlock *block,Value *val);
-void updateReachingDef();
+void insertPhiInfo(InstNode *ins,pair *phiInfo);
+void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals);
+void deleteLoadStore(Function *currentFunction);
+InstNode* new_phi(Value *val);
 #endif //C22V1_MEM2REG_H
