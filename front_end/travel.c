@@ -3479,8 +3479,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 HashSetFirst(phiSet);
                 //暂时的给phi函数一个名字
                 //最多四个字节
-                instruction->user.value.name = (char *)malloc(sizeof(char) * 4);
-                instruction->user.value.name = "%phi";
                 printf(" %s = phi i32 ",instruction->user.value.name);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                     BasicBlock *from = phiInfo->from;

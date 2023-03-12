@@ -15,6 +15,9 @@ InstNode* new_phi(Value *val){
     InstNode *phiNode = new_inst_node(phiIns);
     //做一个映射 记录现在对应的是哪个alloca
     phiNode->inst->user.value.alias = val;
+    // 添加一个默认的名字
+    phiIns->user.value.name = (char *)malloc(sizeof(char) * 4);
+    phiIns->user.value.name = "%phi";
     return phiNode;
 }
 
@@ -215,7 +218,9 @@ void mem2reg(Function *currentFunction){
 
 
     // 让LLVM IR符合标准
-    renameVariabels(currentFunction);
+    //renameVariabels(currentFunction);
+
+
     // OK 记得释放内存哦
     //先释放栈的内存再释放HashMap的内存
     HashMapFirst(IncomingVals);
