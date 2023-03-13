@@ -2624,6 +2624,11 @@ void create_params_stmt(past func_params)
                 }
             }
         }
+        else if(strcmp(bstr2cstr(params->nodeType, '\0'), "expr") == 0)
+        {
+            int convert=0;
+            v= cal_expr(params,&convert);
+        }
             //是IDent
         else
         {
@@ -2844,6 +2849,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case Load:
                 if(instruction->user.use_list->Val->VTy->ID==AddressTyID)
                 {
+                    instruction->user.value.VTy->ID=AddressTyID;
                     printf(" %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                     fprintf(fptr," %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 } else
