@@ -4,9 +4,10 @@ extern Symtab *this;
 extern struct _InstNode *instruction_list;
 
 //记录临时变量组,形如%1,%2,%3...
-//t_index转字符串用的sprintf，itoa好像识别不了
+//t_index转字符串用的sprintf
 //目前设置的能容纳3位数的临时变量
 extern char t[5];
+extern int t_index;
 extern int return_stmt_num[10];
 extern int return_index;
 extern insnode_stack S_continue;
@@ -18,7 +19,6 @@ extern insnode_stack S_or;
 extern bool c_b_flag[2];
 
 extern char t_num[3];
-extern int t_index;
 int param_map=0;
 Value *v_cur_func;
 
@@ -3477,17 +3477,29 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case Phi:{
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
-                //暂时的给phi函数一个名字
-                //最多四个字节
                 printf(" %s = phi i32 ",instruction->user.value.name);
+                unsigned int size=HashSetSize(phiSet);
+                int i=0;
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                     BasicBlock *from = phiInfo->from;
                     Value *incomingVal = phiInfo->define;
-                    if(isImm(incomingVal)){
-                        printf("[ %d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
-                    }else{
-                        printf("[ %s , %%%d], ",incomingVal->name,from->id);
+                    if(i+1==size)      //最后一次
+                    {
+                        if(isImm(incomingVal)){
+                            printf("[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
+                        }else{
+                            printf("[%s , %%%d]",incomingVal->name,from->id);
+                        }
                     }
+                    else
+                    {
+                        if(isImm(incomingVal)){
+                            printf("[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+                        }else{
+                            printf("[%s , %%%d], ",incomingVal->name,from->id);
+                        }
+                    }
+                    i++;
                 }
                 printf("\n");
                 //printf("A phi instruction\n");

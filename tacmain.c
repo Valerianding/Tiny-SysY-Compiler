@@ -27,6 +27,7 @@ extern FILE *yyin;
 int return_index=0;
 int return_stmt_num[10]={0};
 char t[5];
+int t_index = 0;
 insnode_stack S_continue;
 insnode_stack S_break;
 insnode_stack S_return;
@@ -35,7 +36,6 @@ insnode_stack S_or;
 bool c_b_flag[2]={false,false};
 
 char t_num[3] = {0};
-int t_index = 0;
 
 struct _InstNode *instruction_list;
 
