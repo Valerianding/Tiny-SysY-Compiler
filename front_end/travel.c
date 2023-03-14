@@ -2624,6 +2624,11 @@ void create_params_stmt(past func_params)
                 }
             }
         }
+        else if(strcmp(bstr2cstr(params->nodeType, '\0'), "expr") == 0)
+        {
+            int convert=0;
+            v= cal_expr(params,&convert);
+        }
             //是IDent
         else
         {
@@ -2844,6 +2849,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case Load:
                 if(instruction->user.use_list->Val->VTy->ID==AddressTyID)
                 {
+                    instruction->user.value.VTy->ID=AddressTyID;
                     printf(" %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                     fprintf(fptr," %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 } else
@@ -3065,10 +3071,16 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 break;
             case FunBegin:
-                //TODO 暂时用#0，未考虑参数
+                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID==VoidTyID)
+                {
+                    printf("define dso_local void @%s(",instruction->user.use_list->Val->name);
+                    fprintf(fptr,"define dso_local void @%s(",instruction->user.use_list->Val->name);
+                } else
+                {
+                    printf("define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+                    fprintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+                }
                 p=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
-                printf("define dso_local i32 @%s(",instruction->user.use_list->Val->name);
-                fprintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
                 int ii=p;
                 while (p>0)
                 {
@@ -3149,24 +3161,24 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         fprintf(fptr," %s = call i32 (...) @%s (",instruction->user.value.name,instruction->user.use_list->Val->name);
                     }
                 }
-                else
+                else     //voidTypeID
                 {
                     //非库函数
                     if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
                     {
-                        printf(" call i32 @%s(",instruction->user.use_list->Val->name);
-                        fprintf(fptr," call i32 @%s(",instruction->user.use_list->Val->name);
+                        printf(" call void @%s(",instruction->user.use_list->Val->name);
+                        fprintf(fptr," call void @%s(",instruction->user.use_list->Val->name);
                     }
                         //是库函数
                     else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
                     {
-                        printf(" call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
-                        fprintf(fptr," call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
+                        printf(" call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
+                        fprintf(fptr," call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
                     }
                     else
                     {
-                        printf(" call i32 (...) @%s (",instruction->user.use_list->Val->name);
-                        fprintf(fptr," call i32 (...) @%s (",instruction->user.use_list->Val->name);
+                        printf(" call void (...) @%s (",instruction->user.use_list->Val->name);
+                        fprintf(fptr," void i32 (...) @%s (",instruction->user.use_list->Val->name);
                     }
                 }
                 //参数
