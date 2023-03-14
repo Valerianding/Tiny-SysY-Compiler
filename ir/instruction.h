@@ -42,6 +42,7 @@ typedef enum OpcodeType{
     GLOBAL_VAR,
 
     Phi,
+    CopyOperation,  //消除phi函数
 }Opcode;
 
 

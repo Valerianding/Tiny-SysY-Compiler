@@ -217,8 +217,9 @@ void mem2reg(Function *currentFunction){
     deleteLoadStore(currentFunction);
 
 
+    printf("after rename pass and delete load store alloc\n");
     // 让LLVM IR符合标准
-    //renameVariabels(currentFunction);
+    renameVariabels(currentFunction);
 
 
     // OK 记得释放内存哦
@@ -236,6 +237,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
     printf("in rename phrase : block : %d\n", node->block->id);
     assert(HashMapSize(IncomingVals) != 0);
 
+    printf("11111 \n");
     // 先根处理
     BasicBlock *block = node->block;
     InstNode *head = block->head_node;
@@ -243,9 +245,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
     InstNode *curr = head;
 
+
+    printf("11111 \n");
     //记录一下每一个alloc的压栈次数
     HashMap *countDefine = HashMapInit();
-
     HashMapFirst(IncomingVals);
     for(Pair *pair = HashMapNext(IncomingVals); pair != NULL; pair = HashMapNext(IncomingVals)){
         int *defineTimes = (int *)malloc(sizeof(int));
@@ -254,7 +257,19 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         Value *alloc = (Value*)pair->key;
         HashMapPut(countDefine,alloc,defineTimes);
     }
+    printf("11111 \n");
 
+    if(GlobalIncomingVal != nullptr){
+        // 同样的我们也要记录全局变量压栈的次数
+        HashMapFirst(GlobalIncomingVal);
+        for(Pair *pair = HashMapNext(GlobalIncomingVal); pair != NULL; pair = HashMapNext(GlobalIncomingVal)){
+            int *globalDefineTimes = (int *)malloc(sizeof(int));
+            *(globalDefineTimes) = 0;
+            Value *alloc = (Value*)pair->key;
+            HashMapPut(countDefine,alloc,globalDefineTimes);
+        }
+    }
+    printf("11111 \n");
     // 变量重命名
     while(curr != get_next_inst(tail)){
         switch(curr->inst->Opcode) {
@@ -266,10 +281,20 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 Value *replace = nullptr;
                 //找到栈
                 stack *allocStack = HashMapGet(IncomingVals, alloca);
-                assert(allocStack != nullptr);
-                //去里面找
-                stackTop(allocStack, (void *) &replace);
-                assert(replace != nullptr);
+
+                //如果是nullptr
+                if(allocStack == nullptr){
+                    //尝试去全局里面去取
+                    stack *globalStack = HashMapGet(GlobalIncomingVal,alloca);
+                    assert(globalStack != nullptr);
+                    stackTop(globalStack,(void *)&replace);
+                    assert(replace != nullptr);
+                }else{
+                    assert(allocStack != nullptr);
+                    //去里面找
+                    stackTop(allocStack, (void *) &replace);
+                    assert(replace != nullptr);
+                }
 
                 value_replaceAll(value, replace);
                 break;
@@ -280,12 +305,20 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 Value *data = ins_get_lhs(curr->inst);
                 Value *store = ins_get_rhs(curr->inst); // 对应的allocas
                 //可以直接这样更新
-                stack *allocStack = (stack *) HashMapGet(IncomingVals, store);
-                assert(allocStack != nullptr);
-                stackPush(allocStack, data);
+                stack *allocStack = HashMapGet(IncomingVals, store);
+                if(allocStack == nullptr){
+                    stack *globalStack = HashMapGet(GlobalIncomingVal,store);
+                    assert(globalStack != nullptr);
+                    stackPush(globalStack,data);
+                }else{
+                    assert(allocStack != nullptr);
+                    stackPush(allocStack, data);
+                }
 
                 //记录define的次数
                 int *defineTime = HashMapGet(countDefine,store);
+
+                //if(count
                 assert(defineTime != NULL);
                 *(defineTime) = *(defineTime) + 1;
                 break;
@@ -399,12 +432,24 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         Value *alloc = pair->key;
 
         stack *allocStack = HashMapGet(IncomingVals,alloc);
-        //去找压栈的次数
-        int *defineTime = HashMapGet(countDefine,alloc);
-        int actualTime = *(defineTime);
-        printf("block : %d alloc : %s defineTimes : %d\n",block->id,alloc->name,actualTime);
-        for(int i = 0; i < actualTime; i++){
-            stackPop(allocStack);
+        if(allocStack != NULL){
+            //去找压栈的次数
+            assert(allocStack != NULL);
+            int *defineTime = HashMapGet(countDefine,alloc);
+            int actualTime = *(defineTime);
+            printf("block : %d alloc : %s defineTimes : %d\n",block->id,alloc->name,actualTime);
+            for(int i = 0; i < actualTime; i++){
+                stackPop(allocStack);
+            }
+        }else{
+            // 全局变量里面去压栈操作
+            stack *globalAllocStack = HashMapGet(GlobalIncomingVal,alloc);
+            assert(globalAllocStack != NULL);
+            int *globalDefineTime = HashMapGet(countDefine,alloc);
+            int actualTime = *(globalDefineTime);
+            for(int i = 0; i < actualTime; i++){
+                stackPop(globalAllocStack);
+            }
         }
     }
 }
@@ -443,7 +488,7 @@ void deleteLoadStore(Function *currentFunction){
 
 //TODO 草，对不起，这算法太丑了，但是能跑，若有时间，想想有没有什么别的方法
 void renameVariabels(Function *currentFunction){
-    bool hava_param=false;
+    bool hava_param = false;
     BasicBlock *entry = currentFunction->head;
     BasicBlock *end = currentFunction->tail;
 
@@ -592,16 +637,18 @@ void renameVariabels(Function *currentFunction){
                 if(insName != NULL && insName[0] == '%'){
                     char newName[5];
                     clear_tmp(insName);
-                    newName[0]='%';
+                    newName[0] = '%';
                     int index = 1;
-                    int rep_count=countVariable;
+                    int rep_count = countVariable;
                     while(rep_count){
                         newName[index] = (rep_count % 10) + '0';
                         rep_count /= 10;
                         index++;
                     }
-                    for(int i = 1; i < index; i++){
-                        insName[i] = newName[i];
+                    int j = 1;
+                    for(int i = index - 1; i >= 1; i--){
+                        insName[j] = newName[i];
+                        j++;
                     }
                     countVariable++;
                 }
@@ -618,4 +665,11 @@ void renameVariabels(Function *currentFunction){
         HashSetDeinit(set);
     }
     HashMapDeinit(hashMap);
+}
+
+InstNode *newCopyOperation(Value *dest){
+    Instruction *CopyOperation = ins_new(1);
+
+    //
+    //CopyOperation->user.value.pdata
 }

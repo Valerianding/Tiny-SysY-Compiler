@@ -2,6 +2,8 @@
 // Created by Valerian on 2023/1/15.
 //
 #include "bb_divide.h"
+
+
 void bblock_divide(InstNode *head){
     InstNode *cur = head;
     cur = get_next_inst(cur); //跳过第一个ALLBegin
@@ -14,7 +16,21 @@ void bblock_divide(InstNode *head){
         globalBlock->id = count;
         count++;
         cur = get_next_inst(cur);
+
+        //对全局变量设计一个同样的mem2reg的过程
+        GlobalIncomingVal = HashMapInit();
+        // 对所有的gloabl进行存储
         while (cur->inst->Opcode != FunBegin) {
+            Value *globalAlloc = &cur->inst->user.value;
+            stack *globalAllocStack = stackInit();
+
+            // 存放的Value是多少
+            Value *store = ins_get_lhs(cur->inst);
+
+            //存进去
+            stackPush(globalAllocStack,store);
+            HashMapPut(GlobalIncomingVal,globalAlloc,globalAllocStack);
+
             prev = cur;
             cur = get_next_inst(cur);
         }

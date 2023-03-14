@@ -19,7 +19,7 @@ int deepWhileBr(int a, int b) {
 }
 
 int main() {
-  int p;
+  int p
   p = 2;
   return deepWhileBr(p, p);
 }
