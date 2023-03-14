@@ -2,10 +2,15 @@
 int if_if_Else() {
     int a = 10;
     int b = 10;
-    if(b > 10)
+    if(b > 10){
         a = a - 1;
-    else
+        b = b - 1;
+    }
+    else{
         a = a + 1;
+        b = b + 1;
+    }
+    b = 10;
     return a;
 }
 
