@@ -17,11 +17,7 @@ void insertPhiInfo(InstNode *ins,pair *phiInfo);
 void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals);
 void deleteLoadStore(Function *currentFunction);
 void renameVariabels(Function *currentFunction);
-
-
-InstNode *newCopyOperation(Value *dest);
-
-
+InstNode *newCopyOperation(Value *dest, Value *src);
 void outOfSSA(Function *currentFunction);
 InstNode* new_phi(Value *val);
 #endif //C22V1_MEM2REG_H
