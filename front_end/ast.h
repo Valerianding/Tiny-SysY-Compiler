@@ -7,6 +7,7 @@
 
 #include "bstrlib.h"
 #include "../ir/symtab.h"
+#include "stack.h"
 //#include "travel.h"
 typedef struct _ast ast;
 typedef struct _ast *past;
@@ -57,6 +58,8 @@ void showAst(past node, int nest);
 
 //将变量插入符号表
 void insert_var_into_symtab(past type,past p);
+
+int cal_easy_expr(past expr);
 //TODO 目前还未考虑数组
 
 //将函数参数插入到对应的作用域表中

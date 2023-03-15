@@ -987,7 +987,21 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 value_init_float(v1,vars->right->fVal);
             }
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "ID") == 0)
-                v1= create_load_stmt(bstr2cstr(vars->right->sVal,'\0'));
+            {
+                Value *vv= symtab_dynamic_lookup(this,bstr2cstr(vars->right->sVal, '\0'));
+                if(vv->VTy->ID==Const_INT)
+                {
+                    v1=(Value*) malloc(sizeof (Value));
+                    value_init_int(v1, vars->right->iVal);
+                }
+                else if(vv->VTy->ID==Const_FLOAT)
+                {
+                    v1=(Value*) malloc(sizeof (Value));
+                    value_init_float(v1, vars->right->fVal);
+                }
+                else
+                    v1= create_load_stmt(bstr2cstr(vars->right->sVal,'\0'));
+            }
             else if (strcmp(bstr2cstr(vars->right->nodeType, '\0'), "expr") == 0)
             {
                 int convert=0;
