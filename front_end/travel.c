@@ -952,6 +952,9 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension)
         ins_node_add(instruction_list,node_load);
     }
 
+    if(dimension!=-1)
+        v_last->VTy->ID=AddressTyID;
+
     return v_last;
 }
 
@@ -3164,8 +3167,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         //是库函数
                     else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
                     {
-                        printf(" %s = call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.value.name,instruction->user.use_list->Val->name);
-                        fprintf(fptr," %s = call i32 (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                        printf(" %s = call i32 (",instruction->user.value.name);
+                        fprintf(fptr," %s = call i32 (",instruction->user.value.name);
                     }
                     else
                     {
@@ -3184,8 +3187,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         //是库函数
                     else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
                     {
-                        printf(" call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
-                        fprintf(fptr," call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
+                        printf(" call void (");
+                        fprintf(fptr," call void (");
+                        //printf(" call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
+                        //fprintf(fptr," call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
                     }
                     else
                     {
@@ -3193,6 +3198,41 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         fprintf(fptr," void i32 (...) @%s (",instruction->user.use_list->Val->name);
                     }
                 }
+                //参数
+                if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)==NULL && instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+                {
+                    for(int i=0;i<give_count;i++)
+                    {
+                        if(params[i]->VTy->ID==AddressTyID)
+                        {
+                            printf("i32*,");
+                            fprintf(fptr,"i32*,");
+                        }
+                        else
+                        {
+                            printf("i32,");
+                            fprintf(fptr,"i32,");
+                        }
+                    }
+                    printf("...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
+                    fprintf(fptr,"...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
+                    for(int i=0;i<give_count;i++)
+                    {
+                        if(params[i]->VTy->ID==AddressTyID)
+                        {
+                            printf("i32*,");
+                            fprintf(fptr,"i32*,");
+                        }
+                        else
+                        {
+                            printf("i32,");
+                            fprintf(fptr,"i32,");
+                        }
+                    }
+                    printf("...)*)(");
+                    fprintf(fptr,"...)*)(");
+                }
+
                 //参数
                 for(int i=0;i<give_count;i++)
                 {
@@ -3422,19 +3462,33 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     fprintf(fptr,"* ");
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
                     {
-                        printf("%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                        fprintf(fptr,"%s, i32 0,i32 %d\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        printf("%s, i32 0,i32 %s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                        fprintf(fptr,"%s, i32 0,i32 %s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                     }
                 }
                 else
                 {
-                    printf("i32,i32* %s,i32 %s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                    fprintf(fptr,"i32,i32* %s,i32 %s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    printf("i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    fprintf(fptr,"i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                }
+
+                if(instruction->user.value.VTy->ID==AddressTyID)
+                {
+                    for(int i= instruction->user.value.pdata->var_pdata.iVal+1;i<v_cur_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                    {
+                        printf(",i32 0\n");
+                        fprintf(fptr,",i32 0\n");
+                    }
+                }
+                else
+                {
+                    printf("\n");
+                    fprintf(fptr,"\n");
                 }
                 break;
             case MEMSET:
