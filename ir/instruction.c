@@ -81,6 +81,16 @@ Value *ins_get_value_with_name(Instruction *ins){
     return v_tmp;
 }
 
+//获取全局value并赋个name
+Value *ins_get_global_value(Instruction *ins,char* name)
+{
+    Value *v_tmp = &ins->user.value;
+    v_tmp->pdata->var_pdata.map = getCurMap(this);
+    v_tmp->name = (char*) malloc(strlen (name));
+    strcpy(v_tmp->name,name);
+    return v_tmp;
+}
+
 Value *ins_get_lhs(Instruction *ins){
     User *user = &ins->user;
     Use *use1 = user_get_operand_use(user,0);

@@ -258,11 +258,7 @@ void create_assign_stmt(past root,Value* v_return) {
     Value *v=NULL;
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
     {
-        //是全局变量
-        v=symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'));
-        if(!begin_global(v->name))
-            //左id,从符号表中取出之前存入的这个变量
-            v = symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'))->alias;
+        v = symtab_dynamic_lookup(this, bstr2cstr(root->left->sVal, '\0'))->alias;
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0)
     {
@@ -587,10 +583,17 @@ void handle_global_array(Value* v_array,bool is_global,past vars)
         }
     }
 
-    //替换掉原来的value
-    //symtab_update_value(this,v_array->name,v_array);
-
     Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR,v_array,NULL);
+
+    //替换一下value
+    Value *v_replace= ins_get_global_value(instruction,v_array->name);
+    //全局
+    v_array->alias=v_replace;
+    v_replace->alias=v_array;
+    //拷贝一下其他信息
+    v_replace->VTy->ID=v_array->VTy->ID;
+    v_replace->pdata=v_array->pdata;
+
     //将这个instruction加入总list
     InstNode *instNode = new_inst_node(instruction);
     ins_insert_after(instNode,instruction_list);
@@ -2557,8 +2560,17 @@ void declare_global_alloca(struct _mapList* func_map)
                     else
                         value_init_int(v_num,0);
                     Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR, (Value *) value,v_num);
+
+                    //替换一下value,作为alias
+                    Value *v_replace= ins_get_global_value(instruction,((Value*)value)->name);
                     //全局
-                    ((Value*)value)->alias=((Value*)value);
+                    ((Value*)value)->alias=v_replace;
+                    v_replace->alias=((Value*)value);
+                    //拷贝一下其他信息
+                    v_replace->VTy->ID=((Value*)value)->VTy->ID;
+                    v_replace->pdata->var_pdata.map= getCurMap(this);
+                    v_replace->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
+
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
                     ins_node_add(instruction_list,node);
