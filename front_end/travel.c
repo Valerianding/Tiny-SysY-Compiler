@@ -3597,6 +3597,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 //printf("A phi instruction\n");
                 break;
             }
+            case CopyOperation:{
+                printf(" a copy operation!\n");
+            }
             default:
                 break;
         }

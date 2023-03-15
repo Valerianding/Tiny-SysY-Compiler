@@ -27,6 +27,7 @@ void bblock_divide(InstNode *head){
             // 存放的Value是多少
             Value *store = ins_get_lhs(cur->inst);
 
+            printf("global alloc stored : %s\n",globalAlloc->name);
             //存进去
             stackPush(globalAllocStack,store);
             HashMapPut(GlobalIncomingVal,globalAlloc,globalAllocStack);
