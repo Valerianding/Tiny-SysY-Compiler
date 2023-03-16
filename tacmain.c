@@ -11,6 +11,7 @@
 #include "dominance.h"
 #include "mem2reg.h"
 #include "front_end/travel.h"
+#include "back_end/register_allocation.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
@@ -116,6 +117,16 @@ int main(int argc, char* argv[]){
 
     // mem2reg 之后的
     printf_llvm_ir(temp2,argv[1]);
+
+    //ljw_begin
+    // reg_control();
+
+
+
+
+
+
+    //ljw_end
     //    ljf
     arm_translate_ins(temp2);
     return 0;
