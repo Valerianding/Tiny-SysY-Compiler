@@ -3,6 +3,11 @@
 //
 #include "arm.h"
 
+//ri
+int regi=0;
+//si
+int regs=0;
+
 bool imm_is_valid(unsigned int imm){
     int i;
     for (i = 0; i <= 30; i += 2) {
