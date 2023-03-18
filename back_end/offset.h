@@ -7,10 +7,17 @@
 #include "bblock.h"
 #include "hash_map.h"
 /**
- * @details 使用哈希表来存放栈帧的信息key=Value*,value=offset*
+ * @struct  使用哈希表来存放栈帧的信息key=Value*,value=offset*
+ * @details regr通用寄存器标号
+ * @details regs浮点寄存器标号s0-s31
+ * @details memory 表示是否在内存中，true表示在内存中，false不在内存（即表示在寄存器中）
+ * @details 如果是float型使用regs标识寄存器，int型使用regr标识寄存器
  */
 typedef struct _offset{
     int offset_sp;
+    bool memory;
+    int regr;
+    int regs;
 }offset;
 
 
@@ -37,6 +44,7 @@ HashMap *offset_init(InstNode*ins);
  * @param sub_sp 用来记录参数的开辟
  * @param add_sp 用来记录临时变量的开辟
  */
+
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp);
 
 

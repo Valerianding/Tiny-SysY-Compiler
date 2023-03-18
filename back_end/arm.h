@@ -13,11 +13,17 @@
 
 
 /**
+ * 判断立即数int是否有效
+ * @param value
+ * @return
+ */
+bool imm_is_valid(unsigned value);
+
+/**
  * @details 获取哈希表的大小
  * @param hashMap
  */
 int get_siezof_sp(HashMap*hashMap);
-
 
 /**
  * @details 获取变量相对于栈帧首地址的偏移量
@@ -25,15 +31,13 @@ int get_siezof_sp(HashMap*hashMap);
  * @param value key
  * @return 返回偏移量，负数为参数，正数为临时变量
  */
-int get_value_offset(HashMap *hashMap,Value*value);
-
+int get_value_offset_sp(HashMap *hashMap,Value*value);
 
 /**
  * @details 进行指令的翻译，总体翻译逻辑
  * @param ins
  */
 void arm_translate_ins(InstNode *ins);
-
 
 /**
  * @details 进行每条具体指令的翻译
@@ -69,25 +73,24 @@ void give_param_str(HashMap*hashMap,Value*value,char *name,int *ri);
  * @param ins
  * @return
  */
-InstNode * arm_trans_Add(InstNode *ins);
-InstNode * arm_trans_Sub(InstNode *ins);
-InstNode * arm_trans_Mul(InstNode *ins);
-InstNode * arm_trans_Div(InstNode *ins);
+
+InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Module(InstNode *ins);
 InstNode * arm_trans_Call(InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap);
-InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
-InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
+
+//load和store指令已经被删除掉
+//InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
+//InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
+
 InstNode * arm_trans_Alloca(InstNode *ins);
 InstNode * arm_trans_GIVE_PARAM(InstNode *ins);
 InstNode * arm_trans_ALLBEGIN(InstNode *ins);
-InstNode * arm_trans_LESS(InstNode *ins);
-InstNode * arm_trans_GREAT(InstNode *ins);
-InstNode * arm_trans_LESSEQ(InstNode *ins);
-InstNode * arm_trans_GREATEQ(InstNode *ins);
-InstNode * arm_trans_EQ(InstNode *ins);
-InstNode * arm_trans_NOTEQ(InstNode *ins);
+ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_br_i1(InstNode *ins);
 InstNode * arm_trans_br(InstNode *ins);
 InstNode * arm_trans_br_i1_true(InstNode *ins);
