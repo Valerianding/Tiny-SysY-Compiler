@@ -6,7 +6,7 @@ extern struct _InstNode *instruction_list;
 //记录临时变量组,形如%1,%2,%3...
 //t_index转字符串用的sprintf
 //目前设置的能容纳3位数的临时变量
-extern char t[5];
+extern char t[6];
 extern int t_index;
 extern int return_stmt_num[10];
 extern int return_index;
@@ -18,7 +18,7 @@ extern insnode_stack S_or;
 //记录有没有需要continue和break的语句
 extern bool c_b_flag[2];
 
-extern char t_num[3];
+extern char t_num[5];
 int param_map=0;
 Value *v_cur_func;
 
@@ -2082,7 +2082,7 @@ void create_func_def(past root) {
 }
 
 //处理!
-void travel_expr(past str[200],int length)
+void travel_expr(past* str,int length)
 {
     bool need_xor=false;
     for(int i=length-1;i>=0;i--)
@@ -2105,7 +2105,7 @@ struct _Value *cal_expr(past expr,int* convert) {
     value_init(final_result);
 
     //记录后缀表达式
-    past str[200];
+    past str[10000];
     int i = 0;
 
     //后序遍历语法树

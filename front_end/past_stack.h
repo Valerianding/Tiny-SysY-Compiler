@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include "ast.h"
 
-#define past_stack_Size 200
+#define past_stack_Size 10000
 
 //目前是专为cal_expr()设计的
 typedef struct{
