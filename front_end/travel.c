@@ -1898,7 +1898,6 @@ void create_func_def(past root) {
 
     v_cur_func=v;
 
-
     //将这个instruction加入总list
     InstNode *instNode_begin = new_inst_node(instruction_begin);
     ins_node_add(instruction_list,instNode_begin);
@@ -2054,9 +2053,15 @@ void create_func_def(past root) {
 
     //解决填充continue和break
     if(c_b_flag[1]==true)
+    {
         reduce_break();
+        c_b_flag[1]=false;
+    }
     if(c_b_flag[0]==true)
+    {
         reduce_continue();
+        c_b_flag[0]=false;
+    }
     if(return_stmt_num[return_index]>1 || (return_stmt_num[return_index]==1 && v->pdata->symtab_func_pdata.return_type.ID==VoidTyID))
         reduce_return();
     insnode_stack_new(&S_break);
@@ -2067,46 +2072,6 @@ void create_func_def(past root) {
     if (root->next != NULL)
         create_instruction_list(root->next,v_return);
 }
-
-//Value *get_value_by_type(past x1)
-//{
-//    Value *v1=NULL;
-//    if (strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0)
-//    {
-//        v1=(Value*) malloc(sizeof (Value));
-//        value_init_int(v1, x1->iVal);
-//    }
-//    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "ID") == 0)
-//    {
-//        //如果x1->sVal是a,b,c...需要load
-//        v1=symtab_dynamic_lookup(this, bstr2cstr(x1->sVal, '\0'));
-//        if(v1!=NULL)
-//        {
-//            if(v1->VTy->ID==Const_INT)
-//            {
-//                v1=(Value*) malloc(sizeof (Value));
-//                value_init_int(v1, x1->iVal);
-//            }
-//            else
-//                v1=create_load_stmt(bstr2cstr(x1->sVal, '\0'));
-//        }
-//        else{
-//            //TODO 会造成地址不同
-//            v1=(Value*) malloc(sizeof (Value));
-//            value_init(v1);
-//            v1->name = (char *) malloc(sizeof(bstr2cstr(x1->sVal, '\0')));
-//            strcpy(v1->name, bstr2cstr(x1->sVal, '\0'));
-//            v1->pdata->var_pdata.map= getCurMap(this);
-//            v1->VTy->ID = Var_INT;
-//        }
-//    }
-//    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "LValArray") == 0)
-//    {
-//        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(x1->left->sVal, '\0'));
-//        v1= handle_assign_array(x1->right->left,v_array);
-//    }
-//    return v1;
-//}
 
 //处理!
 void travel_expr(past str[200],int length)
