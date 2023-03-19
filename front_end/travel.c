@@ -2451,7 +2451,16 @@ struct _Value* cal_logic_expr(past logic_expr)
         v1= cal_expr(logic_expr->left,&convert);
     }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "ID") == 0)
-        v1= create_load_stmt(bstr2cstr(logic_expr->left->sVal,'\0'));
+    {
+        Value *v_test= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->left->sVal, '\0'));
+        if(v_test->VTy->ID==Const_INT || v_test->VTy->ID==Const_FLOAT)
+        {
+            v1=(Value*) malloc(sizeof (Value));
+            value_init_int(v1,logic_expr->left->iVal);
+        }
+        else
+            v1= create_load_stmt(bstr2cstr(logic_expr->left->sVal,'\0'));
+    }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "LValArray") == 0)
     {
         Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->left->left->sVal, '\0'));
@@ -2485,7 +2494,16 @@ struct _Value* cal_logic_expr(past logic_expr)
         v2= cal_expr(logic_expr->right,&convert);
     }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "ID") == 0)
-        v2= create_load_stmt(bstr2cstr(logic_expr->right->sVal,'\0'));
+    {
+        Value *v_test= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->right->sVal, '\0'));
+        if(v_test->VTy->ID==Const_INT || v_test->VTy->ID==Const_FLOAT)
+        {
+            v2=(Value*) malloc(sizeof (Value));
+            value_init_int(v2,logic_expr->right->iVal);
+        }
+        else
+            v2= create_load_stmt(bstr2cstr(logic_expr->right->sVal,'\0'));
+    }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "LValArray") == 0)
     {
         Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->right->left->sVal, '\0'));
