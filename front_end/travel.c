@@ -3624,11 +3624,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 flag_func=true;
                 printf(" call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
                 fprintf(fptr," call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
-                printf_array(v_cur_array,0,fptr);
+                printf_array(instruction->user.use_list[1].Val,0,fptr);
                 printf("* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
-                       get_array_total_occupy(v_cur_array,0));
+                       get_array_total_occupy(instruction->user.use_list[1].Val,0));
                 fprintf(fptr,"* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
-                        get_array_total_occupy(v_cur_array,0));
+                        get_array_total_occupy(instruction->user.use_list[1].Val,0));
                 break;
             case GLOBAL_VAR:
                 if(instruction->user.use_list->Val->VTy->ID!=ArrayTyID && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Init && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_Const)
