@@ -810,6 +810,8 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
                         num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                    else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
+                        num= create_call_func(p);
                     create_store_stmt(num,v_gmp);
 
                 }
@@ -874,6 +876,8 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
                         num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                    else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
+                        num= create_call_func(p);
                     create_store_stmt(num,record[v_array->pdata->symtab_array_pdata.dimention_figure-1]);
 
                     //再做一次进位，到下一次的初始地址
@@ -1957,11 +1961,16 @@ void create_func_def(past root) {
         //params走到第一个FuncParam处
         past params=root->left->next->left->left;
 
+        int u=0;
         //先生成参数的alloca
         while(params!=NULL)
         {
+            u++;
+//            if(u==3)
+//                printf("kk");
             //参数Value
-            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map);
+            char *nn=bstr2cstr(params->left->next->sVal, '\0');
+            Value *param= symtab_lookup_withmap(this,nn, &v->pdata->symtab_func_pdata.map_list->map);
 
             Instruction *instruction= ins_new_unary_operator(Alloca,param);
             Value *v_param= ins_get_value_with_name(instruction);
@@ -2938,9 +2947,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     Value *v_cur_array=NULL;
 
     int p=0;
-    Value* params[10];
+    Value* params[50];
     int give_count=0;
-    for(int i=0;i<10;i++)
+    for(int i=0;i<50;i++)
         params[i]=NULL;
 
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)

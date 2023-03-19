@@ -521,7 +521,6 @@ void insert_func_params(past params)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
-        v->pdata->var_pdata.map= getCurMap(this);
         //right不为NULL，则说明参数是数组
         if(params->right!=NULL)
         {
@@ -545,6 +544,7 @@ void insert_func_params(past params)
         }
         else
         {
+            v->pdata->var_pdata.map= getCurMap(this);
             if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
                 //函数参数默认为有初始值
             {v->VTy->ID=Param_FLOAT;}
