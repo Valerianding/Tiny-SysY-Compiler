@@ -1388,6 +1388,14 @@ void reduce_or(int true_index,int false_index)
 }
 
 void create_if_stmt(past root,Value* v_return) {
+    //语句为空，则直接跳过不处理
+    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "Empty_Stmt") == 0 || strcmp(bstr2cstr(root->right->nodeType, '\0'), "Block_EMPTY") == 0)
+        if(root->next!=NULL)
+        {
+            create_instruction_list(root->next,v_return);
+            return;
+        }
+
     //br i1 label__,label__
     Value *v_real=NULL;
     int result=-1;          //如果是&&,||的话，保留调用结果
@@ -1466,10 +1474,10 @@ void create_if_stmt(past root,Value* v_return) {
         else
             v_real=v_load;
     }
-//    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
-//    {
-//        v_real= create_call_func(root->left);
-//    }
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
+    {
+        v_real= create_call_func(root->left);
+    }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
         result=handle_and_or(root->left,false);
@@ -2146,6 +2154,9 @@ struct _Value *cal_expr(past expr,int* convert) {
     //存储数组需要past
     past_stack PS3;
     init_past_stack(&PS3);
+    //存储call_func也需要past
+    past_stack  PSC;
+    init_past_stack(&PSC);
     Value* x1;Value *x2;
     past *pp = str;
     bool have_icmp=false;
@@ -2169,6 +2180,17 @@ struct _Value *cal_expr(past expr,int* convert) {
                 v1= symtab_dynamic_lookup(this,bstr2cstr((*pp)->left->sVal, '\0'));
                 past ff=(*pp)->right->left;
                 push(&PS3,(*pp)->right->left);
+            }
+            else if(strcmp(bstr2cstr((*pp)->nodeType, '\0'), "Call_Func") == 0)
+            {
+                v1=symtab_dynamic_lookup(this, bstr2cstr((*pp)->left->sVal, '\0'));
+                if(v1==NULL)      //是库函数
+                {
+                    v1=(Value*) malloc(sizeof (Value));
+                    value_init(v1);
+                    v1->VTy->ID=FunctionTyID;
+                }
+                push(&PSC,(*pp));
             }
             push_value(&PS2, v1);
         }
@@ -2229,10 +2251,25 @@ struct _Value *cal_expr(past expr,int* convert) {
                     pop(&PS3,&roo2);
                     pop(&PS3,&roo1);
                 }
+                past call1=NULL;past call2=NULL;
+                if(x1->VTy->ID==FunctionTyID && x2->VTy->ID==FunctionTyID)
+                {
+                    pop(&PSC,&call2);
+                    pop(&PSC,&call1);
+                }
 
                 //先看v1
                 Value *v1=NULL;
-                if(x1->VTy->ID==Int || x1->VTy->ID==Float)
+                if(x1->VTy->ID==FunctionTyID)
+                {
+                    past call;
+                    if(call1==NULL)
+                        pop(&PSC,&call);
+                    else
+                        call=call1;
+                    v1= create_call_func(call);
+                }
+                else if(x1->VTy->ID==Int || x1->VTy->ID==Float)
                     v1=x1;
                 else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==Var_initINT || x1->VTy->ID==Param_INT))
                 {
@@ -2264,7 +2301,16 @@ struct _Value *cal_expr(past expr,int* convert) {
 
                 //看v2
                 Value *v2=NULL;
-                if(x2->VTy->ID==Int || x2->VTy->ID==Float)
+                if(x2->VTy->ID==FunctionTyID)
+                {
+                    past call;
+                    if(call2==NULL)
+                        pop(&PSC,&call);
+                    else
+                        call=call2;
+                    v2= create_call_func(call);
+                }
+                else if(x2->VTy->ID==Int || x2->VTy->ID==Float)
                     v2=x2;
                 else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==Var_initINT || x2->VTy->ID==Param_INT))
                 {
