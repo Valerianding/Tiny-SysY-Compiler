@@ -7,7 +7,7 @@ void init_past_stack(past_stack *S)
 
 bool push(past_stack* s, past x)
 {
-    if (s->top== MaxSize - 1)
+    if (s->top== past_stack_Size - 1)
         return false;
     else
         s->past_node[++s->top] =x;

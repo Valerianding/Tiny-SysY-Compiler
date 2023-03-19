@@ -210,28 +210,18 @@ void insert_var_into_symtab(past type,past p)
             if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"num_int")==0)
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
             else
-                //是const常数的expr
+                //是const常数或常数的expr
             {
-                //TODO 暂时这样做，调用cal_expr的嵌套问题还未解决
-                Value *v_tmp=(Value*) malloc(sizeof (Value));
-
-//                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
-//                {
-//                    v_tmp= cal_expr(one_dimention,0);
-//                    v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
-//                }
-                //TODO 只考虑了单边const
-                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
+                if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"ID")==0)
                 {
-                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
-                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
+                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->sVal,'\0'));
+                    v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_id_n->pdata->var_pdata.iVal;
                 }
-                else
+                else if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
                 {
-                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
-                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
+                    int result= cal_easy_expr(one_dimention);
+                    v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=result;
                 }
-                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
             }
             one_dimention=one_dimention->next;
         }

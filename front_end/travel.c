@@ -406,7 +406,7 @@ void create_return_stmt(past root,Value* v_return) {
             ins_node_add(instruction_list,node);
         }
     }
-    //ret void
+        //ret void
     else
     {
         //有多返回语句
@@ -1397,7 +1397,7 @@ void create_if_stmt(past root,Value* v_return) {
             ins_node_add(instruction_list,node);
             Value *v_loadp= ins_get_value_with_name(ins_load);
             v_loadp->alias=v_array;
-            v_load->VTy->ID=AddressTyID;
+            v_loadp->VTy->ID=AddressTyID;
             v_loadp->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
             v_load= handle_assign_array(root->left->right->left,v_loadp,1,-1);
         }
@@ -1443,6 +1443,10 @@ void create_if_stmt(past root,Value* v_return) {
         else
             v_real=v_load;
     }
+//    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
+//    {
+//        v_real= create_call_func(root->left);
+//    }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
         result=handle_and_or(root->left,false);
@@ -1453,16 +1457,16 @@ void create_if_stmt(past root,Value* v_return) {
                 create_instruction_list(root->next,v_return);
             return;
         }
-        if(result==1)
-            //后面都不用t_index，让t_index回归正轨
-            t_index--;
+//        if(result==1)
+//            //后面都不用t_index，让t_index回归正轨
+//            t_index--;
     }
 
 
     InstNode *node1=NULL;
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
     {
-        if(!(root->left->sVal!=NULL && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)))
+        if(!(root->left->sVal!=NULL && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)))
         {
             if(convert==0)
                 //正确跳转
@@ -1491,13 +1495,17 @@ void create_if_stmt(past root,Value* v_return) {
         t_index++;
     }
 
-    if(result!=1 && ((root->left->sVal==NULL) || strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0))
+    if(result==-1 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0)
     {
-        if(convert==0)
-            node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
-        else
-            node1->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index++;
+        if(root->left->sVal==NULL || (root->left->sVal!=NULL && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0))
+        {
+            if(convert==0)
+                node1->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index++;
+            else
+                node1->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index++;
+        }
     }
+
 
     //无break或continue的话就补，有就不补了
     if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
@@ -1535,7 +1543,7 @@ void create_if_else_stmt(past root,Value* v_return) {
             ins_node_add(instruction_list,node);
             Value *v_loadp= ins_get_value_with_name(ins_load);
             v_loadp->alias=v_array;
-            v_load->VTy->ID=AddressTyID;
+            v_loadp->VTy->ID=AddressTyID;
             v_loadp->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
             v_load= handle_assign_array(root->left->right->left,v_loadp,1,-1);
         }
@@ -1580,6 +1588,10 @@ void create_if_else_stmt(past root,Value* v_return) {
         }
         else
             v_real=v_load;
+    }
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
+    {
+        v_real= create_call_func(root->left);
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
@@ -1721,7 +1733,7 @@ void create_while_stmt(past root,Value* v_return)
             ins_node_add(instruction_list,node);
             Value *v_loadp= ins_get_value_with_name(ins_load);
             v_loadp->alias=v_array;
-            v_load->VTy->ID=AddressTyID;
+            v_loadp->VTy->ID=AddressTyID;
             v_loadp->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
             v_load= handle_assign_array(root->left->right->left,v_loadp,1,-1);
         }
@@ -1767,6 +1779,10 @@ void create_while_stmt(past root,Value* v_return)
         else
             v_real=v_load;
     }
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
+    {
+        v_real= create_call_func(root->left);
+    }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
         result=handle_and_or(root->left,false);
@@ -1779,7 +1795,7 @@ void create_while_stmt(past root,Value* v_return)
     }
 
     InstNode *node_first_bri1=NULL;
-    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") != 0  && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") != 0)
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && !(root->left->sVal!=NULL && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0  || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)) )
     {
         if(convert==0)
             node_first_bri1= true_location_handler(br_i1,v_real,t_index++);
@@ -1996,7 +2012,7 @@ void create_func_def(past root) {
         if(v->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
         {
             //2.再生成一条load
-             final_ret= create_return_load(v_return);
+            final_ret= create_return_load(v_return);
         }
 
         //3.最后生成ret
@@ -2067,7 +2083,7 @@ void create_func_def(past root) {
 //}
 
 //处理!
-void travel_expr(past str[100],int length)
+void travel_expr(past str[200],int length)
 {
     bool need_xor=false;
     for(int i=length-1;i>=0;i--)
@@ -2090,7 +2106,7 @@ struct _Value *cal_expr(past expr,int* convert) {
     value_init(final_result);
 
     //记录后缀表达式
-    past str[100];
+    past str[200];
     int i = 0;
 
     //后序遍历语法树
@@ -2123,6 +2139,9 @@ struct _Value *cal_expr(past expr,int* convert) {
                 q = p;              //保存到q，作为下一次处理结点的前驱
                 pop(&PS1, &p);
                 str[i++] = p;
+                //printf("%d:really??\n",i);
+                if(i==99)
+                    printf("heere\n");
                 p = NULL;         //p置于NULL可继续退层，否则会重复访问刚访问结点的左子树
                 first_not_expr=false;
             } else
@@ -2672,6 +2691,7 @@ void create_params_stmt(past func_params)
                 Instruction *instruction1= ins_new_binary_operator(GMP,v_test->alias,v_zero);
                 v=ins_get_value_with_name(instruction1);
                 v->VTy->ID=AddressTyID;
+                v->alias=v_test;
                 InstNode *node = new_inst_node(instruction1);
                 ins_node_add(instruction_list,node);
             }
@@ -3491,7 +3511,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     fprintf(fptr,"i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                 }
 
-                if(instruction->user.value.VTy->ID==AddressTyID)
+                if(instruction->user.value.VTy->ID==AddressTyID && (instruction->user.value.pdata->var_pdata.iVal+1<instruction->user.use_list->Val->pdata->symtab_array_pdata.dimention_figure))
                 {
                     for(int i= instruction->user.value.pdata->var_pdata.iVal+1;i<v_cur_array->pdata->symtab_array_pdata.dimention_figure;i++)
                     {
@@ -3596,9 +3616,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 printf("\n");
                 //printf("A phi instruction\n");
                 break;
-            }
-            case CopyOperation:{
-                printf(" a copy operation!\n");
             }
             default:
                 break;

@@ -7,7 +7,7 @@ void init_value_stack(value_stack *S)
 
 bool push_value(value_stack* s, Value *x)
 {
-    if (s->top== MaxSize - 1)
+    if (s->top== value_stack_Size - 1)
         return false;
     else
         s->value_node[++s->top] =x;
