@@ -24,12 +24,14 @@ file_obj=".o"
 file_in=".in"
 file_out=".out"
 file_temp_out="_temp.out"
+ret=0
 exp_str="expect:"
 act_str="actual:"
 exp=0
 act=0
 out_value=0
 ljw=1
+stm=0
 le_count=0
 for file in $(ls *[.c])
 do
@@ -51,6 +53,20 @@ do
         cd ../
         # ./compiler >a.log
         ./cmake-build-debug/compiler test_cases/$filename$file_c
+        ret=$?
+        if [ $ret -ne $stm ]
+        then 
+        let le_count+=1
+        echo "$FILE_LL not exist"
+        file_err[le_count]=$filename$file_c
+        ll_err[le_count]=1
+        exp_err[le_count]=$exp
+        rm -rf test_cases/$filename$file_ll
+        cd test_cases
+        continue
+        fi
+
+
         cd test_cases
         #记录生成ll文件失败的用例
         FILE_LL=$filename$file_ll
