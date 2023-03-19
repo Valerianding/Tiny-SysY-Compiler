@@ -2167,6 +2167,7 @@ struct _Value *cal_expr(past expr,int* convert) {
             else if(strcmp(bstr2cstr((*pp)->nodeType, '\0'), "LValArray") == 0)
             {
                 v1= symtab_dynamic_lookup(this,bstr2cstr((*pp)->left->sVal, '\0'));
+                past ff=(*pp)->right->left;
                 push(&PS3,(*pp)->right->left);
             }
             push_value(&PS2, v1);
@@ -2221,6 +2222,14 @@ struct _Value *cal_expr(past expr,int* convert) {
             {
                 Instruction *instruction=NULL;
 
+                //加个判定，如果v1,v2都是LValArray,顺序会出问题
+                past roo1=NULL;past roo2=NULL;
+                if(x1->name!=NULL && x2->name!=NULL && (!begin_tmp(x1->name) && (x1->VTy->ID==ArrayTyID || x1->VTy->ID==ArrayTyID_Init || x1->VTy->ID==ArrayTyID_Const || x1->VTy->ID==AddressTyID)) && (!begin_tmp(x2->name) && (x2->VTy->ID==ArrayTyID || x2->VTy->ID==ArrayTyID_Init || x2->VTy->ID==ArrayTyID_Const || x2->VTy->ID==AddressTyID)))
+                {
+                    pop(&PS3,&roo2);
+                    pop(&PS3,&roo1);
+                }
+
                 //先看v1
                 Value *v1=NULL;
                 if(x1->VTy->ID==Int || x1->VTy->ID==Float)
@@ -2235,7 +2244,10 @@ struct _Value *cal_expr(past expr,int* convert) {
                 else if(!begin_tmp(x1->name) && (x1->VTy->ID==ArrayTyID || x1->VTy->ID==ArrayTyID_Init || x1->VTy->ID==ArrayTyID_Const || x1->VTy->ID==AddressTyID))
                 {
                     past root;
-                    pop(&PS3,&root);
+                    if(roo1==NULL)
+                        pop(&PS3,&root);
+                    else
+                        root=roo1;
                     if(x1->VTy->ID==AddressTyID)
                         v1= handle_assign_array(root,x1->alias,1,-1);
                     else
@@ -2264,7 +2276,10 @@ struct _Value *cal_expr(past expr,int* convert) {
                 else if(!begin_tmp(x2->name) && (x2->VTy->ID==ArrayTyID || x2->VTy->ID==ArrayTyID_Init || x2->VTy->ID==ArrayTyID_Const || x2->VTy->ID==AddressTyID))
                 {
                     past root;
-                    pop(&PS3,&root);
+                    if(roo2==NULL)
+                        pop(&PS3,&root);
+                    else
+                        root=roo2;
                     if(x2->VTy->ID==AddressTyID)
                         v2= handle_assign_array(root,x2->alias,1,-1);
                     else
