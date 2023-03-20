@@ -40,6 +40,7 @@ typedef enum OpcodeType{
     MEMSET,
     zeroinitializer,
     GLOBAL_VAR,
+    FunEnd,
 
     Phi,
     CopyOperation,  //消除phi函数

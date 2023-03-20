@@ -206,7 +206,7 @@ BlockComment \/\*(.|\n)*\*\/
 {INT_OCT} 			{ yylval.iVal = __my_parse_integer(yytext, 8); return num_int;}
 
 
-{FLOAT}																					{ yylval.fVal = __my_parse_float(yytext); return num_float;}
+{FLOAT}																					{ yylval.fVal = atof(yytext); return num_float;}
 ({FLOAT}|0|([1-9][0-9]*))[eE][-+]?(0|([1-9][0-9]*))   									{ yylval.fVal = __my_parse_float(yytext); return num_float;}
 0[xX]{FLOAT_HEX}    																	{ yylval.fVal = __my_parse_float(yytext); return num_float;}
 0[xX]({FLOAT_HEX}|0|([1-9a-fA-F][0-9a-fA-F]*))[pP][-+]?(0|([1-9a-fA-F][0-9a-fA-F]*))   	{ yylval.fVal = __my_parse_hex_float(yytext); return num_float;}

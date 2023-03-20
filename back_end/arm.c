@@ -3,9 +3,22 @@
 //
 #include "arm.h"
 
+//ri
 int regi=0;
+//si
+int regs=0;
 
-int get_value_offset(HashMap *hashMap,Value*value){
+bool imm_is_valid(unsigned int imm){
+    int i;
+    for (i = 0; i <= 30; i += 2) {
+        unsigned int rotated = (imm >> i) | (imm << (32 - i));
+        if (rotated <= 255 && (rotated & ~0xff) == 0)
+            return true;
+    }
+    return false;
+}
+
+int get_value_offset_sp(HashMap *hashMap,Value*value){
     offset *node= HashMapGet(hashMap, value);
     return node->offset_sp;
 }
@@ -18,7 +31,7 @@ void give_param_str(HashMap*hashMap,Value*value,char *name,int *ri){
             if((strcmp(name,value->name)>0)&& (strlen(name)>= strlen(value->name))){
 //                    表示该参数为传递过来的参数
 //                printf("namelen:%d value_namelen:%d\n", strlen(name), strlen(value->name));
-                int x= get_value_offset(hashMap,value);
+                int x= get_value_offset_sp(hashMap,value);
                 printf("    str r%d,[sp,#%d]\n",(*ri)++,x);
                 HashMapRemove(hashMap,value);
             }
@@ -40,7 +53,6 @@ int get_value_pdata_inspdata_false(Value*value){
 }
 
 void arm_translate_ins(InstNode *ins){
-//    int x=1;
     InstNode *head;
     HashMap *hashMap;
     for(;ins!=NULL;ins=get_next_inst(ins)) {
@@ -50,6 +62,7 @@ void arm_translate_ins(InstNode *ins){
 //            在进入函数时将offset初始化好，以供load指令使用
             hashMap=offset_init(ins);
             regi=0;
+            regs=0;
             ins= arm_trans_FunBegin(ins,hashMap);
             offset_free(hashMap);
             hashMap=NULL;
@@ -67,146 +80,2991 @@ void arm_translate_ins(InstNode *ins){
     return;
 }
 
-InstNode * arm_trans_Add(InstNode *ins){
+InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
+    Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
     if(isImm(value1)&& isImm(value2)){
         if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    add r0,#%d,#%d\n",x1,x2);
+            if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+                printf("    add r0,#%d,#%d\n",x1,x2);
+            }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    add r0,r1,#%d\n",x2);
+            } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    add r0,#%d,r2\n",x1);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    add r0,r1,r2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
         }
         else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            int x1=value1->pdata->var_pdata.iVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+                printf("    fadd s0,s1,s2\n");
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+
+                printf("    fadd s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
         else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fadd s0,s1,s2\n");
+            }else{
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fadd s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
         else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
     }
     if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
-            printf("    add r0,#%d,r0\n",x1);
+            if(imm_is_valid(x1)){
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    add r0,#%d,r2\n",x1);
+                }else{
+                    int x=node->regr;
+                    printf("    add r0,#%d,r%d\n",x1,x);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    add r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    add r0,r1,r%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
         }
-        else if(isFloatType((value1->VTy))){
-            ;
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fadd s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fadd s0,s1,s%d\n",x);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fadd s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fadd s0,s1,s%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s2.r2\n");
+            }else{
+                int x=node->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x);
+            }
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s2,s%d\n",x);
+            }
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
     }
     if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    add r0,r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
+            if((imm_is_valid(x2))){
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    add r0,r1,#%d\n",x2);
+                }else{
+                    int x=node->regr;
+                    printf("    add r0,r%d,#%d\n",x,x2);
+                }
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    add r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    add r0,r%d,r2\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
 
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s1,r1\n");
+            }
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fadd s0,s1,s2\n");
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fadd s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s1,s%d\n",x);
+            }
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
     }
     if(!isImm(value1)&& !isImm(value2)){
-        printf("    add r0,r0,r1\n");
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    mov r2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                int x1=node1->regr;
+                printf("    mov r1,r%d\n",x1);
+            }else{
+                int x1=node1->regr;
+                int x2=node2->regr;
+                printf("    mov r1,r%d",x1);
+                printf("    mov r2,r%d\n",x2);
+            }
+            printf("    add r0,r1,r2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fadd s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+
+        }
     }
 
     return  ins;
-
 }
 
-InstNode * arm_trans_Sub(InstNode *ins){
+InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
 
+    Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
     if(isImm(value1)&& isImm(value2)){
         if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    sub r0,#%d,#%d\n",x1,x2);
+            if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+                printf("    sub r0,#%d,#%d\n",x1,x2);
+            }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    sub r0,r1,#%d\n",x2);
+            } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    sub r0,#%d,r2\n",x1);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    sub r0,r1,r2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
         }
         else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            int x1=value1->pdata->var_pdata.iVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+                printf("    fsub s0,s1,s2\n");
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+
+                printf("    fsub s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
         else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fsub s0,s1,s2\n");
+            }else{
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fsub s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
         else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
     }
     if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
-            printf("    sub r0,#%d,r0\n",x1);
+            if(imm_is_valid(x1)){
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    sub r0,#%d,r2\n",x1);
+                }else{
+                    int x=node->regr;
+                    printf("    sub r0,#%d,r%d\n",x1,x);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    sub r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    sub r0,r1,r%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
         }
-        else if(isFloatType((value1->VTy))){
-            ;
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fsub s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fsub s0,s1,s%d\n",x);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fsub s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fsub s0,s1,s%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s2.r2\n");
+            }else{
+                int x=node->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x);
+            }
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s2,s%d\n",x);
+            }
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
     }
     if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    sub r0,r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
+            if((imm_is_valid(x2))){
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    sub r0,r1,#%d\n",x2);
+                }else{
+                    int x=node->regr;
+                    printf("    sub r0,r%d,#%d\n",x,x2);
+                }
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    sub r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    sub r0,r%d,r2\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
 
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s1,r1\n");
+            }
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fsub s0,s1,s2\n");
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fsub s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s1,s%d\n",x);
+            }
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
     }
     if(!isImm(value1)&& !isImm(value2)){
-        printf("    sub r0,r0,r1\n");
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    mov r2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                int x1=node1->regr;
+                printf("    mov r1,r%d\n",x1);
+            }else{
+                int x1=node1->regr;
+                int x2=node2->regr;
+                printf("    mov r1,r%d",x1);
+                printf("    mov r2,r%d\n",x2);
+            }
+            printf("    sub r0,r1,r2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fsub s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+
+        }
     }
+
     return  ins;
+
 }
 
-InstNode * arm_trans_Mul(InstNode *ins){
-
+InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
+    Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
     if(isImm(value1)&& isImm(value2)){
         if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    mul r0,#%d,#%d\n",x1,x2);
+            if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+                printf("    mov r1,#%d\n",x1);
+                printf("    mov r2,#%d\n",x2);
+            }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    mov r2,#%d\n",x2);
+            } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+                printf("    mov r1,#%d\n",x1);
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    ldr r2,=%s\n",arr2);
+            }
+            printf("    mul r0,r1,r2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
         }
         else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            int x1=value1->pdata->var_pdata.iVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+                printf("    fmul s0,s1,s2\n");
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+
+                printf("    fmul s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
         else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fmul s0,s1,s2\n");
+            }else{
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fmul s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
         else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
     }
     if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
-            printf("    mul r0,#%d,r0\n",x1);
+            if(imm_is_valid(x1)){
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    mov r1,#%d\n",x1);
+                    printf("    mul r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    mov r1,#%d\n",x1);
+                    printf("    mov r2,r%d\n",x);
+                    printf("    mul r0,r1,r2\n",x1);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    mul r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    mul r0,r1,r%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
         }
-        else if(isFloatType((value1->VTy))){
-            ;
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fmul s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fmul s0,s1,s%d\n",x);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fmul s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fmul s0,s1,s%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s2.r2\n");
+            }else{
+                int x=node->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x);
+            }
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s2,s%d\n",x);
+            }
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
         }
     }
     if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    mul r0,r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
+            if((imm_is_valid(x2))){
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    mov r2,#%d\n",x2);
+                    printf("    mul r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    mov r2,#%d\n",x2);
+                    printf("    mul r0,r%d,r2\n",x);
+                }
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    mul r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    mul r0,r%d,r2\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
 
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s1,r1\n");
+            }
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fmul s0,s1,s2\n");
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fmul s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s1,s%d\n",x);
+            }
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
     }
     if(!isImm(value1)&& !isImm(value2)){
-        printf("    mul r0,r0,r1\n");
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    mov r2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                int x1=node1->regr;
+                printf("    mov r1,r%d\n",x1);
+            }else{
+                int x1=node1->regr;
+                int x2=node2->regr;
+                printf("    mov r1,r%d",x1);
+                printf("    mov r2,r%d\n",x2);
+            }
+            printf("    mul r0,r1,r2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fmul s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+
+        }
     }
+
     return  ins;
 }
 
-InstNode * arm_trans_Div(InstNode *ins){
-    printf("    bl __aeabi_idiv\n");
-    return ins;
+InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
+    Value *value0=&ins->inst->user.value;
+    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+                printf("    mov r1,#%d\n",x1);
+                printf("    mov r2,#%d\n",x2);
+            }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    mov r2,#%d\n",x2);
+            } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+                printf("    mov r1,#%d\n",x1);
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    ldr r2,=%s\n",arr2);
+            }
+            printf("    sdiv r0,r1,r2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+                printf("    fdiv s0,s1,s2\n");
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+
+                printf("    fdiv s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fdiv s0,s1,s2\n");
+            }else{
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fdiv s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+    }
+    if(isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            if(imm_is_valid(x1)){
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    mov r1,#%d\n",x1);
+                    printf("    sdiv r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    mov r1,#%d\n",x1);
+                    printf("    mov r2,r%d\n",x);
+                    printf("    sdiv r0,r1,r2\n",x1);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                    printf("    sdiv r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    sdiv r0,r1,r%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            int x1=value1->pdata->var_pdata.iVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fdiv s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fdiv s0,s1,s%d\n",x);
+                }
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                    printf("    fdiv s0,s1,s2\n");
+                }else{
+                    int x= node->regs;
+                    printf("    fdiv s0,s1,s%d\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s2.r2\n");
+            }else{
+                int x=node->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x);
+            }
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s2,s%d\n",x);
+            }
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+    }
+    if(!isImm(value1)&& isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            if((imm_is_valid(x2))){
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    mov r2,#%d\n",x2);
+                    printf("    sdiv r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    mov r2,#%d\n",x2);
+                    printf("    sdiv r0,r%d,r2\n",x);
+                }
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                    printf("    sdiv r0,r1,r2\n");
+                }else{
+                    int x=node->regr;
+                    printf("    sdiv r0,r%d,r2\n",x);
+                }
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x);
+                printf("    fcvt.s32.f32 s1,r1\n");
+            }
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fdiv s0,s1,s2\n");
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory) {
+                    int x = get_value_offset_sp(hashMap, value1);
+                    printf("    fload s1,[sp,#%d]\n", x);
+                } else{
+                    int x=node->regs;
+                    printf("    fmov s1,s%d\n",x);
+                }
+                printf("    fdiv s0,s1,s2\n");
+            }
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s1,s%d\n",x);
+            }
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+    }
+    if(!isImm(value1)&& !isImm(value2)){
+        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    mov r2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                int x1=node1->regr;
+                printf("    mov r1,r%d\n",x1);
+            }else{
+                int x1=node1->regr;
+                int x2=node2->regr;
+                printf("    mov r1,r%d",x1);
+                printf("    mov r2,r%d\n",x2);
+            }
+            printf("    sdiv r0,r1,r2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    mov r%d,r0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 s0,r0\n");
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fcvt.s32.f32 s%d,r0\n",x);
+                }
+            }
+        }
+        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+        }
+        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fdiv s0,s1,s2\n");
+            if(isIntType(value0->VTy)){
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fcvt.s32.f32 r0,s0\n");
+                    printf("    str r0,[sp,#%d]\n",x);
+                } else{
+                    int x=node->regr;
+                    printf("    fcvt.s32.f32 r%d,s0\n",x);
+                }
+            }
+            else{
+                offset *node= HashMapGet(hashMap,value0);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("    fstr s0,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s%d,s0\n",x);
+                }
+            }
+
+        }
+    }
+
+    return  ins;
 }
 
 InstNode * arm_trans_Module(InstNode *ins){
@@ -420,83 +3278,6 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap){
     return ins;
 }
 
-InstNode * arm_trans_Store(InstNode *ins,HashMap*hashMap){
-
-    if(isImm(user_get_operand_use(&ins->inst->user,0)->Val)){
-        if(isIntType(user_get_operand_use(&ins->inst->user,0)->Val->VTy)){
-            printf("    mov r0,#%d\n",user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal);
-            int x=get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,1)->Val);
-            printf("    str r0,[sp,#%d]\n",x);
-        }
-        else if(isFloatType(user_get_operand_use(&ins->inst->user,0)->Val->VTy)){
-            ;
-        }
-    }
-    else{
-        int x=get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,1)->Val);
-//        printf("%s\n",user_get_operand_use(&ins->inst->user,1)->Val->alias->name);
-            printf("    str r0,[sp,#%d]\n",x);
-    }
-
-    return ins;
-}
-
-InstNode * arm_trans_Load(InstNode *ins,HashMap*hashMap){
-    if(get_next_inst(ins)->inst->Opcode==GIVE_PARAM&&regi<4){
-        int x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
-        printf("    ldr r%d,[sp,#%d]\n",regi++,x);
-    }
-//    int i=ins->inst->i;
-    else if(get_next_inst(ins)->inst->Opcode==GIVE_PARAM){
-        int x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
-        printf("    ldr r12,[sp,#%d]\n",x);
-        printf("    str r12,[sp,#-%d]\n",regi);
-        regi+=4;
-    }
-    else{
-        int x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
-//        printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->alias->name);
-//        printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->name);
-        printf("    ldr r0,[sp,#%d]\n",x);
-
-        if(get_next_inst(ins)->inst->Opcode==Load){
-            ins= get_next_inst(ins);
-//            printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->alias->name);
-//            printf("%s\n",user_get_operand_use(&ins->inst->user,0)->Val->name);
-            x= get_value_offset(hashMap,user_get_operand_use(&ins->inst->user,0)->Val);
-            printf("    ldr r1,[sp,#%d]\n",x);
-//        printf("***************LOAD2\n");
-            InstNode *temp= get_next_inst(ins);
-            if(temp->inst->Opcode==LESSEQ){
-                ins=temp;
-                ins= arm_trans_LESSEQ(ins);
-            }
-            if(temp->inst->Opcode==LESS){
-                ins=temp;
-                ins= arm_trans_LESS(ins);
-            }
-            if(temp->inst->Opcode==GREAT){
-                ins=temp;
-                ins= arm_trans_GREAT(ins);
-            }
-            if(temp->inst->Opcode==GREATEQ){
-                ins=temp;
-                ins= arm_trans_GREATEQ(ins);
-            }
-            if(temp->inst->Opcode==EQ){
-                ins=temp;
-                ins= arm_trans_EQ(ins);
-            }
-            if(temp->inst->Opcode==NOTEQ){
-                ins=temp;
-                ins= arm_trans_NOTEQ(ins);
-            }
-        }
-    }
-//    printf("Load success\n");
-    return ins;
-}
-
 InstNode * arm_trans_Alloca(InstNode *ins){
 //    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
     return ins;
@@ -514,63 +3295,7 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
     return ins;
 }
 
-InstNode * arm_trans_LESS(InstNode *ins){
-//a<b  a,b
-    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
-    if(isImm(value1)&& isImm(value2)){
-        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp #%d,#%d\n",x1,x2);
-        }
-        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
-        }
-        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
-        }
-        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
-        }
-    }
-    if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            printf("    cmp #%d,r0\n",x1);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-    }
-    if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-
-    }
-    if(!isImm(value1)&& !isImm(value2)){
-        printf("    cmp r0,r1\n");
-    }
-//    printf("    cmp r0,r1\n");
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==br_i1){
-        ins= temp;
-        int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-        printf("    bge %d\n",x);
-        x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-        printf("    b %d\n",x);
-    }
-    return ins;
-
-
-}
-
-InstNode * arm_trans_GREAT(InstNode *ins){
+InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
@@ -578,277 +3303,452 @@ InstNode * arm_trans_GREAT(InstNode *ins){
         if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp #%d,#%d\n",x1,x2);
+            if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+                printf("    cmp #%d,#%d\n",x1,x2);
+            }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+                char arr[12]="0x";
+                sprintf(arr+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr);
+                printf("    cmp r1,#%d\n",x2);
+            } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+                char arr[12]="0x";
+                sprintf(arr+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr);
+                printf("    cmp #%d,r2\n",x1);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    cmp r1,r2\n");
+            }
         }
         else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            int x1=value1->pdata->var_pdata.iVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+                printf("    fcmp s1,s2\n");
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+
+                int *xx2=(int*)&x2;
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",*xx2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fmov s2,r2\n");
+
+                printf("    fcmp s1,s2\n");
+            }
         }
         else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            int x2=value2->pdata->var_pdata.iVal;
+            if(imm_is_valid(x2)){
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fcmp s0,s1,s2\n");
+            }else{
+                int *xx1=(int*)&x1;
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",*xx1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fmov s1,r1\n");
+
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+
+                printf("    fcmp s1,s2\n");
+            }
         }
         else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fmov s1,r1\n");
+
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+
+            printf("    fcmp s1,s2\n");
         }
     }
     if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            printf("    cmp #%d,r0\n",x1);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-    }
-    if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-
-    }
-    if(!isImm(value1)&& !isImm(value2)){
-        printf("    cmp r0,r1\n");
-    }
-
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==br_i1){
-        ins= temp;
-        int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-        printf("    ble %d\n",x);
-        x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-        printf("    b %d\n",x);
-    }
-    return ins;
-//    printf("\n");
-//    return ins;
-}
-
-InstNode * arm_trans_LESSEQ(InstNode *ins){
-
-    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
-    if(isImm(value1)&& isImm(value2)){
         if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
             int x1=value1->pdata->var_pdata.iVal;
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp #%d,#%d\n",x1,x2);
+            if(imm_is_valid(x1)){
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regr;
+                    printf("    mov r2,r%d\n",x);
+                }
+                printf("    cmp #%d,r2\n",x1);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    load r2,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regr;
+                    printf("    mov r2,r%d\n",x);
+                }
+                printf("    cmp r1,r2\n");
+            }
         }
         else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            int x1=value1->pdata->var_pdata.iVal;
+            if(imm_is_valid(x1)){
+                printf("    mov r1,#%d\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s2,s%d\n",x);
+                }
+                printf("    fcmp s1,s2\n");
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x1);
+                printf("    ldr r1,=%s\n",arr1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                offset *node= HashMapGet(hashMap,value2);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    printf("    fload s2,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regs;
+                    printf("    fmov s2,s%d\n",x);
+                }
+                printf("    fcmp s1,s2\n");
+            }
         }
         else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fcvt.s32.f32 s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x);
+            }else{
+                int x=node->regr;
+                printf("    mov r2,r%d\n",x);
+            }
+            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("    fcmp s1,s2\n");
         }
         else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            float x1=value1->pdata->var_pdata.fVal;
+            int *xx1=(int*)&x1;
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",*xx1);
+            printf("    ldr r1,=%s\n",arr1);
+            printf("    fcvt.s32.f32 s1,r1\n");
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s2,s%d\n",x);
+            }
+            printf("    fcmp s1,s0\n");
         }
-    }
-    if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            printf("    cmp #%d,r0\n",x1);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
+
     }
     if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-
-    }
-    if(!isImm(value1)&& !isImm(value2)){
-        printf("    cmp r0,r1\n");
-    }
-//    printf("    cmp r0,r1\n");
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==br_i1){
-        ins= temp;
-        int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-        printf("    bgt %d\n",x);
-        x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-        printf("    b %d\n",x);
-    }
-    return ins;
-
-//    printf("\n");
-//    return ins;
-}
-
-InstNode * arm_trans_GREATEQ(InstNode *ins){
-
-    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
-    if(isImm(value1)&& isImm(value2)){
         if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
             int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp #%d,#%d\n",x1,x2);
+            if((imm_is_valid(x2))){
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regr;
+                    printf("    mov r1,r%d\n",x);
+                }
+                printf("    cmp r1,#%d\n",x2);
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                offset *node= HashMapGet(hashMap,value1);
+                if(node->memory){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("    load r1,[sp,#%d]\n",x);
+                }else{
+                    int x=node->regr;
+                    printf("    mov r1,r%d\n",x);
+                }
+                printf("    cmp r1,r2\n");
+            }
         }
         else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fcvt.s32.f32 s2,r2\n");
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regr;
+                printf("    mov r1,r%d\n",x);
+            }
+            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("    fcmp s1,s2\n");
         }
         else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
+            int x2=value2->pdata->var_pdata.iVal;
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s1,s%d\n",x);
+            }
+            if(imm_is_valid(x2)){
+                printf("    mov r2,#%d\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else{
+                char arr2[12]="0x";
+                sprintf(arr2+2,"%0x",x2);
+                printf("    ldr r2,=%s\n",arr2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }
+            printf("    fcmp s1,s2\n");
         }
         else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
-        }
-    }
-    if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            printf("    cmp #%d,r0\n",x1);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-    }
-    if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fmov s1,s%d\n",x);
+            }
+            float x2=value2->pdata->var_pdata.fVal;
+            int *xx2=(int*)&x2;
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",*xx2);
+            printf("    ldr r2,=%s\n",arr2);
+            printf("    fmov s2,r2\n");
+            printf("    fcmp s1,s2\n");
         }
 
     }
     if(!isImm(value1)&& !isImm(value2)){
-        printf("    cmp r0,r1\n");
-    }
-//    printf("    cmp r0,r1\n");
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==br_i1){
-        ins= temp;
-        int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-        printf("    blt %d\n",x);
-        x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-        printf("    b %d\n",x);
-    }
-    return ins;
-//    printf("\n");
-//    return ins;
-}
-
-InstNode * arm_trans_EQ(InstNode *ins){
-
-    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
-    if(isImm(value1)&& isImm(value2)){
         if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp #%d,#%d\n",x1,x2);
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    mov r2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                int x1=node1->regr;
+                printf("    mov r1,r%d\n",x1);
+            }else{
+                int x1=node1->regr;
+                int x2=node2->regr;
+                printf("    mov r1,r%d",x1);
+                printf("    mov r2,r%d\n",x2);
+            }
+            printf("    cmp r1,r2\n");
         }
         else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    load r1,[sp,#%d]\n",x1);
+                printf("    fcvt.s32.f32 s1,r1\n");
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regr;
+                printf("    fcvt.s32.f32 s1,r%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fcmp s1,s2\n");
         }
         else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    load r2,[sp,#%d]\n",x2);
+                printf("    fcvt.s32.f32 s2,r2\n");
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regr;
+                printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            }
+            printf("    fcmp s1,s2\n");
         }
         else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
+            offset *node1= HashMapGet(hashMap,value1);
+            offset *node2= HashMapGet(hashMap,value2);
+            if(node1->memory&&node2->memory){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else if(node1->memory&&(!node2->memory)){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("    fload s1,[sp,#%d]\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }else if((!node1->memory)&&node2->memory){
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("    fload s2,[sp,#%d]\n",x2);
+            }else{
+                int x1=node1->regs;
+                printf("    fmov s1,s%d\n",x1);
+                int x2=node2->regs;
+                printf("    fmov s2,s%d\n",x2);
+            }
+            printf("    fcmp s1,s2\n");
         }
     }
-    if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            printf("    cmp #%d,r0\n",x1);
+    if(ins->inst->Opcode==LESS){
+        InstNode *temp= get_next_inst(ins);
+        if(temp->inst->Opcode==br_i1){
+            ins= temp;
+            int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
+            printf("    bge %d\n",x);
+            x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+            printf("    b %d\n",x);
         }
-        else if(isFloatType((value1->VTy))){
-            ;
+    } else if(ins->inst->Opcode==GREAT){
+        InstNode *temp= get_next_inst(ins);
+        if(temp->inst->Opcode==br_i1){
+            ins= temp;
+            int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
+            printf("    ble %d\n",x);
+            x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+            printf("    b %d\n",x);
+        }
+    } else if(ins->inst->Opcode==LESSEQ){
+        InstNode *temp= get_next_inst(ins);
+        if(temp->inst->Opcode==br_i1){
+            ins= temp;
+            int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
+            printf("    bgt %d\n",x);
+            x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+            printf("    b %d\n",x);
+        }
+    } else if(ins->inst->Opcode==GREATEQ){
+        InstNode *temp= get_next_inst(ins);
+        if(temp->inst->Opcode==br_i1){
+            ins= temp;
+            int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
+            printf("    blt %d\n",x);
+            x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+            printf("    b %d\n",x);
+        }
+    } else if(ins->inst->Opcode==EQ){
+        InstNode *temp= get_next_inst(ins);
+        if(temp->inst->Opcode==br_i1){
+            ins= temp;
+            int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
+            printf("    bne %d\n",x);
+            x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+            printf("    b %d\n",x);
+        }
+    } else if(ins->inst->Opcode==NOTEQ){
+        InstNode *temp= get_next_inst(ins);
+        if(temp->inst->Opcode==br_i1){
+            ins= temp;
+            int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
+            printf("    beq %d\n",x);
+            x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+            printf("    b %d\n",x);
         }
     }
-    if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
 
-    }
-    if(!isImm(value1)&& !isImm(value2)){
-        printf("    cmp r0,r1\n");
-    }
-//    printf("    cmp r0,r1\n");
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==br_i1){
-//        printf("***************EQ\n");
-        ins= temp;
-        int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-        printf("    bne %d\n",x);
-        x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-        printf("    b %d\n",x);
-    }
     return ins;
-//    printf("\n");
-//    return ins;
-}
 
-InstNode * arm_trans_NOTEQ(InstNode *ins){
 
-    Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
-    if(isImm(value1)&& isImm(value2)){
-        if(isIntType(value1->VTy)&& isIntType(value2->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp #%d,#%d\n",x1,x2);
-        }
-        else if(isIntType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
-        }
-        else if(isFloatType(value1->VTy)&& isIntType(value2->VTy)){
-            ;
-        }
-        else if(isFloatType(value1->VTy)&& isFloatType(value2->VTy)){
-            ;
-        }
-    }
-    if(isImm(value1)&& !isImm(value2)){
-        if(isIntType(value1->VTy)){
-            int x1=value1->pdata->var_pdata.iVal;
-            printf("    cmp #%d,r0\n",x1);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-    }
-    if(!isImm(value1)&& isImm(value2)){
-        if(isIntType(value2->VTy)){
-            int x2=value2->pdata->var_pdata.iVal;
-            printf("    cmp r0,#%d\n",x2);
-        }
-        else if(isFloatType((value1->VTy))){
-            ;
-        }
-
-    }
-    if(!isImm(value1)&& !isImm(value2)){
-        printf("    cmp r0,r1\n");
-    }
-    InstNode *temp= get_next_inst(ins);
-    if(temp->inst->Opcode==br_i1){
-        ins= temp;
-        int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-        printf("    beq %d\n",x);
-        x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-        printf("    b %d\n",x);
-    }
-    return ins;
-//    printf("\n");
-//    return ins;
 }
 
 InstNode * arm_trans_br_i1(InstNode *ins){
@@ -916,7 +3816,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         int off= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
         int x= user_get_operand_use(&next->inst->user,0)->Val->pdata->var_pdata.iVal;
         printf("    mov r0,#%d\n",x);
-        int off_sp= get_value_offset(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
+        int off_sp= get_value_offset_sp(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
         printf("    store r0,[sp,#%d]\n",off_sp*4);
         return next;
     }
@@ -961,108 +3861,71 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
     int x=ins->inst->Opcode;
     switch(x){
         case Add:
-            return arm_trans_Add(ins);
-            break;
+            return arm_trans_Add(ins,hashMap);
         case Sub:
-            return arm_trans_Sub(ins);
-            break;
+            return arm_trans_Sub(ins,hashMap);
         case Mul:
-            return arm_trans_Mul(ins);
-            break;
+            return arm_trans_Mul(ins,hashMap);
         case Div:
-            return arm_trans_Div(ins);
-            break;
+            return arm_trans_Div(ins,hashMap);
         case Module:
             return arm_trans_Module(ins);
-            break;
         case Call:
             return arm_trans_Call(ins);
-            break;
         case FunBegin:
             return arm_trans_FunBegin(ins,hashMap);
-            break;
         case Return:
             return arm_trans_Return(ins,head,hashMap);
-            break;
         case Store:
-            return arm_trans_Store(ins,hashMap);
-            break;
+//            return arm_trans_Store(ins,hashMap);
+            return ins;
         case Load:
-            return arm_trans_Load(ins,hashMap);
-            break;
+//            return arm_trans_Load(ins,hashMap);
+            return ins;
         case Alloca:
             return arm_trans_Alloca(ins);
-            break;
         case GIVE_PARAM:
             return arm_trans_GIVE_PARAM(ins);
-            break;
         case ALLBEGIN:
             return arm_trans_ALLBEGIN(ins);
-            break;
         case LESS:
-            return arm_trans_LESS(ins);
-            break;
         case GREAT:
-            return arm_trans_GREAT(ins);
-            break;
         case LESSEQ:
-            return arm_trans_LESSEQ(ins);
-            break;
         case GREATEQ:
-            return arm_trans_GREATEQ(ins);
-            break;
         case EQ:
-            return arm_trans_EQ(ins);
-            break;
         case NOTEQ:
-            return arm_trans_NOTEQ(ins);
-            break;
+            return arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(ins,hashMap);
         case br_i1:
             return arm_trans_br_i1(ins);
-            break;
         case br:
             return arm_trans_br(ins);
-            break;
         case br_i1_true:
             return arm_trans_br_i1_true(ins);
-            break;
         case br_i1_false:
             return arm_trans_br_i1_false(ins);
-            break;
         case Label:
             return arm_trans_Label(ins);
-            break;
         case tmp:
             return arm_trans_tmp(ins);
-            break;
         case XOR:
             return arm_trans_XOR(ins);
-            break;
         case zext:
             return arm_trans_zext(ins);
-            break;
         case bitcast:
             return arm_trans_bitcast(ins);
-            break;
         case GMP:
             return arm_trans_GMP(ins,hashMap);
-            break;
         case MEMCPY:
             return arm_trans_MEMCPY(ins);
-            break;
         case zeroinitializer:
             return arm_trans_zeroinitializer(ins);
-            break;
         case GLOBAL_VAR:
             return arm_trans_GLOBAL_VAR(ins);
-            break;
         case Phi:
             return arm_trans_Phi(ins);
-            break;
         case MEMSET:
             return arm_trans_MEMSET(ins);
-            break;
         default:
-            break;
+            return ins;
     }
 }

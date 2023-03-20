@@ -210,28 +210,18 @@ void insert_var_into_symtab(past type,past p)
             if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"num_int")==0)
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
             else
-                //是const常数的expr
+                //是const常数或常数的expr
             {
-                //TODO 暂时这样做，调用cal_expr的嵌套问题还未解决
-                Value *v_tmp=(Value*) malloc(sizeof (Value));
-
-//                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
-//                {
-//                    v_tmp= cal_expr(one_dimention,0);
-//                    v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
-//                }
-                //TODO 只考虑了单边const
-                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
+                if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"ID")==0)
                 {
-                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
-                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
+                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->sVal,'\0'));
+                    v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_id_n->pdata->var_pdata.iVal;
                 }
-                else
+                else if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
                 {
-                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
-                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
+                    int result= cal_easy_expr(one_dimention);
+                    v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=result;
                 }
-                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
             }
             one_dimention=one_dimention->next;
         }
@@ -265,13 +255,15 @@ void insert_var_into_symtab(past type,past p)
                 if(v_num->VTy->ID==Const_FLOAT)
                 {
                     v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
-                    v->VTy->ID=Const_FLOAT;
+                    //v->VTy->ID=Const_FLOAT;
+                    v->VTy->ID=Var_INT;
                 }
                     //Const_Int
                 else if(v_num->VTy->ID==Const_INT)
                 {
                     v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
-                    v->VTy->ID=Const_INT;
+                    //v->VTy->ID=Const_INT;
+                    v->VTy->ID=Var_FLOAT;
                 }
                 else
                 {
@@ -351,29 +343,32 @@ void insert_var_into_symtab(past type,past p)
         {
             if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"num_int")==0)
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
-//            else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"expr")==0)
-//            {
-//                Value *v_result= cal_expr(one_dimention,0);
-//                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_result->pdata->var_pdata.iVal;
-//            }
-            else
-                //是const常数的expr
+            else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"expr")==0)
             {
-                //TODO 暂时这样做，调用cal_expr的嵌套问题还未解决
-                Value *v_tmp=(Value*) malloc(sizeof (Value));
-                //TODO 只考虑了单边const
-                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
-                {
-                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
-                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
-                }
-                else
-                {
-                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
-                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
-                }
-                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
+                int result= cal_easy_expr(one_dimention);
+                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=result;
             }
+            else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"ID")==0)
+            {
+                Value *v_con= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->sVal,'\0'));
+                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_con->pdata->var_pdata.iVal;
+            }
+                //是const常数的expr
+//            {
+//                Value *v_tmp=(Value*) malloc(sizeof (Value));
+//                //TODO 只考虑了单边const
+//                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
+//                {
+//                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
+//                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
+//                }
+//                else
+//                {
+//                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
+//                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
+//                }
+//                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
+//            }
             one_dimention=one_dimention->next;
         }
         v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
@@ -421,17 +416,100 @@ void insert_var_into_symtab(past type,past p)
                 v->VTy->ID=Const_INT;
             }
         }
-        /*
+
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
         {
-
-        }*/
+            int result= cal_easy_expr(p->right);
+            v->pdata->var_pdata.iVal=result;
+            v->VTy->ID=Const_INT;
+        }
 
         symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
     }
 
     if(p->next!=NULL)
         insert_var_into_symtab(type,p->next);
+}
+
+int cal_easy_expr(past expr)
+{
+    stack *s=stackInit();  //用于后序遍历二叉树
+    stack *S=stackInit();
+    past p1 = expr;
+    past q = NULL;     //记录刚刚访问过的结点
+    int x3;
+    //记录后缀表达式
+    past str[100];
+    int i = 0;
+
+    while (p1 != NULL || stackSize(s))
+    {
+        if (p1 != NULL)
+        {
+            stackPush(s, p1);
+            p1 = p1->left;
+        }
+        else
+        {
+            stackTop(s, (void**)&p1);     //往上走了才pop掉
+            if ((p1->right == NULL) || (p1->right) == q)
+            {
+                //开始往上走
+                q = p1;              //保存到q，作为下一次处理结点的前驱
+                stackTop(s, (void**)&p1);
+                stackPop(s);
+                p1 = NULL;         //p置于NULL可继续退层，否则会重复访问刚访问结点的左子树
+                str[i++] = p1;
+            }
+            else
+                p1 = p1->right;
+        }
+    }
+    str[i]=NULL;
+
+    int x1,x2;
+    int result;
+    int data;
+    past *p=str;
+    while(*p)
+    {
+        if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "expr") != 0)
+        {
+            if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "num_int") == 0)
+                data=(*p)->iVal;
+            //CONST_INT
+            else
+            {
+                Value *v= symtab_dynamic_lookup(this,bstr2cstr((*p)->sVal, '\0'));
+                data=v->pdata->var_pdata.iVal;
+            }
+
+            stackPush(S,&data);
+        }
+
+        else
+        {
+            stackTop(S, (void**)&x2);
+            stackPop(S);
+            stackTop(S, (void**)&x1);
+            stackPop(S);
+            switch((*p)->iVal)
+            {
+                case '+': result = x1 + x2; break;
+                case '-': result = x1 - x2; break;
+                case '*': result = x1 * x2; break;
+                case '/': result = x1 / x2; break;
+                case '%': result = x1 % x2; break;
+            }
+            stackPush(S,&result);
+            p++;
+        }
+
+        p++;
+    }
+    stackTop(S,(void**)&result);
+    stackPop(S);
+    return x1;
 }
 
 //目前还未考虑数组
@@ -443,7 +521,6 @@ void insert_func_params(past params)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
-        v->pdata->var_pdata.map= getCurMap(this);
         //right不为NULL，则说明参数是数组
         if(params->right!=NULL)
         {
@@ -467,6 +544,7 @@ void insert_func_params(past params)
         }
         else
         {
+            v->pdata->var_pdata.map= getCurMap(this);
             if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
                 //函数参数默认为有初始值
             {v->VTy->ID=Param_FLOAT;}

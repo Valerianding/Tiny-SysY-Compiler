@@ -37,7 +37,7 @@ union _PData{
 
     struct {
         Type return_type;            //返回类型
-        Type param_type_lists[10];   //参数名数组
+        Type param_type_lists[50];   //参数名数组
         struct _mapList* map_list;         //所指向的那张函数作用域的表
         int param_num;              //TODO 可能要，也可能不要
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
@@ -47,7 +47,7 @@ union _PData{
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
 
-        int array[100];                 //memcpy使用
+        int array[100001];                 //memcpy使用
     }symtab_array_pdata;
 
     HashSet *pairSet; // 为了phi指令设计的 存pair类型的数据

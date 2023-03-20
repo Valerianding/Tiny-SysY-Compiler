@@ -22,12 +22,18 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp){
                 (*sub_sp)-=4;
 //                printf("sub_sp=%d\n",*sub_sp);
                 temp->offset_sp=(*sub_sp);
+                temp->memory=true;
+                temp->regr=-1;
+                temp->regs=-1;
                 HashMapPut(hashMap,key,temp);
             }else if(strcmp(name,key->name)<=0){
                 offset *temp=(offset*) malloc(sizeof(offset));
                 temp->offset_sp=(*add_sp);
 //                printf("add_sp=%d\n",*add_sp);
                 (*add_sp)+=4;
+                temp->memory=true;
+                temp->regr=-1;
+                temp->regs=-1;
                 HashMapPut(hashMap,key,temp);
             }
         }
