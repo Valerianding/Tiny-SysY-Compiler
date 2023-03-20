@@ -256,14 +256,14 @@ void insert_var_into_symtab(past type,past p)
                 {
                     v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
                     //v->VTy->ID=Const_FLOAT;
-                    v->VTy->ID=Var_INT;
+                    v->VTy->ID=Var_FLOAT;
                 }
                     //Const_Int
                 else if(v_num->VTy->ID==Const_INT)
                 {
                     v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
                     //v->VTy->ID=Const_INT;
-                    v->VTy->ID=Var_FLOAT;
+                    v->VTy->ID=Var_INT;
                 }
                 else
                 {
