@@ -1600,13 +1600,15 @@ void create_if_stmt(past root,Value* v_return) {
     }
 
 
-    //无break或continue的话就补，有就不补了
-    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
+    if(get_last_inst(instruction_list)->inst->Opcode!=Return)
     {
-        //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
-        true_location_handler(br,NULL,t_index-1);
+        //无break或continue的话就补，有就不补了
+        if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
+        {
+            //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
+            true_location_handler(br,NULL,t_index-1);
+        }
     }
-
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
         //再补一条标号,可以理解为是false的跳转，也可以理解为是end的跳转
         true_location_handler(Label,NULL,t_index-1);
@@ -1758,12 +1760,14 @@ void create_if_else_stmt(past root,Value* v_return) {
             t_index++;                 //t_index++因为后面都用的t_index-1
     }
 
-    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
+    if(get_last_inst(instruction_list)->inst->Opcode!=Return)
     {
-        //补一条br label，示例的br label %13，这个和后面那条都是跳到end
-        true_location_handler(br,NULL,t_index-1);
+        if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
+        {
+            //补一条br label，示例的br label %13，这个和后面那条都是跳到end
+            true_location_handler(br,NULL,t_index-1);
+        }
     }
-
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
         //再补一条标号，示例的13:
         true_location_handler(Label,NULL,t_index-1);
@@ -2142,7 +2146,9 @@ void create_func_def(past root) {
     return_index++;
 
     if(get_last_inst(instruction_list)->inst->Opcode==Label)
+    {
         delete_inst(get_last_inst(instruction_list));
+    }
 
     //FuncEnd
     Instruction *ins_end= ins_new_unary_operator(FunEnd,v);
