@@ -14,15 +14,14 @@ define i32 @main() #0 {
   %7 = icmp ne i32 %6, 0
   br i1 %7, label %8, label %9
 
-8:
-  %.0 = -1                                              ; preds = %0
+8:                                                ; preds = %0
   br label %10
 
-9:
-  %.0 = 0                                          ; preds = %0
+9:                                                ; preds = %0
   br label %10
 
 10:                                               ; preds = %9, %8
+  %.0 = phi i32 [ -1, %8 ], [ 0, %9 ]
   ret i32 %.0
 }
 

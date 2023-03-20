@@ -16,7 +16,7 @@ Function *function_create(){
 }
 
 void func_set(Function *this,BasicBlock *head,BasicBlock *tail){
-    this->head = head;
+    this->entry = head;
     this->tail = tail;
     HashSet *allNode = HashSetInit();
     InstNode *begin = head->head_node;
@@ -52,6 +52,6 @@ InstNode *get_func_start(InstNode *cur){
 }
 
 void print_function_info(Function *this){
-    printf("function : %p head : b%d tail : b%d\n",this,this->head->id,this->tail->id);
+    printf("function : %p entry : b%d tail : b%d\n", this, this->entry->id, this->tail->id);
     printf("------------------------\n");
 }

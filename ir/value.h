@@ -90,4 +90,5 @@ void value_replaceAll(Value *oldValue,Value *newValue);
 
 bool isVar(Value *val);
 bool isImm(Value *val);
+bool isArray(Value *val);
 #endif

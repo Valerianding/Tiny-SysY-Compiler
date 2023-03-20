@@ -183,7 +183,7 @@ bool QueuePop(Queue* self)
     if (unlikely(size == 0))
         return false;
 
-    /* Remove the element from the head of the array. */
+    /* Remove the element from the entry of the array. */
     unsigned front = data->front_;
     if (func_clean)
         func_clean(elements[front]);

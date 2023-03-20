@@ -77,14 +77,14 @@ int main(int argc, char* argv[]){
     //showAst(TRoot,0);
 
     InstNode *temp = get_next_inst(instruction_list);
-    InstNode *temp2 = instruction_list;
 
     //丁老师
     bblock_divide(instruction_list);
 
     /* 测试所有instruction list */
-    for(;instruction_list != NULL;instruction_list = get_next_inst(instruction_list)){
-        print_one_ins_info(instruction_list);
+    InstNode *printNode = instruction_list;
+    for(;printNode != NULL;printNode = get_next_inst(printNode)){
+        print_one_ins_info(printNode);
     }
 
     printf("--------------\n");
@@ -115,8 +115,8 @@ int main(int argc, char* argv[]){
     }
 
     // mem2reg 之后的
-    printf_llvm_ir(temp2,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
     //    ljf
-    arm_translate_ins(temp2);
+    arm_translate_ins(instruction_list);
     return 0;
 }

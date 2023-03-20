@@ -3,11 +3,10 @@
 BasicBlock *bb_create(){
     BasicBlock *this = (BasicBlock*)malloc(sizeof(BasicBlock));
     memset(this,0,sizeof(BasicBlock));
+    this->preBlocks = HashSetInit();
+    this->in = HashSetInit();
+    this->out = HashSetInit();
     return this;
-}
-
-void bblock_init(BasicBlock* this) {
-    memset(this,0,sizeof(BasicBlock));
 }
 
 //// 将instruction放在instnode里面
@@ -17,18 +16,6 @@ InstNode* new_inst_node(Instruction* inst){
     // 初始化结点
     sc_list_init(&(n->list));
     return n;
-}
-
-InstNode* bblock_get_inst_back(BasicBlock* this){
-    return this->tail_node;
-}
-
-InstNode* bblock_get_inst_head(BasicBlock* this){
-    return this->head_node;
-}
-
-Function *bblock_get_parent(BasicBlock* this){
-    return this->Parent;
 }
 
 InstNode *get_prev_inst(InstNode *this){
@@ -88,48 +75,17 @@ void ins_node_add(InstNode *head,InstNode *this){
     sc_list_add_tail(&head->list,&this->list);
 }
 
-BlockNode *get_next_block(BlockNode *this){
-    if(this->list.next == NULL) return nullptr;
-    BlockNode *next = sc_list_entry(this->list.next,BlockNode,list);
-    return next;
-}
-
-BasicBlock *blocklist_pop(BlockList list){
-    if(list == nullptr){
-        return nullptr;
-    }else{
-        struct sc_list *temp = &list->list;
-        while(temp->next != nullptr){
-            temp = temp->next;
-        }
-        BlockNode *tail = sc_list_entry(temp,BlockNode,list);
-        return tail->block;
-    }
-}
 
 HashSet *get_prev_block(BasicBlock *this){
-    HashSet *prevBlocks = HashSetInit();
-    if(this->prev_blocks == NULL) return NULL;
-    struct sc_list *temp = &this->prev_blocks->list;
-    while(temp != NULL){
-        BlockNode *blockNode = sc_list_entry(temp,BlockNode,list);
-        BasicBlock *block = blockNode->block;
-        HashSetAdd(prevBlocks,block);
-        temp = temp->next;
-    }
+    HashSet *prevBlocks = this->preBlocks;
     return prevBlocks;
 }
 
 void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
-    BlockNode *blockNode = (BlockNode*)malloc(sizeof(BlockNode));
-    memset(blockNode,0,sizeof(BlockNode));
-    sc_list_init(&blockNode->list);
-    blockNode->block = prev;
-    if(pos->prev_blocks == nullptr) {
-        pos->prev_blocks = blockNode;
-    }else{
-        sc_list_add_tail(&pos->prev_blocks->list,&blockNode->list);
-    }
+    HashSet *posPrevBlocks = pos->preBlocks;
+    printf("bb_add_prev!\n");
+    HashSetAdd(posPrevBlocks,prev);
+    printf("after bb_add_prev\n");
 }
 
 void clear_visited_flag(InstNode *head) {
@@ -141,16 +97,6 @@ void clear_visited_flag(InstNode *head) {
     }
 }
 
-void blocklist_add(BlockList list,BasicBlock *block){
-    BlockNode *blocknode = (BlockNode*)malloc(sizeof(BlockNode));
-    memset(blocknode,0,sizeof(BlockNode));
-    blocknode->block = block;
-    if(list == nullptr){
-        list = blocknode;
-    }else{
-        sc_list_add_tail(&list->list,&blocknode->list);
-    }
-}
 
 void print_one_ins_info(InstNode *instruction_list){
     printf("%d : opcode:",instruction_list->inst->i);
@@ -165,6 +111,17 @@ void print_one_ins_info(InstNode *instruction_list){
         if(instruction_list->inst->user.value.name != NULL){
             printf(" user.value.name : %s",instruction_list->inst->user.value.name);
         }
+        printf(" alloca type : ");
+        Value *lhs = ins_get_lhs(instruction_list->inst);
+        if(lhs != NULL && isArray(lhs)){
+            printf("array type");
+        }else if(lhs != NULL && isVar(lhs)){
+            printf("var type");
+        }else if(lhs != NULL){
+            printf("not any type");
+        }else{
+            printf("null!");
+        }
     }else if(instruction_list->inst->Opcode == Load){
         if(instruction_list->inst->user.value.name != NULL){
             printf(" name : %s",instruction_list->inst->user.value.name);
@@ -174,6 +131,8 @@ void print_one_ins_info(InstNode *instruction_list){
             printf("name : %s",instruction_list->inst->user.value.name);
         }
         printf(" oprand name : %s",instruction_list->inst->user.use_list[1].Val->name);
+    }else if(instruction_list->inst->Opcode == Call){
+
     }
     if(instruction_list->inst->Parent != NULL){
         printf(" parent: b%d",instruction_list->inst->Parent->id);
@@ -194,13 +153,6 @@ void print_one_ins_info(InstNode *instruction_list){
         }
     }
     printf("\n");
-}
-
-BlockNode *get_next_prevblock(BlockNode *this){
-    if(this->list.next == NULL) return NULL;
-    struct sc_list *list= this->list.next;
-    BlockNode *next = sc_list_entry(list,BlockNode,list);
-    return next;
 }
 
 void ins_insert_after(InstNode *this,InstNode *pos){
@@ -256,19 +208,17 @@ void print_block_info(BasicBlock *this){
     printf("block : b%d ",this->id);
     //打印后继
     if(this->head_node){
-        printf("head : id : %d ",this->head_node->inst->i);
+        printf("entry : id : %d ",this->head_node->inst->i);
     }
     if(this->tail_node){
         printf("tail : id : %d ",this->tail_node->inst->i);
     }
     //打印前驱
     printf("prev: ");
-    if(this->prev_blocks){
-        BlockNode *temp = this->prev_blocks;
-        int i = 0;
-        while(temp != NULL){
-            printf("%d : b%d ",i++,temp->block->id);
-            temp = get_next_prevblock(temp);
+    if(HashSetSize(this->preBlocks) != 0){
+        HashSetFirst(this->preBlocks);
+        for(BasicBlock *prevBlock = HashSetNext(this->preBlocks); prevBlock != NULL; prevBlock = HashSetNext(this->preBlocks)){
+            printf(" b%d", prevBlock->id);
         }
     }else{
         printf("NULL ");

@@ -80,3 +80,7 @@ bool isVar(Value *val){
 bool isImm(Value *val){
     return isImmType(val->VTy);
 }
+
+bool isArray(Value *val){
+    return isArrayType(val->VTy);
+}

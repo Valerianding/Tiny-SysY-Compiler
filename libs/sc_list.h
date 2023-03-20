@@ -71,7 +71,7 @@ size_t sc_list_count(struct sc_list *l);
 
 /**
  * @param l list
- * @return  returns head. If list is empty, returns NULL.
+ * @return  returns entry. If list is empty, returns NULL.
  */
 struct sc_list *sc_list_head(struct sc_list *l);
 
@@ -82,26 +82,26 @@ struct sc_list *sc_list_head(struct sc_list *l);
 struct sc_list *sc_list_tail(struct sc_list *l);
 
 /**
- *  before : [head]item1 -> [tail]item2
- *  after  : [head]'elem' -> item1 -> [tail]item2
+ *  before : [entry]item1 -> [tail]item2
+ *  after  : [entry]'elem' -> item1 -> [tail]item2
  *
  * @param l    list
- * @param elem elem to add to the head
+ * @param elem elem to add to the entry
  */
 void sc_list_add_head(struct sc_list *l, struct sc_list *elem);
 
 /**
- *  before : [head]item1 -> item2 -> item3
- *  after  : [head]item2 -> item3
+ *  before : [entry]item1 -> item2 -> item3
+ *  after  : [entry]item2 -> item3
  *
  * @param l list
- * @return  head element, if list is empty, returns NULL.
+ * @return  entry element, if list is empty, returns NULL.
  */
 struct sc_list *sc_list_pop_head(struct sc_list *l);
 
 /**
- *  before : [head]item1 -> [tail]item2
- *  after  : [head]item1 -> item2 -> [tail]'elem'
+ *  before : [entry]item1 -> [tail]item2
+ *  after  : [entry]item1 -> item2 -> [tail]'elem'
  *
  * @param l    list
  * @param elem elem to append to the tail
@@ -109,11 +109,11 @@ struct sc_list *sc_list_pop_head(struct sc_list *l);
 void sc_list_add_tail(struct sc_list *l, struct sc_list *elem);
 
 /**
- *  before : [head]item1 -> item2 -> item3
- *  after  : [head]item1 -> item2
+ *  before : [entry]item1 -> item2 -> item3
+ *  after  : [entry]item1 -> item2
  *
  * @param l list
- * @return  head element, if list is empty, returns NULL.
+ * @return  entry element, if list is empty, returns NULL.
  */
 struct sc_list *sc_list_pop_tail(struct sc_list *l);
 

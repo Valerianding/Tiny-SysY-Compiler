@@ -37,7 +37,10 @@ DomTreeNode *createDomTreeNode(BasicBlock *block,BasicBlock *parent){
 
 void calculate_dominance(Function *currentFunction) {
     //currentFunction->dominance = HashMapInit();
-    BasicBlock *entry = currentFunction->head;
+
+
+    // 注意要删除不可达的BasicBlock
+    BasicBlock *entry = currentFunction->entry;
     entry->dom = HashSetInit();
     HashSetAdd(entry->dom,entry);
     //HashMapPut(currentFunction->dominance, entry, entry->dom);
@@ -83,7 +86,7 @@ void calculate_dominance(Function *currentFunction) {
     while(changed){
         changed = false;
         //对于除了entry外的每一个block
-        cur = currentFunction->head->head_node;
+        cur = currentFunction->entry->head_node;
         clear_visited_flag(cur);
         while(cur != end){
             BasicBlock *parent = cur->inst->Parent;
@@ -145,7 +148,7 @@ void calculate_dominance(Function *currentFunction) {
 
 void calculate_dominance_frontier(Function *currentFunction){
     //对于每一个节点
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     printf("entryBlock : %d",entry->id);
@@ -192,7 +195,7 @@ void calculate_dominance_frontier(Function *currentFunction){
 }
 
 void calculate_iDominator(Function *currentFunction){
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     //不动的
@@ -244,7 +247,7 @@ void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child){
 }
 
 void calculate_DomTree(Function *currentFunction){
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     printf("entryBlock : %d",entry->id);

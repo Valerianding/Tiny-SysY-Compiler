@@ -51,7 +51,7 @@ typedef struct _Queue {
         @see QueuePush */
     bool (*push) (struct _Queue*, void*);
 
-    /** Retrieve an element from the head of the queue.
+    /** Retrieve an element from the entry of the queue.
         @see QueueFront */
     bool (*front) (struct _Queue*, void**);
 
@@ -59,7 +59,7 @@ typedef struct _Queue {
         @see QueueBack */
     bool (*back) (struct _Queue*, void**);
 
-    /** Remove an element from the head of the queue.
+    /** Remove an element from the entry of the queue.
         @see QueuePop */
     bool (*pop) (struct _Queue*);
 
@@ -103,12 +103,12 @@ void QueueDeinit(Queue* obj);
 bool QueuePush(Queue* self, void* element);
 
 /**
- * @brief Retrieve an element from the head of the queue.
+ * @brief Retrieve an element from the entry of the queue.
  *
  * @param self          The pointer to PriorityQueue structure
  * @param p_element     The pointer to the returned element
  *
- * @retval true         The head element is successfully retrieved
+ * @retval true         The entry element is successfully retrieved
  * @retval false        The queue is empty
  */
 bool QueueFront(Queue* self, void** p_element);
@@ -125,9 +125,9 @@ bool QueueFront(Queue* self, void** p_element);
 bool QueueBack(Queue* self, void** p_element);
 
 /**
- * @brief Remove an element from the head of the queue.
+ * @brief Remove an element from the entry of the queue.
  *
- * This function removes an element from the head of the queue. Also, the cleanup
+ * This function removes an element from the entry of the queue. Also, the cleanup
  * function is invoked for the removed element.
  *
  * @param self          The pointer to Queue structure
