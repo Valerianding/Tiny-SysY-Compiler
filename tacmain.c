@@ -22,21 +22,21 @@ void test(HashSet *set){
 }
 
 extern int yyparse();
-extern past TRoot;
+//extern past TRoot;
 Symtab *this;
 extern FILE *yyin;
 int return_index=0;
-int return_stmt_num[10]={0};
-char t[5];
+int return_stmt_num[20]={0};
+char t[6];
 int t_index = 0;
 insnode_stack S_continue;
 insnode_stack S_break;
 insnode_stack S_return;
 insnode_stack S_and;
 insnode_stack S_or;
-bool c_b_flag[2]={false,false};
+bool c_b_flag[2];
 
-char t_num[3] = {0};
+char t_num[5] = {0};
 
 struct _InstNode *instruction_list;
 
@@ -71,6 +71,7 @@ int main(int argc, char* argv[]){
     TRoot=TRoot->left;
     stack_new(this);
     declare_global_alloca(this->value_maps->next);
+    c_b_flag[0]=false;c_b_flag[1]=false;
     create_instruction_list(TRoot,NULL);
     printf_llvm_ir(instruction_list,argv[1]);
 //    fix_array(instruction_list);
@@ -78,14 +79,14 @@ int main(int argc, char* argv[]){
     //showAst(TRoot,0);
 
     InstNode *temp = get_next_inst(instruction_list);
+    InstNode *temp2 = instruction_list;
 
     //丁老师
     bblock_divide(instruction_list);
 
     /* 测试所有instruction list */
-    InstNode *printNode = instruction_list;
-    for(;printNode != NULL;printNode = get_next_inst(printNode)){
-        print_one_ins_info(printNode);
+    for(;instruction_list != NULL;instruction_list = get_next_inst(instruction_list)){
+        print_one_ins_info(instruction_list);
     }
 
     printf("--------------\n");
@@ -116,15 +117,13 @@ int main(int argc, char* argv[]){
     }
 
     // mem2reg 之后的
-    printf_llvm_ir(instruction_list,argv[1]);
-
+    printf_llvm_ir(temp2,argv[1]);
 
     //ljw_begin
     // reg_control();
 
-
     //ljw_end
     //    ljf
-    arm_translate_ins(instruction_list);
+    arm_translate_ins(temp2);
     return 0;
 }
