@@ -10,7 +10,7 @@ extern char* yytext;
 extern Symtab *this;
 extern FILE* yyin;
 extern int return_index;
-extern int return_stmt_num[10];
+extern int return_stmt_num[20];
 
 %}
 

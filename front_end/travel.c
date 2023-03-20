@@ -8,7 +8,7 @@ extern struct _InstNode *instruction_list;
 //目前设置的能容纳3位数的临时变量
 extern char t[6];
 extern int t_index;
-extern int return_stmt_num[10];
+extern int return_stmt_num[20];
 extern int return_index;
 extern insnode_stack S_continue;
 extern insnode_stack S_break;
@@ -2133,6 +2133,7 @@ void create_func_def(past root) {
         reduce_continue();
         c_b_flag[0]=false;
     }
+
     if(return_stmt_num[return_index]>1 || (return_stmt_num[return_index]==1 && v->pdata->symtab_func_pdata.return_type.ID==VoidTyID))
         reduce_return();
     insnode_stack_new(&S_break);
@@ -2823,18 +2824,19 @@ void create_params_stmt(past func_params,Value * v_func)
                     v= handle_assign_array(params->right->left,v_array,1,-1);
                 else
                 {
-                    v= handle_assign_array(params->right->left,v_array,0,dimension_count);
-//                    //要补一条0的地址
+                    Value *v_f= handle_assign_array(params->right->left,v_array,0,dimension_count);
+//                    //二维度数组传一位的话 要补一条0的地址
 //                    //TODO 目前只针对二维补了
-//                    Value *v_z=(Value*) malloc(sizeof (Value));
-//                    value_init_int(v_z,0);
-//                    Instruction *instruction1= ins_new_binary_operator(GMP,v->alias,v_z);
-//                    v= ins_get_value_with_name(instruction1);
-//                    v->pdata->var_pdata.iVal=1;
-//                    v->VTy->ID=AddressTyID;
-//                    //将这个instruction加入总list
-//                    InstNode *node_bu = new_inst_node(instruction1);
-//                    ins_node_add(instruction_list,node_bu);
+                    Value *v_z=(Value*) malloc(sizeof (Value));
+                    value_init_int(v_z,0);
+                    Instruction *instruction1= ins_new_binary_operator(GMP,v_f,v_z);
+                    v= ins_get_value_with_name(instruction1);
+                    v->pdata->var_pdata.iVal=1;
+                    v->VTy->ID=AddressTyID;
+                    v->alias=v_array;
+                    //将这个instruction加入总list
+                    InstNode *node_bu = new_inst_node(instruction1);
+                    ins_node_add(instruction_list,node_bu);
                 }
             }
         }
@@ -3462,7 +3464,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 {
                     for(int i=start;i<start+instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
                     {
-                        if(i==0)
+                        if(i==start)
                         {
                             if(params[i]->inst->user.use_list->Val->VTy->ID==Int)
                             {
@@ -3706,6 +3708,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 else
                 {
+
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
                     {
                         printf("i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
