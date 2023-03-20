@@ -2816,7 +2816,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 v_load->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
                 v= handle_assign_array(params->right->left,v_load,1,-1);
             }
-            else
+            else    //TODO 很不完善
             {
                 //先计数，看看传进去的是几维
                 past var=params->right->left;
@@ -3693,7 +3693,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
                 printf(" %s=getelementptr inbounds ",instruction->user.value.name);
                 fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
-                if(instruction->user.use_list->Val->VTy->ID!=AddressTyID)
+                if(instruction->user.use_list->Val->VTy->ID!=AddressTyID || (v_cur_array->pdata->symtab_array_pdata.dimention_figure>1 && v_cur_array->alias->name[0]!='@'))   //TODO 目前只是一个很粗糙的处理
                 {
                     printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
                     printf(",");
@@ -3714,7 +3714,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 else
                 {
-
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
                     {
                         printf("i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
