@@ -243,12 +243,15 @@ void delete_inst(InstNode *this){
     if(prev == NULL && next != NULL){
         next->list.prev = NULL;
     }
-    if(prev != NULL && next == NULL){
+    else if(prev != NULL && next == NULL){
         prev->list.next = NULL;
     }
     // 要么就都不为空
-    next->list.prev = &(prev->list);
-    prev->list.next = &(next->list);
+    else
+    {
+        next->list.prev = &(prev->list);
+        prev->list.next = &(next->list);
+    }
     free(this);
 }
 

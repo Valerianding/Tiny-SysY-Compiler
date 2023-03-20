@@ -221,7 +221,7 @@ struct _Value *create_call_func(past root)
 
     //参数传递
     if(root->right!=NULL)
-        create_params_stmt(root->right);
+        create_params_stmt(root->right,v);
 
     instruction= ins_new_unary_operator(Call,v);
 
@@ -1216,6 +1216,21 @@ int handle_and_or(past root,bool flag)
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
         }
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
+        {
+            int convert=0;
+            Value *v_load= cal_expr(root->left,&convert);
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v1= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
         {
             Value *v_load= create_call_func(root->left);
@@ -1262,6 +1277,35 @@ int handle_and_or(past root,bool flag)
     {
         if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0)
             v1= cal_logic_expr(root->left->right);
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
+        {
+            int convert=0;
+            Value *v_load= cal_expr(root->left->right,&convert);
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v1= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
+        else if(strcmp(bstr2cstr(root->left->right->nodeType, '\0'), "Call_Func") == 0)
+        {
+            Value *v_load= create_call_func(root->left->right);
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            //v_real
+            v1= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
             //ID
         else
         {
@@ -1277,6 +1321,7 @@ int handle_and_or(past root,bool flag)
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
         }
+
 
         //一定是在&&中但用||
         InstNode *ins1= false_location_handler(br_i1,v1,t_index++);
@@ -1306,6 +1351,21 @@ int handle_and_or(past root,bool flag)
             {
                 Value *v_load= create_load_stmt(bstr2cstr(root->right->sVal, '\0'));
                 //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v2= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
+            else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "expr") == 0)
+            {
+                int convert=0;
+                Value *v_load= cal_expr(root->right,&convert);
+                //加一条icmp ne
                 //包装0
                 Value *v_zero=(Value*) malloc(sizeof (Value));
                 value_init_int(v_zero,0);
@@ -2086,6 +2146,15 @@ void create_func_def(past root) {
 
     return_index++;
 
+    if(get_last_inst(instruction_list)->inst->Opcode==Label)
+        delete_inst(get_last_inst(instruction_list));
+
+    //FuncEnd
+    Instruction *ins_end= ins_new_unary_operator(FunEnd,v);
+    //将这个instruction加入总list
+    InstNode *node_end = new_inst_node(ins_end);
+    ins_node_add(instruction_list,node_end);
+
     if (root->next != NULL)
         create_instruction_list(root->next,v_return);
 }
@@ -2462,10 +2531,15 @@ struct _Value* cal_logic_expr(past logic_expr)
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "ID") == 0)
     {
         Value *v_test= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->left->sVal, '\0'));
-        if(v_test->VTy->ID==Const_INT || v_test->VTy->ID==Const_FLOAT)
+        if(v_test->VTy->ID==Const_INT)
         {
             v1=(Value*) malloc(sizeof (Value));
             value_init_int(v1,logic_expr->left->iVal);
+        }
+        else if(v_test->VTy->ID==Const_FLOAT)
+        {
+            v1=(Value*) malloc(sizeof (Value));
+            value_init_float(v1,logic_expr->left->fVal);
         }
         else
             v1= create_load_stmt(bstr2cstr(logic_expr->left->sVal,'\0'));
@@ -2505,10 +2579,15 @@ struct _Value* cal_logic_expr(past logic_expr)
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "ID") == 0)
     {
         Value *v_test= symtab_dynamic_lookup(this,bstr2cstr(logic_expr->right->sVal, '\0'));
-        if(v_test->VTy->ID==Const_INT || v_test->VTy->ID==Const_FLOAT)
+        if(v_test->VTy->ID==Const_INT)
         {
             v2=(Value*) malloc(sizeof (Value));
             value_init_int(v2,logic_expr->right->iVal);
+        }
+        else if(v_test->VTy->ID==Const_FLOAT)
+        {
+            v2=(Value*) malloc(sizeof (Value));
+            value_init_float(v2,logic_expr->right->fVal);
         }
         else
             v2= create_load_stmt(bstr2cstr(logic_expr->right->sVal,'\0'));
@@ -2702,7 +2781,7 @@ void declare_global_alloca(struct _mapList* func_map)
 }
 
 //参数传递
-void create_params_stmt(past func_params)
+void create_params_stmt(past func_params,Value * v_func)
 {
     past params=func_params->left;
     while(params!=NULL)
@@ -2751,6 +2830,17 @@ void create_params_stmt(past func_params)
                 else
                 {
                     v= handle_assign_array(params->right->left,v_array,0,dimension_count);
+//                    //要补一条0的地址
+//                    //TODO 目前只针对二维补了
+//                    Value *v_z=(Value*) malloc(sizeof (Value));
+//                    value_init_int(v_z,0);
+//                    Instruction *instruction1= ins_new_binary_operator(GMP,v->alias,v_z);
+//                    v= ins_get_value_with_name(instruction1);
+//                    v->pdata->var_pdata.iVal=1;
+//                    v->VTy->ID=AddressTyID;
+//                    //将这个instruction加入总list
+//                    InstNode *node_bu = new_inst_node(instruction1);
+//                    ins_node_add(instruction_list,node_bu);
                 }
             }
         }
@@ -2764,7 +2854,17 @@ void create_params_stmt(past func_params)
         {
             //取出value，先区别是数组还是普通id
             Value *v_test= symtab_dynamic_lookup(this,bstr2cstr(params->sVal, '\0'));
-            if(v_test->VTy->ID==ArrayTyID || v_test->VTy->ID==ArrayTyID_Const || v_test->VTy->ID==ArrayTyID_Init)
+            if(v_test->VTy->ID==Const_INT)
+            {
+                v=(Value*) malloc(sizeof (Value));
+                value_init_int(v, params->iVal);
+            }
+            else if(v_test->VTy->ID==Const_FLOAT)
+            {
+                v=(Value*) malloc(sizeof (Value));
+                value_init_float(v, params->fVal);
+            }
+            else if(v_test->VTy->ID==ArrayTyID || v_test->VTy->ID==ArrayTyID_Const || v_test->VTy->ID==ArrayTyID_Init)
             {
                 //TODO 目前还是只做了一维数组
                 //取得首地址，gmp一下
@@ -2782,7 +2882,7 @@ void create_params_stmt(past func_params)
         }
 
         //传递参数的IR
-        instruction= ins_new_unary_operator(GIVE_PARAM,v);
+        instruction= ins_new_binary_operator(GIVE_PARAM,v,v_func);
         //将这个instruction加入总list
         InstNode *node = new_inst_node(instruction);
         ins_node_add(instruction_list,node);
@@ -3268,8 +3368,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     fprintf(fptr," ret i32 %s\n",instruction->user.use_list->Val->name);
                 }
 
-                printf("}\n\n");
-                fprintf(fptr,"}\n\n");
+//                printf("}\n\n");
+//                fprintf(fptr,"}\n\n");
                 break;
             case Call:
                 if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
@@ -3350,52 +3450,60 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
 
                 //参数
-                for(int i=0;i<give_count;i++)
+                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
                 {
-                    if(i==0)
+                    for(int i=0;i<give_count;i++)
                     {
-                        if(params[i]->VTy->ID==Int)
+                        if(i==0)
                         {
-                            printf("i32 %d",params[i]->pdata->var_pdata.iVal);
-                            fprintf(fptr,"i32 %d",params[i]->pdata->var_pdata.iVal);
-                        }
-                        else if(params[i]->VTy->ID==AddressTyID)
-                        {
-                            printf("i32* %s",params[i]->name);
-                            fprintf(fptr,"i32* %s",params[i]->name);
-                        }
-                        else
-                        {
-                            printf("i32 %s",params[i]->name);
-                            fprintf(fptr,"i32 %s",params[i]->name);
-                        }
+                            if(params[i]->VTy->ID==Int)
+                            {
+                                printf("i32 %d",params[i]->pdata->var_pdata.iVal);
+                                fprintf(fptr,"i32 %d",params[i]->pdata->var_pdata.iVal);
+                            }
+                            else if(params[i]->VTy->ID==AddressTyID)
+                            {
+                                printf("i32* %s",params[i]->name);
+                                fprintf(fptr,"i32* %s",params[i]->name);
+                            }
+                            else
+                            {
+                                printf("i32 %s",params[i]->name);
+                                fprintf(fptr,"i32 %s",params[i]->name);
+                            }
 
-                    }
-                    else
-                    {
-                        if(params[i]->VTy->ID==Int)
-                        {
-                            printf(",i32 %d",params[i]->pdata->var_pdata.iVal);
-                            fprintf(fptr,",i32 %d",params[i]->pdata->var_pdata.iVal);
-                        }
-                        else if(params[i]->VTy->ID==AddressTyID)
-                        {
-                            printf(",i32* %s",params[i]->name);
-                            fprintf(fptr,",i32* %s",params[i]->name);
                         }
                         else
                         {
-                            printf(",i32 %s",params[i]->name);
-                            fprintf(fptr,",i32 %s",params[i]->name);
+                            if(params[i]->VTy->ID==Int)
+                            {
+                                printf(",i32 %d",params[i]->pdata->var_pdata.iVal);
+                                fprintf(fptr,",i32 %d",params[i]->pdata->var_pdata.iVal);
+                            }
+                            else if(params[i]->VTy->ID==AddressTyID)
+                            {
+                                printf(",i32* %s",params[i]->name);
+                                fprintf(fptr,",i32* %s",params[i]->name);
+                            }
+                            else
+                            {
+                                printf(",i32 %s",params[i]->name);
+                                fprintf(fptr,",i32 %s",params[i]->name);
+                            }
                         }
                     }
                 }
+
                 printf(")\n");
                 fprintf(fptr,")\n");
 
-                give_count=0;
-                for(int i=0;i<10;i++)
-                    params[i]=NULL;
+                //TODO 只是一个暂时处理，需要把value加进来一起看才行
+                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+                {
+                    give_count=0;
+                    for(int i=0;i<50;i++)
+                        params[i]=NULL;
+                }
                 break;
             case Label:
                 printf("%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
@@ -3667,6 +3775,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction->user.use_list->Val;
+                break;
+            case FunEnd:
+                printf("}\n\n");
+                fprintf(fptr,"}\n\n");
                 break;
             case zext:
                 printf(" %s = zext i1 %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
