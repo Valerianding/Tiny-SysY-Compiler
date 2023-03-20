@@ -42,4 +42,5 @@ bool isIntType(Type *type);
 bool isFloatType(Type *type);
 bool isVarType(Type *type);
 bool isImmType(Type *type);
+bool isArrayType(Type *type);
 #endif

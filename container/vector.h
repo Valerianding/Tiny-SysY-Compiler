@@ -172,7 +172,7 @@ bool VectorPopBack(Vector* self);
  * @brief Remove an element from the specified index of the vector.
  *
  * This function removes an element from the specified index of the vector and
- * shifts the trailing elements one position to the head. Also, the cleanup
+ * shifts the trailing elements one position to the entry. Also, the cleanup
  * function is invoked for the removed element.
  *
  * @param self          The pointer to Vector structure
@@ -278,8 +278,8 @@ bool VectorNext(Vector* self, void** p_element);
  * @param self          The pointer to Vector structure
  * @param p_element        The pointer to the returned element
  *
- * @retval true         The head end is not reached
- * @retval false        The head end is reached
+ * @retval true         The entry end is not reached
+ * @retval false        The entry end is reached
  */
 bool VectorReverseNext(Vector* self, void** p_element);
 

@@ -15,10 +15,12 @@ Instruction* ins_new(int op_num){
     // use 是额外的，所以要单独计算大小 
     uint8_t *storage = (uint8_t *)malloc(sizeof(Instruction) + use_size);
     /* 为Instruction的Value初始化 */
-    Instruction* temp = (Instruction*)(storage+use_size);
-    value_init((Value*)temp);
+    Instruction* ins = (Instruction*)(storage+use_size);
+    value_init((Value*)ins);
     /* 在这里已经设置了指令的操作数个数 */
     user_construct(storage, op_num);
+    ins->in = HashSetInit();
+    ins->out = HashSetInit();
     return (Instruction*)(storage+use_size);
 }
 
@@ -33,7 +35,6 @@ Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2){
     inst->Opcode = Op;
     inst->i=instruction_uid;
     instruction_uid++;
-    //inst->user.value.IsInstruction = 1;
     return inst;
 }
 
@@ -146,6 +147,12 @@ void print_ins_opcode(Instruction *ins){
             break;
         case Label:
             printf("Label");
+            break;
+        case bitcast:
+            printf("bitcast");
+            break;
+        case GMP:
+            printf("getelementptr");
             break;
         default:
             printf("Normal Calculation");

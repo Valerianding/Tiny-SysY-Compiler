@@ -3,6 +3,7 @@
 #include "value.h"
 #include "instruction.h"
 #include "sc_list.h"
+#include "hash_set.h"
 struct _Function;
 struct _BasicBlock;
 struct _DomNode;
@@ -16,18 +17,10 @@ typedef struct _InstNode{
     struct sc_list list;
 }InstNode;
 
-typedef struct _BlockNode{
-    BasicBlock *block;
-    struct sc_list list;
-}BlockNode;
-
-typedef BlockNode * BlockList;
 
 
 struct _BasicBlock{
-
-    //TODO 我们直接保留HashSet的prevBlocks?
-    BlockList prev_blocks;
+    HashSet *preBlocks;
     struct _BasicBlock *true_block;
     struct _BasicBlock *false_block;
     struct _Function *Parent;
@@ -38,11 +31,11 @@ struct _BasicBlock{
     HashSet *df; // 记录支配边界
     BasicBlock *iDom;
     DomTreeNode *domTreeNode;
+    HashSet *in; // 对应live-in
+    HashSet *out; // 对应live-out
     int id;
 };
 
-///初始化bblock
-void bblock_init(BasicBlock *this);
 
 ///将head到tail的InstNode加入this的BasicBlock中
 void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail);
@@ -52,12 +45,6 @@ void ins_node_add(InstNode *head,InstNode *this);
 
 ///为prev的基本块添加前驱
 void bb_add_prev(BasicBlock *prev,BasicBlock *pos);
-
-///获得bblock的最后的inst
-InstNode* bblock_get_inst_back(BasicBlock *this);
-
-///获得bblock的头inst
-InstNode* bblock_get_inst_head(BasicBlock *this);
 
 /// 创建一个InstNode 注意Instruction是一定自己分配了内存的
 InstNode* new_inst_node(Instruction* inst);
@@ -79,15 +66,6 @@ InstNode *search_ins_label(InstNode *head,int label_id);
 
 ///新建一个基本块
 BasicBlock *bb_create();
-
-///获得属于trueBlock的后继节点
-BlockNode *get_next_block(BlockNode *this);
-
-///获得BlockList的最后一个节点
-BasicBlock *blocklist_pop(BlockList list);
-
-///获得下一个前驱节点
-BlockNode *get_next_prevblock(BlockNode *this);
 
 ///获得所有的前驱节点
 HashSet *get_prev_block(BasicBlock *this);

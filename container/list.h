@@ -46,7 +46,7 @@ typedef struct _List {
     /** The container private information */
     ListData *data;
 
-    /** Push an element to the head of the list.
+    /** Push an element to the entry of the list.
         @see ListPushFront */
     bool (*push_front) (struct _List*, void*);
 
@@ -58,7 +58,7 @@ typedef struct _List {
         @see ListInsert */
     bool (*insert) (struct _List*, unsigned, void*);
 
-    /** Pop an element from the head of the list.
+    /** Pop an element from the entry of the list.
         @see ListPopFront */
     bool (*pop_front) (struct _List*);
 
@@ -70,7 +70,7 @@ typedef struct _List {
         @see ListRemove */
     bool (*remove) (struct _List*, unsigned);
 
-    /** Replace an element at the head of the list.
+    /** Replace an element at the entry of the list.
         @see ListSetFront */
     bool (*set_front) (struct _List*, void*);
 
@@ -82,7 +82,7 @@ typedef struct _List {
         @see ListSetAt */
     bool (*set_at) (struct _List*, unsigned, void*);
 
-    /** Get an element from the head of the list.
+    /** Get an element from the entry of the list.
         @see ListGetFront */
     bool (*get_front) (struct _List*, void**);
 
@@ -141,7 +141,7 @@ void ListDeinit(List* obj);
 
 
 /**
- * @brief Push an element to the head of the list.
+ * @brief Push an element to the entry of the list.
  *
  * @param self          The pointer to the List structure
  * @param element       The specified element
@@ -179,14 +179,14 @@ bool ListPushBack(List* self, void* element);
 bool ListInsert(List* self, unsigned idx, void* element);
 
 /**
- * @brief Pop an element from the head of the list.
+ * @brief Pop an element from the entry of the list.
  *
- * This function removes an element from the head of the list. Also, the cleanup
+ * This function removes an element from the entry of the list. Also, the cleanup
  * function is invoked for the popped element.
  *
  * @param self          The pointer to List structure
  *
- * @retval true         The head element is successfully popped
+ * @retval true         The entry element is successfully popped
  * @retval false        The list is empty
  */
 bool ListPopFront(List* self);
@@ -208,7 +208,7 @@ bool ListPopBack(List* self);
  * @brief Remove an element from the specified index of the list.
  *
  * This function removes an element from the specified index of the list and
- * shifts the trailing elements one position to the head. Also, the cleanup
+ * shifts the trailing elements one position to the entry. Also, the cleanup
  * function is invoked for the removed element.
  *
  * @param self          The pointer to List structure
@@ -220,9 +220,9 @@ bool ListPopBack(List* self);
 bool ListRemove(List* self, unsigned idx);
 
 /**
- * @brief Replace an element at the head of the list.
+ * @brief Replace an element at the entry of the list.
  *
- * This function replaces the head element of the list. Also, the cleanup
+ * This function replaces the entry element of the list. Also, the cleanup
  * function is invoked for the replaced element.
  *
  * @param self          The pointer to the List structure
@@ -263,7 +263,7 @@ bool ListSetBack(List* self, void* element);
 bool ListSetAt(List* self, unsigned idx, void* element);
 
 /**
- * @brief Get an element from the head of the list.
+ * @brief Get an element from the entry of the list.
  *
  * @param self          The pointer to List structure
  * @param p_element     The pointer to the returned element
@@ -341,8 +341,8 @@ bool ListNext(List* self, void** p_element);
  * @param self          The pointer to List structure
  * @param p_element     The pointer to the returned element
  *
- * @retval true         The head end is not reached
- * @retval false        The head end is reached
+ * @retval true         The entry end is not reached
+ * @retval false        The entry end is reached
  */
 bool ListReverseNext(List* self, void** p_element);
 

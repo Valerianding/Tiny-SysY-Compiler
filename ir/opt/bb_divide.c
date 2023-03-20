@@ -28,6 +28,7 @@ void bblock_divide(InstNode *head){
             Value *store = ins_get_lhs(cur->inst);
 
             printf("global alloc stored : %s\n",globalAlloc->name);
+            printf("stored value : %s\n",store->name);
             //存进去
             stackPush(globalAllocStack,store);
             HashMapPut(GlobalIncomingVal,globalAlloc,globalAllocStack);
@@ -73,8 +74,8 @@ void bblock_divide(InstNode *head){
     cur = get_next_inst(cur);
     Function *func_prev = nullptr;
     BasicBlock *entry = nullptr;
-    //printf("second while\n");
-    //第二次直接套壳
+    printf("second while\n");
+   // 第二次直接套壳
     while(cur != NULL){
         if(cur->inst->Opcode == FunBegin){
             entry = cur->inst->Parent;
@@ -112,4 +113,5 @@ void bblock_divide(InstNode *head){
         }
         cur = get_next_inst(cur);
     }
+    printf("after second while\n");
 }

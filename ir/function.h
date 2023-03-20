@@ -6,7 +6,7 @@
 #define C22V1_FUNCTION_H
 #include "bblock.h"
 struct _Function{
-    BasicBlock *head;
+    BasicBlock *entry;
     BasicBlock *tail;
 
     HashMap *dominance;  // value: block key: Dom(block)->hashset(block)

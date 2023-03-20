@@ -27,3 +27,10 @@ bool isImmType(Type *type){
     else
         return false;
 }
+
+bool isArrayType(Type *type){
+    if(type->ID == ArrayTyID || type->ID == ArrayTyID_Const || type->ID == ArrayTyID_Init){
+        return true;
+    }
+    return false;
+}

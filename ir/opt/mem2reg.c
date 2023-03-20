@@ -16,7 +16,7 @@ InstNode* new_phi(Value *val){
     //做一个映射 记录现在对应的是哪个alloca
     phiNode->inst->user.value.alias = val;
     // 添加一个默认的名字
-    phiIns->user.value.name = (char *)malloc(sizeof(char) * 4);
+    phiIns->user.value.name = (char *)malloc(sizeof(char) * 7);
     strcpy(phiIns->user.value.name,"%phi");
     return phiNode;
 }
@@ -62,7 +62,7 @@ void mem2reg(Function *currentFunction){
 
     //HashSet *allocas = HashSetInit();
 
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
 
@@ -120,7 +120,8 @@ void mem2reg(Function *currentFunction){
     while(curNode != get_next_inst(tail)){
         //如果alloca没有load就删除这个alloca
         //首先找到对应的value
-        if(curNode->inst->Opcode == Alloca && !HashMapContain(currentFunction->loadSet,(Value*)curNode->inst)){
+        printf("assert alloca ing \n");
+        if(curNode->inst->Opcode == Alloca && !HashMapContain(currentFunction->loadSet,(Value*)curNode->inst) && (curNode->inst->user.value.use_list == NULL)){
             //不存在loadSet之中不存在这个value
             //删除这个instruction
             InstNode *next = get_next_inst(curNode);
@@ -213,16 +214,16 @@ void mem2reg(Function *currentFunction){
 
     //变量重命名 如果都没有alloc那么就不需要了
     if(HashMapSize(IncomingVals) != 0){
-        dfsTravelDomTree(root,IncomingVals);
+        //dfsTravelDomTree(root,IncomingVals);
     }
 
     // delete load 和 store
-    deleteLoadStore(currentFunction);
+    //deleteLoadStore(currentFunction);
 
 
     printf("after rename pass and delete load store alloc\n");
     // 让LLVM IR符合标准
-    renameVariabels(currentFunction);
+   // renameVariabels(currentFunction);
 
 
     // OK 记得释放内存哦
@@ -234,7 +235,7 @@ void mem2reg(Function *currentFunction){
     }
     HashMapDeinit(IncomingVals);
 
-    outOfSSA(currentFunction);
+   // outOfSSA(currentFunction);
 }
 
 void insertCopies(BasicBlock *block,Value *dest,Value *src){
@@ -284,6 +285,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
     printf("11111 \n");
     // 变量重命名
     while(curr != get_next_inst(tail)){
+
         switch(curr->inst->Opcode) {
             case Load: {
                 // 需要被替换的
@@ -376,6 +378,9 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             printf("fuck \n");
             //去找对应需要更新的
             stack *allocStack = HashMapGet(IncomingVals,alias);
+            if(allocStack == NULL){
+                allocStack = HashMapGet(GlobalIncomingVal,alias);
+            }
             assert(allocStack != NULL);
 
             //从中去取目前到达的定义
@@ -417,6 +422,9 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
             //取栈里面找那个对应的Value
             stack *allocStack = HashMapGet(IncomingVals,alias);
+            if(allocStack == NULL){
+                allocStack = HashMapGet(GlobalIncomingVal,alias);
+            }
             assert(allocStack != NULL);
 
             Value *pairValue = NULL;
@@ -431,6 +439,9 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             Value *alias = falseBlockCurr->inst->user.value.alias;
 
             stack *allocStack = HashMapGet(IncomingVals,alias);
+            if(allocStack != NULL){
+                allocStack = HashMapGet(GlobalIncomingVal,alias);
+            }
             assert(allocStack != NULL);
 
             Value *pairValue = NULL;
@@ -487,7 +498,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 void deleteLoadStore(Function *currentFunction){
     // 删除这个函数内的load store
 
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     InstNode *head = entry->head_node;
@@ -519,7 +530,7 @@ void deleteLoadStore(Function *currentFunction){
 //TODO 草，对不起，这算法太丑了，但是能跑，若有时间，想想有没有什么别的方法
 void renameVariabels(Function *currentFunction){
     bool hava_param = false;
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     InstNode *currNode = entry->head_node;
@@ -698,7 +709,7 @@ void renameVariabels(Function *currentFunction){
 }
 
 void outOfSSA(Function *currentFunction){
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     printf("in out of ssa\n");
@@ -738,7 +749,7 @@ InstNode *newCopyOperation(Value *dest, Value *src){
 
 void renameVariabelsAfterSSA(Function *currentFunction){
     bool hava_param = false;
-    BasicBlock *entry = currentFunction->head;
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     InstNode *currNode = entry->head_node;

@@ -52,6 +52,9 @@ typedef struct _Instruction{
     int Opcode;
     struct _BasicBlock *Parent;
     int i; //指令的编号
+
+    HashSet *in; // live-in
+    HashSet *out; // live-out
 }Instruction;
 
 
