@@ -51,6 +51,7 @@ typedef struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
+    int _reg_[3];
     int i; //指令的编号
 
     HashSet *in; // live-in
