@@ -3280,6 +3280,8 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap){
 
 InstNode * arm_trans_Alloca(InstNode *ins){
 //    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     return ins;
 }
 
@@ -3811,15 +3813,38 @@ InstNode * arm_trans_bitcast(InstNode *ins){
 
 InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //数组初始化
+    Value *array= user_get_operand_use(&ins->inst->user,0)->Val->alias;
+
+    for(; get_next_inst(ins)->inst->Opcode==GMP;ins= get_next_inst(ins));
+//    这里得到最后一条GMP指令
+    int off_sp= get_value_offset_sp(hashMap,array)+ins->inst->user.value.pdata->var_pdata.iVal*4;
+//    Value *value0=&ins->inst->user.value;
+//    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
     if(get_next_inst((ins))->inst->Opcode==Store){
         InstNode *next= get_next_inst(ins);
-        int off= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
+//        int off= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
         int x= user_get_operand_use(&next->inst->user,0)->Val->pdata->var_pdata.iVal;
         printf("    mov r0,#%d\n",x);
-        int off_sp= get_value_offset_sp(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
-        printf("    store r0,[sp,#%d]\n",off_sp*4);
+//        int off_sp= get_value_offset_sp(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
+        printf("    store r0,[sp,#%d]\n",off_sp);
         return next;
     }
+
+//*************************************************************************
+//这里是在数组处理的store指令没有被删除的时候的处理方式,理论上来说
+//    if(get_next_inst((ins))->inst->Opcode==Store){
+//        InstNode *next= get_next_inst(ins);
+//        int off= user_get_operand_use(&ins->inst->user,0)->Val->pdata->var_pdata.iVal;
+//        int x= user_get_operand_use(&next->inst->user,0)->Val->pdata->var_pdata.iVal;
+//        printf("    mov r0,#%d\n",x);
+//        int off_sp= get_value_offset_sp(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
+//        printf("    store r0,[sp,#%d]\n",off_sp*4);
+//        return next;
+//    }
+
+
+
 //    printf("\n");
     return ins;
 }
@@ -3878,9 +3903,11 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
             return arm_trans_Return(ins,head,hashMap);
         case Store:
 //            return arm_trans_Store(ins,hashMap);
+            printf("    store\n");
             return ins;
         case Load:
 //            return arm_trans_Load(ins,hashMap);
+            printf("    load\n");
             return ins;
         case Alloca:
             return arm_trans_Alloca(ins);

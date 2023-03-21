@@ -6,6 +6,7 @@
 #define C22V1_OFFSET_H
 #include "bblock.h"
 #include "hash_map.h"
+#include "ast.h"
 /**
  * @struct  使用哈希表来存放栈帧的信息key=Value*,value=offset*
  * @details regr通用寄存器标号
