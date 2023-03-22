@@ -18,23 +18,48 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp){
 //            printf("name:%s  keyname:%s\n",name,key->name);
             if(strcmp(name,key->name)>0&& (strlen(name)>= strlen(key->name))){
 //                    表示该参数为传递过来的参数
-                offset *temp=offset_node();
-                (*sub_sp)-=4;
+                if(key->VTy->ID==ArrayTyID){
+//                    处理数组,
+                    int size_array= get_array_total_occupy(key,0);
+                    offset *temp=offset_node();
+                    temp->offset_sp=(*sub_sp)-4;
+                    temp->memory=true;
+                    temp->regr=-1;
+                    temp->regs=-1;
+                    (*sub_sp)-=size_array;
+                    HashMapPut(hashMap,key,temp);
+                } else{
+                    offset *temp=offset_node();
+                    (*sub_sp)-=4;
 //                printf("sub_sp=%d\n",*sub_sp);
-                temp->offset_sp=(*sub_sp);
-                temp->memory=true;
-                temp->regr=-1;
-                temp->regs=-1;
-                HashMapPut(hashMap,key,temp);
+                    temp->offset_sp=(*sub_sp);
+                    temp->memory=true;
+                    temp->regr=-1;
+                    temp->regs=-1;
+                    HashMapPut(hashMap,key,temp);
+                }
+
             }else if(strcmp(name,key->name)<=0){
-                offset *temp=(offset*) malloc(sizeof(offset));
-                temp->offset_sp=(*add_sp);
+                if(key->VTy->ID==ArrayTyID){
+//                    处理数组
+                    int size_array= get_array_total_occupy(key,0);
+                    offset *temp=offset_node();
+                    temp->offset_sp=(*add_sp);
+                    (*add_sp)+=size_array;
+                    temp->memory=true;
+                    temp->regr=-1;
+                    temp->regs=-1;
+                    HashMapPut(hashMap,key,temp);
+                }else{
+                    offset *temp=(offset*) malloc(sizeof(offset));
+                    temp->offset_sp=(*add_sp);
 //                printf("add_sp=%d\n",*add_sp);
-                (*add_sp)+=4;
-                temp->memory=true;
-                temp->regr=-1;
-                temp->regs=-1;
-                HashMapPut(hashMap,key,temp);
+                    (*add_sp)+=4;
+                    temp->memory=true;
+                    temp->regr=-1;
+                    temp->regs=-1;
+                    HashMapPut(hashMap,key,temp);
+                }
             }
         }
     }
@@ -52,7 +77,19 @@ HashMap *offset_init(InstNode*ins){
 //    这个在hashmap_add函数里面进行了处理
     for(;ins!=NULL&&ins->inst->Opcode!=Return;ins= get_next_inst(ins)){
         Value *value0,*value1,*value2;
+        Value *value0_alias;
         switch (ins->inst->Opcode) {
+            case Alloca:
+//                这个需要补充
+//                Value * value0_alias=&ins->inst->user.value.alias;
+                value0_alias=ins->inst->user.value.alias;
+//                这个是用来处理掉MAIN_INT和其他一些alloca指令的干扰的.
+                if(value0_alias==NULL){
+                    hashmap_add(hashMap,&ins->inst->user.value,name,&sub_sp,&add_sp);
+                }else{
+                    hashmap_add(hashMap,value0_alias,name,&sub_sp,&add_sp);
+                }
+                break;
             case Add:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -173,14 +210,14 @@ HashMap *offset_init(InstNode*ins){
                 hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
                 break;
-            case GMP:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
-                break;
+//            case GMP:
+//                value0=&ins->inst->user.value;
+//                value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//                value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
+//                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+//                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+//                break;
             case MEMCPY:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;

@@ -8,7 +8,7 @@ extern struct _InstNode *instruction_list;
 //目前设置的能容纳3位数的临时变量
 extern char t[6];
 extern int t_index;
-extern int return_stmt_num[10];
+extern int return_stmt_num[20];
 extern int return_index;
 extern insnode_stack S_continue;
 extern insnode_stack S_break;
@@ -1514,13 +1514,15 @@ void create_if_stmt(past root,Value* v_return) {
         else
             v_real=v_load;
     }
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
     {
         Value *v_load=NULL;
         if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
             v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
-        else
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
             v_load= cal_expr(root->left,&convert);
+        else
+            v_load= create_call_func(root->left);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
@@ -1537,10 +1539,6 @@ void create_if_stmt(past root,Value* v_return) {
         }
         else
             v_real=v_load;
-    }
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
-    {
-        v_real= create_call_func(root->left);
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
@@ -1602,13 +1600,15 @@ void create_if_stmt(past root,Value* v_return) {
     }
 
 
-    //无break或continue的话就补，有就不补了
-    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
+    if(get_last_inst(instruction_list)->inst->Opcode!=Return)
     {
-        //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
-        true_location_handler(br,NULL,t_index-1);
+        //无break或continue的话就补，有就不补了
+        if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
+        {
+            //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
+            true_location_handler(br,NULL,t_index-1);
+        }
     }
-
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result!=1)
         //再补一条标号,可以理解为是false的跳转，也可以理解为是end的跳转
         true_location_handler(Label,NULL,t_index-1);
@@ -1660,13 +1660,15 @@ void create_if_else_stmt(past root,Value* v_return) {
         else
             v_real=v_load;
     }
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
     {
         Value *v_load=NULL;
         if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
             v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
-        else
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
             v_load= cal_expr(root->left,&convert);
+        else
+            v_load=create_call_func(root->left);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
@@ -1683,10 +1685,6 @@ void create_if_else_stmt(past root,Value* v_return) {
         }
         else
             v_real=v_load;
-    }
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
-    {
-        v_real= create_call_func(root->left);
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
@@ -1762,12 +1760,14 @@ void create_if_else_stmt(past root,Value* v_return) {
             t_index++;                 //t_index++因为后面都用的t_index-1
     }
 
-    if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
+    if(get_last_inst(instruction_list)->inst->Opcode!=Return)
     {
-        //补一条br label，示例的br label %13，这个和后面那条都是跳到end
-        true_location_handler(br,NULL,t_index-1);
+        if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
+        {
+            //补一条br label，示例的br label %13，这个和后面那条都是跳到end
+            true_location_handler(br,NULL,t_index-1);
+        }
     }
-
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1)
         //再补一条标号，示例的13:
         true_location_handler(Label,NULL,t_index-1);
@@ -1850,13 +1850,15 @@ void create_while_stmt(past root,Value* v_return)
         else
             v_real=v_load;
     }
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
+    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
     {
         Value *v_load=NULL;
         if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
             v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
-        else
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
             v_load= cal_expr(root->left,&convert);
+        else
+            v_load=create_call_func(root->left);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
@@ -1873,10 +1875,6 @@ void create_while_stmt(past root,Value* v_return)
         }
         else
             v_real=v_load;
-    }
-    else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
-    {
-        v_real= create_call_func(root->left);
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
@@ -2139,6 +2137,7 @@ void create_func_def(past root) {
         reduce_continue();
         c_b_flag[0]=false;
     }
+
     if(return_stmt_num[return_index]>1 || (return_stmt_num[return_index]==1 && v->pdata->symtab_func_pdata.return_type.ID==VoidTyID))
         reduce_return();
     insnode_stack_new(&S_break);
@@ -2147,7 +2146,9 @@ void create_func_def(past root) {
     return_index++;
 
     if(get_last_inst(instruction_list)->inst->Opcode==Label)
+    {
         delete_inst(get_last_inst(instruction_list));
+    }
 
     //FuncEnd
     Instruction *ins_end= ins_new_unary_operator(FunEnd,v);
@@ -2815,7 +2816,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 v_load->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
                 v= handle_assign_array(params->right->left,v_load,1,-1);
             }
-            else
+            else    //TODO 很不完善
             {
                 //先计数，看看传进去的是几维
                 past var=params->right->left;
@@ -2829,18 +2830,19 @@ void create_params_stmt(past func_params,Value * v_func)
                     v= handle_assign_array(params->right->left,v_array,1,-1);
                 else
                 {
-                    v= handle_assign_array(params->right->left,v_array,0,dimension_count);
-//                    //要补一条0的地址
+                    Value *v_f= handle_assign_array(params->right->left,v_array,0,dimension_count);
+//                    //二维度数组传一位的话 要补一条0的地址
 //                    //TODO 目前只针对二维补了
-//                    Value *v_z=(Value*) malloc(sizeof (Value));
-//                    value_init_int(v_z,0);
-//                    Instruction *instruction1= ins_new_binary_operator(GMP,v->alias,v_z);
-//                    v= ins_get_value_with_name(instruction1);
-//                    v->pdata->var_pdata.iVal=1;
-//                    v->VTy->ID=AddressTyID;
-//                    //将这个instruction加入总list
-//                    InstNode *node_bu = new_inst_node(instruction1);
-//                    ins_node_add(instruction_list,node_bu);
+                    Value *v_z=(Value*) malloc(sizeof (Value));
+                    value_init_int(v_z,0);
+                    Instruction *instruction1= ins_new_binary_operator(GMP,v_f,v_z);
+                    v= ins_get_value_with_name(instruction1);
+                    v->pdata->var_pdata.iVal=1;
+                    v->VTy->ID=AddressTyID;
+                    v->alias=v_array;
+                    //将这个instruction加入总list
+                    InstNode *node_bu = new_inst_node(instruction1);
+                    ins_node_add(instruction_list,node_bu);
                 }
             }
         }
@@ -3047,7 +3049,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     Value *v_cur_array=NULL;
 
     int p=0;
-    Value* params[50];
+    InstNode* params[50];
     int give_count=0;
     for(int i=0;i<50;i++)
         params[i]=NULL;
@@ -3414,12 +3416,25 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         fprintf(fptr," void i32 (...) @%s (",instruction->user.use_list->Val->name);
                     }
                 }
+
+                //找对应正确函数的起点参数
+                //扫一下params数组
+                int start=0;
+                for(int i=0;i<give_count;i++)
+                {
+                    if(strcmp(instruction->user.use_list->Val->name,params[i]->inst->user.use_list[1].Val->name)==0)
+                    {
+                        start=i;
+                        break;
+                    }
+                }
+
                 //参数
                 if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)==NULL && instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
                 {
-                    for(int i=0;i<give_count;i++)
+                    for(int i=start;i<start+instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
                     {
-                        if(params[i]->VTy->ID==AddressTyID)
+                        if(params[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
                         {
                             printf("i32*,");
                             fprintf(fptr,"i32*,");
@@ -3432,9 +3447,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     }
                     printf("...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
                     fprintf(fptr,"...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
-                    for(int i=0;i<give_count;i++)
+
+                    for(int i=start;i<start+instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
                     {
-                        if(params[i]->VTy->ID==AddressTyID)
+                        if(params[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
                         {
                             printf("i32*,");
                             fprintf(fptr,"i32*,");
@@ -3452,43 +3468,43 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 //参数
                 if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
                 {
-                    for(int i=0;i<give_count;i++)
+                    for(int i=start;i<start+instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
                     {
-                        if(i==0)
+                        if(i==start)
                         {
-                            if(params[i]->VTy->ID==Int)
+                            if(params[i]->inst->user.use_list->Val->VTy->ID==Int)
                             {
-                                printf("i32 %d",params[i]->pdata->var_pdata.iVal);
-                                fprintf(fptr,"i32 %d",params[i]->pdata->var_pdata.iVal);
+                                printf("i32 %d",params[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+                                fprintf(fptr,"i32 %d",params[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
                             }
-                            else if(params[i]->VTy->ID==AddressTyID)
+                            else if(params[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
                             {
-                                printf("i32* %s",params[i]->name);
-                                fprintf(fptr,"i32* %s",params[i]->name);
+                                printf("i32* %s",params[i]->inst->user.use_list->Val->name);
+                                fprintf(fptr,"i32* %s",params[i]->inst->user.use_list->Val->name);
                             }
                             else
                             {
-                                printf("i32 %s",params[i]->name);
-                                fprintf(fptr,"i32 %s",params[i]->name);
+                                printf("i32 %s",params[i]->inst->user.use_list->Val->name);
+                                fprintf(fptr,"i32 %s",params[i]->inst->user.use_list->Val->name);
                             }
 
                         }
                         else
                         {
-                            if(params[i]->VTy->ID==Int)
+                            if(params[i]->inst->user.use_list->Val->VTy->ID==Int)
                             {
-                                printf(",i32 %d",params[i]->pdata->var_pdata.iVal);
-                                fprintf(fptr,",i32 %d",params[i]->pdata->var_pdata.iVal);
+                                printf(",i32 %d",params[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+                                fprintf(fptr,",i32 %d",params[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
                             }
-                            else if(params[i]->VTy->ID==AddressTyID)
+                            else if(params[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
                             {
-                                printf(",i32* %s",params[i]->name);
-                                fprintf(fptr,",i32* %s",params[i]->name);
+                                printf(",i32* %s",params[i]->inst->user.use_list->Val->name);
+                                fprintf(fptr,",i32* %s",params[i]->inst->user.use_list->Val->name);
                             }
                             else
                             {
-                                printf(",i32 %s",params[i]->name);
-                                fprintf(fptr,",i32 %s",params[i]->name);
+                                printf(",i32 %s",params[i]->inst->user.use_list->Val->name);
+                                fprintf(fptr,",i32 %s",params[i]->inst->user.use_list->Val->name);
                             }
                         }
                     }
@@ -3497,12 +3513,13 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 printf(")\n");
                 fprintf(fptr,")\n");
 
-                //TODO 只是一个暂时处理，需要把value加进来一起看才行
                 if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
                 {
-                    give_count=0;
-                    for(int i=0;i<50;i++)
-                        params[i]=NULL;
+                    for(int i=start;i+instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num<50;i++)
+                    {
+                        params[i]=params[i+instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num];
+                    }
+                    give_count-=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
                 }
                 break;
             case Label:
@@ -3517,10 +3534,33 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         printf(" %s= add nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s= add nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= add nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= add nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
                     else
                     {
                         printf(" %s= add nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                         fprintf(fptr," %s= add nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        printf(" %s= add nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr," %s= add nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= add nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= add nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        printf(" %s= add nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr," %s= add nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
                     }
                 }
                 else
@@ -3529,6 +3569,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     {
                         printf(" %s= add nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s= add nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= add nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= add nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
                     }
                     else
                     {
@@ -3545,10 +3590,33 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         printf(" %s= sub nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s= sub nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= sub nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= sub nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
                     else
                     {
                         printf(" %s= sub nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                         fprintf(fptr," %s= sub nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        printf(" %s= sub nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr," %s= sub nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= sub nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= sub nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        printf(" %s= sub nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr," %s= sub nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
                     }
                 }
                 else
@@ -3557,6 +3625,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     {
                         printf(" %s= sub nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s= sub nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= sub nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= sub nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
                     }
                     else
                     {
@@ -3573,10 +3646,33 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                         printf(" %s= mul nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s= mul nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= mul nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= mul nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
                     else
                     {
                         printf(" %s= mul nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                         fprintf(fptr," %s= mul nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        printf(" %s= mul nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr," %s= mul nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= mul nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= mul nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        printf(" %s= mul nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr," %s= mul nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
                     }
                 }
                 else
@@ -3585,6 +3681,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     {
                         printf(" %s= mul nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s= mul nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= mul nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= mul nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
                     }
                     else
                     {
@@ -3599,12 +3700,35 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
                     {
                         printf(" %s= sdiv i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                        fprintf(fptr," %s= sdiv nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr," %s= sdiv i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= sdiv i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= sdiv i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
                     }
                     else
                     {
                         printf(" %s= sdiv i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                         fprintf(fptr," %s= sdiv i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        printf(" %s= sdiv i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr," %s= sdiv i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= sdiv i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= sdiv i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        printf(" %s= sdiv i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr," %s= sdiv i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
                     }
                 }
                 else
@@ -3613,6 +3737,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     {
                         printf(" %s= sdiv i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s= sdiv i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s= sdiv i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s= sdiv i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
                     }
                     else
                     {
@@ -3676,7 +3805,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
                 printf(" %s=getelementptr inbounds ",instruction->user.value.name);
                 fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
-                if(instruction->user.use_list->Val->VTy->ID!=AddressTyID)
+                if(instruction->user.use_list->Val->VTy->ID!=AddressTyID || (v_cur_array->pdata->symtab_array_pdata.dimention_figure>1 && v_cur_array->alias->name[0]!='@'))   //TODO 目前只是一个很粗糙的处理
                 {
                     printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
                     printf(",");
@@ -3774,7 +3903,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 break;
             case GIVE_PARAM:
-                params[give_count++]=instruction->user.use_list->Val;
+                params[give_count++]=instruction_node;
                 break;
             case FunEnd:
                 printf("}\n\n");
