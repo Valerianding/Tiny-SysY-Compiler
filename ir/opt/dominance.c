@@ -50,6 +50,10 @@ void calculate_dominance(Function *currentFunction) {
     BasicBlock *prev = nullptr;
     InstNode *cur = entry->head_node;
     InstNode *end = currentFunction->tail->tail_node;
+
+
+    printf("cur : %d\n",cur->inst->i);
+    printf("end : %d\n",end->inst->i);
     while(cur != end){
         BasicBlock *parent = cur->inst->Parent;
         if(prev != parent){
@@ -81,16 +85,23 @@ void calculate_dominance(Function *currentFunction) {
         cur = get_next_inst(cur);
     }
 
+    printf("right before all\n");
+
     //全集计算完毕
     bool changed = true;
     while(changed){
         changed = false;
         //对于除了entry外的每一个block
         cur = currentFunction->entry->head_node;
+
+
+        printf("iterate begin!\n");
+
         clear_visited_flag(cur);
         while(cur != end){
             BasicBlock *parent = cur->inst->Parent;
             //除了头节点
+
             if(parent->visited != true && parent != entry){
                 //
                 printf("current at : b%d",parent->id);
@@ -136,13 +147,13 @@ void calculate_dominance(Function *currentFunction) {
                 }else{
                     HashSetDeinit(newSet);
                 }
-
                 printf(" changed : %d\n",changed);
             }
             cur = get_next_inst(cur);
         }
         printf("This round changed : %d\n",changed);
     }
+    printf("after dominance!\n");
     HashSetDeinit(allNode);
 }
 

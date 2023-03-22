@@ -182,6 +182,7 @@ void mem2reg(Function *currentFunction){
 
 
 
+    printf("after insert phi function!\n");
     //变量重新命名
     // DomTreeNode *root = currentFunction->root;
     assert(entry->domTreeNode == currentFunction->root);
@@ -214,16 +215,17 @@ void mem2reg(Function *currentFunction){
 
     //变量重命名 如果都没有alloc那么就不需要了
     if(HashMapSize(IncomingVals) != 0){
-        //dfsTravelDomTree(root,IncomingVals);
+        dfsTravelDomTree(root,IncomingVals);
     }
 
+    printf("after rename !\n");
     // delete load 和 store
-    //deleteLoadStore(currentFunction);
+    deleteLoadStore(currentFunction);
 
 
-    printf("after rename pass and delete load store alloc\n");
+    printf("after delete alloca load store\n");
     // 让LLVM IR符合标准
-   // renameVariabels(currentFunction);
+    renameVariabels(currentFunction);
 
 
     // OK 记得释放内存哦
@@ -235,7 +237,7 @@ void mem2reg(Function *currentFunction){
     }
     HashMapDeinit(IncomingVals);
 
-   // outOfSSA(currentFunction);
+    outOfSSA(currentFunction);
 }
 
 void insertCopies(BasicBlock *block,Value *dest,Value *src){
@@ -507,6 +509,17 @@ void deleteLoadStore(Function *currentFunction){
     InstNode *curr = head;
     while(curr != get_next_inst(tail)){
         switch(curr->inst->Opcode){
+            case Alloca:{
+                Value *insValue = ins_get_value(curr->inst);
+                if(!isArray(insValue)){
+                    InstNode *next = get_next_inst(curr);
+                    delete_inst(curr);
+                    curr = next;
+                }else{
+                    curr = get_next_inst(curr);
+                }
+                break;
+            }
             case Load:{
                 InstNode *next = get_next_inst(curr);
                 delete_inst(curr);
@@ -724,15 +737,14 @@ void outOfSSA(Function *currentFunction){
                 BasicBlock *from = phiInfo->from;
                 Value *src = phiInfo->define;
                 Value *dest = ins_get_value(currNode->inst);
-                printf("1111\n");
                 insertCopies(from,dest,src);
-                printf("1111\n");
             }
             InstNode *nextNode = get_next_inst(currNode);
             delete_inst(currNode);
             currNode = nextNode;
+        }else{
+            currNode = get_next_inst(currNode);
         }
-        currNode = get_next_inst(currNode);
     }
 }
 

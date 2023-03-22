@@ -19,8 +19,6 @@ Instruction* ins_new(int op_num){
     value_init((Value*)ins);
     /* 在这里已经设置了指令的操作数个数 */
     user_construct(storage, op_num);
-    ins->in = HashSetInit();
-    ins->out = HashSetInit();
     return (Instruction*)(storage+use_size);
 }
 
@@ -153,6 +151,9 @@ void print_ins_opcode(Instruction *ins){
             break;
         case GMP:
             printf("getelementptr");
+            break;
+        case FunEnd:
+            printf("FunEnd");
             break;
         default:
             printf("Normal Calculation");

@@ -84,3 +84,15 @@ bool isImm(Value *val){
 bool isArray(Value *val){
     return isArrayType(val->VTy);
 }
+
+void typePrinter(Value *val){
+    if(isIntType(val->VTy)){
+        printf("int type");
+    }else if(isFloatType(val->VTy)){
+        printf("float type");
+    }else if(isArrayType(val->VTy)){
+        printf("array type");
+    }else{
+        printf("err type");
+    }
+}

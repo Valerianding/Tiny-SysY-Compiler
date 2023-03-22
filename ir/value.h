@@ -87,7 +87,7 @@ void value_init_int(Value *this,int num);
 void value_init_float(Value *this,float num);
 void value_replace(Value *newValue,Use *use);
 void value_replaceAll(Value *oldValue,Value *newValue);
-
+void typePrinter(Value *val);
 bool isVar(Value *val);
 bool isImm(Value *val);
 bool isArray(Value *val);

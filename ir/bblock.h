@@ -77,7 +77,7 @@ Function *bblock_get_parent(BasicBlock *this);
 size_t bb_count_ins(BasicBlock *this);
 
 ///打印一条语句的信息
-void print_one_ins_info(InstNode *instruction_list);
+void print_one_ins_info(InstNode *insNode);
 
 ///打印基本块的info
 void print_block_info(BasicBlock *this);

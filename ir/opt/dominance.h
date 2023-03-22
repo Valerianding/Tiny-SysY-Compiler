@@ -12,7 +12,6 @@
 #include "assert.h"
 struct _DomNode{
     BasicBlock *parent;
-    //DomTreeNode *parent;
     BasicBlock *block;
     HashSet *children;  //保存DomNode*
     int flag;

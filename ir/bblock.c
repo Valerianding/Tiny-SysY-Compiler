@@ -98,21 +98,21 @@ void clear_visited_flag(InstNode *head) {
 }
 
 
-void print_one_ins_info(InstNode *instruction_list){
-    printf("%d : opcode:",instruction_list->inst->i);
-    print_ins_opcode(instruction_list->inst);
-    if(instruction_list->inst->Opcode == br_i1){
-        printf("%d %d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location,instruction_list->inst->user.value.pdata->instruction_pdata.false_goto_location);
-    }else if(instruction_list->inst->Opcode == br){
-        printf("%d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location);
-    }else if(instruction_list->inst->Opcode == Label){
-        printf("%d",instruction_list->inst->user.value.pdata->instruction_pdata.true_goto_location);
-    }else if(instruction_list->inst->Opcode == Alloca){
-        if(instruction_list->inst->user.value.name != NULL){
-            printf(" user.value.name : %s",instruction_list->inst->user.value.name);
+void print_one_ins_info(InstNode *insNode){
+    printf("%d : opcode:", insNode->inst->i);
+    print_ins_opcode(insNode->inst);
+    if(insNode->inst->Opcode == br_i1){
+        printf("%d %d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location, insNode->inst->user.value.pdata->instruction_pdata.false_goto_location);
+    }else if(insNode->inst->Opcode == br){
+        printf("%d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location);
+    }else if(insNode->inst->Opcode == Label){
+        printf("%d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location);
+    }else if(insNode->inst->Opcode == Alloca){
+        if(insNode->inst->user.value.name != NULL){
+            printf(" user.value.name : %s", insNode->inst->user.value.name);
         }
         printf(" alloca type : ");
-        Value *lhs = ins_get_lhs(instruction_list->inst);
+        Value *lhs = ins_get_value(insNode->inst);
         if(lhs != NULL && isArray(lhs)){
             printf("array type");
         }else if(lhs != NULL && isVar(lhs)){
@@ -122,29 +122,55 @@ void print_one_ins_info(InstNode *instruction_list){
         }else{
             printf("null!");
         }
-    }else if(instruction_list->inst->Opcode == Load){
-        if(instruction_list->inst->user.value.name != NULL){
-            printf(" name : %s",instruction_list->inst->user.value.name);
+    }else if(insNode->inst->Opcode == Load){
+        if(insNode->inst->user.value.name != NULL){
+            printf(" name : %s", insNode->inst->user.value.name);
         }
-    }else if(instruction_list->inst->Opcode == Store){
-        if(instruction_list->inst->user.value.name != NULL){
-            printf("name : %s",instruction_list->inst->user.value.name);
+    }else if(insNode->inst->Opcode == Store){
+        if(insNode->inst->user.value.name != NULL){
+            printf("name : %s", insNode->inst->user.value.name);
         }
-        printf(" oprand name : %s",instruction_list->inst->user.use_list[1].Val->name);
-    }else if(instruction_list->inst->Opcode == Call){
+        printf(" oprand name : %s", insNode->inst->user.use_list[1].Val->name);
+    }else if(insNode->inst->Opcode == Call){
 
     }
-    if(instruction_list->inst->Parent != NULL){
-        printf(" parent: b%d",instruction_list->inst->Parent->id);
+
+    Value *insValue = ins_get_value(insNode->inst);
+    Value *lhs = NULL;
+    Value *rhs = NULL;
+    if(insNode->inst->user.value.NumUserOperands == 1){
+        lhs = ins_get_lhs(insNode->inst);
+    }
+    if(insNode->inst->user.value.NumUserOperands == 2){
+        lhs = ins_get_lhs(insNode->inst);
+        rhs = ins_get_rhs(insNode->inst);
+    }
+    printf(" number of operands : %d ", insNode->inst->user.value.NumUserOperands);
+
+    //为了以后的type mem2reg分别处理 我们一定要好好区分数组和变量
+    if(insValue != NULL){
+        printf(" insValue type : ");
+        typePrinter(insValue);
+    }
+    if (lhs != NULL){
+        printf(" lhsValue type : ");
+        typePrinter(lhs);
+    }
+    if(rhs != NULL){
+        printf(" rhsValue type : ");
+        typePrinter(rhs);
+    }
+
+    if(insNode->inst->Parent != NULL){
+        printf(" parent: b%d", insNode->inst->Parent->id);
     }else{
         printf(" parent:NULL");
     }
-    if(instruction_list->inst->user.value.use_list == NULL){
+    if(insNode->inst->user.value.use_list == NULL){
         printf(" used by: NULL");
     }else{
-        //TODO 打印user而不是use_list
         printf(" used by: ");
-        Use *temp = instruction_list->inst->user.value.use_list;
+        Use *temp = insNode->inst->user.value.use_list;
         while(temp != NULL){
             User *parent = temp->Parent;
             Instruction *ins = (Instruction*)parent;

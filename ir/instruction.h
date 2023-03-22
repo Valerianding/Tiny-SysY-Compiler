@@ -6,44 +6,42 @@
 
 
 typedef enum OpcodeType{
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Module,
-    Call,
-    FunBegin,
-    Return,
-    Store,
-    Load,
-    Alloca,
-    GIVE_PARAM,
-    ALLBEGIN,
-
-    LESS,
-    GREAT,
-    LESSEQ,
-    GREATEQ,
-    EQ,
-    NOTEQ,
-    br_i1,
-    br,
-    br_i1_true,
-    br_i1_false,
-    Label,
-    tmp,
-    XOR,
-    zext,
-    bitcast,
-    GMP,
-    MEMCPY,
-    MEMSET,
-    zeroinitializer,
-    GLOBAL_VAR,
-    FunEnd,
-
-    Phi,
-    CopyOperation,  //消除phi函数
+    Add = 0,
+    Sub = 1,
+    Mul = 2,
+    Div = 3,
+    Module = 4,
+    Call = 5,
+    FunBegin = 6,
+    Return = 7,
+    Store = 8,
+    Load = 9,
+    Alloca = 10,
+    GIVE_PARAM = 11,
+    ALLBEGIN = 12,
+    LESS = 13,
+    GREAT = 14,
+    LESSEQ = 15,
+    GREATEQ = 16,
+    EQ = 17,
+    NOTEQ = 18,
+    br_i1 = 19,
+    br = 20,
+    br_i1_true = 21,
+    br_i1_false = 22,
+    Label = 23,
+    tmp = 24,
+    XOR = 25,
+    zext = 26,
+    bitcast = 27,
+    GMP = 28,
+    MEMCPY = 29,
+    MEMSET = 30,
+    zeroinitializer = 31,
+    GLOBAL_VAR = 32,
+    FunEnd = 33,
+    Phi = 34,
+    CopyOperation = 35,  //消除phi函数
 }Opcode;
 
 
@@ -53,8 +51,6 @@ typedef struct _Instruction{
     struct _BasicBlock *Parent;
     int i; //指令的编号
 
-    HashSet *in; // live-in
-    HashSet *out; // live-out
 }Instruction;
 
 

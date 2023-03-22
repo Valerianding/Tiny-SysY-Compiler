@@ -1,8 +1,6 @@
 #include <assert.h>
 #include "./back_end/arm.h"
 #include "value.h"
-#include "use.h"
-#include "user.h"
 #include "instruction.h"
 #include "symtab.h"
 #include "bblock.h"
@@ -12,14 +10,10 @@
 #include "mem2reg.h"
 #include "front_end/travel.h"
 #include "back_end/register_allocation.h"
+#include "utility.h"
+#include "livenessanalysis.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
-
-void test(HashSet *set){
-    int *a = (int*)malloc(sizeof(int));
-    set = HashSetInit();
-    HashSetAdd(set,(void*)a);
-}
 
 extern int yyparse();
 extern past TRoot;
@@ -99,13 +93,16 @@ int main(int argc, char* argv[]){
         if(parent != prevFunction){
             /* 测试dominance的计算 */
             printf("-------function  start---------\n");
+            correctType(parent);
             print_function_info(parent);
             calculate_dominance(parent);
             calculate_dominance_frontier(parent);
             calculate_iDominator(parent);
             calculate_DomTree(parent);
             mem2reg(parent);
-
+            printf("before liveness!\n");
+            calculateLiveness(parent);
+            printLiveness(parent->entry);
             prevFunction = parent;
             printf("------after a function------\n");
         }
@@ -115,6 +112,10 @@ int main(int argc, char* argv[]){
         }
     }
 
+    printNode = instruction_list;
+    for(;printNode != NULL; printNode = get_next_inst(printNode)){
+        print_one_ins_info(printNode);
+    }
     // mem2reg 之后的
     printf_llvm_ir(instruction_list,argv[1]);
 

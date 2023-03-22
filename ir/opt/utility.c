@@ -27,12 +27,19 @@ void correctType(Function *currentFunction){
                             insValue->VTy->ID = Float;
                         }
                     }
+                }else{
+                    // 如果alloca的是NULL那么说明应该是保存返回值的
+                    // 我们也简单的设置成为Int的Type
+                    Value *insValue = ins_get_value(currNode->inst);
+                    insValue->VTy->ID = Int;
                 }
+                break;
             }
             case GMP:{
                 Value *insValue = ins_get_value(currNode->inst);
                 //设置这个value的type
                 insValue->VTy->ID = ArrayTyID;
+                break;
             }
 
         }
@@ -47,6 +54,26 @@ bool isValidOperator(InstNode *insNode){
         case Label:
             return false;
         case ALLBEGIN:
+            return false;
+        case bitcast:
+            return false;
+        case GMP:
+            return false;
+        case Alloca:
+            return false;
+        case tmp:
+            return false;
+        case zext:
+            return false;
+        case MEMCPY:
+            return false;
+        case zeroinitializer:
+            return false;
+        case GLOBAL_VAR:
+            return false;
+        case FunEnd:
+            return false;
+        case Phi:
             return false;
     }
     return true;

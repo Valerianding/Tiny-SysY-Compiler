@@ -3816,7 +3816,13 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     i++;
                 }
                 printf("\n");
-                //printf("A phi instruction\n");
+                break;
+            }
+            case CopyOperation:{
+                Value *dest = instruction->user.value.alias;
+                Value *src = ins_get_lhs(instruction);
+                printf(" %s = %s\n", dest->name, src->name);
+                //printf("a copy operation\n");
                 break;
             }
             default:
