@@ -3920,7 +3920,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case Phi:{
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
-                printf(" %s = phi i32 ",instruction->user.value.name);
+                printf(" %s( %s) = phi i32 ",instruction->user.value.name, instruction->user.value.alias->name);
                 unsigned int size=HashSetSize(phiSet);
                 int i=0;
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -3950,7 +3950,12 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case CopyOperation:{
                 Value *dest = instruction->user.value.alias;
                 Value *src = ins_get_lhs(instruction);
-                printf(" %s = %s\n", dest->name, src->name);
+                if(isImm(src)){
+                    printf(" %s(%s) = %d\n",dest->name,dest->alias->name,src->pdata->var_pdata.iVal);
+                }else{
+                    printf(" %s(%s) = %s\n", dest->name,dest->alias->name,src->name);
+                }
+
                 //printf("a copy operation\n");
                 break;
             }

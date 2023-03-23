@@ -5,7 +5,6 @@
 struct _Value;
 struct _User;
 
-typedef struct _Use Use;
 struct _Use{
   
    struct _Value *Val;

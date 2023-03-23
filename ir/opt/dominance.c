@@ -2,6 +2,7 @@
 // Created by Valerian on 2023/1/18.
 //
 #include "dominance.h"
+#include "utility.h"
 //只针对BasicBlock类型
 void HashSetCopy(HashSet *dest,HashSet *src){
     HashSetFirst(src);
@@ -97,7 +98,9 @@ void calculate_dominance(Function *currentFunction) {
 
         printf("iterate begin!\n");
 
-        clear_visited_flag(cur);
+        clear_visited_flag(cur->inst->Parent);
+
+        printf("cleared all visited flag!\n");
         while(cur != end){
             BasicBlock *parent = cur->inst->Parent;
             //除了头节点
@@ -169,7 +172,7 @@ void calculate_dominance_frontier(Function *currentFunction){
     InstNode *head = entry->head_node;
     InstNode *tail = end->tail_node;
 
-    clear_visited_flag(head);
+    clear_visited_flag(head->inst->Parent);
     //从头来计算
     InstNode *curNode = head;
     while(curNode != get_next_inst(tail)){
@@ -213,7 +216,7 @@ void calculate_iDominator(Function *currentFunction){
     InstNode *head = entry->head_node;
     InstNode *tail = end->tail_node;
 
-    clear_visited_flag(head);
+    clear_visited_flag(head->inst->Parent);
     //从头来计算
     InstNode *curNode = head;
     while(curNode != get_next_inst(tail)){
@@ -268,7 +271,7 @@ void calculate_DomTree(Function *currentFunction){
     InstNode *head = entry->head_node;
     InstNode *tail = end->tail_node;
 
-    clear_visited_flag(head);
+    clear_visited_flag(head->inst->Parent);
     //从头来计算
     InstNode *curNode = head;
     while(curNode != get_next_inst(tail)){
@@ -297,7 +300,7 @@ void calculate_DomTree(Function *currentFunction){
     assert(entry->domTreeNode != nullptr);
 
     DomTreePrinter(entry->domTreeNode);
-    clear_visited_flag(checkNode);
+    clear_visited_flag(checkNode->inst->Parent);
     while(checkNode != get_next_inst(tail)){
         BasicBlock *parent = checkNode->inst->Parent;
         if(parent->visited == false){

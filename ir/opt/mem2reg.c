@@ -237,7 +237,6 @@ void mem2reg(Function *currentFunction){
     }
     HashMapDeinit(IncomingVals);
 
-    outOfSSA(currentFunction);
 }
 
 void insertCopies(BasicBlock *block,Value *dest,Value *src){
@@ -388,16 +387,16 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             //从中去取目前到达的定义
             Value *pairValue;
             stackTop(allocStack,(void *)&pairValue);
-            printf("fuck \n");
+            //printf("fuck \n");
             //填充信息
             pair *phiInfo = createPhiInfo(block,pairValue);
-            printf("fuck \n");
+            //printf("fuck \n");
             assert(phiInfo != NULL);
 
             insertPhiInfo(nextBlockCurr,phiInfo);
-            printf("fuck \n");
+            //printf("fuck \n");
             nextBlockCurr = get_next_inst(nextBlockCurr);
-            printf("fuck \n");
+            //printf("fuck \n");
         }
     }
 
@@ -540,167 +539,72 @@ void deleteLoadStore(Function *currentFunction){
     }
 }
 
-//TODO 草，对不起，这算法太丑了，但是能跑，若有时间，想想有没有什么别的方法
-void renameVariabels(Function *currentFunction){
-    bool hava_param = false;
+void renameVariabels(Function *currentFunction) {
+    bool haveParam = false;
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     InstNode *currNode = entry->head_node;
+
+    //默认无论有没有参数第一个基本块为0
+    //entry->id = 0;
     //currNode的第一条是FunBegin,判断一下是否有参
-    Value *v_func=currNode->inst->user.use_list->Val;
-    if(v_func->pdata->symtab_func_pdata.param_num>0)
-        hava_param=true;
+    Value *funcValue = currNode->inst->user.use_list->Val;
+    if (funcValue->pdata->symtab_func_pdata.param_num > 0)
+        haveParam = true;
 
     //开始时候为1或__
-    int countVariable=1;
-    if(hava_param)                //TODO 有参的情况看丁老师具体想怎么处理
-        countVariable=v_func->pdata->symtab_func_pdata.param_num+1;
+    int countVariable = 1;
+    if (haveParam)
+        countVariable += funcValue->pdata->symtab_func_pdata.param_num;
 
+    while (currNode != get_next_inst(end->tail_node)) {
+        if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1) {
 
-    ///先遍历两次，搭一个label与br语句的映射关系（对不起，感觉好丑），本来想过在遍历语法树的时候就建上关系，但是看了一下，短路的话，逻辑有点复杂，不太好加
-    HashMap* hashMap=HashMapInit(); //<key,value>-----> <Value*,HashSet<Value*>>，key是label的value,value是br或br_i1或phi的value set
+            if (currNode->inst->Opcode == Label) {
+                //所有有可能用到这个label的都需要更新 只扫描之前的 它一定大于更新了的
+                int prevLabel = currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
 
-    //先装入label的value，作为全部key
-    while(currNode != get_next_inst(end->tail_node)){
-        if(currNode->inst->Opcode==Label)
-        {
-           HashSet *set=HashSetInit();
-           HashMapPut(hashMap,(void*)&currNode->inst->user.value,(void*)set);
-        }
-        currNode = get_next_inst(currNode);
-    }
+                // 去上面区间里面找
+                InstNode *tempNode = entry->head_node;
+                while (tempNode != currNode) {
 
-    //将br,br_i1,phi装到对应key的value set中
-    //br:设置v_br的alias为NULL，肯定是它的true_location对应label的值
-    //br_i1:设置v_br的alias为false_location对应的那个label的value，判断要装入的究竟是true的还是false的
-    currNode=entry->head_node;
-    while(currNode != get_next_inst(end->tail_node)){
-        if(currNode->inst->Opcode==br)
-        {
-            int true_location=currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
-            HashMapFirst(hashMap);
-            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-                Value *v=pair->key;
-                if(v->pdata->instruction_pdata.true_goto_location==true_location)
-                {
-                    //拿出那个set,加入这个br的value
-                    HashSet *set=pair->value;
-                    Value *v_br=&currNode->inst->user.value;
-                    v_br->alias=NULL;
-                    HashSetAdd(set,v_br);
-                    break;
-                }
-            }
-        }
-        else if(currNode->inst->Opcode==br_i1)
-        {
-            int true_location=currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
-            int false_location=currNode->inst->user.value.pdata->instruction_pdata.false_goto_location;
+                    if (tempNode->inst->Opcode == br || tempNode->inst->Opcode == br_i1) {
+                        if (tempNode->inst->user.value.pdata->instruction_pdata.true_goto_location == prevLabel) {
 
-            HashMapFirst(hashMap);
-            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-                Value *v=pair->key;
-                if(v->pdata->instruction_pdata.true_goto_location==true_location)
-                {
-                    //拿出那个set,加入这个br_i1的value
-                    HashSet *set=pair->value;
-                    Value *v_br=&currNode->inst->user.value;
-                    HashSetAdd(set,v_br);
-                }
-                else if(v->pdata->instruction_pdata.true_goto_location==false_location)
-                {
-                    //拿出那个set,加入这个br_i1的value
-                    HashSet *set=pair->value;
-                    Value *v_br=&currNode->inst->user.value;
-                    //这个br i1的alias设置为这个label value
-                    v_br->alias=v;
-                    HashSetAdd(set,v_br);
-                }
-            }
-        }
-        else if(currNode->inst->Opcode==Phi)
-        {
-            //1.取出hashSet
-            HashSet *phiSet=currNode->inst->user.value.pdata->pairSet;
-            HashSetFirst(phiSet);
-            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                BasicBlock *from = phiInfo->from;
-                HashMapFirst(hashMap);
-                for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-                    Value *v=pair->key;
-                    if(v->pdata->instruction_pdata.true_goto_location==from->id)
-                    {
-                        //拿出那个set,加入这个value
-                        HashSet *set=pair->value;
-                        Value *v_phi=&currNode->inst->user.value;
-                        HashSetAdd(set,v_phi);
-                    }
-                }
-            }
-        }
-        currNode = get_next_inst(currNode);
-    }
-
-    currNode=entry->head_node;
-    while(currNode != get_next_inst(end->tail_node)){
-
-        // 只用考虑修改左边的并且我们暂时不修改alloc指令
-        if(currNode->inst->Opcode != Alloca && currNode->inst->Opcode!=br && currNode->inst->Opcode!=br_i1){
-            if(currNode->inst->Opcode == Label){
-                HashSet *hashset=hashMap->get(hashMap,&currNode->inst->user.value);
-
-                HashSetFirst(hashset);
-                for(Value *v_br = HashSetNext(hashset); v_br != NULL; v_br = HashSetNext(hashset)){
-                    if(v_br->name!=NULL)
-                    {
-                        //是phi
-                        HashSet *phiSet=v_br->pdata->pairSet;
-                        HashSetFirst(phiSet);
-                        for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                            BasicBlock *from = phiInfo->from;
-                            if(currNode->inst->user.value.pdata->instruction_pdata.true_goto_location==from->id)
-                            {
-                                //修改该修改的对应id
-                                phiInfo->from->id=countVariable;
-                            }
+                            tempNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
+                        } else if (tempNode->inst->user.value.pdata->instruction_pdata.false_goto_location ==
+                                   prevLabel) {
+                            // 直接更新
+                            tempNode->inst->user.value.pdata->instruction_pdata.false_goto_location = countVariable;
                         }
                     }
-                    else
-                    {
-                        if(v_br->alias==NULL)        //br的情况可完全确定
-                            v_br->pdata->instruction_pdata.true_goto_location=countVariable;
-                        else                         //br_i1的情况
-                        {
-                            if(v_br->alias->pdata->instruction_pdata.true_goto_location==currNode->inst->user.value.pdata->instruction_pdata.true_goto_location)
-                                v_br->pdata->instruction_pdata.false_goto_location=countVariable;          //如果是false_location的位置，与label有映射
-                            else
-                                v_br->pdata->instruction_pdata.true_goto_location=countVariable;
-                        }
-                    }
+                    tempNode = get_next_inst(tempNode);
                 }
+
+                //更新一下BasicBlock的ID 顺便就更新了phi
+                BasicBlock *block = currNode->inst->Parent;
+                block->id = countVariable;
                 currNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
                 countVariable++;
-            }
-            else {
-
-                //普通的instruction语句
+            } else {
+                // 普通的instruction语句
                 char *insName = currNode->inst->user.value.name;
 
                 //如果不为空那我们可以进行重命名
-                if(insName != NULL && insName[0] == '%'){
+                if (insName != NULL && insName[0] == '%') {
                     char newName[5];
                     clear_tmp(insName);
                     newName[0] = '%';
                     int index = 1;
                     int rep_count = countVariable;
-                    while(rep_count){
+                    while (rep_count) {
                         newName[index] = (rep_count % 10) + '0';
                         rep_count /= 10;
                         index++;
                     }
                     int j = 1;
-                    for(int i = index - 1; i >= 1; i--){
+                    for (int i = index - 1; i >= 1; i--) {
                         insName[j] = newName[i];
                         j++;
                     }
@@ -708,18 +612,172 @@ void renameVariabels(Function *currentFunction){
                 }
             }
         }
-
         currNode = get_next_inst(currNode);
     }
-
-    //内存释放
-    HashMapFirst(hashMap);
-    for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-        HashSet *set=pair->value;
-        HashSetDeinit(set);
-    }
-    HashMapDeinit(hashMap);
 }
+
+//
+//
+//    ///先遍历两次，搭一个label与br语句的映射关系（对不起，感觉好丑），本来想过在遍历语法树的时候就建上关系，但是看了一下，短路的话，逻辑有点复杂，不太好加
+//    HashMap* hashMap=HashMapInit(); //<key,value>-----> <Value*,HashSet<Value*>>，key是label的value,value是br或br_i1或phi的value set
+//
+//    //先装入label的value，作为全部key
+//    while(currNode != get_next_inst(end->tail_node)){
+//        if(currNode->inst->Opcode==Label){
+//           HashSet *set=HashSetInit();
+//           HashMapPut(hashMap,(void*)&currNode->inst->user.value,(void*)set);
+//        }
+//        currNode = get_next_inst(currNode);
+//    }
+//
+//    //将br,br_i1,phi装到对应key的value set中
+//    //br:设置v_br的alias为NULL，肯定是它的true_location对应label的值
+//    //br_i1:设置v_br的alias为false_location对应的那个label的value，判断要装入的究竟是true的还是false的
+//    currNode=entry->head_node;
+//    while(currNode != get_next_inst(end->tail_node)){
+//        if(currNode->inst->Opcode==br)
+//        {
+//            int true_location=currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
+//            HashMapFirst(hashMap);
+//            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
+//                Value *v = pair->key;
+//                if(v->pdata->instruction_pdata.true_goto_location == true_location){
+//                    //拿出那个set,加入这个br的value
+//                    HashSet *set = pair->value;
+//                    Value *v_br = &currNode->inst->user.value;
+//                    v_br->alias = NULL;
+//                    HashSetAdd(set,v_br);
+//                    break;
+//                }
+//            }
+//        }
+//        else if(currNode->inst->Opcode == br_i1)
+//        {
+//            int true_location = currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
+//            int false_location = currNode->inst->user.value.pdata->instruction_pdata.false_goto_location;
+//
+//            HashMapFirst(hashMap);
+//            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
+//                Value *v=pair->key;
+//                if(v->pdata->instruction_pdata.true_goto_location == true_location)
+//                {
+//                    //拿出那个set,加入这个br_i1的value
+//                    HashSet *set=pair->value;
+//                    Value *v_br=&currNode->inst->user.value;
+//                    HashSetAdd(set,v_br);
+//                }
+//                else if(v->pdata->instruction_pdata.true_goto_location == false_location)
+//                {
+//                    //拿出那个set,加入这个br_i1的value
+//                    HashSet *set = pair->value;
+//                    Value *v_br = &currNode->inst->user.value;
+//                    //这个br i1的alias设置为这个label value
+//                    v_br->alias = v;
+//                    HashSetAdd(set,v_br);
+//                }
+//            }
+//        }
+//
+//        else if(currNode->inst->Opcode==Phi)
+//        {
+//            //1.取出hashSet
+//            HashSet *phiSet=currNode->inst->user.value.pdata->pairSet;
+//            HashSetFirst(phiSet);
+//            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+//                BasicBlock *from = phiInfo->from;
+//                HashMapFirst(hashMap);
+//                for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
+//                    Value *v=pair->key;
+//                    if(v->pdata->instruction_pdata.true_goto_location==from->id)
+//                    {
+//                        //拿出那个set,加入这个value
+//                        HashSet *set=pair->value;
+//                        Value *v_phi=&currNode->inst->user.value;
+//                        HashSetAdd(set,v_phi);
+//                    }
+//                }
+//            }
+//        }
+//        currNode = get_next_inst(currNode);
+//    }
+//
+//    currNode=entry->head_node;
+//    while(currNode != get_next_inst(end->tail_node)){
+//
+//        if(currNode->inst->Opcode!= br && currNode->inst->Opcode != br_i1){
+//            if(currNode->inst->Opcode == Label){
+//                HashSet *hashset=hashMap->get(hashMap,&currNode->inst->user.value);
+//
+//                HashSetFirst(hashset);
+//                for(Value *v_br = HashSetNext(hashset); v_br != NULL; v_br = HashSetNext(hashset)){
+//                    if(v_br->name!=NULL)
+//                    {
+//                        //是phi
+//                        HashSet *phiSet=v_br->pdata->pairSet;
+//                        HashSetFirst(phiSet);
+//                        for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+//                            BasicBlock *from = phiInfo->from;
+//                            if(currNode->inst->user.value.pdata->instruction_pdata.true_goto_location==from->id){
+//                                //修改该修改的对应id
+//                                phiInfo->from->id=countVariable;
+//                            }
+//                        }
+//                    }
+//                    else
+//                    {
+//                        if(v_br->alias==NULL)        //br的情况可完全确定
+//                            v_br->pdata->instruction_pdata.true_goto_location = countVariable;
+//                        else                         //br_i1的情况
+//                        {
+//                            if(v_br->alias->pdata->instruction_pdata.true_goto_location == currNode->inst->user.value.pdata->instruction_pdata.true_goto_location)
+//                                v_br->pdata->instruction_pdata.false_goto_location = countVariable;          //如果是false_location的位置，与label有映射
+//                            else
+//                                v_br->pdata->instruction_pdata.true_goto_location = countVariable;
+//                        }
+//                    }
+//                }
+//                currNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
+//                countVariable++;
+//            }
+//            else {
+//
+//                //普通的instruction语句
+//                char *insName = currNode->inst->user.value.name;
+//
+//                //如果不为空那我们可以进行重命名
+//                if(insName != NULL && insName[0] == '%'){
+//                    char newName[5];
+//                    clear_tmp(insName);
+//                    newName[0] = '%';
+//                    int index = 1;
+//                    int rep_count = countVariable;
+//                    while(rep_count){
+//                        newName[index] = (rep_count % 10) + '0';
+//                        rep_count /= 10;
+//                        index++;
+//                    }
+//                    int j = 1;
+//                    for(int i = index - 1; i >= 1; i--){
+//                        insName[j] = newName[i];
+//                        j++;
+//                    }
+//                    countVariable++;
+//                }
+//            }
+//        }
+//
+//        currNode = get_next_inst(currNode);
+//    }
+//
+//    //内存释放
+//    HashMapFirst(hashMap);
+//    for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
+//        HashSet *set=pair->value;
+//        HashSetDeinit(set);
+//    }
+//    HashMapDeinit(hashMap);
+//r}
+
 
 void outOfSSA(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
@@ -756,190 +814,4 @@ InstNode *newCopyOperation(Value *dest, Value *src){
     copyIns->user.value.alias = dest;
     InstNode *copyInsNode = new_inst_node(copyIns);
     return copyInsNode;
-}
-
-
-void renameVariabelsAfterSSA(Function *currentFunction){
-    bool hava_param = false;
-    BasicBlock *entry = currentFunction->entry;
-    BasicBlock *end = currentFunction->tail;
-
-    InstNode *currNode = entry->head_node;
-    //currNode的第一条是FunBegin,判断一下是否有参
-    Value *v_func=currNode->inst->user.use_list->Val;
-    if(v_func->pdata->symtab_func_pdata.param_num>0)
-        hava_param=true;
-
-    //开始时候为1或__
-    int countVariable=1;
-    if(hava_param)                //TODO 有参的情况看丁老师具体想怎么处理
-        countVariable=v_func->pdata->symtab_func_pdata.param_num+1;
-
-
-    ///先遍历两次，搭一个label与br语句的映射关系（对不起，感觉好丑），本来想过在遍历语法树的时候就建上关系，但是看了一下，短路的话，逻辑有点复杂，不太好加
-    HashMap* hashMap=HashMapInit(); //<key,value>-----> <Value*,HashSet<Value*>>，key是label的value,value是br或br_i1或phi的value set
-
-    //先装入label的value，作为全部key
-    while(currNode != get_next_inst(end->tail_node)){
-        if(currNode->inst->Opcode==Label)
-        {
-            HashSet *set=HashSetInit();
-            HashMapPut(hashMap,(void*)&currNode->inst->user.value,(void*)set);
-        }
-        currNode = get_next_inst(currNode);
-    }
-
-    //将br,br_i1,phi装到对应key的value set中
-    //br:设置v_br的alias为NULL，肯定是它的true_location对应label的值
-    //br_i1:设置v_br的alias为false_location对应的那个label的value，判断要装入的究竟是true的还是false的
-    currNode=entry->head_node;
-    while(currNode != get_next_inst(end->tail_node)){
-        if(currNode->inst->Opcode==br)
-        {
-            int true_location=currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
-            HashMapFirst(hashMap);
-            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-                Value *v=pair->key;
-                if(v->pdata->instruction_pdata.true_goto_location==true_location)
-                {
-                    //拿出那个set,加入这个br的value
-                    HashSet *set=pair->value;
-                    Value *v_br=&currNode->inst->user.value;
-                    v_br->alias=NULL;
-                    HashSetAdd(set,v_br);
-                    break;
-                }
-            }
-        }
-        else if(currNode->inst->Opcode==br_i1)
-        {
-            int true_location=currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
-            int false_location=currNode->inst->user.value.pdata->instruction_pdata.false_goto_location;
-
-            HashMapFirst(hashMap);
-            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-                Value *v=pair->key;
-                if(v->pdata->instruction_pdata.true_goto_location==true_location)
-                {
-                    //拿出那个set,加入这个br_i1的value
-                    HashSet *set=pair->value;
-                    Value *v_br=&currNode->inst->user.value;
-                    HashSetAdd(set,v_br);
-                }
-                else if(v->pdata->instruction_pdata.true_goto_location==false_location)
-                {
-                    //拿出那个set,加入这个br_i1的value
-                    HashSet *set=pair->value;
-                    Value *v_br=&currNode->inst->user.value;
-                    //这个br i1的alias设置为这个label value
-                    v_br->alias=v;
-                    HashSetAdd(set,v_br);
-                }
-            }
-        }
-        else if(currNode->inst->Opcode==Phi)
-        {
-            //1.取出hashSet
-            HashSet *phiSet=currNode->inst->user.value.pdata->pairSet;
-            HashSetFirst(phiSet);
-            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                BasicBlock *from = phiInfo->from;
-                HashMapFirst(hashMap);
-                for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-                    Value *v=pair->key;
-                    if(v->pdata->instruction_pdata.true_goto_location==from->id)
-                    {
-                        //拿出那个set,加入这个value
-                        HashSet *set=pair->value;
-                        Value *v_phi=&currNode->inst->user.value;
-                        HashSetAdd(set,v_phi);
-                    }
-                }
-            }
-        }
-        else if(currNode->inst->Opcode == CopyOperation)
-        {
-            // 如果是CopyOperation的话
-        }
-
-        currNode = get_next_inst(currNode);
-    }
-
-    currNode=entry->head_node;
-    while(currNode != get_next_inst(end->tail_node)){
-
-        // 只用考虑修改左边的并且我们暂时不修改alloc指令
-        if(currNode->inst->Opcode != Alloca && currNode->inst->Opcode!=br && currNode->inst->Opcode!=br_i1){
-            if(currNode->inst->Opcode == Label){
-                HashSet *hashset=hashMap->get(hashMap,&currNode->inst->user.value);
-
-                HashSetFirst(hashset);
-                for(Value *v_br = HashSetNext(hashset); v_br != NULL; v_br = HashSetNext(hashset)){
-                    if(v_br->name!=NULL)
-                    {
-                        //是phi
-                        HashSet *phiSet=v_br->pdata->pairSet;
-                        HashSetFirst(phiSet);
-                        for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                            BasicBlock *from = phiInfo->from;
-                            if(currNode->inst->user.value.pdata->instruction_pdata.true_goto_location==from->id)
-                            {
-                                //修改该修改的对应id
-                                phiInfo->from->id=countVariable;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if(v_br->alias==NULL)        //br的情况可完全确定
-                            v_br->pdata->instruction_pdata.true_goto_location=countVariable;
-                        else                         //br_i1的情况
-                        {
-                            if(v_br->alias->pdata->instruction_pdata.true_goto_location==currNode->inst->user.value.pdata->instruction_pdata.true_goto_location)
-                                v_br->pdata->instruction_pdata.false_goto_location=countVariable;          //如果是false_location的位置，与label有映射
-                            else
-                                v_br->pdata->instruction_pdata.true_goto_location=countVariable;
-                        }
-                    }
-                }
-                currNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
-                countVariable++;
-            }
-            else {
-
-                //普通的instruction语句
-                char *insName = currNode->inst->user.value.name;
-
-                //如果不为空那我们可以进行重命名
-                if(insName != NULL && insName[0] == '%'){
-                    char newName[5];
-                    clear_tmp(insName);
-                    newName[0] = '%';
-                    int index = 1;
-                    int rep_count = countVariable;
-                    while(rep_count){
-                        newName[index] = (rep_count % 10) + '0';
-                        rep_count /= 10;
-                        index++;
-                    }
-                    int j = 1;
-                    for(int i = index - 1; i >= 1; i--){
-                        insName[j] = newName[i];
-                        j++;
-                    }
-                    countVariable++;
-                }
-            }
-        }
-
-        currNode = get_next_inst(currNode);
-    }
-
-    //内存释放
-    HashMapFirst(hashMap);
-    for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-        HashSet *set=pair->value;
-        HashSetDeinit(set);
-    }
-    HashMapDeinit(hashMap);
 }

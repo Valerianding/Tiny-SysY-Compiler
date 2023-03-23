@@ -1,59 +1,68 @@
-; ModuleID = '31_while_if_test1.bc'
-source_filename = "31_while_if_test1.c"
-target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
-target triple = "x86_64-unknown-linux-gnu"
+define dso_local i32 @whileIf() #0{
+ br label %1
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local i32 @whileIf() #0 {
-  br label %1
+1:
+ %4 = icmp slt i32 %3,100
+ br i1 %4,label %5,label %18
 
-1:                                                ; preds = %12, %0
-  %.01 = phi i32 [ 0, %0 ], [ %.2, %12 ]
-  %.0 = phi i32 [ 0, %0 ], [ %13, %12 ]
-  %2 = icmp slt i32 %.0, 100
-  br i1 %2, label %3, label %14
+5:
+ %6 = icmp eq i32 %3,5
+ br i1 %6,label %7,label %8
 
-3:                                                ; preds = %1
-  %4 = icmp eq i32 %.0, 5
-  br i1 %4, label %5, label %6
+7:
+ br label %15
 
-5:                                                ; preds = %3
-  br label %12
+8:
+ %9 = icmp eq i32 %3,10
+ br i1 %9,label %10,label %11
 
-6:                                                ; preds = %3
-  %7 = icmp eq i32 %.0, 10
-  br i1 %7, label %8, label %9
+10:
+ br label %13
 
-8:                                                ; preds = %6
-  br label %11
+11:
+ %12= mul nsw i32 %3,2
+ br label %13
 
-9:                                                ; preds = %6
-  %10 = mul nsw i32 %.0, 2
-  br label %11
+13:
+ br label %15
 
-11:                                               ; preds = %9, %8
-  %.1 = phi i32 [ 42, %8 ], [ %10, %9 ]
-  br label %12
+15:
+ %17= add nsw i32 %3,1
+ br label %3
 
-12:                                               ; preds = %11, %5
-  %.2 = phi i32 [ 25, %5 ], [ %.1, %11 ]
-  %13 = add nsw i32 %.0, 1
-  br label %1
-
-14:                                               ; preds = %1
-  ret i32 %.01
+18:
+ ret i32 %2
 }
 
-; Function Attrs: noinline nounwind uwtable
-define dso_local i32 @main() #0 {
-  %1 = call i32 @whileIf()
-  ret i32 %1
+define dso_local i32 @main() #0{
+ %1 = call i32 @whileIf()
+ ret i32 %1
 }
 
-attributes #0 = { noinline nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+declare dso_local i32 @getint(...) #1
+declare dso_local i32 @putint(...) #1
+declare dso_local i32 @getch(...) #1
+declare dso_local i32 @getarray(...) #1
+declare dso_local i32 @getfloat(...) #1
+declare dso_local i32 @getfarray(...) #1
+declare dso_local i32 @putch(...) #1
+declare dso_local i32 @putarray(...) #1
+declare dso_local i32 @putfloat(...) #1
+declare dso_local i32 @putfarray(...) #1
+declare dso_local i32 @putf(...) #1
+* %1,align 4
+ %2 = call i32 @whileIf()
+ ret i32 %2
+}
 
-!llvm.module.flags = !{!0}
-!llvm.ident = !{!1}
-
-!0 = !{i32 1, !"wchar_size", i32 4}
-!1 = !{!"clang version 11.0.1"}
+declare dso_local i32 @getint(...) #1
+declare dso_local i32 @putint(...) #1
+declare dso_local i32 @getch(...) #1
+declare dso_local i32 @getarray(...) #1
+declare dso_local i32 @getfloat(...) #1
+declare dso_local i32 @getfarray(...) #1
+declare dso_local i32 @putch(...) #1
+declare dso_local i32 @putarray(...) #1
+declare dso_local i32 @putfloat(...) #1
+declare dso_local i32 @putfarray(...) #1
+declare dso_local i32 @putf(...) #1

@@ -12,6 +12,7 @@
 #include "back_end/register_allocation.h"
 #include "utility.h"
 #include "livenessanalysis.h"
+#include "utility.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
@@ -72,59 +73,55 @@ int main(int argc, char* argv[]){
     //print_array(instruction_list);
     //showAst(TRoot,0);
 
-    InstNode *temp = get_next_inst(instruction_list);
     InstNode *temp2 = instruction_list;
 
-    //丁老师
-    bblock_divide(instruction_list);
-
     /* 测试所有instruction list */
-    for(;instruction_list != NULL;instruction_list = get_next_inst(instruction_list)){
-        print_one_ins_info(instruction_list);
+    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+        print_one_ins_info(temp2);
+    }
+    printf("----------- after print ins info  ---------\n");
+
+    bblock_divide(instruction_list);
+    // 因为AllBegin 没有parent
+    InstNode *temp = get_next_inst(instruction_list);
+    BasicBlock *block = temp->inst->Parent;
+    assert(block != NULL);
+    clear_visited_flag(block);
+    print_block_info(block);
+    printf("--------- after print block info ---------\n");
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        printf("-------function  start---------\n");
+        correctType(currentFunction);
+        print_function_info(currentFunction);
+        calculate_dominance(currentFunction);
+        calculate_dominance_frontier(currentFunction);
+        calculate_iDominator(currentFunction);
+        calculate_DomTree(currentFunction);
+        mem2reg(currentFunction);
+        printf("------after a function------\n");
     }
 
-    printf("--------------\n");
 
-    /* 测试所有BasicBlock的连接 以及Function的连接 */
-    BasicBlock *prev = nullptr;
-    Function *prevFunction = nullptr;
-    for(;temp != NULL;temp = get_next_inst(temp)) {
-        BasicBlock *cur = temp->inst->Parent;
-        Function *parent = cur->Parent;
-        if(parent != prevFunction){
-            /* 测试dominance的计算 */
-            printf("-------function  start---------\n");
-            correctType(parent);
-            print_function_info(parent);
-            calculate_dominance(parent);
-            calculate_dominance_frontier(parent);
-            calculate_iDominator(parent);
-            calculate_DomTree(parent);
-            mem2reg(parent);
-            printf("before liveness!\n");
-            calculateLiveness(parent);
-            printLiveness(parent->entry);
-            prevFunction = parent;
-            printf("------after a function------\n");
-        }
-        if (cur != prev) {
-            print_block_info(cur);
-            prev = cur;
-        }
+    // 建立phi 之后的
+    printf_llvm_ir(instruction_list,argv[1]);
+
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        outOfSSA(currentFunction);
+        clear_visited_flag(currentFunction->entry);
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction->entry);
     }
 
-    printNode = instruction_list;
-    for(;printNode != NULL; printNode = get_next_inst(printNode)){
-        print_one_ins_info(printNode);
-    }
-    // mem2reg 之后的
-    printf_llvm_ir(temp2,argv[1]);
+    // 消除phi函数之后
+    printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();
 
     //ljw_end
     //    ljf
-    arm_translate_ins(temp2);
+    arm_translate_ins(instruction_list);
     return 0;
 }

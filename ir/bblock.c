@@ -88,14 +88,6 @@ void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
     printf("after bb_add_prev\n");
 }
 
-void clear_visited_flag(InstNode *head) {
-    InstNode *temp = head;
-    while(temp != NULL){
-        BasicBlock *parent = temp->inst->Parent;
-        parent->visited = 0;
-        temp = get_next_inst(temp);
-    }
-}
 
 
 void print_one_ins_info(InstNode *insNode){
@@ -225,8 +217,7 @@ void delete_inst(InstNode *this){
         prev->list.next = NULL;
     }
     // 要么就都不为空
-    else
-    {
+    else{
         next->list.prev = &(prev->list);
         prev->list.next = &(next->list);
     }
@@ -234,6 +225,8 @@ void delete_inst(InstNode *this){
 }
 
 void print_block_info(BasicBlock *this){
+    BasicBlock *block = this;
+    block->visited = true;
     printf("block : b%d ",this->id);
     //打印后继
     if(this->head_node){
@@ -264,4 +257,6 @@ void print_block_info(BasicBlock *this){
         printf("parent : NULL");
     }
     printf("\n");
+    if(block->true_block != NULL && block->visited == false) print_block_info(block->true_block);
+    if(block->false_block != NULL && block->visited == false) print_block_info(block->false_block);
 }

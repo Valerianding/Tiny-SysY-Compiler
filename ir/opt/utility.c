@@ -78,3 +78,22 @@ bool isValidOperator(InstNode *insNode){
     }
     return true;
 }
+
+void clear_visited_flag(BasicBlock *block){
+    Function *parent = block->Parent;
+
+    assert(parent->entry == block);
+    BasicBlock *tail = parent->tail;
+    InstNode *currNode = block->head_node;
+    InstNode *tailNode = tail->tail_node;
+
+    BasicBlock *prevBlock = NULL;
+    while(currNode != get_next_inst(tailNode)){
+        BasicBlock *currNodeParent = currNode->inst->Parent;
+        if(currNodeParent != prevBlock){
+            currNodeParent->visited = false;
+            prevBlock = currNodeParent;
+        }
+        currNode = get_next_inst(currNode);
+    }
+}
