@@ -2,6 +2,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include "../ir/instruction.h"
+#include "../ir/bblock.h"
+#include "value.h"
+#include "type.h"
+#include "user.h"
+#include "function.h"
+#include "offset.h"
 #define SET(i) ( non_available_colors[i/32] |= (1 << (i % 32) ) )
 #define CLEAR(i)   ( non_available_colors[i/32] &= ~(1 << (i % 32) ) )
 #define CHECK(i)  ( non_available_colors[i/32] & (1 << (i % 32) ) )
@@ -13,6 +20,9 @@
 #define NO_COLOR -1
 #define REMOVED -2
 #define SPILLED -3
+
+
+#define all_in_memory 1
 struct queue
 {
     int variable_index;
@@ -32,12 +42,12 @@ struct tac_var
     char * right;
 };
 
-struct var_fist_last
+struct var_def_use
 {
     char * name;
-    int first;
-    int last;
-};
+    int def;
+    int use;
+}_var[10000];
 
 typedef struct numnum *pn;
 typedef struct numnum
@@ -91,3 +101,7 @@ void create_edge(int firstNode,int secondNode);
 void create_variable_list();
 void print_RIG();
 void spill_variable();
+
+void reg_control_block();
+void reg_init();
+void end_reg();//未实现

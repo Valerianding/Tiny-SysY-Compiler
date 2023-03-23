@@ -20,6 +20,7 @@ int _b_end;
 int _numnum;
 int block_num;
 int if_neicun=0;
+
 struct name_num
 {
     int num;
@@ -142,6 +143,50 @@ int visit(int index)
     }
     return 0;
 } 
+
+void reg_init()
+{
+    for(int i=0;i<10000;i++)
+    {
+        _var[i].def=-1;
+        _var[i].use=-1;
+        _var[i].name=NULL;
+    }
+    return ;
+}
+
+
+void reg_control_block(BasicBlock *cur)
+{
+    #ifdef all_in_memory
+    InstNode *temp =cur->head_node;
+    while(get_next_inst(temp)!=NULL)
+    {
+        temp->inst->_reg_[0]=104;
+        temp->inst->_reg_[1]=-4;
+        temp->inst->_reg_[2]=-5;
+    }
+    return ;
+
+    #else
+    init_RIG();
+    create_RIG();
+    check_edge();
+    //print_info();
+    minimize_RIG();
+    init_non_available_colors();
+
+    while(first_fit_coloring())
+    {
+        reset_colors();
+        reset_queue();
+        spill_variable();
+    }
+
+    color_removed(); 
+    end_reg(); //分配并打印
+    #endif
+}
 
 void __push(int variable_index)
 {

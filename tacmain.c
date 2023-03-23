@@ -119,7 +119,7 @@ int main(int argc, char* argv[]){
 
     //ljw_begin
     // reg_control();
-
+    //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
     //    ljf
     arm_translate_ins(instruction_list);
