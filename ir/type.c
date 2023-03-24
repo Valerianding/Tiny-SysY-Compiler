@@ -29,7 +29,21 @@ bool isImmType(Type *type){
 }
 
 bool isArrayType(Type *type){
-    if(type->ID == ArrayTyID || type->ID == ArrayTyID_Const || type->ID == ArrayTyID_Init){
+    if(type->ID == ArrayTyID || type->ID == ArrayTyID_Const || type->ID == ArrayTyID_Init || type->ID == GlobalArrayInt || type->ID == GlobalArrayFloat){
+        return true;
+    }
+    return false;
+}
+
+bool isGlobalVarType(Type *type){
+    if(type->ID == GlobalVarFloat || type->ID == GlobalVarInt){
+        return true;
+    }
+    return false;
+}
+
+bool isGlobalArrayType(Type *type){
+    if(type->ID == GlobalArrayFloat || type->ID == GlobalArrayInt){
         return true;
     }
     return false;

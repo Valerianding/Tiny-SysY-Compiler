@@ -109,9 +109,9 @@ int main(int argc, char* argv[]){
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         outOfSSA(currentFunction);
-        clear_visited_flag(currentFunction->entry);
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction->entry);
+//        clear_visited_flag(currentFunction->entry);
+        //calculateLiveness(currentFunction);
+//        printLiveness(currentFunction->entry);
     }
 
     // 消除phi函数之后

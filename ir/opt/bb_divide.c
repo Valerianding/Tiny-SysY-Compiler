@@ -33,6 +33,13 @@ void bblock_divide(InstNode *head){
             stackPush(globalAllocStack,store);
             HashMapPut(GlobalIncomingVal,globalAlloc,globalAllocStack);
 
+
+            ///修改Type 此处可能前端就处理了
+            Value *insValue = ins_get_value(cur->inst);
+            if(isIntType(insValue->VTy)){
+                insValue->VTy->ID = Globa
+            }
+
             prev = cur;
             cur = get_next_inst(cur);
         }

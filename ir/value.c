@@ -85,6 +85,14 @@ bool isArray(Value *val){
     return isArrayType(val->VTy);
 }
 
+bool isGlobalVar(Value *val){
+    return isGlobalVarType(val->VTy);
+}
+
+bool isGlobalArray(Value *val){
+    return isGlobalArrayType(val->VTy);
+}
+
 void typePrinter(Value *val){
     if(isIntType(val->VTy)){
         printf("int type");

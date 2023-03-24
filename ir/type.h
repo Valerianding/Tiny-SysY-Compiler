@@ -20,7 +20,7 @@ enum TypeID {
     Int,              //int类型整数
     Float,            //float类型浮点数
 
-    Const_INT,        //立即数
+    Const_INT,        // 常变量 应该用不到了
     Const_FLOAT,
 
     ArrayTyID,
@@ -30,12 +30,18 @@ enum TypeID {
     VoidTyID,
 
     AddressTyID,       //地址
+
+
+    GlobalVarInt,  //全局INT类型变量
+    GlobalVarFloat, //全局Float类型变量
+
+    GlobalArrayInt, // 全局Int类型数组
+    GlobalArrayFloat, // 全局float类型数组
 };
 
 typedef struct _Type{
     enum TypeID   ID : 8;            // The current base type of this type.
     unsigned SubclassData : 24;     // Space for subclasses to store data.
-//    struct _Type * const *ContainedTys;
 }Type;
 
 bool isIntType(Type *type);
@@ -43,4 +49,6 @@ bool isFloatType(Type *type);
 bool isVarType(Type *type);
 bool isImmType(Type *type);
 bool isArrayType(Type *type);
+bool isGlobalArrayType(Type *type);
+bool isGlobalVarType(Type *type);
 #endif
