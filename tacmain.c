@@ -90,28 +90,38 @@ int main(int argc, char* argv[]){
     print_block_info(block);
     printf("--------- after print block info ---------\n");
 
+    temp2 = instruction_list;
+    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+        print_one_ins_info(temp2);
+    }
+
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         printf("-------function  start---------\n");
         correctType(currentFunction);
         print_function_info(currentFunction);
+        clear_visited_flag(block);
         calculate_dominance(currentFunction);
+        clear_visited_flag(block);
         calculate_dominance_frontier(currentFunction);
+        clear_visited_flag(block);
         calculate_iDominator(currentFunction);
+        clear_visited_flag(block);
         calculate_DomTree(currentFunction);
+        clear_visited_flag(block);
         mem2reg(currentFunction);
         printf("------after a function------\n");
     }
 
-
     // 建立phi 之后的
     printf_llvm_ir(instruction_list,argv[1]);
 
-
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         outOfSSA(currentFunction);
-//        clear_visited_flag(currentFunction->entry);
-        //calculateLiveness(currentFunction);
-//        printLiveness(currentFunction->entry);
+        printf("after out of SSA!\n");
+        clear_visited_flag(currentFunction->entry);
+        calculateLiveness(currentFunction);
+//      clear_visited_flag(currentFunction->entry);
+        printLiveness(currentFunction->entry);
     }
 
     // 消除phi函数之后

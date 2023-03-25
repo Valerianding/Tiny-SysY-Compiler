@@ -100,7 +100,13 @@ void typePrinter(Value *val){
         printf("float type");
     }else if(isArrayType(val->VTy)){
         printf("array type");
-    }else{
-        printf("err type");
+    }else if(isGlobalVarType(val->VTy)){
+        if(val->VTy->ID == GlobalVarInt){
+            printf("global int var");
+        }else if(val->VTy->ID == GlobalVarFloat){
+            printf("global float var");
+        }else{
+            printf("err type");
+        }
     }
 }

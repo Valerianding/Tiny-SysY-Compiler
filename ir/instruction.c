@@ -14,6 +14,7 @@ Instruction* ins_new(int op_num){
     unsigned int use_size = user_size - sizeof(User);
     // use 是额外的，所以要单独计算大小 
     uint8_t *storage = (uint8_t *)malloc(sizeof(Instruction) + use_size);
+    memset(storage, 0 , use_size);
     /* 为Instruction的Value初始化 */
     Instruction* ins = (Instruction*)(storage+use_size);
     value_init((Value*)ins);
@@ -38,13 +39,15 @@ Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2){
 
 Instruction *ins_new_unary_operator(int Op,Value *S1){
     Instruction* inst = ins_new(1);
+    //printf("copy ins created!\n");
     Use* pUse = user_get_operand_use(&inst->user,0);
+    assert(pUse != NULL);
+    printf("copy ins created!\n");
     use_set_value(pUse,S1);
 
     inst->Opcode = Op;
-    inst->i=instruction_uid;
+    inst->i = instruction_uid;
     instruction_uid++;
-    //inst->user.value.IsInstruction = 1;
     return inst;
 }
 

@@ -12,6 +12,7 @@ void CleanObject(void* obj){
 InstNode* new_phi(Value *val){
     Instruction *phiIns = ins_new(0);
     phiIns->Opcode = Phi;
+    phiIns->user.value.pdata->pairSet = NULL;
     InstNode *phiNode = new_inst_node(phiIns);
     //做一个映射 记录现在对应的是哪个alloca
     phiNode->inst->user.value.alias = val;
@@ -31,13 +32,6 @@ pair *createPhiInfo(BasicBlock *prev, Value *val){
 void insert_phi(BasicBlock *block,Value *val){
     //头指令
     InstNode *instNode = block->head_node;
-
-    //注意第一条语句是label 所以我们一定要插入到label的后面
-    //
-    // 这个好像不存在这种情况
-    //如果当前的基本块内已经存在了对应phi指令的话那我们就不需要再次添加了
-
-
     //插入空的phi函数
     InstNode *phiInstNode = new_phi(val);
     ins_insert_after(phiInstNode,instNode);
@@ -47,11 +41,10 @@ void insert_phi(BasicBlock *block,Value *val){
 
 void insertPhiInfo(InstNode *ins,pair *phiInfo){
     if(ins->inst->user.value.pdata->pairSet == nullptr){
-        printf("oops\n");
         ins->inst->user.value.pdata->pairSet = HashSetInit();
-        printf("oops\n");
     }
     assert(ins->inst->user.value.pdata->pairSet != NULL);
+    assert(phiInfo != NULL);
     HashSetAdd(ins->inst->user.value.pdata->pairSet,phiInfo);
 }
 
@@ -59,8 +52,6 @@ void mem2reg(Function *currentFunction){
     //对于现在的Function初始化
     currentFunction->loadSet = HashMapInit();
     currentFunction->storeSet = HashMapInit();
-
-    //HashSet *allocas = HashSetInit();
 
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
@@ -77,60 +68,72 @@ void mem2reg(Function *currentFunction){
 
         if (curNode->inst->Opcode == Load) {
             Value *loadValue = curNode->inst->user.use_list[0].Val;
-            if (HashMapContain(currentFunction->loadSet, loadValue)) {
-                //不是第一次加入
-                HashSet *loadSet = HashMapGet(currentFunction->loadSet, loadValue);
-                //那么就将现在的BasicBlock
-                if (!HashSetFind(loadSet, parent)) {
-                    //如果存在那么就意味着存在两次load 我们目前仅保留一次 如果不存在我们再加入进去
+            if(!isArray(loadValue) && !isGlobalVar(loadValue)){
+                if (HashMapContain(currentFunction->loadSet, loadValue)) {
+                    //不是第一次加入
+                    HashSet *loadSet = HashMapGet(currentFunction->loadSet, loadValue);
+                    //那么就将现在的BasicBlock
+                    if (!HashSetFind(loadSet, parent)) {
+                        //如果存在那么就意味着存在两次load 我们目前仅保留一次 如果不存在我们再加入进去
+                        HashSetAdd(loadSet, parent);
+                    }
+                } else {
+                    HashSet *loadSet = HashSetInit();
                     HashSetAdd(loadSet, parent);
+                    HashMapPut(currentFunction->loadSet, loadValue, loadSet);
                 }
-            } else {
-                HashSet *loadSet = HashSetInit();
-                HashSetAdd(loadSet, parent);
-                HashMapPut(currentFunction->loadSet, loadValue, loadSet);
             }
         }
 
         if (curNode->inst->Opcode == Store) {
             //一定对应的是第二个
             Value *storeValue = curNode->inst->user.use_list[1].Val;
-            if (HashMapContain(currentFunction->storeSet, storeValue)) {
-                //如果存在的话那么之前的HashSet也一定存在
-                HashSet *storeSet = HashMapGet(currentFunction->storeSet, storeValue);
-                if (!HashSetFind(storeSet, parent)) {
+            if(!isGlobalVar(storeValue) && !isArray(storeValue)){
+                if (HashMapContain(currentFunction->storeSet, storeValue)) {
+                    //如果存在的话那么之前的HashSet也一定存在
+                    HashSet *storeSet = HashMapGet(currentFunction->storeSet, storeValue);
+                    if (!HashSetFind(storeSet, parent)) {
+                        HashSetAdd(storeSet, parent);
+                    }
+                } else {
+                    HashSet *storeSet = HashSetInit();
                     HashSetAdd(storeSet, parent);
+                    HashMapPut(currentFunction->storeSet, storeValue, storeSet);
                 }
-            } else {
-                HashSet *storeSet = HashSetInit();
-                HashSetAdd(storeSet, parent);
-                HashMapPut(currentFunction->storeSet, storeValue, storeSet);
             }
         }
         curNode = get_next_inst(curNode);
     }
 
-//
-
+    // 打印一下现在HashSet
+    HashMapFirst(currentFunction->loadSet);
+    for(Pair *pair = HashMapNext(currentFunction->loadSet); pair != NULL; pair = HashMapNext(currentFunction->loadSet)){
+        Value *val = pair->key;
+        BasicBlock *block = pair->value;
+        printf("value %s : load in block : b%d\n", val->name,block->id);
+    }
     curNode = head;
-
     //做一些基本的优化
-
     // 删除无用的alloca
     while(curNode != get_next_inst(tail)){
         //如果alloca没有load就删除这个alloca
         //首先找到对应的value
         printf("assert alloca ing \n");
-        if(curNode->inst->Opcode == Alloca && !HashMapContain(currentFunction->loadSet,(Value*)curNode->inst) && (curNode->inst->user.value.use_list == NULL)){
+        if(curNode->inst->Opcode == Alloca && curNode->inst->user.value.use_list == NULL){
             //不存在loadSet之中不存在这个value
             //删除这个instruction
             InstNode *next = get_next_inst(curNode);
             delete_inst(curNode);
             curNode = next;
-        }else if(curNode->inst->Opcode == Store && !HashMapContain(currentFunction->loadSet, ins_get_rhs(curNode->inst))) {
-            InstNode *next = get_next_inst(curNode);
-            delete_inst(curNode);
-            curNode = next;
+        }else if(curNode->inst->Opcode == Store) {
+            Value *storeValue = ins_get_rhs(curNode->inst);
+            if(!isGlobalVar(storeValue) && !isArray(storeValue) && !HashMapContain(currentFunction->loadSet, storeValue)){
+                InstNode *next = get_next_inst(curNode);
+                delete_inst(curNode);
+                curNode = next;
+            }else{
+                curNode = get_next_inst(curNode);
+            }
         }else{
             curNode = get_next_inst(curNode);
         }
@@ -139,7 +142,6 @@ void mem2reg(Function *currentFunction){
     //TODO 做一些剪枝来保证phi函数插入更加简介
 
     //mem2reg的主要过程
-    //如果只有一个store的话 被store支配的load转换
     //Function里面去找
     HashMapFirst(currentFunction->storeSet);
     //对里面所有的variable进行查找
@@ -148,7 +150,6 @@ void mem2reg(Function *currentFunction){
         Value *val = pair->key;
         HashSet *storeSet = pair->value;  //这个value对应的所有defBlocks
         HashSetFirst(storeSet);
-
         printf("value : %s store(defBlocks) : ", val->name);
         for(BasicBlock *key = HashSetNext(storeSet); key != NULL; key = HashSetNext(storeSet)){
             printf("b%d ",key->id);
@@ -157,7 +158,6 @@ void mem2reg(Function *currentFunction){
         printf("\n");
 
         //place phi
-
         HashSet *phiBlocks = HashSetInit();
         while(HashSetSize(storeSet) != 0){
             HashSetFirst(storeSet);
@@ -188,23 +188,15 @@ void mem2reg(Function *currentFunction){
     assert(entry->domTreeNode == currentFunction->root);
     DomTreeNode *root = entry->domTreeNode;
 
-    //利用一个HashMap alloca的value*  -> stack*
-
-    //(a) A hash table of IncomingVals which is a map from a alloca to its most recent name is created
-    // Most recent name of each alloca is an undef value to start with
     HashMap *IncomingVals = HashMapInit();
 
     curNode = entry->head_node;
-    //printf("entry id : %d",curNode->inst->i);
-    //printf("tail id : %d",entry->tail_node->inst->i);
     while(curNode != get_next_inst(entry->tail_node)){
         //printf("curNode id is : %d",curNode->inst->i);
         if(curNode->inst->Opcode == Alloca){
             //每一个alloca都对应一个stack
             stack *allocaStack = stackInit();
-            //stackSetClean(allocaStack,CleanObject);
             assert(allocaStack != nullptr);
-            //printf("name : %s created stack\n",curNode->inst->user.value.name);
             HashMapPut(IncomingVals,&(curNode->inst->user.value),allocaStack);
             assert(HashMapContain(IncomingVals,&(curNode->inst->user.value)));
         }
@@ -237,11 +229,17 @@ void mem2reg(Function *currentFunction){
     }
     HashMapDeinit(IncomingVals);
 
+    // Function中的HashSet也不需要了
+    HashMapDeinit(currentFunction->storeSet);
+    HashMapDeinit(currentFunction->loadSet);
 }
 
 void insertCopies(BasicBlock *block,Value *dest,Value *src){
     InstNode *tailIns = block->tail_node;
+    assert(tailIns != NULL);
     InstNode *copyIns = newCopyOperation(dest,src);
+    printf("new a copy Ins!\n");
+    assert(copyIns != NULL);
     copyIns->inst->Parent = block;
     ins_insert_before(copyIns,tailIns);
 }
@@ -260,7 +258,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
     InstNode *curr = head;
 
 
-    printf("11111 \n");
     //记录一下每一个alloc的压栈次数
     HashMap *countDefine = HashMapInit();
     HashMapFirst(IncomingVals);
@@ -271,7 +268,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         Value *alloc = (Value*)pair->key;
         HashMapPut(countDefine,alloc,defineTimes);
     }
-    printf("11111 \n");
 
     if(GlobalIncomingVal != nullptr){
         // 同样的我们也要记录全局变量压栈的次数
@@ -283,60 +279,60 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             HashMapPut(countDefine,alloc,globalDefineTimes);
         }
     }
+
     printf("11111 \n");
     // 变量重命名
     while(curr != get_next_inst(tail)){
-
         switch(curr->inst->Opcode) {
             case Load: {
-                // 需要被替换的
-                Value *value = ins_get_value(curr->inst);
-                // 对应的alloc
                 Value *alloc = ins_get_lhs(curr->inst);
-                Value *replace = nullptr;
-                //找到栈
-                stack *allocStack = HashMapGet(IncomingVals, alloc);
-
-                printf("what name : %s\n",alloc->name);
-                //如果是nullptr
-                if(allocStack == nullptr){
-                    //尝试去全局里面去取
-                    stack *globalStack = HashMapGet(GlobalIncomingVal,alloc);
-                    assert(globalStack != nullptr);
-                    stackTop(globalStack,(void *)&replace);
-                    assert(replace != nullptr);
-                }else{
-                    assert(allocStack != nullptr);
-                    //去里面找
-                    stackTop(allocStack, (void *) &replace);
-                    assert(replace != nullptr);
+                if(!isArray(alloc) && !isGlobalVar(alloc)){
+                    // 需要被替换的
+                    Value *value = ins_get_value(curr->inst);
+                    // 对应的alloc
+                    Value *replace = nullptr;
+                    //找到栈
+                    stack *allocStack = HashMapGet(IncomingVals, alloc);
+                    printf("what name : %s\n",alloc->name);
+                    //如果是nullptr
+                    if(allocStack == nullptr){
+                        //尝试去全局里面去取
+                        stack *globalStack = HashMapGet(GlobalIncomingVal,alloc);
+                        assert(globalStack != nullptr);
+                        stackTop(globalStack,(void *)&replace);
+                        assert(replace != nullptr);
+                    }else{
+                        assert(allocStack != nullptr);
+                        //去里面找
+                        stackTop(allocStack, (void *) &replace);
+                        assert(replace != nullptr);
+                    }
+                    value_replaceAll(value, replace);
                 }
-
-                value_replaceAll(value, replace);
                 break;
             }
             case Store: {
-                //更新变量的使用与
-                //对应的{}
-                Value *data = ins_get_lhs(curr->inst);
                 Value *store = ins_get_rhs(curr->inst); // 对应的allocas
-                //可以直接这样更新
-                stack *allocStack = HashMapGet(IncomingVals, store);
-                if(allocStack == nullptr){
-                    stack *globalStack = HashMapGet(GlobalIncomingVal,store);
-                    assert(globalStack != nullptr);
-                    stackPush(globalStack,data);
-                }else{
-                    assert(allocStack != nullptr);
-                    stackPush(allocStack, data);
+                if(!isArray(store) && !isGlobalVar(store)){
+                    //更新变量的使用
+                    //对应的{}
+                    Value *data = ins_get_lhs(curr->inst);
+                    //可以直接这样更新
+                    stack *allocStack = HashMapGet(IncomingVals, store);
+                    if(allocStack == nullptr){
+                        stack *globalStack = HashMapGet(GlobalIncomingVal,store);
+                        assert(globalStack != nullptr);
+                        stackPush(globalStack,data);
+                    }else{
+                        assert(allocStack != nullptr);
+                        stackPush(allocStack, data);
+                    }
+                    //记录define的次数
+                    int *defineTime = HashMapGet(countDefine,store);
+                    //if(count
+                    assert(defineTime != NULL);
+                    *(defineTime) = *(defineTime) + 1;
                 }
-
-                //记录define的次数
-                int *defineTime = HashMapGet(countDefine,store);
-
-                //if(count
-                assert(defineTime != NULL);
-                *(defineTime) = *(defineTime) + 1;
                 break;
             }
             case Phi: {
@@ -371,6 +367,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
         //维护这个block内的phiNode
         InstNode *nextBlockHead = nextBlock->head_node;
+        //跳过Label
         InstNode *nextBlockCurr = get_next_inst(nextBlockHead);
         while(nextBlockCurr->inst->Opcode == Phi){
             //对应的是哪个
@@ -387,16 +384,14 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             //从中去取目前到达的定义
             Value *pairValue;
             stackTop(allocStack,(void *)&pairValue);
-            //printf("fuck \n");
+            printf("fuck \n");
             //填充信息
             pair *phiInfo = createPhiInfo(block,pairValue);
-            //printf("fuck \n");
-            assert(phiInfo != NULL);
-
+            printf("fuck \n");
             insertPhiInfo(nextBlockCurr,phiInfo);
-            //printf("fuck \n");
+            printf("fuck \n");
             nextBlockCurr = get_next_inst(nextBlockCurr);
-            //printf("fuck \n");
+            printf("fuck \n");
         }
     }
 
@@ -520,15 +515,25 @@ void deleteLoadStore(Function *currentFunction){
                 break;
             }
             case Load:{
-                InstNode *next = get_next_inst(curr);
-                delete_inst(curr);
-                curr = next;
+                Value *loadValue = ins_get_lhs(curr->inst);
+                if(!isArray(loadValue) && !isGlobalVar(loadValue)){
+                    InstNode *next = get_next_inst(curr);
+                    delete_inst(curr);
+                    curr = next;
+                }else{
+                    curr = get_next_inst(curr);
+                }
                 break;
             }
             case Store:{
-                InstNode *next = get_next_inst(curr);
-                delete_inst(curr);
-                curr = next;
+                Value *storeValue = ins_get_rhs(curr->inst);
+                if(!isArray(storeValue) && !isGlobalVar(storeValue)){
+                    InstNode *next = get_next_inst(curr);
+                    delete_inst(curr);
+                    curr = next;
+                }else{
+                    curr = get_next_inst(curr);
+                }
                 break;
             }
             default:{
@@ -567,7 +572,7 @@ void renameVariabels(Function *currentFunction) {
 
                 // 去上面区间里面找
                 InstNode *tempNode = entry->head_node;
-                while (tempNode != currNode) {
+                while (tempNode != NULL) {
 
                     if (tempNode->inst->Opcode == br || tempNode->inst->Opcode == br_i1) {
                         if (tempNode->inst->user.value.pdata->instruction_pdata.true_goto_location == prevLabel) {
@@ -616,168 +621,6 @@ void renameVariabels(Function *currentFunction) {
     }
 }
 
-//
-//
-//    ///先遍历两次，搭一个label与br语句的映射关系（对不起，感觉好丑），本来想过在遍历语法树的时候就建上关系，但是看了一下，短路的话，逻辑有点复杂，不太好加
-//    HashMap* hashMap=HashMapInit(); //<key,value>-----> <Value*,HashSet<Value*>>，key是label的value,value是br或br_i1或phi的value set
-//
-//    //先装入label的value，作为全部key
-//    while(currNode != get_next_inst(end->tail_node)){
-//        if(currNode->inst->Opcode==Label){
-//           HashSet *set=HashSetInit();
-//           HashMapPut(hashMap,(void*)&currNode->inst->user.value,(void*)set);
-//        }
-//        currNode = get_next_inst(currNode);
-//    }
-//
-//    //将br,br_i1,phi装到对应key的value set中
-//    //br:设置v_br的alias为NULL，肯定是它的true_location对应label的值
-//    //br_i1:设置v_br的alias为false_location对应的那个label的value，判断要装入的究竟是true的还是false的
-//    currNode=entry->head_node;
-//    while(currNode != get_next_inst(end->tail_node)){
-//        if(currNode->inst->Opcode==br)
-//        {
-//            int true_location=currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
-//            HashMapFirst(hashMap);
-//            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-//                Value *v = pair->key;
-//                if(v->pdata->instruction_pdata.true_goto_location == true_location){
-//                    //拿出那个set,加入这个br的value
-//                    HashSet *set = pair->value;
-//                    Value *v_br = &currNode->inst->user.value;
-//                    v_br->alias = NULL;
-//                    HashSetAdd(set,v_br);
-//                    break;
-//                }
-//            }
-//        }
-//        else if(currNode->inst->Opcode == br_i1)
-//        {
-//            int true_location = currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
-//            int false_location = currNode->inst->user.value.pdata->instruction_pdata.false_goto_location;
-//
-//            HashMapFirst(hashMap);
-//            for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-//                Value *v=pair->key;
-//                if(v->pdata->instruction_pdata.true_goto_location == true_location)
-//                {
-//                    //拿出那个set,加入这个br_i1的value
-//                    HashSet *set=pair->value;
-//                    Value *v_br=&currNode->inst->user.value;
-//                    HashSetAdd(set,v_br);
-//                }
-//                else if(v->pdata->instruction_pdata.true_goto_location == false_location)
-//                {
-//                    //拿出那个set,加入这个br_i1的value
-//                    HashSet *set = pair->value;
-//                    Value *v_br = &currNode->inst->user.value;
-//                    //这个br i1的alias设置为这个label value
-//                    v_br->alias = v;
-//                    HashSetAdd(set,v_br);
-//                }
-//            }
-//        }
-//
-//        else if(currNode->inst->Opcode==Phi)
-//        {
-//            //1.取出hashSet
-//            HashSet *phiSet=currNode->inst->user.value.pdata->pairSet;
-//            HashSetFirst(phiSet);
-//            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-//                BasicBlock *from = phiInfo->from;
-//                HashMapFirst(hashMap);
-//                for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-//                    Value *v=pair->key;
-//                    if(v->pdata->instruction_pdata.true_goto_location==from->id)
-//                    {
-//                        //拿出那个set,加入这个value
-//                        HashSet *set=pair->value;
-//                        Value *v_phi=&currNode->inst->user.value;
-//                        HashSetAdd(set,v_phi);
-//                    }
-//                }
-//            }
-//        }
-//        currNode = get_next_inst(currNode);
-//    }
-//
-//    currNode=entry->head_node;
-//    while(currNode != get_next_inst(end->tail_node)){
-//
-//        if(currNode->inst->Opcode!= br && currNode->inst->Opcode != br_i1){
-//            if(currNode->inst->Opcode == Label){
-//                HashSet *hashset=hashMap->get(hashMap,&currNode->inst->user.value);
-//
-//                HashSetFirst(hashset);
-//                for(Value *v_br = HashSetNext(hashset); v_br != NULL; v_br = HashSetNext(hashset)){
-//                    if(v_br->name!=NULL)
-//                    {
-//                        //是phi
-//                        HashSet *phiSet=v_br->pdata->pairSet;
-//                        HashSetFirst(phiSet);
-//                        for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-//                            BasicBlock *from = phiInfo->from;
-//                            if(currNode->inst->user.value.pdata->instruction_pdata.true_goto_location==from->id){
-//                                //修改该修改的对应id
-//                                phiInfo->from->id=countVariable;
-//                            }
-//                        }
-//                    }
-//                    else
-//                    {
-//                        if(v_br->alias==NULL)        //br的情况可完全确定
-//                            v_br->pdata->instruction_pdata.true_goto_location = countVariable;
-//                        else                         //br_i1的情况
-//                        {
-//                            if(v_br->alias->pdata->instruction_pdata.true_goto_location == currNode->inst->user.value.pdata->instruction_pdata.true_goto_location)
-//                                v_br->pdata->instruction_pdata.false_goto_location = countVariable;          //如果是false_location的位置，与label有映射
-//                            else
-//                                v_br->pdata->instruction_pdata.true_goto_location = countVariable;
-//                        }
-//                    }
-//                }
-//                currNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
-//                countVariable++;
-//            }
-//            else {
-//
-//                //普通的instruction语句
-//                char *insName = currNode->inst->user.value.name;
-//
-//                //如果不为空那我们可以进行重命名
-//                if(insName != NULL && insName[0] == '%'){
-//                    char newName[5];
-//                    clear_tmp(insName);
-//                    newName[0] = '%';
-//                    int index = 1;
-//                    int rep_count = countVariable;
-//                    while(rep_count){
-//                        newName[index] = (rep_count % 10) + '0';
-//                        rep_count /= 10;
-//                        index++;
-//                    }
-//                    int j = 1;
-//                    for(int i = index - 1; i >= 1; i--){
-//                        insName[j] = newName[i];
-//                        j++;
-//                    }
-//                    countVariable++;
-//                }
-//            }
-//        }
-//
-//        currNode = get_next_inst(currNode);
-//    }
-//
-//    //内存释放
-//    HashMapFirst(hashMap);
-//    for(Pair *pair = HashMapNext(hashMap); pair != NULL; pair = HashMapNext(hashMap)){
-//        HashSet *set=pair->value;
-//        HashSetDeinit(set);
-//    }
-//    HashMapDeinit(hashMap);
-//r}
-
 
 void outOfSSA(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
@@ -787,16 +630,23 @@ void outOfSSA(Function *currentFunction){
     InstNode *currNode = entry->head_node;
 
     while(currNode != get_next_inst(end->tail_node)){
-
+        printf("hello !\n");
         if(currNode->inst->Opcode == Phi){
-            //
+            assert(currNode->inst->user.value.pdata->pairSet != NULL);
+            printf("recognize a phi!\n");
             HashSetFirst(currNode->inst->user.value.pdata->pairSet);
             for(pair *phiInfo = HashSetNext(currNode->inst->user.value.pdata->pairSet); phiInfo != NULL; phiInfo = HashSetNext(currNode->inst->user.value.pdata->pairSet)){
                 BasicBlock *from = phiInfo->from;
                 Value *src = phiInfo->define;
+                assert(from != NULL);
+                assert(src != NULL);
                 Value *dest = ins_get_value(currNode->inst);
+                printf("hashset first!\n");
+                printf("insert copy of %s to b%d\n",src->name, from->id);
                 insertCopies(from,dest,src);
+                printf("insert success!\n");
             }
+            printf("insert a phi\n");
             InstNode *nextNode = get_next_inst(currNode);
             delete_inst(currNode);
             currNode = nextNode;
@@ -809,9 +659,13 @@ void outOfSSA(Function *currentFunction){
 
 InstNode *newCopyOperation(Value *dest, Value *src){
     // 此时挂载了
+    printf("copy ins created!\n");
     Instruction *copyIns = ins_new_unary_operator(CopyOperation,src);
+    printf("copy ins created!\n");
+    assert(copyIns != NULL);
     copyIns->Opcode = CopyOperation;
     copyIns->user.value.alias = dest;
     InstNode *copyInsNode = new_inst_node(copyIns);
+    assert(copyInsNode != NULL);
     return copyInsNode;
 }

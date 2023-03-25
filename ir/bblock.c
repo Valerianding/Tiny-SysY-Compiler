@@ -12,6 +12,7 @@ BasicBlock *bb_create(){
 //// 将instruction放在instnode里面
 InstNode* new_inst_node(Instruction* inst){
     InstNode* n = malloc(sizeof(InstNode));
+    assert(n != NULL && " out of memory");
     n->inst = inst;
     // 初始化结点
     sc_list_init(&(n->list));
@@ -83,9 +84,7 @@ HashSet *get_prev_block(BasicBlock *this){
 
 void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
     HashSet *posPrevBlocks = pos->preBlocks;
-    printf("bb_add_prev!\n");
     HashSetAdd(posPrevBlocks,prev);
-    printf("after bb_add_prev\n");
 }
 
 
@@ -221,42 +220,46 @@ void delete_inst(InstNode *this){
         next->list.prev = &(prev->list);
         prev->list.next = &(next->list);
     }
-    free(this);
+    //free(this);
 }
 
 void print_block_info(BasicBlock *this){
-    BasicBlock *block = this;
-    block->visited = true;
-    printf("block : b%d ",this->id);
-    //打印后继
-    if(this->head_node){
-        printf("entry : id : %d ",this->head_node->inst->i);
-    }
-    if(this->tail_node){
-        printf("tail : id : %d ",this->tail_node->inst->i);
-    }
-    //打印前驱
-    printf("prev: ");
-    if(HashSetSize(this->preBlocks) != 0){
-        HashSetFirst(this->preBlocks);
-        for(BasicBlock *prevBlock = HashSetNext(this->preBlocks); prevBlock != NULL; prevBlock = HashSetNext(this->preBlocks)){
-            printf(" b%d", prevBlock->id);
+    InstNode *currNode = this->head_node;
+    while(currNode != NULL) {
+        BasicBlock *block = currNode->inst->Parent;
+        if(block->visited == false){
+            block->visited = true;
+            printf("block : b%d ",block->id);
+            //打印后继
+            if(block->head_node){
+                printf("entry : id : %d ",block->head_node->inst->i);
+            }
+            if(block->tail_node){
+                printf("tail : id : %d ",block->tail_node->inst->i);
+            }
+            //打印前驱
+            printf("prev: ");
+            if(HashSetSize(block->preBlocks) != 0){
+                HashSetFirst(block->preBlocks);
+                for(BasicBlock *prevBlock = HashSetNext(block->preBlocks); prevBlock != NULL; prevBlock = HashSetNext(block->preBlocks)){
+                    printf(" b%d", prevBlock->id);
+                }
+            }else{
+                printf("NULL ");
+            }
+            if(block->true_block){
+                printf("true_block : %d ",block->true_block->id);
+            }
+            if(block->false_block){
+                printf("false_block : %d ",block->false_block->id);
+            }
+            if(block->Parent){
+                printf("parent : %p",block->Parent);
+            }else{
+                printf("parent : NULL");
+            }
+            printf("\n");
         }
-    }else{
-        printf("NULL ");
+        currNode = get_next_inst(currNode);
     }
-    if(this->true_block){
-        printf("true_block : %d ",this->true_block->id);
-    }
-    if(this->false_block){
-        printf("false_block : %d ",this->false_block->id);
-    }
-    if(this->Parent){
-        printf("parent : %p",this->Parent);
-    }else{
-        printf("parent : NULL");
-    }
-    printf("\n");
-    if(block->true_block != NULL && block->visited == false) print_block_info(block->true_block);
-    if(block->false_block != NULL && block->visited == false) print_block_info(block->false_block);
 }

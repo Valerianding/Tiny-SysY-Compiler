@@ -37,7 +37,9 @@ void bblock_divide(InstNode *head){
             ///修改Type 此处可能前端就处理了
             Value *insValue = ins_get_value(cur->inst);
             if(isIntType(insValue->VTy)){
-                insValue->VTy->ID = Globa
+                insValue->VTy->ID = GlobalVarInt;
+            }else if(isFloatType(insValue->VTy)){
+                insValue->VTy->ID = GlobalArrayFloat;
             }
 
             prev = cur;
@@ -63,6 +65,8 @@ void bblock_divide(InstNode *head){
 
             if(cur->inst->Opcode == Label){
                 curBlockLabel = cur->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            }else if(cur->inst->Opcode == FunBegin){
+                curBlockLabel = 0;
             }
         }
         if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd){

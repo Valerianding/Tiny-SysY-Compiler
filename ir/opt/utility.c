@@ -41,7 +41,6 @@ void correctType(Function *currentFunction){
                 insValue->VTy->ID = ArrayTyID;
                 break;
             }
-
         }
         currNode = get_next_inst(currNode);
     }
@@ -80,19 +79,12 @@ bool isValidOperator(InstNode *insNode){
 }
 
 void clear_visited_flag(BasicBlock *block){
-    Function *parent = block->Parent;
-
-    assert(parent->entry == block);
-    BasicBlock *tail = parent->tail;
     InstNode *currNode = block->head_node;
-    InstNode *tailNode = tail->tail_node;
 
-    BasicBlock *prevBlock = NULL;
-    while(currNode != get_next_inst(tailNode)){
+    while(currNode != NULL){
         BasicBlock *currNodeParent = currNode->inst->Parent;
-        if(currNodeParent != prevBlock){
+        if(currNodeParent->visited == true){
             currNodeParent->visited = false;
-            prevBlock = currNodeParent;
         }
         currNode = get_next_inst(currNode);
     }
