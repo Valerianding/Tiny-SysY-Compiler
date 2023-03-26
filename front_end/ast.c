@@ -437,7 +437,6 @@ int cal_easy_expr(past expr)
     stack *S=stackInit();
     past p1 = expr;
     past q = NULL;     //记录刚刚访问过的结点
-    int x3;
     //记录后缀表达式
     past str[100];
     int i = 0;
@@ -458,8 +457,8 @@ int cal_easy_expr(past expr)
                 q = p1;              //保存到q，作为下一次处理结点的前驱
                 stackTop(s, (void**)&p1);
                 stackPop(s);
-                p1 = NULL;         //p置于NULL可继续退层，否则会重复访问刚访问结点的左子树
                 str[i++] = p1;
+                p1 = NULL;         //p置于NULL可继续退层，否则会重复访问刚访问结点的左子树
             }
             else
                 p1 = p1->right;
@@ -469,7 +468,7 @@ int cal_easy_expr(past expr)
 
     int x1,x2;
     int result;
-    int data;
+    int data ;
     past *p=str;
     while(*p)
     {
@@ -484,14 +483,14 @@ int cal_easy_expr(past expr)
                 data=v->pdata->var_pdata.iVal;
             }
 
-            stackPush(S,&data);
+            stackPush(S,data);
         }
 
         else
         {
-            stackTop(S, (void**)&x2);
+            stackTop(S, (void*)&x2);
             stackPop(S);
-            stackTop(S, (void**)&x1);
+            stackTop(S, (void*)&x1);
             stackPop(S);
             switch((*p)->iVal)
             {
@@ -501,13 +500,11 @@ int cal_easy_expr(past expr)
                 case '/': result = x1 / x2; break;
                 case '%': result = x1 % x2; break;
             }
-            stackPush(S,&result);
-            p++;
+            stackPush(S,result);
         }
-
         p++;
     }
-    stackTop(S,(void**)&result);
+    stackTop(S,(void*)&result);
     stackPop(S);
     return x1;
 }
