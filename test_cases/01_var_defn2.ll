@@ -17,7 +17,3 @@ declare dso_local i32 @putarray(...) #1
 declare dso_local i32 @putfloat(...) #1
 declare dso_local i32 @putfarray(...) #1
 declare dso_local i32 @putf(...) #1
- i32 @putarray(...) #1
-declare dso_local i32 @putfloat(...) #1
-declare dso_local i32 @putfarray(...) #1
-declare dso_local i32 @putf(...) #1
