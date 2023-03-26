@@ -542,14 +542,17 @@ void assign_global_array(past p,Value* v_array,int i,int level)
     }
 }
 
-void handle_global_array(Value* v_array,bool is_global,past vars)
+void handle_global_array(Value* v_array,bool is_global,past vars,int flag)
 {
     //先全部默认为0
     int ele_num= get_array_total_occupy(v_array,0);
     ele_num/=4;
-    for(int i=0;i<ele_num;i++)
+    if(flag==1)       //有初始化
     {
-        v_array->pdata->symtab_array_pdata.array[i]=0;
+        for(int i=0;i<ele_num;i++)
+        {
+            v_array->pdata->symtab_array_pdata.array[i]=0;
+        }
     }
 
     if(v_array->VTy->ID==ArrayTyID_Init || v_array->VTy->ID==ArrayTyID_Const)
@@ -1067,7 +1070,10 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
                 {
                     //以全局，memcpy的方式处理
-                    handle_global_array(v_array,is_global,vars);
+                    if(vars->right->left==NULL)
+                        handle_global_array(v_array,is_global,vars,0);
+                    else
+                        handle_global_array(v_array,is_global,vars,1);
 
                     Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
                     //将这个instruction加入总list
@@ -1107,19 +1113,24 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                     }
                 }
             }
-                //TODO 是全局有初始化数组
+            //TODO 是全局有初始化数组
             else
             {
                 past ident_array=vars->left;         //到IdentArray结点
                 Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->left->sVal,'\0'));
-                handle_global_array(v_array,true,vars);
+
+                if(vars->right->left==NULL)
+                    handle_global_array(v_array,true,vars,0);
+                else
+                    handle_global_array(v_array,true,vars,1);
             }
         }
+        //无初值数组
         else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "IdentArray") == 0 && is_global)
         {
             past ident_array=vars->left;         //到IdentArray结点
             Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->sVal,'\0'));
-            handle_global_array(v_array,true,vars);
+            handle_global_array(v_array,true,vars,0);
         }
 
         vars=vars->next;

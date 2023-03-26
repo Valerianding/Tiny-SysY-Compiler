@@ -40,7 +40,7 @@ void reduce_break();
 void reduce_return();
 void reduce_and(int false_index);
 void reduce_or(int true_index,int false_index);
-void handle_global_array(Value* v_array,bool is_global,past vars);
+void handle_global_array(Value* v_array,bool is_global,past vars,int flag);    //flag:0未初始化，1初始化
 void assign_global_array(past p,Value* v_array,int i,int level);
 void fix_array(struct _InstNode *instruction_node);
 
