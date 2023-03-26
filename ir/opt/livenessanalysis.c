@@ -68,11 +68,13 @@ void calculateLiveness(Function *currentFunction){
             Value *rhs = NULL;
             //如果是return 语句的话就不需要左边这个
             //如果是CopyOperation也需要的特殊处理
-            if(exitCurr->inst->Opcode != Return && exitCurr->inst->Opcode != CopyOperation){
-                def = ins_get_value(exitCurr->inst);
+            if(exitCurr->inst->Opcode == Return || exitCurr->inst->Opcode == Store){
+                def = NULL;
             }else if(exitCurr->inst->Opcode == CopyOperation){
                 Value *insValue = ins_get_value(exitCurr->inst);
                 def = insValue->alias;
+            }else{
+                def = ins_get_value(exitCurr->inst);
             }
 
             //现在是否只有可能是
@@ -90,13 +92,13 @@ void calculateLiveness(Function *currentFunction){
                     HashSetRemove(exitLiveIn,def);
                 }
             }
-            if(lhs != NULL && !isImm(lhs) && !isArray(lhs)){
+            if(lhs != NULL && !isImm(lhs) && !isArray(lhs) && !isGlobalVar(lhs)){
                 if(!HashSetFind(exitLiveIn,lhs)){
                     HashSetAdd(exitLiveIn,lhs);
                 }
             }
 
-            if(rhs != NULL && !isImm(rhs) && !isArray(rhs)){
+            if(rhs != NULL && !isImm(rhs) && !isArray(rhs) && !isGlobalVar(rhs)){
                 if(!HashSetFind(exitLiveIn,rhs)){
                     HashSetAdd(exitLiveIn,rhs);
                 }
@@ -149,11 +151,13 @@ void calculateLiveness(Function *currentFunction){
 
                 //如果是return 语句的话就不需要左边这个
                 //如果是CopyOperation也需要的特殊处理
-                if(currNode->inst->Opcode != Return && currNode->inst->Opcode != CopyOperation){
-                    def = ins_get_value(currNode->inst);
+                if(currNode->inst->Opcode == Return || currNode->inst->Opcode == Store){
+                    def = NULL;
                 }else if(currNode->inst->Opcode == CopyOperation){
                     Value *insValue = ins_get_value(currNode->inst);
                     def = insValue->alias;
+                }else{
+                    def = ins_get_value(currNode->inst);
                 }
 
                 //现在是否只有可能是

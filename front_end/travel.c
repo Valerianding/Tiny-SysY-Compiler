@@ -728,12 +728,12 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
 
                     if(i==start_layer)
                     {
-                        ins_gmp= ins_new_binary_operator(GMP,begin_offset_value,v_offset);
+                        ins_gmp= ins_new_binary_operator(GEP, begin_offset_value, v_offset);
                     }
                     else
                     {
                         Value *v_prev=&get_last_inst(instruction_list)->inst->user.value;
-                        ins_gmp= ins_new_binary_operator(GMP,v_prev,v_offset);
+                        ins_gmp= ins_new_binary_operator(GEP, v_prev, v_offset);
                     }
 
                     Value *v_gmp= ins_get_value_with_name(ins_gmp);
@@ -776,7 +776,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     //这里+1后可能溢出
                     value_init_int(v_offset,carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]++);
 
-                    Instruction *gmp_last = ins_new_binary_operator(GMP,record[v_array->pdata->symtab_array_pdata.dimention_figure-2],v_offset);
+                    Instruction *gmp_last = ins_new_binary_operator(GEP, record[v_array->pdata->symtab_array_pdata.dimention_figure - 2], v_offset);
                     //是最后一层吧
                     Value *v_gmp= ins_get_value_with_name(gmp_last);
                     //v_gmp->VTy->ID=AddressTyID;
@@ -836,12 +836,12 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         //注意record是岔一级使用的
                         if(i==carry_index)
                         {
-                            ins= ins_new_binary_operator(GMP,v_start,v_carry_index);
+                            ins= ins_new_binary_operator(GEP, v_start, v_carry_index);
                         }
                         else
                         {
                             Value *v_prev=&get_last_inst(instruction_list)->inst->user.value;
-                            ins= ins_new_binary_operator(GMP,v_prev,v_carry_index);
+                            ins= ins_new_binary_operator(GEP, v_prev, v_carry_index);
                             //更新record
                             //record[i]=v_prev;
                         }
@@ -928,18 +928,18 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension)
         if(i==0)
         {
             if(v_array->VTy->ID!=AddressTyID)
-                gmp= ins_new_binary_operator(GMP,v_array->alias,v_num);
+                gmp= ins_new_binary_operator(GEP, v_array->alias, v_num);
             else
             {
                 //还得load一把?
                 Value *vvv_load= create_load_stmt(v_array->alias->name);
-                gmp=ins_new_binary_operator(GMP,vvv_load,v_num);
-                //gmp=ins_new_binary_operator(GMP,v_array,v_num);
+                gmp=ins_new_binary_operator(GEP, vvv_load, v_num);
+                //gmp=ins_new_binary_operator(GEP,v_array,v_num);
             }
         }
         else
         {
-            gmp= ins_new_binary_operator(GMP,v_last,v_num);
+            gmp= ins_new_binary_operator(GEP, v_last, v_num);
         }
 
 
@@ -2835,7 +2835,7 @@ void create_params_stmt(past func_params,Value * v_func)
 //                    //TODO 目前只针对二维补了
                     Value *v_z=(Value*) malloc(sizeof (Value));
                     value_init_int(v_z,0);
-                    Instruction *instruction1= ins_new_binary_operator(GMP,v_f,v_z);
+                    Instruction *instruction1= ins_new_binary_operator(GEP, v_f, v_z);
                     v= ins_get_value_with_name(instruction1);
                     v->pdata->var_pdata.iVal=1;
                     v->VTy->ID=AddressTyID;
@@ -2872,7 +2872,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 //取得首地址，gmp一下
                 Value *v_zero=(Value*) malloc(sizeof (Value));
                 value_init_int(v_zero,0);
-                Instruction *instruction1= ins_new_binary_operator(GMP,v_test->alias,v_zero);
+                Instruction *instruction1= ins_new_binary_operator(GEP, v_test->alias, v_zero);
                 v=ins_get_value_with_name(instruction1);
                 v->VTy->ID=AddressTyID;
                 v->alias=v_test;
@@ -3799,7 +3799,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 break;
 
-            case GMP:
+            case GEP:
                 if(instruction->user.value.alias!=NULL)
                     v_cur_array=instruction->user.value.alias;
                 //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
@@ -3996,7 +3996,7 @@ void fix_array(struct _InstNode *instruction_node)
         //
         switch (instruction_node->inst->Opcode)
         {
-            case GMP:
+            case GEP:
                 /** 1. 先取出第一个操作数的value的iVal，是当前累积量
                 * 2. 算出左值的累积量，替换左值的iVal*/
                 v_array=instruction->user.value.alias;

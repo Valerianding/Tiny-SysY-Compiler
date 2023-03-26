@@ -3219,7 +3219,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,HashMap*hashMap){
                     give_param_str(hashMap,value0,name,&ri);
                     give_param_str(hashMap,value1,name,&ri);
                     break;
-                case GMP:
+                case GEP:
                     value0 = &ins->inst->user.value;
                     value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                     value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
@@ -3815,7 +3815,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //数组初始化
     Value *array= user_get_operand_use(&ins->inst->user,0)->Val->alias;
 
-    for(; get_next_inst(ins)->inst->Opcode==GMP;ins= get_next_inst(ins));
+    for(; get_next_inst(ins)->inst->Opcode == GEP; ins= get_next_inst(ins));
 //    这里得到最后一条GMP指令
     int off_sp= get_value_offset_sp(hashMap,array)+ins->inst->user.value.pdata->var_pdata.iVal*4;
 //    Value *value0=&ins->inst->user.value;
@@ -3940,7 +3940,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
             return arm_trans_zext(ins);
         case bitcast:
             return arm_trans_bitcast(ins);
-        case GMP:
+        case GEP:
             return arm_trans_GMP(ins,hashMap);
         case MEMCPY:
             return arm_trans_MEMCPY(ins);

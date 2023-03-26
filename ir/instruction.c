@@ -39,10 +39,8 @@ Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2){
 
 Instruction *ins_new_unary_operator(int Op,Value *S1){
     Instruction* inst = ins_new(1);
-    //printf("copy ins created!\n");
     Use* pUse = user_get_operand_use(&inst->user,0);
     assert(pUse != NULL);
-    printf("copy ins created!\n");
     use_set_value(pUse,S1);
 
     inst->Opcode = Op;
@@ -152,7 +150,7 @@ void print_ins_opcode(Instruction *ins){
         case bitcast:
             printf("bitcast");
             break;
-        case GMP:
+        case GEP:
             printf("getelementptr");
             break;
         case FunEnd:

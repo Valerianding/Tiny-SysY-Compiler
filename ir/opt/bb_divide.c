@@ -15,7 +15,6 @@ void bblock_divide(InstNode *head){
         globalBlock->head_node = cur;
         globalBlock->id = count;
         count++;
-        cur = get_next_inst(cur);
 
         //对全局变量设计一个同样的mem2reg的过程
         GlobalIncomingVal = HashMapInit();
@@ -37,8 +36,10 @@ void bblock_divide(InstNode *head){
             ///修改Type 此处可能前端就处理了
             Value *insValue = ins_get_value(cur->inst);
             if(isIntType(insValue->VTy)){
+                printf("changed a global type!\n");
                 insValue->VTy->ID = GlobalVarInt;
             }else if(isFloatType(insValue->VTy)){
+                printf("changed a global type!\n");
                 insValue->VTy->ID = GlobalArrayFloat;
             }
 
@@ -51,7 +52,6 @@ void bblock_divide(InstNode *head){
 
     //现在cur 为第一个函数开头
     //第一次全部打点
-    //printf("first while\n");
     InstNode *prev_in;
     int curBlockLabel = 0;
     while(cur != NULL){
@@ -85,8 +85,7 @@ void bblock_divide(InstNode *head){
     cur = get_next_inst(cur);
     Function *func_prev = nullptr;
     BasicBlock *entry = nullptr;
-    printf("second while\n");
-   // 第二次直接套壳
+
     while(cur != NULL){
         if(cur->inst->Opcode == FunBegin){
             entry = cur->inst->Parent;

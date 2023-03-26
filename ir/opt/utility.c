@@ -22,9 +22,9 @@ void correctType(Function *currentFunction){
                     }else if(isVar(lhs)){
                         Value *insValue = ins_get_value(currNode->inst);
                         if(isIntType(lhs->VTy)){
-                            insValue->VTy->ID = Int;
+                            insValue->VTy->ID = Var_INT;
                         }else if(isFloatType(lhs->VTy)){
-                            insValue->VTy->ID = Float;
+                            insValue->VTy->ID = Var_FLOAT;
                         }
                     }
                 }else{
@@ -35,7 +35,7 @@ void correctType(Function *currentFunction){
                 }
                 break;
             }
-            case GMP:{
+            case GEP:{
                 Value *insValue = ins_get_value(currNode->inst);
                 //设置这个value的type
                 insValue->VTy->ID = ArrayTyID;
@@ -56,7 +56,7 @@ bool isValidOperator(InstNode *insNode){
             return false;
         case bitcast:
             return false;
-        case GMP:
+        case GEP:
             return false;
         case Alloca:
             return false;

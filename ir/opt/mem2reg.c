@@ -4,11 +4,6 @@
 
 #include "mem2reg.h"
 
-void CleanObject(void* obj){
-    //(Value*)obj;
-    free((Value*)obj);
-}
-
 InstNode* new_phi(Value *val){
     Instruction *phiIns = ins_new(0);
     phiIns->Opcode = Phi;
@@ -35,7 +30,7 @@ void insert_phi(BasicBlock *block,Value *val){
     //插入空的phi函数
     InstNode *phiInstNode = new_phi(val);
     ins_insert_after(phiInstNode,instNode);
-    // 让这个语句属于Basicblock
+    // 让这个语句属于BasicBlock
     phiInstNode->inst->Parent = block;
 }
 

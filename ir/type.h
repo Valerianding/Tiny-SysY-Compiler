@@ -12,7 +12,7 @@ enum TypeID {
     MAIN_INT,        //只有一个返回语句的main函数
     MAIN_FLOAT,
 
-                        // 即使有初始化 值也可能改变
+                       // 即使有初始化 值也可能改变
     Var_INT,          //无初始值的int型    变量
     Var_FLOAT,        //无初始值的float型  变量
     Var_initINT,      //有初始值的int型    变量

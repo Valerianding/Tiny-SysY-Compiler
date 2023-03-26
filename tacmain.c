@@ -90,10 +90,17 @@ int main(int argc, char* argv[]){
     print_block_info(block);
     printf("--------- after print block info ---------\n");
 
+    // 再打印一遍看看类型有没有更改的
     temp2 = instruction_list;
     for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
         print_one_ins_info(temp2);
     }
+
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    block = temp->inst->Parent;
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         printf("-------function  start---------\n");

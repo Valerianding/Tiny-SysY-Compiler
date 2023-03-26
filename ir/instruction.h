@@ -34,7 +34,7 @@ typedef enum OpcodeType{
     XOR = 25,
     zext = 26,
     bitcast = 27,
-    GMP = 28,
+    GEP = 28,
     MEMCPY = 29,
     MEMSET = 30,
     zeroinitializer = 31,
