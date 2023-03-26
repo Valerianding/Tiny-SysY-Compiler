@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "utility.h"
 #include "./back_end/arm.h"
 #include "value.h"
 #include "instruction.h"
@@ -10,9 +11,7 @@
 #include "mem2reg.h"
 #include "front_end/travel.h"
 #include "back_end/register_allocation.h"
-#include "utility.h"
 #include "livenessanalysis.h"
-#include "utility.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
@@ -68,7 +67,7 @@ int main(int argc, char* argv[]){
     declare_global_alloca(this->value_maps->next);
     c_b_flag[0]=false;c_b_flag[1]=false;
     create_instruction_list(TRoot,NULL);
-    printf_llvm_ir(instruction_list,argv[1]);
+   // printf_llvm_ir(instruction_list,argv[1]);
 //    fix_array(instruction_list);
     //print_array(instruction_list);
     //showAst(TRoot,0);
@@ -127,7 +126,6 @@ int main(int argc, char* argv[]){
         printf("after out of SSA!\n");
         clear_visited_flag(currentFunction->entry);
         calculateLiveness(currentFunction);
-//      clear_visited_flag(currentFunction->entry);
         printLiveness(currentFunction->entry);
     }
 

@@ -8,8 +8,6 @@
 #include "function.h"
 #include "dominance.h"
 #include "stack.h"
-
-
 extern HashMap *GlobalIncomingVal;
 void mem2reg(Function *currentFunction);
 void insert_phi(BasicBlock *block,Value *val);
