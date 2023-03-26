@@ -533,6 +533,7 @@ void insert_func_params(past params)
             //多维数组
             else{
                 v->pdata->symtab_array_pdata.dimention_figure=1;
+                v->VTy->ID=AddressTyID;
                 past get_dimension=params->right->left;        //到达num_int
                 while(get_dimension!=NULL)
                 {
