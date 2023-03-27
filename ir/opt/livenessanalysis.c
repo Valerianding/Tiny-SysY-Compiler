@@ -68,7 +68,7 @@ void calculateLiveness(Function *currentFunction){
             Value *rhs = NULL;
             //如果是return 语句的话就不需要左边这个
             //如果是CopyOperation也需要的特殊处理
-            if(exitCurr->inst->Opcode == Return || exitCurr->inst->Opcode == Store){
+            if(exitCurr->inst->Opcode == Return || exitCurr->inst->Opcode == Store || exitCurr->inst->Opcode == GIVE_PARAM){
                 def = NULL;
             }else if(exitCurr->inst->Opcode == CopyOperation){
                 Value *insValue = ins_get_value(exitCurr->inst);
@@ -151,7 +151,7 @@ void calculateLiveness(Function *currentFunction){
 
                 //如果是return 语句的话就不需要左边这个
                 //如果是CopyOperation也需要的特殊处理
-                if(currNode->inst->Opcode == Return || currNode->inst->Opcode == Store){
+                if(currNode->inst->Opcode == Return || currNode->inst->Opcode == Store || currNode->inst->Opcode == GIVE_PARAM){
                     def = NULL;
                 }else if(currNode->inst->Opcode == CopyOperation){
                     Value *insValue = ins_get_value(currNode->inst);

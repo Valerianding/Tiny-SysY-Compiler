@@ -41,6 +41,13 @@ void correctType(Function *currentFunction){
                 insValue->VTy->ID = ArrayTyID;
                 break;
             }
+            case bitcast:{
+                //
+                Value *insValue = ins_get_value(currNode->inst);
+                insValue->VTy->ID = ArrayTyID;
+                Value *lhs = ins_get_lhs(currNode->inst);
+                lhs->VTy->ID = ArrayTyID;
+            }
         }
         currNode = get_next_inst(currNode);
     }

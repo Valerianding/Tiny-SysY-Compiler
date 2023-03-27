@@ -39,9 +39,9 @@ add_executable(compiler
         ${FLEX_mc_lexer_OUTPUTS}
         ${BISON_mc_parser_OUTPUTS}
         ${DIR_FRONT}
-        ${DIR_OPT}
         ${DIR_TAC}
         ${DIR_IR}
+        ${DIR_OPT}
         ${DIR_LIB}
         ${DIR_CONTAINER}
         ${DIR_BACK}
