@@ -38,7 +38,7 @@ le_count=0
 
 if [ $argu -ne $stm ]
 then
-    for file in $(ls $single_file_name*[.c])
+    for file in $(ls $single_file_name/_*[.c])
     do
         out_value=1
         filename=${file%.*}
