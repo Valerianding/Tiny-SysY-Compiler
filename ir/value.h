@@ -47,7 +47,7 @@ union _PData{
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
 
-        int array[100001];                 //memcpy使用
+        int array[100];                 //memcpy使用
     }symtab_array_pdata;
 
     HashSet *pairSet; // 为了phi指令设计的 存pair类型的数据
