@@ -345,6 +345,8 @@ void insert_var_into_symtab(past type,past p)
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=one_dimention->iVal;
             else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"expr")==0)
             {
+                if(one_dimention->iVal=='-')
+                    printf("here");
                 int result= cal_easy_expr(one_dimention);
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=result;
             }
@@ -506,7 +508,7 @@ int cal_easy_expr(past expr)
     }
     stackTop(S,(void*)&result);
     stackPop(S);
-    return x1;
+    return result;
 }
 
 //目前还未考虑数组
