@@ -430,7 +430,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             Value *alias = falseBlockCurr->inst->user.value.alias;
 
             stack *allocStack = HashMapGet(IncomingVals,alias);
-            if(allocStack != NULL){
+            if(allocStack == NULL){
                 allocStack = HashMapGet(GlobalIncomingVal,alias);
             }
             assert(allocStack != NULL);

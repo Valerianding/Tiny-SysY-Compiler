@@ -67,76 +67,76 @@ int main(int argc, char* argv[]){
     declare_global_alloca(this->value_maps->next);
     c_b_flag[0]=false;c_b_flag[1]=false;
     create_instruction_list(TRoot,NULL);
-   // printf_llvm_ir(instruction_list,argv[1]);
-//    fix_array(instruction_list);
+    printf_llvm_ir(instruction_list,argv[1]);
+//   fix_array(instruction_list);
     //print_array(instruction_list);
     //showAst(TRoot,0);
 
-    InstNode *temp2 = instruction_list;
+    //InstNode *temp2 = instruction_list;
 
     /* 测试所有instruction list */
-    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
-        print_one_ins_info(temp2);
-    }
-    printf("----------- after print ins info  ---------\n");
-
-    bblock_divide(instruction_list);
-    // 因为AllBegin 没有parent
-    InstNode *temp = get_next_inst(instruction_list);
-    BasicBlock *block = temp->inst->Parent;
-    assert(block != NULL);
-    clear_visited_flag(block);
-    print_block_info(block);
-    printf("--------- after print block info ---------\n");
+//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+//        print_one_ins_info(temp2);
+//    }
+//    printf("----------- after print ins info  ---------\n");
+//
+//    bblock_divide(instruction_list);
+//    // 因为AllBegin 没有parent
+//    InstNode *temp = get_next_inst(instruction_list);
+//    BasicBlock *block = temp->inst->Parent;
+//    assert(block != NULL);
+//    clear_visited_flag(block);
+//    print_block_info(block);
+//    printf("--------- after print block info ---------\n");
 
     // 再打印一遍看看类型有没有更改的
-    temp2 = instruction_list;
-    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
-        print_one_ins_info(temp2);
-    }
-
-    //找到第一个function的
-    while(temp->inst->Parent->Parent == NULL){
-        temp = get_next_inst(temp);
-    }
-    block = temp->inst->Parent;
-
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        printf("-------function  start---------\n");
-        correctType(currentFunction);
-        print_function_info(currentFunction);
-        clear_visited_flag(block);
-        calculate_dominance(currentFunction);
-        clear_visited_flag(block);
-        calculate_dominance_frontier(currentFunction);
-        clear_visited_flag(block);
-        calculate_iDominator(currentFunction);
-        clear_visited_flag(block);
-        calculate_DomTree(currentFunction);
-        clear_visited_flag(block);
-        mem2reg(currentFunction);
-        printf("------after a function------\n");
-    }
+//    temp2 = instruction_list;
+//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+//        print_one_ins_info(temp2);
+//    }
+//
+//    //找到第一个function的
+//    while(temp->inst->Parent->Parent == NULL){
+//        temp = get_next_inst(temp);
+//    }
+//    block = temp->inst->Parent;
+//
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        printf("-------function  start---------\n");
+//        correctType(currentFunction);
+//        print_function_info(currentFunction);
+//        clear_visited_flag(block);
+//        calculate_dominance(currentFunction);
+//        clear_visited_flag(block);
+//        calculate_dominance_frontier(currentFunction);
+//        clear_visited_flag(block);
+//        calculate_iDominator(currentFunction);
+//        clear_visited_flag(block);
+//        calculate_DomTree(currentFunction);
+//        clear_visited_flag(block);
+//        mem2reg(currentFunction);
+//        printf("------after a function------\n");
+//    }
 
     // 建立phi 之后的
-    printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1]);
 
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        outOfSSA(currentFunction);
-        printf("after out of SSA!\n");
-        clear_visited_flag(currentFunction->entry);
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction->entry);
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        outOfSSA(currentFunction);
+//        printf("after out of SSA!\n");
+//        clear_visited_flag(currentFunction->entry);
+//        calculateLiveness(currentFunction);
+//        printLiveness(currentFunction->entry);
+//    }
 
     // 消除phi函数之后
-    printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
     //    ljf
-    arm_translate_ins(instruction_list);
+    //arm_translate_ins(instruction_list);
     return 0;
 }
