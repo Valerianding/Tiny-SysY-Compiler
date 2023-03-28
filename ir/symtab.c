@@ -113,6 +113,21 @@ struct _Value* symtab_dynamic_lookup(Symtab* this, char* name)
     for(int i=this->S.top;i>=0;i--)
     {
         var = (struct _Value *)sc_map_get_sv(&this->S.value_map[i]->map,name);
+        if(var!=NULL && var->pdata->define_flag==1)
+        {
+            return var;
+        }
+    }
+    return NULL;
+}
+
+struct _Value* symtab_dynamic_lookup_first(Symtab* this, char* name)
+{
+    Value *var;
+
+    for(int i=this->S.top;i>=0;i--)
+    {
+        var = (struct _Value *)sc_map_get_sv(&this->S.value_map[i]->map,name);
         if(var!=NULL)
         {
             return var;

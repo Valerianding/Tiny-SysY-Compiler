@@ -175,6 +175,10 @@ void insert_var_into_symtab(past type,past p)
             strcpy(v->name,bstr2cstr(p->sVal,0));
         }
         v->pdata->var_pdata.map= getCurMap(this);
+        if(is_global_map(this))
+            v->pdata->define_flag=1;
+        else
+            v->pdata->define_flag=0;
         if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
             v->VTy->ID=Var_FLOAT;
         else
@@ -200,6 +204,10 @@ void insert_var_into_symtab(past type,past p)
         }
 
         v->pdata->symtab_array_pdata.map= getCurMap(this);
+        if(is_global_map(this))
+            v->pdata->define_flag=1;
+        else
+            v->pdata->define_flag=0;
         v->VTy->ID=ArrayTyID;
 
         //加入维度具体数值
@@ -214,7 +222,7 @@ void insert_var_into_symtab(past type,past p)
             {
                 if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"ID")==0)
                 {
-                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->sVal,'\0'));
+                    Value *v_id_n= symtab_dynamic_lookup_first(this,bstr2cstr(one_dimention->sVal,'\0'));
                     v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_id_n->pdata->var_pdata.iVal;
                 }
                 else if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
@@ -236,6 +244,10 @@ void insert_var_into_symtab(past type,past p)
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
         v->pdata->var_pdata.map= getCurMap(this);
+        if(is_global_map(this))
+            v->pdata->define_flag=1;
+        else
+            v->pdata->define_flag=0;
 
         //比如int a=8，为常数;其他复杂的情况在这一步暂时认为是无初值!
         if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
@@ -248,7 +260,7 @@ void insert_var_into_symtab(past type,past p)
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
-            Value *v_num= symtab_dynamic_lookup(this,bstr2cstr(p->right->sVal,'\0'));
+            Value *v_num= symtab_dynamic_lookup_first(this,bstr2cstr(p->right->sVal,'\0'));
             //非参数
             if(v_num!=NULL)
             {
@@ -317,6 +329,10 @@ void insert_var_into_symtab(past type,past p)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
+        if(is_global_map(this))
+            v->pdata->define_flag=1;
+        else
+            v->pdata->define_flag=0;
 
         if(is_global_map(this))
         {
@@ -350,7 +366,7 @@ void insert_var_into_symtab(past type,past p)
             }
             else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"ID")==0)
             {
-                Value *v_con= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->sVal,'\0'));
+                Value *v_con= symtab_dynamic_lookup_first(this,bstr2cstr(one_dimention->sVal,'\0'));
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_con->pdata->var_pdata.iVal;
             }
                 //是const常数的expr
@@ -380,6 +396,10 @@ void insert_var_into_symtab(past type,past p)
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
         v->pdata->var_pdata.map= getCurMap(this);
+        if(is_global_map(this))
+            v->pdata->define_flag=1;
+        else
+            v->pdata->define_flag=0;
 
         if(is_global_map(this))
         {
@@ -403,7 +423,7 @@ void insert_var_into_symtab(past type,past p)
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
-            Value *v_num= symtab_dynamic_lookup(this,bstr2cstr(p->right->sVal,'\0'));
+            Value *v_num= symtab_dynamic_lookup_first(this,bstr2cstr(p->right->sVal,'\0'));
             if(v_num->VTy->ID==Const_FLOAT)
             {
                 v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
@@ -479,7 +499,7 @@ int cal_easy_expr(past expr)
             //CONST_INT
             else
             {
-                Value *v= symtab_dynamic_lookup(this,bstr2cstr((*p)->sVal, '\0'));
+                Value *v= symtab_dynamic_lookup_first(this,bstr2cstr((*p)->sVal, '\0'));
                 data=v->pdata->var_pdata.iVal;
             }
 
@@ -506,7 +526,7 @@ int cal_easy_expr(past expr)
     }
     stackTop(S,(void*)&result);
     stackPop(S);
-    return x1;
+    return result;
 }
 
 //目前还未考虑数组
@@ -521,6 +541,7 @@ void insert_func_params(past params)
         //right不为NULL，则说明参数是数组
         if(params->right!=NULL)
         {
+            v->pdata->define_flag=1;
             //一维数组
             if(strcmp(bstr2cstr(params->right->nodeType,'\0'),"num_int")==0)
             {
@@ -543,6 +564,7 @@ void insert_func_params(past params)
         else
         {
             v->pdata->var_pdata.map= getCurMap(this);
+            v->pdata->define_flag=1;
             if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
                 //函数参数默认为有初始值
             {v->VTy->ID=Param_FLOAT;}
