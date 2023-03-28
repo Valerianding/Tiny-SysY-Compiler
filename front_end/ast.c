@@ -209,6 +209,10 @@ void insert_var_into_symtab(past type,past p)
         else
             v->pdata->define_flag=0;
         v->VTy->ID=ArrayTyID;
+        if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            v->pdata->symtab_array_pdata.array_type.ID=Float;
+        else
+            v->pdata->symtab_array_pdata.array_type.ID=Int;
 
         //加入维度具体数值
         past one_dimention = p->left->next;
@@ -333,6 +337,10 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->define_flag=1;
         else
             v->pdata->define_flag=0;
+        if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            v->pdata->symtab_array_pdata.array_type.ID=Float;
+        else
+            v->pdata->symtab_array_pdata.array_type.ID=Int;
 
         if(is_global_map(this))
         {

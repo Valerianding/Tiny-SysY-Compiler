@@ -531,6 +531,10 @@ void assign_global_array(past p,Value* v_array,int i,int level)
         {
             v_array->pdata->symtab_array_pdata.array[i++]=p->iVal;
         }
+        else if(strcmp(bstr2cstr(p->nodeType, '\0'), "num_float") == 0)
+        {
+            v_array->pdata->symtab_array_pdata.f_array[i++]=p->fVal;
+        }
             //是InitValList
         else
         {
@@ -581,7 +585,10 @@ void handle_global_array(Value* v_array,bool is_global,past vars,int flag)
                 past p=vars->right->left;
                 while(p!=NULL)
                 {
-                    v_array->pdata->symtab_array_pdata.array[i++]=p->iVal;
+                    if(strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0)
+                        v_array->pdata->symtab_array_pdata.array[i++]=p->iVal;
+                    else
+                        v_array->pdata->symtab_array_pdata.f_array[i++]=p->fVal;
                     p=p->next;
                 }
             }
@@ -762,10 +769,14 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                 num=(Value*) malloc(sizeof (Value));
                 value_init_int(num,p->iVal);
             }
-
+            else if(strcmp(bstr2cstr(p->nodeType, '\0'), "num_float") == 0)
+            {
+                num=(Value*) malloc(sizeof (Value));
+                value_init_float(num,p->fVal);
+            }
             //!如果是0就不处理
             //p->iVal是0,直接将位置+1
-            if(num!=NULL && num->pdata->var_pdata.iVal==0)
+            if(num!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0 && num->pdata->var_pdata.iVal==0)
             {
                 carry_save(v_array,carry);
             }
@@ -789,7 +800,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     InstNode *node_gmp_last = new_inst_node(gmp_last);
                     ins_node_add(instruction_list,node_gmp_last);
 
-                    //其他除num_int的情况
+                    //其他除num_int和num_float的情况
                     //进行一次store
                     //将num值包装成value
                     if(strcmp(bstr2cstr(p->nodeType, '\0'), "LValArray") == 0)
@@ -910,6 +921,12 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
             //包装偏移的num_int为Value
             v_num=(Value*) malloc(sizeof (Value));
             value_init_int(v_num,root->iVal);
+        }
+        else if(strcmp(bstr2cstr(root->nodeType, '\0'), "num_float") == 0)
+        {
+            //包装偏移的num_float为Value
+            v_num=(Value*) malloc(sizeof (Value));
+            value_init_float(v_num,root->fVal);
         }
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "expr") == 0)
         {
@@ -3063,13 +3080,26 @@ void printf_global_array(Value* v_array,FILE* fptr)
         {
             if(i==0)
             {
-                printf("i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
-                fprintf(fptr,"i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                if(v_array->pdata->symtab_array_pdata.array_type.ID==Int)
+                {
+                    printf("i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                    fprintf(fptr,"i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                } else
+                {
+                    printf("i32 %f",v_array->pdata->symtab_array_pdata.f_array[i]);
+                    fprintf(fptr,"i32 %f",v_array->pdata->symtab_array_pdata.f_array[i]);
+                }
             }
             else
             {
-                printf(", i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
-                fprintf(fptr,", i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                if(v_array->pdata->symtab_array_pdata.array_type.ID==Int){
+                    printf(", i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                    fprintf(fptr,", i32 %d",v_array->pdata->symtab_array_pdata.array[i]);
+                } else
+                {
+                    printf(", i32 %f",v_array->pdata->symtab_array_pdata.f_array[i]);
+                    fprintf(fptr,", i32 %f",v_array->pdata->symtab_array_pdata.f_array[i]);
+                }
             }
         }
     }
@@ -3091,13 +3121,27 @@ void printf_global_array(Value* v_array,FILE* fptr)
                 {
                     if(j==i)
                     {
-                        printf("i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
-                        fprintf(fptr,"i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                        if(v_array->pdata->symtab_array_pdata.array_type.ID==Int){
+                            printf("i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                            fprintf(fptr,"i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                        }
+                        else
+                        {
+                            printf("i32 %f",v_array->pdata->symtab_array_pdata.f_array[j]);
+                            fprintf(fptr,"i32 %f",v_array->pdata->symtab_array_pdata.f_array[j]);
+                        }
                     }
                     else
                     {
-                        printf(", i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
-                        fprintf(fptr,", i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                        if(v_array->pdata->symtab_array_pdata.array_type.ID==Int){
+                            printf(", i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                            fprintf(fptr,", i32 %d",v_array->pdata->symtab_array_pdata.array[j]);
+                        }
+                        else
+                        {
+                            printf(", i32 %f",v_array->pdata->symtab_array_pdata.f_array[j]);
+                            fprintf(fptr,", i32 %f",v_array->pdata->symtab_array_pdata.f_array[j]);
+                        }
                     }
                 }
                 printf("]");

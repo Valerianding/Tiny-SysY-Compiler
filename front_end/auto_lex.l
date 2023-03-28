@@ -61,14 +61,13 @@
     }
 
 
-    int __my_parse_float(char *Input)
+    float __my_parse_float(char *Input)
     {
     	float ret = atof(Input);
-    	int *retint = (int*)&ret;
-        return *retint;
+        return ret;
     }
 
-    int __my_parse_hex_float(char *Input)
+    float __my_parse_hex_float(char *Input)
     {
     	float ret;
     	int *retint;
@@ -144,8 +143,7 @@
     		ret = ret / lenth_p;
     	}
 
-    	retint = (int*) &ret;
-        return *retint;
+        return ret;
     }
 %}
 
