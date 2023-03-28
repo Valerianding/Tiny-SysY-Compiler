@@ -3,7 +3,8 @@
 //
 
 #include "mem2reg.h"
-
+HashSet *nonLocals = NULL;
+HashSet *killed = NULL;
 InstNode* new_phi(Value *val){
     Instruction *phiIns = ins_new(0);
     phiIns->Opcode = Phi;
@@ -663,4 +664,18 @@ InstNode *newCopyOperation(Value *dest, Value *src){
     InstNode *copyInsNode = new_inst_node(copyIns);
     assert(copyInsNode != NULL);
     return copyInsNode;
+}
+
+void calculateNonLocals(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *end = currentFunction->tail;
+
+    InstNode *currNode = entry->head_node;
+    InstNode *tailNode = end->tail_node;
+    while(currNode != get_next_inst(tailNode)){
+        BasicBlock *block = currNode->inst->Parent;
+
+        currNode = get_next_inst(currNode);
+
+    }
 }

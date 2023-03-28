@@ -7,6 +7,7 @@
 #define nullptr 0
 
 enum TypeID {
+    Unknown = 0,
     Param_INT,
     Param_FLOAT,
     MAIN_INT,        //只有一个返回语句的main函数
