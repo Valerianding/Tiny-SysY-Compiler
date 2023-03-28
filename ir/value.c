@@ -9,7 +9,7 @@ void value_add_use(Value *this, Use *U){
 void value_init(Value* this){
     memset(this, 0, sizeof(Value));
     this->VTy = (Type*)malloc(sizeof(Type));
-    this->VTy->ID = 0;
+    this->VTy->ID = Unknown;
     this->pdata = (PData*)malloc(sizeof(PData));
     this->use_list = NULL;
 }

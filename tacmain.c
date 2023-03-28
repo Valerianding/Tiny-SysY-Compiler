@@ -138,5 +138,14 @@ int main(int argc, char* argv[]){
     //ljw_end
     //    ljf
     //arm_translate_ins(instruction_list);
+    stack *test = stackInit();
+    assert(test != NULL);
+    Value *replace = NULL;
+    stackTop(test,&replace);
+    if(replace == NULL){
+        printf("correct\n");
+    }else{
+        printf("error\n");
+    }
     return 0;
 }
