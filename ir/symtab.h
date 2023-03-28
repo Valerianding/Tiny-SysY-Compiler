@@ -38,6 +38,7 @@ void stack_new(Symtab* this);
 //根据变量名查找变量,在栈中有MapList*指针时才使用此方法
 //应该只有前端会用到这个方法
 struct _Value * symtab_dynamic_lookup(Symtab* this, char* name);
+struct _Value* symtab_dynamic_lookup_first(Symtab* this, char* name);
 
 //获取现在所在的表,应该也只有前端会用到
 struct sc_map_sv *getCurMap(Symtab *this);

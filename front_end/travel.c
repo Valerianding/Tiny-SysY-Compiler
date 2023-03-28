@@ -988,12 +988,25 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
 
     while (vars!=NULL)
     {
-        //纯定义语句不需要处理了
+        //纯定义语句不需要处理了xxx，需要将定义标志位置1
+        if(strcmp(bstr2cstr(vars->nodeType, '\0'), "ID") == 0)
+        {
+            Value *v=symtab_dynamic_lookup_first(this, bstr2cstr(vars->sVal, '\0'));
+            v->pdata->define_flag=1;
+            v=v->alias;
+        }
+        else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "ConstDef") == 0)
+        {
+            Value *v=symtab_dynamic_lookup_first(this, bstr2cstr(vars->left->sVal, '\0'));
+            v->pdata->define_flag=1;
+        }
         //有初值
-        if (strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_init") == 0 && !is_global)
+        else if (strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_init") == 0 && !is_global)
         {
             //左值
-            Value *v=symtab_dynamic_lookup(this, bstr2cstr(vars->left->sVal, '\0'))->alias;
+            Value *v=symtab_dynamic_lookup_first(this, bstr2cstr(vars->left->sVal, '\0'));
+            v->pdata->define_flag=1;
+            v=v->alias;
 
             //初始化的值
             //root->right是VarDefList
@@ -1049,7 +1062,8 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             if(is_global==false)
             {
                 past ident_array=vars->left;         //到IdentArray结点
-                Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->left->sVal,'\0'));
+                Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(ident_array->left->sVal,'\0'));
+                v_array->pdata->define_flag=1;
                 past init_val_list = vars->right;
 
                 //生成bitcast,使读取的内存空间通过指针i8*，i8步长读取
@@ -1117,7 +1131,8 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             else
             {
                 past ident_array=vars->left;         //到IdentArray结点
-                Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->left->sVal,'\0'));
+                Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(ident_array->left->sVal,'\0'));
+                v_array->pdata->define_flag=1;
 
                 if(vars->right->left==NULL)
                     handle_global_array(v_array,true,vars,0);
@@ -1129,8 +1144,14 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
         else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "IdentArray") == 0 && is_global)
         {
             past ident_array=vars->left;         //到IdentArray结点
-            Value *v_array = symtab_dynamic_lookup(this,bstr2cstr(ident_array->sVal,'\0'));
+            Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(ident_array->sVal,'\0'));
+            v_array->pdata->define_flag=1;
             handle_global_array(v_array,true,vars,0);
+        }
+        else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "IdentArray") == 0)
+        {
+            Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(vars->left->sVal,'\0'));
+            v_array->pdata->define_flag=1;
         }
 
         vars=vars->next;
@@ -2030,13 +2051,9 @@ void create_func_def(past root) {
         //params走到第一个FuncParam处
         past params=root->left->next->left->left;
 
-        int u=0;
         //先生成参数的alloca
         while(params!=NULL)
         {
-            u++;
-//            if(u==3)
-//                printf("kk");
             //参数Value
             char *nn=bstr2cstr(params->left->next->sVal, '\0');
             Value *param= symtab_lookup_withmap(this,nn, &v->pdata->symtab_func_pdata.map_list->map);
