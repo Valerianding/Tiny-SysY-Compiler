@@ -543,8 +543,6 @@ void renameVariabels(Function *currentFunction) {
 
     InstNode *currNode = entry->head_node;
 
-    //默认无论有没有参数第一个基本块为0
-    //entry->id = 0;
     //currNode的第一条是FunBegin,判断一下是否有参
     Value *funcValue = currNode->inst->user.use_list->Val;
     if (funcValue->pdata->symtab_func_pdata.param_num > 0)
@@ -556,9 +554,10 @@ void renameVariabels(Function *currentFunction) {
         //更新第一个基本块
         countVariable += funcValue->pdata->symtab_func_pdata.param_num;
         currNode->inst->Parent->id = countVariable;
-        countVariable++;
     }
+    countVariable++;
 
+    currNode = get_next_inst(currNode);
     while (currNode != get_next_inst(end->tail_node)) {
         if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1) {
 
