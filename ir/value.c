@@ -2,12 +2,6 @@
 #include "use.h"
 #include "symtab.h"
 
-Value *value_create(){
-    Value *val = (Value*)malloc(sizeof(Value));
-    memset(val,0,sizeof(Value));
-    return val;
-}
-
 void value_add_use(Value *this, Use *U){
     use_add_to_list(U, &(this->use_list));
 }
@@ -15,6 +9,7 @@ void value_add_use(Value *this, Use *U){
 void value_init(Value* this){
     memset(this, 0, sizeof(Value));
     this->VTy = (Type*)malloc(sizeof(Type));
+    this->VTy->ID = Unknown;
     this->pdata = (PData*)malloc(sizeof(PData));
     this->use_list = NULL;
 }

@@ -1,48 +1,48 @@
 ; ModuleID = '89_many_globals.bc'
 source_filename = "89_many_globals.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
-target triple = "x86_64-unknown-linux-gnu"
+target triple = "x86_64-pc-linux-gnu"
 
-@a0 = dso_local global i32 0, align 4
-@a1 = dso_local global i32 0, align 4
-@a2 = dso_local global i32 0, align 4
-@a3 = dso_local global i32 0, align 4
-@a4 = dso_local global i32 0, align 4
-@a5 = dso_local global i32 0, align 4
-@a6 = dso_local global i32 0, align 4
-@a7 = dso_local global i32 0, align 4
-@a8 = dso_local global i32 0, align 4
-@a9 = dso_local global i32 0, align 4
-@a10 = dso_local global i32 0, align 4
-@a11 = dso_local global i32 0, align 4
-@a12 = dso_local global i32 0, align 4
-@a13 = dso_local global i32 0, align 4
-@a14 = dso_local global i32 0, align 4
-@a15 = dso_local global i32 0, align 4
-@a16 = dso_local global i32 0, align 4
-@a17 = dso_local global i32 0, align 4
-@a18 = dso_local global i32 0, align 4
-@a19 = dso_local global i32 0, align 4
-@a20 = dso_local global i32 0, align 4
-@a21 = dso_local global i32 0, align 4
-@a22 = dso_local global i32 0, align 4
-@a23 = dso_local global i32 0, align 4
-@a24 = dso_local global i32 0, align 4
-@a25 = dso_local global i32 0, align 4
-@a26 = dso_local global i32 0, align 4
-@a27 = dso_local global i32 0, align 4
-@a28 = dso_local global i32 0, align 4
-@a29 = dso_local global i32 0, align 4
-@a30 = dso_local global i32 0, align 4
-@a31 = dso_local global i32 0, align 4
-@a32 = dso_local global i32 0, align 4
-@a33 = dso_local global i32 0, align 4
-@a34 = dso_local global i32 0, align 4
-@a35 = dso_local global i32 0, align 4
-@a36 = dso_local global i32 0, align 4
-@a37 = dso_local global i32 0, align 4
-@a38 = dso_local global i32 0, align 4
-@a39 = dso_local global i32 0, align 4
+@a0 = common dso_local global i32 0, align 4
+@a1 = common dso_local global i32 0, align 4
+@a2 = common dso_local global i32 0, align 4
+@a3 = common dso_local global i32 0, align 4
+@a4 = common dso_local global i32 0, align 4
+@a5 = common dso_local global i32 0, align 4
+@a6 = common dso_local global i32 0, align 4
+@a7 = common dso_local global i32 0, align 4
+@a8 = common dso_local global i32 0, align 4
+@a9 = common dso_local global i32 0, align 4
+@a10 = common dso_local global i32 0, align 4
+@a11 = common dso_local global i32 0, align 4
+@a12 = common dso_local global i32 0, align 4
+@a13 = common dso_local global i32 0, align 4
+@a14 = common dso_local global i32 0, align 4
+@a15 = common dso_local global i32 0, align 4
+@a16 = common dso_local global i32 0, align 4
+@a17 = common dso_local global i32 0, align 4
+@a18 = common dso_local global i32 0, align 4
+@a19 = common dso_local global i32 0, align 4
+@a20 = common dso_local global i32 0, align 4
+@a21 = common dso_local global i32 0, align 4
+@a22 = common dso_local global i32 0, align 4
+@a23 = common dso_local global i32 0, align 4
+@a24 = common dso_local global i32 0, align 4
+@a25 = common dso_local global i32 0, align 4
+@a26 = common dso_local global i32 0, align 4
+@a27 = common dso_local global i32 0, align 4
+@a28 = common dso_local global i32 0, align 4
+@a29 = common dso_local global i32 0, align 4
+@a30 = common dso_local global i32 0, align 4
+@a31 = common dso_local global i32 0, align 4
+@a32 = common dso_local global i32 0, align 4
+@a33 = common dso_local global i32 0, align 4
+@a34 = common dso_local global i32 0, align 4
+@a35 = common dso_local global i32 0, align 4
+@a36 = common dso_local global i32 0, align 4
+@a37 = common dso_local global i32 0, align 4
+@a38 = common dso_local global i32 0, align 4
+@a39 = common dso_local global i32 0, align 4
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @testParam8(i32 %0, i32 %1, i32 %2, i32 %3, i32 %4, i32 %5, i32 %6, i32 %7) #0 {
@@ -227,11 +227,11 @@ define dso_local i32 @main() #0 {
 
 declare dso_local i32 @putint(...) #1
 
-attributes #0 = { noinline nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #0 = { noinline nounwind uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "frame-pointer"="all" "less-precise-fpmad"="false" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 
 !llvm.module.flags = !{!0}
 !llvm.ident = !{!1}
 
 !0 = !{i32 1, !"wchar_size", i32 4}
-!1 = !{!"clang version 11.0.1"}
+!1 = !{!"clang version 10.0.0-4ubuntu1 "}

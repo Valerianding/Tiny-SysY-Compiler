@@ -13,8 +13,7 @@ void bblock_divide(InstNode *head){
     if(cur->inst->Opcode != FunBegin) {
         globalBlock = bb_create();
         globalBlock->head_node = cur;
-        globalBlock->id = count;
-        count++;
+        globalBlock->id = -1;
 
         //对全局变量设计一个同样的mem2reg的过程
         GlobalIncomingVal = HashMapInit();
@@ -53,7 +52,7 @@ void bblock_divide(InstNode *head){
     //现在cur 为第一个函数开头
     //第一次全部打点
     InstNode *prev_in;
-    int curBlockLabel = 0;
+    int curBlockLabel = -1;
     while(cur != NULL){
         if(cur->inst->Opcode == FunBegin || cur->inst->Opcode == Label){
             InstNode *cur_prev = get_prev_inst(cur);

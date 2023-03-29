@@ -3,7 +3,8 @@
 //
 
 #include "mem2reg.h"
-
+HashSet *nonLocals = NULL;
+HashSet *killed = NULL;
 InstNode* new_phi(Value *val){
     Instruction *phiIns = ins_new(0);
     phiIns->Opcode = Phi;
@@ -371,22 +372,17 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             printf("fuck \n");
             //去找对应需要更新的
             stack *allocStack = HashMapGet(IncomingVals,alias);
-            if(allocStack == NULL){
-                allocStack = HashMapGet(GlobalIncomingVal,alias);
-            }
             assert(allocStack != NULL);
 
             //从中去取目前到达的定义
-            Value *pairValue;
+            Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
-            printf("fuck \n");
             //填充信息
-            pair *phiInfo = createPhiInfo(block,pairValue);
-            printf("fuck \n");
-            insertPhiInfo(nextBlockCurr,phiInfo);
-            printf("fuck \n");
+            if(pairValue != NULL){
+                pair *phiInfo = createPhiInfo(block,pairValue);
+                insertPhiInfo(nextBlockCurr,phiInfo);
+            }
             nextBlockCurr = get_next_inst(nextBlockCurr);
-            printf("fuck \n");
         }
     }
 
@@ -421,8 +417,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
 
-            pair *phiInfo = createPhiInfo(block,pairValue);
-            insertPhiInfo(trueBlockCurr,phiInfo);
+            if(pairValue != NULL){
+                pair *phiInfo = createPhiInfo(block,pairValue);
+                insertPhiInfo(trueBlockCurr,phiInfo);
+            }
             trueBlockCurr = get_next_inst(trueBlockCurr);
         }
 
@@ -430,16 +428,15 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             Value *alias = falseBlockCurr->inst->user.value.alias;
 
             stack *allocStack = HashMapGet(IncomingVals,alias);
-            if(allocStack != NULL){
-                allocStack = HashMapGet(GlobalIncomingVal,alias);
-            }
             assert(allocStack != NULL);
 
             Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
 
-            pair *phiInfo  = createPhiInfo(block,pairValue);
-            insertPhiInfo(falseBlockCurr,phiInfo);
+            if(pairValue != NULL){
+                pair *phiInfo  = createPhiInfo(block,pairValue);
+                insertPhiInfo(falseBlockCurr,phiInfo);
+            }
             falseBlockCurr = get_next_inst(falseBlockCurr);
         }
     }
@@ -546,18 +543,21 @@ void renameVariabels(Function *currentFunction) {
 
     InstNode *currNode = entry->head_node;
 
-    //默认无论有没有参数第一个基本块为0
-    //entry->id = 0;
     //currNode的第一条是FunBegin,判断一下是否有参
     Value *funcValue = currNode->inst->user.use_list->Val;
     if (funcValue->pdata->symtab_func_pdata.param_num > 0)
         haveParam = true;
 
     //开始时候为1或__
-    int countVariable = 1;
-    if (haveParam)
+    int countVariable = 0;
+    if (haveParam){
+        //更新第一个基本块
         countVariable += funcValue->pdata->symtab_func_pdata.param_num;
+        currNode->inst->Parent->id = countVariable;
+    }
+    countVariable++;
 
+    currNode = get_next_inst(currNode);
     while (currNode != get_next_inst(end->tail_node)) {
         if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1) {
 
@@ -663,4 +663,18 @@ InstNode *newCopyOperation(Value *dest, Value *src){
     InstNode *copyInsNode = new_inst_node(copyIns);
     assert(copyInsNode != NULL);
     return copyInsNode;
+}
+
+void calculateNonLocals(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *end = currentFunction->tail;
+
+    InstNode *currNode = entry->head_node;
+    InstNode *tailNode = end->tail_node;
+    while(currNode != get_next_inst(tailNode)){
+        BasicBlock *block = currNode->inst->Parent;
+
+        currNode = get_next_inst(currNode);
+
+    }
 }
