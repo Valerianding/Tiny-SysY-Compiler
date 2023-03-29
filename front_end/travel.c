@@ -302,9 +302,14 @@ void create_assign_stmt(past root,Value* v_return) {
         //赋值右边为普通a,b,c,d
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
     {
-        v1= symtab_dynamic_lookup(this,bstr2cstr(root->right->sVal,'\0'));
-        if(v1->VTy->ID==Const_INT || v1->VTy->ID==Const_FLOAT)
-            ;
+        Value *v_const= symtab_dynamic_lookup(this,bstr2cstr(root->right->sVal,'\0'));
+        if(v_const->VTy->ID==Const_INT || v_const->VTy->ID==Const_FLOAT)
+        {
+            if(v_const->VTy->ID==Const_INT)
+                value_init_int(v1,v_const->pdata->var_pdata.iVal);
+            else
+                value_init_float(v1,v_const->pdata->var_pdata.fVal);
+        }
         else
             //先load出右值,要返回创建出的value
             v1=create_load_stmt(bstr2cstr(root->right->sVal,'\0'));
@@ -1049,12 +1054,12 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 if(vv->VTy->ID==Const_INT)
                 {
                     v1=(Value*) malloc(sizeof (Value));
-                    value_init_int(v1, vars->right->iVal);
+                    value_init_int(v1, vv->pdata->var_pdata.iVal);
                 }
                 else if(vv->VTy->ID==Const_FLOAT)
                 {
                     v1=(Value*) malloc(sizeof (Value));
-                    value_init_float(v1, vars->right->fVal);
+                    value_init_float(v1, vv->pdata->var_pdata.fVal);
                 }
                 else
                     v1= create_load_stmt(bstr2cstr(vars->right->sVal,'\0'));

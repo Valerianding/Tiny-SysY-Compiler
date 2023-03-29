@@ -377,22 +377,6 @@ void insert_var_into_symtab(past type,past p)
                 Value *v_con= symtab_dynamic_lookup_first(this,bstr2cstr(one_dimention->sVal,'\0'));
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_con->pdata->var_pdata.iVal;
             }
-                //是const常数的expr
-//            {
-//                Value *v_tmp=(Value*) malloc(sizeof (Value));
-//                //TODO 只考虑了单边const
-//                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
-//                {
-//                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
-//                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
-//                }
-//                else
-//                {
-//                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
-//                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
-//                }
-//                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
-//            }
             one_dimention=one_dimention->next;
         }
         v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
@@ -425,9 +409,14 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->var_pdata.iVal=p->right->iVal;
             v->VTy->ID=Const_INT;
         }
-        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
             v->pdata->var_pdata.fVal=p->right->fVal;
             v->VTy->ID=Const_FLOAT;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0)
+        {
+            v->pdata->var_pdata.iVal=(int)p->right->fVal;
+            v->VTy->ID=Const_INT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
@@ -513,11 +502,16 @@ int cal_easy_expr(past expr)
         {
             if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "num_int") == 0)
                 data=(*p)->iVal;
+            else if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "num_float") == 0)
+                data=(int)(*p)->fVal;
             //CONST_INT
             else
             {
                 Value *v= symtab_dynamic_lookup_first(this,bstr2cstr((*p)->sVal, '\0'));
-                data=v->pdata->var_pdata.iVal;
+                if(v->VTy->ID==Const_INT)
+                    data=v->pdata->var_pdata.iVal;
+                else
+                    data=(int)v->pdata->var_pdata.fVal;
             }
 
             stackPush(S,data);
@@ -606,6 +600,7 @@ float cal_easy_expr_f(past expr)
                         *result=(float )x1->iVal+x2->fVal;
                     else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
                         *result=x1->fVal+(float )x2->iVal;
+
                     //else if()
                     break;
                 case '-':
