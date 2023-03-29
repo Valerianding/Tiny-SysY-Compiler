@@ -447,9 +447,18 @@ void insert_var_into_symtab(past type,past p)
 
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
         {
-            int result= cal_easy_expr(p->right);
-            v->pdata->var_pdata.iVal=result;
-            v->VTy->ID=Const_INT;
+            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            {
+                float result= cal_easy_expr_f(p->right);
+                v->pdata->var_pdata.fVal=result;
+                v->VTy->ID=Const_FLOAT;
+            }
+            else
+            {
+                int result= cal_easy_expr(p->right);
+                v->pdata->var_pdata.iVal=result;
+                v->VTy->ID=Const_INT;
+            }
         }
 
         symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
@@ -535,6 +544,107 @@ int cal_easy_expr(past expr)
     stackTop(S,(void*)&result);
     stackPop(S);
     return result;
+}
+
+float cal_easy_expr_f(past expr)
+{
+    stack *s=stackInit();  //用于后序遍历二叉树
+    stack *S=stackInit();
+    past p1 = expr;
+    past q = NULL;     //记录刚刚访问过的结点
+    //记录后缀表达式
+    past str[100];
+    int i = 0;
+
+    while (p1 != NULL || stackSize(s))
+    {
+        if (p1 != NULL)
+        {
+            stackPush(s, p1);
+            p1 = p1->left;
+        }
+        else
+        {
+            stackTop(s, (void**)&p1);     //往上走了才pop掉
+            if ((p1->right == NULL) || (p1->right) == q)
+            {
+                //开始往上走
+                q = p1;              //保存到q，作为下一次处理结点的前驱
+                stackTop(s, (void**)&p1);
+                stackPop(s);
+                str[i++] = p1;
+                p1 = NULL;         //p置于NULL可继续退层，否则会重复访问刚访问结点的左子树
+            }
+            else
+                p1 = p1->right;
+        }
+    }
+    str[i]=NULL;
+
+    past x1;past x2;
+    past *p=str;
+    while(*p)
+    {
+        if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "expr") != 0)
+        {
+            stackPush(S,(*p));
+        }
+
+        else
+        {
+            stackTop(S, (void*)&x2);
+            stackPop(S);
+            stackTop(S, (void*)&x1);
+            stackPop(S);
+            float *result= malloc(4);
+            switch((*p)->iVal)
+            {
+                case '+':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal + x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal+x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal+(float )x2->iVal;
+                    //else if()
+                    break;
+                case '-':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal - x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal-x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal-(float )x2->iVal;
+                    //else if()
+                    break;
+                case '*':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal * x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal*x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal*(float )x2->iVal;
+                    //else if()
+                    break;
+                case '/':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal / x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal/x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal/(float )x2->iVal;
+                    //else if()
+                    break;
+            }
+            past p_result= newNumFloat((*result));
+            stackPush(S,p_result);
+        }
+        p++;
+    }
+    past final_result= malloc(4);
+    stackTop(S,(void*)&final_result);
+    stackPop(S);
+    return final_result->fVal;
 }
 
 //目前还未考虑数组

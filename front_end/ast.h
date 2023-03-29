@@ -60,7 +60,7 @@ void showAst(past node, int nest);
 void insert_var_into_symtab(past type,past p);
 
 int cal_easy_expr(past expr);
-//TODO 目前还未考虑数组
+float cal_easy_expr_f(past expr);
 
 //将函数参数插入到对应的作用域表中
 void insert_func_params(past params);
@@ -70,6 +70,7 @@ void insert_func_into_symtab(past return_type,past pname,past params);
 
 //根据数组名，拿到具体数组需开辟的大小
 int get_array_total_occupy(Value *a,int begin);
+
 
 #endif
 

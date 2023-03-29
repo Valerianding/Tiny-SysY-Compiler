@@ -372,6 +372,11 @@ void create_return_stmt(past root,Value* v_return) {
             v=(Value*) malloc(sizeof (Value));
             value_init_int(v,root->left->iVal);
         }
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0)
+        {
+            v=(Value*) malloc(sizeof (Value));
+            value_init_float(v,root->left->fVal);
+        }
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0){
             v = symtab_dynamic_lookup(this, bstr2cstr(root->left->left->sVal,'\0'));
             if(v->VTy->ID==AddressTyID)
