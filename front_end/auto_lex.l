@@ -192,11 +192,12 @@ SEMICOLON ";"
 
 WhiteSpace    [ \t\n\r]*
 LineComment (\/\/.*)
+BlockComment "/*"([^\*]|(\*)+[^/])*"*/"
 
 %%
 {WhiteSpace} {}
 {LineComment} {}
-"/*"([^\*]|(\*)+[^/])*"*/" {}
+{BlockComment} {}
 
 {INT_DEX} 			{ yylval.iVal = atoi(yytext); return num_int;}
 {INT_HEX} 			{ yylval.iVal = __my_parse_integer(yytext, 16); return num_int;}
