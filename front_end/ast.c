@@ -209,6 +209,10 @@ void insert_var_into_symtab(past type,past p)
         else
             v->pdata->define_flag=0;
         v->VTy->ID=ArrayTyID;
+        if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            v->pdata->symtab_array_pdata.array_type.ID=Float;
+        else
+            v->pdata->symtab_array_pdata.array_type.ID=Int;
 
         //加入维度具体数值
         past one_dimention = p->left->next;
@@ -333,6 +337,10 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->define_flag=1;
         else
             v->pdata->define_flag=0;
+        if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            v->pdata->symtab_array_pdata.array_type.ID=Float;
+        else
+            v->pdata->symtab_array_pdata.array_type.ID=Int;
 
         if(is_global_map(this))
         {
@@ -369,22 +377,6 @@ void insert_var_into_symtab(past type,past p)
                 Value *v_con= symtab_dynamic_lookup_first(this,bstr2cstr(one_dimention->sVal,'\0'));
                 v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_con->pdata->var_pdata.iVal;
             }
-                //是const常数的expr
-//            {
-//                Value *v_tmp=(Value*) malloc(sizeof (Value));
-//                //TODO 只考虑了单边const
-//                if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"ID")==0)
-//                {
-//                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->left->sVal,'\0'));
-//                    value_init_int(v_tmp,v_id_n->pdata->var_pdata.iVal+one_dimention->right->iVal);
-//                }
-//                else
-//                {
-//                    Value *v_id_n= symtab_dynamic_lookup(this,bstr2cstr(one_dimention->right->sVal,'\0'));
-//                    value_init_int(v_tmp,one_dimention->left->iVal+v_id_n->pdata->var_pdata.iVal);
-//                }
-//                v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_tmp->pdata->var_pdata.iVal;
-//            }
             one_dimention=one_dimention->next;
         }
         v->pdata->symtab_array_pdata.dimention_figure=dimention_figure;
@@ -417,9 +409,14 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->var_pdata.iVal=p->right->iVal;
             v->VTy->ID=Const_INT;
         }
-        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
             v->pdata->var_pdata.fVal=p->right->fVal;
             v->VTy->ID=Const_FLOAT;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0)
+        {
+            v->pdata->var_pdata.iVal=(int)p->right->fVal;
+            v->VTy->ID=Const_INT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
@@ -439,9 +436,18 @@ void insert_var_into_symtab(past type,past p)
 
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
         {
-            int result= cal_easy_expr(p->right);
-            v->pdata->var_pdata.iVal=result;
-            v->VTy->ID=Const_INT;
+            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            {
+                float result= cal_easy_expr_f(p->right);
+                v->pdata->var_pdata.fVal=result;
+                v->VTy->ID=Const_FLOAT;
+            }
+            else
+            {
+                int result= cal_easy_expr(p->right);
+                v->pdata->var_pdata.iVal=result;
+                v->VTy->ID=Const_INT;
+            }
         }
 
         symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
@@ -496,11 +502,16 @@ int cal_easy_expr(past expr)
         {
             if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "num_int") == 0)
                 data=(*p)->iVal;
+            else if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "num_float") == 0)
+                data=(int)(*p)->fVal;
             //CONST_INT
             else
             {
                 Value *v= symtab_dynamic_lookup_first(this,bstr2cstr((*p)->sVal, '\0'));
-                data=v->pdata->var_pdata.iVal;
+                if(v->VTy->ID==Const_INT)
+                    data=v->pdata->var_pdata.iVal;
+                else
+                    data=(int)v->pdata->var_pdata.fVal;
             }
 
             stackPush(S,data);
@@ -527,6 +538,108 @@ int cal_easy_expr(past expr)
     stackTop(S,(void*)&result);
     stackPop(S);
     return result;
+}
+
+float cal_easy_expr_f(past expr)
+{
+    stack *s=stackInit();  //用于后序遍历二叉树
+    stack *S=stackInit();
+    past p1 = expr;
+    past q = NULL;     //记录刚刚访问过的结点
+    //记录后缀表达式
+    past str[100];
+    int i = 0;
+
+    while (p1 != NULL || stackSize(s))
+    {
+        if (p1 != NULL)
+        {
+            stackPush(s, p1);
+            p1 = p1->left;
+        }
+        else
+        {
+            stackTop(s, (void**)&p1);     //往上走了才pop掉
+            if ((p1->right == NULL) || (p1->right) == q)
+            {
+                //开始往上走
+                q = p1;              //保存到q，作为下一次处理结点的前驱
+                stackTop(s, (void**)&p1);
+                stackPop(s);
+                str[i++] = p1;
+                p1 = NULL;         //p置于NULL可继续退层，否则会重复访问刚访问结点的左子树
+            }
+            else
+                p1 = p1->right;
+        }
+    }
+    str[i]=NULL;
+
+    past x1;past x2;
+    past *p=str;
+    while(*p)
+    {
+        if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "expr") != 0)
+        {
+            stackPush(S,(*p));
+        }
+
+        else
+        {
+            stackTop(S, (void*)&x2);
+            stackPop(S);
+            stackTop(S, (void*)&x1);
+            stackPop(S);
+            float *result= malloc(4);
+            switch((*p)->iVal)
+            {
+                case '+':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal + x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal+x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal+(float )x2->iVal;
+
+                    //else if()
+                    break;
+                case '-':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal - x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal-x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal-(float )x2->iVal;
+                    //else if()
+                    break;
+                case '*':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal * x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal*x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal*(float )x2->iVal;
+                    //else if()
+                    break;
+                case '/':
+                    if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result = x1->fVal / x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_float") == 0)
+                        *result=(float )x1->iVal/x2->fVal;
+                    else if(strcmp(bstr2cstr(x1->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(x2->nodeType, '\0'), "num_int") == 0)
+                        *result=x1->fVal/(float )x2->iVal;
+                    //else if()
+                    break;
+            }
+            past p_result= newNumFloat((*result));
+            stackPush(S,p_result);
+        }
+        p++;
+    }
+    past final_result= malloc(4);
+    stackTop(S,(void*)&final_result);
+    stackPop(S);
+    return final_result->fVal;
 }
 
 //目前还未考虑数组
