@@ -28,17 +28,19 @@ void correctType(Function *currentFunction){
                         }
                     }
                 }else{
-                    // 如果alloca的是NULL那么说明应该是保存返回值的
-                    // 我们也简单的设置成为Int的Type
+                    // 如果alloca的是NULL那么说明应该是保存返回值 或者传递参数的
+                    // 我们也简单的设置成为Var Int的Type
                     Value *insValue = ins_get_value(currNode->inst);
-                    insValue->VTy->ID = Int;
+                    insValue->VTy->ID = Var_INT;
                 }
                 break;
             }
             case GEP:{
                 Value *insValue = ins_get_value(currNode->inst);
                 //设置这个value的type
-                insValue->VTy->ID = ArrayTyID;
+                if(insValue->VTy->ID == Unknown){
+                    insValue->VTy->ID = ArrayTyID;
+                }
                 break;
             }
             case bitcast:{
@@ -46,7 +48,9 @@ void correctType(Function *currentFunction){
                 Value *insValue = ins_get_value(currNode->inst);
                 insValue->VTy->ID = ArrayTyID;
                 Value *lhs = ins_get_lhs(currNode->inst);
-                lhs->VTy->ID = ArrayTyID;
+                if(lhs->VTy->ID == Unknown){
+                    lhs->VTy->ID = ArrayTyID;
+                }
             }
         }
         currNode = get_next_inst(currNode);

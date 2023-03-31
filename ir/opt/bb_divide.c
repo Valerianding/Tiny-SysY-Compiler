@@ -51,7 +51,7 @@ void bblock_divide(InstNode *head){
 
     //现在cur 为第一个函数开头
     //第一次全部打点
-    InstNode *prev_in;
+    InstNode *prev_in = NULL;
     int curBlockLabel = -1;
     while(cur != NULL){
         if(cur->inst->Opcode == FunBegin || cur->inst->Opcode == Label){

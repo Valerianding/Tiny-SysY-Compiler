@@ -52,16 +52,6 @@ InstNode *search_ins_id(InstNode *head,int id){
     return NULL;
 }
 
-InstNode *search_ins_label(InstNode *head,int label_id){
-    // 需要满足在一个function里面
-    while(head != NULL){
-        if(head->inst->Opcode == Label && head->inst->user.value.pdata->instruction_pdata.true_goto_location == label_id){
-            return head;
-        }
-        head = get_next_inst(head);
-    }
-    return nullptr;
-}
 
 void bb_set_block(BasicBlock *this,InstNode *head,InstNode *tail){
     this->head_node = head;
@@ -76,6 +66,18 @@ void ins_node_add(InstNode *head,InstNode *this){
     sc_list_add_tail(&head->list,&this->list);
 }
 
+InstNode *search_ins_label(InstNode *head,int label_id){
+
+    // 需要满足在一个function里面
+
+    while(head != NULL){
+        if(head->inst->Opcode == Label && head->inst->user.value.pdata->instruction_pdata.true_goto_location == label_id){
+            return head;
+        }
+        head = get_next_inst(head);
+    }
+    return nullptr;
+}
 
 HashSet *get_prev_block(BasicBlock *this){
     HashSet *prevBlocks = this->preBlocks;
@@ -109,7 +111,7 @@ void print_one_ins_info(InstNode *insNode){
         }else if(lhs != NULL && isVar(lhs)){
             printf("var type");
         }else if(lhs != NULL){
-            printf("not any type");
+            printf("lhs type : %d",lhs->VTy->ID);
         }else{
             printf("null!");
         }

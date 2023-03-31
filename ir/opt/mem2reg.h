@@ -12,10 +12,12 @@ extern HashMap *GlobalIncomingVal;
 void mem2reg(Function *currentFunction);
 void insert_phi(BasicBlock *block,Value *val);
 void insertPhiInfo(InstNode *ins,pair *phiInfo);
+InstNode *newCopyOperation(Value *dest, Value *src);
+InstNode* new_phi(Value *val);
 void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals);
 void deleteLoadStore(Function *currentFunction);
 void renameVariabels(Function *currentFunction);
-InstNode *newCopyOperation(Value *dest, Value *src);
 void outOfSSA(Function *currentFunction);
-InstNode* new_phi(Value *val);
+void calculateNonLocals(Function *currentFunction);
+void correctPhiNode(Function *currentFunction);
 #endif //C22V1_MEM2REG_H

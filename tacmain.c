@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     declare_global_alloca(this->value_maps->next);
     c_b_flag[0]=false;c_b_flag[1]=false;
     create_instruction_list(TRoot,NULL);
-    //printf_llvm_ir(instruction_list,argv[1]);
+   // printf_llvm_ir(instruction_list,argv[1]);
 //   fix_array(instruction_list);
     //print_array(instruction_list);
     //showAst(TRoot,0);
@@ -114,6 +114,8 @@ int main(int argc, char* argv[]){
         clear_visited_flag(block);
         calculate_DomTree(currentFunction);
         clear_visited_flag(block);
+        calculateNonLocals(currentFunction);
+        printf("after non locals\n");
         mem2reg(currentFunction);
         printf("------after a function------\n");
     }
@@ -121,6 +123,11 @@ int main(int argc, char* argv[]){
     // 建立phi 之后的
     printf_llvm_ir(instruction_list,argv[1]);
 
+//    temp2 = instruction_list;
+//    /* 测试所有instruction list */
+//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+//        print_one_ins_info(temp2);
+//    }
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
 //        outOfSSA(currentFunction);
 //        printf("after out of SSA!\n");
@@ -138,14 +145,5 @@ int main(int argc, char* argv[]){
     //ljw_end
     //    ljf
     //arm_translate_ins(instruction_list);
-    stack *test = stackInit();
-    assert(test != NULL);
-    Value *replace = NULL;
-    stackTop(test,&replace);
-    if(replace == NULL){
-        printf("correct\n");
-    }else{
-        printf("error\n");
-    }
     return 0;
 }

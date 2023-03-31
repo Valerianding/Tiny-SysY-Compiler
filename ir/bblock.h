@@ -33,6 +33,7 @@ struct _BasicBlock{
     DomTreeNode *domTreeNode;
     HashSet *in; // 对应live-in
     HashSet *out; // 对应live-out
+
     int id;
 };
 
@@ -61,7 +62,6 @@ InstNode *get_last_inst(InstNode *this);
 ///根据指令标号搜索instnode
 InstNode *search_ins_id(InstNode *head,int id);
 
-///根据label搜索instnode
 InstNode *search_ins_label(InstNode *head,int label_id);
 
 ///新建一个基本块

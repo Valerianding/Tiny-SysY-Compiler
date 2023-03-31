@@ -21,7 +21,7 @@ typedef struct pair{
 
 #define  NumUserOperandsBits 27
 
-union _PData{
+struct _PData{
     struct {
         int true_goto_location;       //跳转位置
         int false_goto_location;
@@ -54,7 +54,7 @@ union _PData{
     HashSet *pairSet; // 为了phi指令设计的 存pair类型的数据
     unsigned int define_flag:1;
 };
-typedef union _PData PData;
+typedef struct _PData PData;
 typedef struct _Value Value;
 struct _Value
 {
