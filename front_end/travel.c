@@ -21,6 +21,7 @@ extern bool c_b_flag[2];
 extern char t_num[5];
 int param_map=0;
 Value *v_cur_func;
+char type_str[30][20]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"main_float"},{"var_int"},{"var_float"},{"var_initint"},{"var_initfloat"},{"int"},{"float"},{"const_int"},{"const_float"},{"arrayType"},{"array_init"},{"array_const"},{"function"},{"void"},{"address"},{"globalint"},{"globalfloat"},{"global_arrayint"},{"global_arrayfloat"}};
 
 void create_instruction_list(past root,Value* v_return)
 {
@@ -1027,7 +1028,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             Value *v=symtab_dynamic_lookup_first(this, bstr2cstr(vars->left->sVal, '\0'));
             v->pdata->define_flag=1;
         }
-        //有初值
+            //有初值
         else if (strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_init") == 0 && !is_global)
         {
             //左值
@@ -1154,7 +1155,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                     }
                 }
             }
-            //TODO 是全局有初始化数组
+                //TODO 是全局有初始化数组
             else
             {
                 past ident_array=vars->left;         //到IdentArray结点
@@ -1167,7 +1168,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                     handle_global_array(v_array,true,vars,1);
             }
         }
-        //无初值数组
+            //无初值数组
         else if(strcmp(bstr2cstr(vars->nodeType, '\0'), "IdentArray") == 0 && is_global)
         {
             past ident_array=vars->left;         //到IdentArray结点
@@ -3010,12 +3011,12 @@ void create_params_stmt(past func_params,Value * v_func)
             if(v_test->VTy->ID==Const_INT)
             {
                 v=(Value*) malloc(sizeof (Value));
-                value_init_int(v, params->iVal);
+                value_init_int(v, v_test->pdata->var_pdata.iVal);
             }
             else if(v_test->VTy->ID==Const_FLOAT)
             {
                 v=(Value*) malloc(sizeof (Value));
-                value_init_float(v, params->fVal);
+                value_init_float(v, v_test->pdata->var_pdata.fVal);
             }
             else if(v_test->VTy->ID==ArrayTyID || v_test->VTy->ID==ArrayTyID_Const || v_test->VTy->ID==ArrayTyID_Init)
             {
@@ -4322,3 +4323,45 @@ void print_array(struct _InstNode *instruction_node)
         instruction_node= get_next_inst(instruction_node);
     }
 }
+//
+//void test_travel_type(struct _InstNode *instruction_node){
+//    instruction_node= get_next_inst(instruction_node);
+//    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
+//    {
+//        if(instruction_node->inst->user.value.name!=NULL)
+//            printf("left:%s,\t",type_str[instruction_node->inst->user.value.VTy->ID]);
+//        if(instruction_node->inst->user.use_list->Val!=NULL)
+//            printf("value1:%s,\t",type_str[instruction_node->inst->user.use_list->Val->VTy->ID]);
+//        Value *v=instruction_node->inst->user.use_list[1].Val;
+//        if(instruction_node->inst->user.use_list[1].Val->VTy!=NULL)
+//            printf("value1:%s,\t",type_str[instruction_node->inst->user.use_list[1].Val->VTy->ID]);
+//        printf("\n");
+//        instruction_node= get_next_inst(instruction_node);
+//    }
+//}
+//
+//void travel_finish_type(struct _InstNode *instruction_node)
+//{
+//    instruction_node= get_next_inst(instruction_node);
+//    Instruction *instruction=NULL;
+//    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
+//    {
+//        instruction=instruction_node->inst;
+//        switch (instruction_node->inst->Opcode)
+//        {
+//            case Alloca:
+//                //如果是存返回值的
+//                if(instruction->user.use_list->Val==NULL)
+//                    instruction->user.value.VTy->ID= get_prev_inst(instruction_node)->inst->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID;
+//                else
+//                    //普通alloca
+//                    instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
+//                break;
+//
+//        }
+//
+//
+//
+//        instruction_node= get_next_inst(instruction_node);
+//    }
+//}
