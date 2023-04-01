@@ -49,8 +49,8 @@ struct _PData{
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
 
         union {
-            int array[100];                 //memcpy使用
-            float f_array[100];
+            int array[301];                 //memcpy使用
+            float f_array[301];
         };
     }symtab_array_pdata;
 

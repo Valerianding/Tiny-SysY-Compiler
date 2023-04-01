@@ -1,21 +1,21 @@
 #include "type.h"
 
 bool isIntType(Type *type){
-    if(type->ID == Var_INT || type->ID == Var_initINT){
+    if(type->ID == Var_INT ){
         return true;
     }
     return false;
 }
 
 bool isFloatType(Type *type){
-    if(type->ID == Var_FLOAT || type->ID == Var_initFLOAT){
+    if(type->ID == Var_FLOAT ){
         return true;
     }
     return false;
 }
 
 bool isVarType(Type *type){
-    if(type->ID == Var_initFLOAT || type->ID == Var_FLOAT || type->ID == Var_initINT || type->ID == Var_INT){
+    if( type->ID == Var_FLOAT  || type->ID == Var_INT){
         return true;
     }
     return false;

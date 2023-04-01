@@ -2455,7 +2455,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                 }
                 else if(x1->VTy->ID==Int || x1->VTy->ID==Float)
                     v1=x1;
-                else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==Var_initINT || x1->VTy->ID==Param_INT || x1->VTy->ID==Var_FLOAT || x1->VTy->ID==Var_initFLOAT || x1->VTy->ID==Param_FLOAT))
+                else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==Param_INT || x1->VTy->ID==Var_FLOAT || x1->VTy->ID==Param_FLOAT))
                 {
                     if(!begin_global(x1->name))
                         v1= create_load_stmt(x1->name);
@@ -2501,7 +2501,7 @@ struct _Value *cal_expr(past expr,int* convert) {
                 }
                 else if(x2->VTy->ID==Int || x2->VTy->ID==Float)
                     v2=x2;
-                else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==Var_initINT || x2->VTy->ID==Param_INT || x2->VTy->ID==Var_FLOAT || x2->VTy->ID==Var_initFLOAT || x2->VTy->ID==Param_FLOAT))
+                else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==Param_INT || x2->VTy->ID==Var_FLOAT || x2->VTy->ID==Param_FLOAT))
                 {
                     if(!begin_global(x2->name))
                         v2= create_load_stmt(x2->name);
@@ -4323,45 +4323,51 @@ void print_array(struct _InstNode *instruction_node)
         instruction_node= get_next_inst(instruction_node);
     }
 }
-//
-//void test_travel_type(struct _InstNode *instruction_node){
-//    instruction_node= get_next_inst(instruction_node);
-//    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
-//    {
-//        if(instruction_node->inst->user.value.name!=NULL)
-//            printf("left:%s,\t",type_str[instruction_node->inst->user.value.VTy->ID]);
-//        if(instruction_node->inst->user.use_list->Val!=NULL)
-//            printf("value1:%s,\t",type_str[instruction_node->inst->user.use_list->Val->VTy->ID]);
-//        Value *v=instruction_node->inst->user.use_list[1].Val;
-//        if(instruction_node->inst->user.use_list[1].Val->VTy!=NULL)
-//            printf("value1:%s,\t",type_str[instruction_node->inst->user.use_list[1].Val->VTy->ID]);
-//        printf("\n");
-//        instruction_node= get_next_inst(instruction_node);
-//    }
-//}
-//
-//void travel_finish_type(struct _InstNode *instruction_node)
-//{
-//    instruction_node= get_next_inst(instruction_node);
-//    Instruction *instruction=NULL;
-//    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
-//    {
-//        instruction=instruction_node->inst;
-//        switch (instruction_node->inst->Opcode)
-//        {
-//            case Alloca:
-//                //如果是存返回值的
-//                if(instruction->user.use_list->Val==NULL)
-//                    instruction->user.value.VTy->ID= get_prev_inst(instruction_node)->inst->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID;
-//                else
-//                    //普通alloca
-//                    instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
-//                break;
-//
-//        }
-//
-//
-//
-//        instruction_node= get_next_inst(instruction_node);
-//    }
-//}
+
+void test_travel_type(struct _InstNode *instruction_node){
+    instruction_node= get_next_inst(instruction_node);
+    Value *v=NULL;Value *vl=NULL;Value *vr=NULL;
+    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
+    {
+        v= ins_get_value(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+        printf("\n");
+        instruction_node= get_next_inst(instruction_node);
+    }
+}
+
+void travel_finish_type(struct _InstNode *instruction_node)
+{
+    instruction_node= get_next_inst(instruction_node);
+    Instruction *instruction=NULL;
+    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
+    {
+        instruction=instruction_node->inst;
+        switch (instruction_node->inst->Opcode)
+        {
+            case Alloca:
+                //如果是存返回值的
+                if(instruction->user.use_list->Val==NULL)
+                    instruction->user.value.VTy->ID= get_prev_inst(instruction_node)->inst->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID;
+                else
+                    //普通alloca
+                    instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
+                break;
+            case Load:
+                instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
+                break;
+
+        }
+
+
+
+        instruction_node= get_next_inst(instruction_node);
+    }
+}

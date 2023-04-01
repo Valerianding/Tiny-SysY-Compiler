@@ -16,8 +16,6 @@ enum TypeID {
                        // 即使有初始化 值也可能改变
     Var_INT,          //无初始值的int型    变量
     Var_FLOAT,        //无初始值的float型  变量
-    Var_initINT,      //有初始值的int型    变量
-    Var_initFLOAT,    //有初始值的float型  变量
     Int,              //int类型整数
     Float,            //float类型浮点数
 

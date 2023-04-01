@@ -256,11 +256,11 @@ void insert_var_into_symtab(past type,past p)
         //比如int a=8，为常数;其他复杂的情况在这一步暂时认为是无初值!
         if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
             v->pdata->var_pdata.iVal=p->right->iVal;
-            v->VTy->ID=Var_initINT;
+            v->VTy->ID=Var_INT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
             v->pdata->var_pdata.fVal=p->right->fVal;
-            v->VTy->ID=Var_initFLOAT;
+            v->VTy->ID=Var_FLOAT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
