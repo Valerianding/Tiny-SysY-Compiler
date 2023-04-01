@@ -283,7 +283,7 @@ void create_assign_stmt(past root,Value* v_return) {
     //右值value
     Value *v1=(Value*) malloc(sizeof (Value));
     value_init(v1);
-    v1->pdata->var_pdata.map= getCurMap(this);
+    v1->pdata->var_pdata.map_list= getCurMapList(this);
 
     //赋值右边为常数(整数),只有一句store
     if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "num_int") == 0)
@@ -2625,7 +2625,7 @@ struct _Value *cal_expr(past expr,int* convert) {
 
     //弹出最终值
     pop_value(&PS2, &final_result);
-    final_result->pdata->var_pdata.map= getCurMap(this);
+    final_result->pdata->var_pdata.map_list= getCurMapList(this);
 
     return final_result;
 }
@@ -2806,7 +2806,7 @@ struct _Value *create_param_value()
     strcat(t,t_num);
     Value *v_tmp=(Value*) malloc(sizeof (Value));
     value_init(v_tmp);
-    v_tmp->pdata->var_pdata.map= getCurMap(this);
+    v_tmp->pdata->var_pdata.map_list= getCurMapList(this);
     v_tmp->name=(char*) malloc(strlen (t));
     strcpy(v_tmp->name,t);
     clear_tmp(t);
@@ -2918,7 +2918,7 @@ void declare_global_alloca(struct _mapList* func_map)
                     v_replace->alias=((Value*)value);
                     //拷贝一下其他信息
                     v_replace->VTy->ID=((Value*)value)->VTy->ID;
-                    v_replace->pdata->var_pdata.map= getCurMap(this);
+                    v_replace->pdata->var_pdata.map_list= getCurMapList(this);
                     v_replace->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
 
                     //将这个instruction加入总list

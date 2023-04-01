@@ -28,7 +28,7 @@ struct _PData{
     }instruction_pdata;
 
     struct {
-        struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
+        struct _mapList* map_list;         //所指向的那张函数作用域的表
         union {
             int iVal;
             float fVal;
@@ -43,7 +43,7 @@ struct _PData{
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
 
     struct {
-        struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
+        struct _mapList* map_list;         //所指向的那张函数作用域的表
         Type array_type;
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
