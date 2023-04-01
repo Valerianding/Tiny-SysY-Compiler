@@ -68,7 +68,7 @@ void bblock_divide(InstNode *head){
                 curBlockLabel = 0;
             }
         }
-        if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd){
+        if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd || cur->inst->Opcode == Return){
             cur->inst->user.value.is_out = true;
             InstNode *cur_next = get_next_inst(cur);
             if(cur_next != NULL){
@@ -89,7 +89,7 @@ void bblock_divide(InstNode *head){
         if(cur->inst->Opcode == FunBegin){
             entry = cur->inst->Parent;
         }
-        if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd) {
+        if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd || cur->inst->Opcode == Return) {
             BasicBlock *this = cur->inst->Parent;
             if (cur->inst->Opcode == FunEnd) {
                 Function *cur_func = function_create();

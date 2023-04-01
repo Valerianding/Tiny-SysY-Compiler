@@ -101,7 +101,9 @@ Value *ins_get_lhs(Instruction *ins){
 Value *ins_get_rhs(Instruction *ins){
     Value *dest = (Value*)ins;
     // 如果没有两个就报错
-    assert(dest->NumUserOperands == 2);
+    if(dest->NumUserOperands != (unsigned int)2){
+        return NULL;
+    }
     User *user = &ins->user;
     Use *use2 = user_get_operand_use(user,1);
     Value *rhs = use2->Val;

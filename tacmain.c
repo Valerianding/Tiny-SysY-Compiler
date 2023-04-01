@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     declare_global_alloca(this->value_maps->next);
     c_b_flag[0]=false;c_b_flag[1]=false;
     create_instruction_list(TRoot,NULL);
-    //printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 //   fix_array(instruction_list);
 //   print_array(instruction_list);
 //   showAst(TRoot,0);

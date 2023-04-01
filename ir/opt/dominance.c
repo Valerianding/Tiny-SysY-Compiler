@@ -199,6 +199,17 @@ void calculate_dominance_frontier(Function *currentFunction){
         }
     }
 
+    HashSetFirst(allBlocks);
+    for(BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)){
+        HashSetFirst(block->df);
+        printf("b%d df : ",block->id);
+        for(BasicBlock *df = HashSetNext(block->df); df != NULL; df = HashSetNext(block->df)){
+            printf("b%d ",df->id);
+        }
+        printf("\n");
+    }
+    HashSetDeinit(allBlocks);
+    HashSetDeinit(tempSet);
 }
 
 void calculate_iDominator(Function *currentFunction){
@@ -264,15 +275,33 @@ void calculate_DomTree(Function *currentFunction){
     InstNode *head = entry->head_node;
     InstNode *tail = end->tail_node;
 
-    clear_visited_flag(head->inst->Parent);
-    //从头来计算
+    // 先对每一个BasicBlock进行建立DomNode
+    clear_visited_flag(entry);
+
     InstNode *curNode = head;
     while(curNode != get_next_inst(tail)){
         BasicBlock *block = curNode->inst->Parent;
         if(block->visited == false){
             block->visited = true;
+            assert(block->domTreeNode == NULL);
+            block->domTreeNode = (DomTreeNode*)malloc(sizeof(DomTreeNode));
+            memset(block->domTreeNode,0,sizeof(DomTreeNode));
+            block->domTreeNode->block = block;
+            block->domTreeNode->children = HashSetInit();
+        }
+        curNode = get_next_inst(curNode);
+    }
+
+    //从头来计算
+    clear_visited_flag(head->inst->Parent);
+    curNode = head;
+    while(curNode != get_next_inst(tail)){
+        BasicBlock *block = curNode->inst->Parent;
+        if(block->visited == false){
+            block->visited = true;
             BasicBlock *iDom = block->iDom;
-            DomTreeNode *domTreeNode = createDomTreeNode(block,iDom);
+            DomTreeNode *domTreeNode = block->domTreeNode;
+            domTreeNode->parent = iDom;
             if(iDom != NULL){
                 DomTreeNode *prevNode = iDom->domTreeNode;
                 assert(prevNode != NULL);

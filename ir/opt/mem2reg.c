@@ -114,7 +114,6 @@ void mem2reg(Function *currentFunction){
     while(curNode != get_next_inst(tail)){
         //如果alloca没有load就删除这个alloca
         //首先找到对应的value
-        printf("assert alloca ing \n");
         if(curNode->inst->Opcode == Alloca && curNode->inst->user.value.use_list == NULL){
             //不存在loadSet之中不存在这个value
             //删除这个instruction
@@ -205,9 +204,9 @@ void mem2reg(Function *currentFunction){
     printf("in rename pass!\n");
 
     //变量重命名 如果都没有alloc那么就不需要了
-    if(HashMapSize(IncomingVals) != 0){
-        dfsTravelDomTree(root,IncomingVals);
-    }
+//    if(HashMapSize(IncomingVals) != 0){
+//        dfsTravelDomTree(root,IncomingVals);
+//    }
 
     printf("after rename !\n");
     //correctPhiNode(currentFunction);
@@ -251,8 +250,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
     printf("in rename phrase : block : %d\n", node->block->id);
     assert(HashMapSize(IncomingVals) != 0);
-
-    printf("11111 \n");
     // 先根处理
     BasicBlock *block = node->block;
     InstNode *head = block->head_node;
@@ -358,8 +355,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
     }
 
     // 维护该基本块所有的后继基本块中的phi指令 修改phi函数中的参数
-    // 先找到它的后继基本块有两种可能
-    printf("22222\n");
     if(tail->inst->Opcode == br){
         //label的编号是
         int labelId = tail->inst->user.value.pdata->instruction_pdata.true_goto_location;
@@ -374,11 +369,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         if(nextBlockHead->inst->Opcode == Label){
             nextBlockCurr = get_next_inst(nextBlockHead);
         }
+
         while(nextBlockCurr->inst->Opcode == Phi){
             //对应的是哪个
             Value *alias = nextBlockCurr->inst->user.value.alias;
-
-            printf("fuck \n");
             //去找对应需要更新的
             stack *allocStack = HashMapGet(IncomingVals,alias);
             assert(allocStack != NULL);
@@ -395,8 +389,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         }
     }
 
-
-    printf("44444\n");
     if(tail->inst->Opcode == br_i1){
         int labelId1 = tail->inst->user.value.pdata->instruction_pdata.true_goto_location;
         int labelId2 = tail->inst->user.value.pdata->instruction_pdata.false_goto_location;
