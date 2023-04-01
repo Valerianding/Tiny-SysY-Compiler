@@ -3,6 +3,10 @@
 BasicBlock *bb_create(){
     BasicBlock *this = (BasicBlock*)malloc(sizeof(BasicBlock));
     memset(this,0,sizeof(BasicBlock));
+    this->head_node = NULL;
+    this->tail_node = NULL;
+    this->true_block = NULL;
+    this->false_block = NULL;
     this->preBlocks = HashSetInit();
     this->in = HashSetInit();
     this->out = HashSetInit();

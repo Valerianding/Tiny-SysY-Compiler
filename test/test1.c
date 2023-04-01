@@ -1,27 +1,15 @@
-int a = 7;
-
-int func() {
-    int b = a;
-    int a = 1;
-    if (a == b) {
-        a = a + 1;
-        return 1;
-    }
-    else
-        return 0;
+/* Type your code here, or load an example. */
+int square(int num,float a, int b,int c,int arr[]) {
+    int num1 = 1.3;
+    float num2 = a + num1;
+    arr[0] = num2;
+    return num * num;
+}
+int main(){
+    int result[100];
+    float c = square(1,3.1,1,1,result);
+    int d = c + result[0];
+    return result[1];
 }
 
-int main() {
-    int result = 0;
-    int i = 0;
-    while (i < 100) {
-        if (func() == 1)
-            result = result + 1;
-        i = i + 1;
-    }
-    if (result < 100)
-        putint(1);
-    else
-        putint(0);
-    return 0;
-}
+ 

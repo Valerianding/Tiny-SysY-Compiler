@@ -147,7 +147,7 @@ void mem2reg(Function *currentFunction){
         HashSet *storeSet = pair->value;  //这个value对应的所有defBlocks
 
         // 只有non-Locals 我们才需要放置phi函数
-        {
+        if(HashSetFind(nonLocals, val)){
             HashSetFirst(storeSet);
             printf("value : %s store(defBlocks) : ", val->name);
             for(BasicBlock *key = HashSetNext(storeSet); key != NULL; key = HashSetNext(storeSet)){
@@ -210,7 +210,7 @@ void mem2reg(Function *currentFunction){
     }
 
     printf("after rename !\n");
-    correctPhiNode(currentFunction);
+    //correctPhiNode(currentFunction);
 
     printf("after correct phiNode\n");
 
@@ -604,7 +604,7 @@ void renameVariabels(Function *currentFunction) {
 
                 //如果不为空那我们可以进行重命名
                 if (insName != NULL && insName[0] == '%') {
-                    char newName[5];
+                    char newName[10];
                     clear_tmp(insName);
                     newName[0] = '%';
                     int index = 1;
@@ -636,7 +636,6 @@ void outOfSSA(Function *currentFunction){
     InstNode *currNode = entry->head_node;
 
     while(currNode != get_next_inst(end->tail_node)){
-        printf("hello !\n");
         if(currNode->inst->Opcode == Phi){
             assert(currNode->inst->user.value.pdata->pairSet != NULL);
             printf("recognize a phi!\n");
@@ -802,6 +801,104 @@ void correctPhiNode(Function *currentFunction){
 
             }else{
                 currNode = get_next_inst(currNode);
+            }
+        }else{
+            currNode = get_next_inst(currNode);
+        }
+    }
+
+
+    //再解决
+
+    currNode = entry->head_node;
+    while(currNode != get_next_inst(end->tail_node)){
+
+        if(currNode->inst->Opcode == Phi){
+            Value *insValue = ins_get_value(currNode->inst);
+            HashSet *pairSet = currNode->inst->user.value.pdata->pairSet;
+            HashSetFirst(pairSet);
+            for(pair *phiInfo = HashSetNext(pairSet); phiInfo != NULL; phiInfo = HashSetNext(pairSet)){
+                if(phiInfo->define == insValue){
+                    printf("remove a phi call phi!\n");
+                    bool flag = HashSetRemove(pairSet,phiInfo);
+                    assert(flag == true);
+                }
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
+
+
+    // 再来一遍
+    currNode = entry->head_node;
+    while(currNode != get_next_inst(end->tail_node)){
+        if(currNode->inst->Opcode == Phi){
+            HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
+
+            if(HashSetSize(phiSet) == 1){
+                HashSetFirst(phiSet);
+                pair *phiInfo = HashSetNext(phiSet);
+                Value *define = phiInfo->define;
+                Value *insValue = ins_get_value(currNode->inst);
+                value_replaceAll(insValue,define);
+
+
+                // 还不对因为有可能在另一个phi函数里面引用到了这个变量所以我们还得替换！
+
+                // 从头到尾去判断
+                InstNode *tempNode = entry->head_node;
+                while(tempNode != get_next_inst(end->tail_node)){
+                    if(tempNode->inst->Opcode == Phi){
+                        HashSet *pairSet = tempNode->inst->user.value.pdata->pairSet;\
+                        Value *tempValue = ins_get_value(tempNode->inst);
+                        HashSetFirst(pairSet);
+                        for(pair *phiInfo1 = HashSetNext(pairSet); phiInfo1 != NULL; phiInfo1 = HashSetNext(pairSet)){
+                            if(phiInfo1->define == insValue){
+                                phiInfo1->define = define;
+                            }
+                        }
+                    }
+                    tempNode = get_next_inst(tempNode);
+                }
+
+                InstNode *nextNode = get_next_inst(currNode);
+                delete_inst(currNode);
+                currNode = nextNode;
+
+            }else{
+                currNode = get_next_inst(currNode);
+            }
+        }else{
+            currNode = get_next_inst(currNode);
+        }
+    }
+
+    while(currNode != get_next_inst(end->tail_node)) {
+
+        if(currNode->inst->Opcode == Phi && currNode->inst->user.value.use_list == NULL){
+            InstNode *tempNode = entry->head_node;
+            bool flag = false;
+            while(tempNode != get_next_inst(end->tail_node)){
+                if(tempNode->inst->Opcode == Phi){
+                    Value *insValue = ins_get_value(currNode->inst);
+                    HashSet *pairSet = tempNode->inst->user.value.pdata->pairSet;
+                    HashSetFirst(pairSet);
+                    for(pair *phiInfo = HashSetNext(pairSet); phiInfo != NULL; phiInfo = HashSetNext(pairSet)){
+                        Value *define = phiInfo->define;
+                        if(define == insValue){
+                            flag = true;
+                        }
+                    }
+                }
+                tempNode = get_next_inst(tempNode);
+            }
+            if(flag == true){
+                currNode = get_next_inst(currNode);
+            }else{
+                printf("delete a dead p\n");
+                InstNode *next = get_next_inst(currNode);
+                delete_inst(currNode);
+                currNode = next;
             }
         }else{
             currNode = get_next_inst(currNode);
