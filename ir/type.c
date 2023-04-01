@@ -29,7 +29,7 @@ bool isImmType(Type *type){
 }
 
 bool isArrayType(Type *type){
-    if(type->ID == ArrayTyID || type->ID == ArrayTyID_Const || type->ID == ArrayTyID_Init || type->ID == GlobalArrayInt || type->ID == GlobalArrayFloat){
+    if(type->ID == ArrayTy_FLOAT || type->ID==ArrayTy_INT || type->ID == ArrayTyID_ConstINT || type->ID==ArrayTyID_ConstFLOAT || type->ID == GlobalArrayInt || type->ID == GlobalArrayFloat){
         return true;
     }
     return false;

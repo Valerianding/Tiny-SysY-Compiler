@@ -44,7 +44,7 @@ struct _PData{
 
     struct {
         struct _mapList* map_list;         //所指向的那张函数作用域的表
-        Type array_type;
+        //Type array_type;
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
 
@@ -52,6 +52,7 @@ struct _PData{
             int array[301];                 //memcpy使用
             float f_array[301];
         };
+        unsigned is_init:1;  //用于判断数组是否初始化
     }symtab_array_pdata;
 
     HashSet *pairSet; // 为了phi指令设计的 存pair类型的数据

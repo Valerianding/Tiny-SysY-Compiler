@@ -22,9 +22,8 @@ enum TypeID {
     Const_INT,        // 常变量 应该用不到了
     Const_FLOAT,
 
-    ArrayTyID,
-    ArrayTyID_Init,
-    ArrayTyID_Const,
+    ArrayTyID_ConstINT,
+    ArrayTyID_ConstFLOAT,
     FunctionTyID,
     VoidTyID,
 
@@ -34,6 +33,8 @@ enum TypeID {
     GlobalVarInt,  //全局INT类型变量
     GlobalVarFloat, //全局Float类型变量
 
+    ArrayTy_INT,
+    ArrayTy_FLOAT,
     GlobalArrayInt, // 全局Int类型数组
     GlobalArrayFloat, // 全局float类型数组
 };

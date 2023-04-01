@@ -180,9 +180,19 @@ void insert_var_into_symtab(past type,past p)
         else
             v->pdata->define_flag=0;
         if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            v->VTy->ID=Var_FLOAT;
+        {
+            if(is_global_map(this))
+                v->VTy->ID=GlobalVarFloat;
+            else
+                v->VTy->ID=Var_FLOAT;
+        }
         else
-            v->VTy->ID=Var_INT;
+        {
+            if(is_global_map(this))
+                v->VTy->ID=GlobalVarInt;
+            else
+                v->VTy->ID=Var_INT;
+        }
         symtab_insert_value_name(this,bstr2cstr(p->sVal,0),v);
     }
 
@@ -208,11 +218,24 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->define_flag=1;
         else
             v->pdata->define_flag=0;
-        v->VTy->ID=ArrayTyID;
+
         if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            v->pdata->symtab_array_pdata.array_type.ID=Float;
+        {
+            if(is_global_map(this))
+                v->VTy->ID=GlobalArrayFloat;
+            else
+                v->VTy->ID=ArrayTy_FLOAT;
+        }
         else
-            v->pdata->symtab_array_pdata.array_type.ID=Int;
+        {
+            if(is_global_map(this))
+                v->VTy->ID=GlobalArrayInt;
+            else
+                v->VTy->ID=ArrayTy_INT;
+        }
+
+        //v->VTy->ID=ArrayTyID;
+        v->pdata->symtab_array_pdata.is_init=0;
 
         //加入维度具体数值
         past one_dimention = p->left->next;
@@ -256,11 +279,17 @@ void insert_var_into_symtab(past type,past p)
         //比如int a=8，为常数;其他复杂的情况在这一步暂时认为是无初值!
         if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
             v->pdata->var_pdata.iVal=p->right->iVal;
-            v->VTy->ID=Var_INT;
+            if(is_global_map(this))
+                v->VTy->ID=GlobalVarInt;
+            else
+                v->VTy->ID=Var_INT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
             v->pdata->var_pdata.fVal=p->right->fVal;
-            v->VTy->ID=Var_FLOAT;
+            if(is_global_map(this))
+                v->VTy->ID=GlobalVarFloat;
+            else
+                v->VTy->ID=Var_FLOAT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
@@ -272,46 +301,92 @@ void insert_var_into_symtab(past type,past p)
                 {
                     v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
                     //v->VTy->ID=Const_FLOAT;
-                    v->VTy->ID=Var_FLOAT;
+                    if(is_global_map(this))
+                        v->VTy->ID=GlobalVarFloat;
+                    else
+                        v->VTy->ID=Var_FLOAT;
                 }
                     //Const_Int
                 else if(v_num->VTy->ID==Const_INT)
                 {
                     v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
                     //v->VTy->ID=Const_INT;
-                    v->VTy->ID=Var_INT;
+                    if(is_global_map(this))
+                        v->VTy->ID=GlobalVarInt;
+                    else
+                        v->VTy->ID=Var_INT;
                 }
                 else
                 {
                     if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-                        v->VTy->ID=Var_FLOAT;
+                    {
+                        if(is_global_map(this))
+                            v->VTy->ID=GlobalVarFloat;
+                        else
+                            v->VTy->ID=Var_FLOAT;
+                    }
                     else
-                        v->VTy->ID=Var_INT;
+                    {
+                        if(is_global_map(this))
+                            v->VTy->ID=GlobalVarInt;
+                        else
+                            v->VTy->ID=Var_INT;
+                    }
                 }
             }
             //参数
             else
             {
                 if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-                    v->VTy->ID=Var_FLOAT;
+                {
+                    if(is_global_map(this))
+                        v->VTy->ID=GlobalVarFloat;
+                    else
+                        v->VTy->ID=Var_FLOAT;
+                }
                 else
-                    v->VTy->ID=Var_INT;
+                {
+                    if(is_global_map(this))
+                        v->VTy->ID=GlobalVarInt;
+                    else
+                        v->VTy->ID=Var_INT;
+                }
             }
         }
         //是expr
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
         {
             if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-                v->VTy->ID=Var_FLOAT;
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarFloat;
+                else
+                    v->VTy->ID=Var_FLOAT;
+            }
             else
-                v->VTy->ID=Var_INT;
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarInt;
+                else
+                    v->VTy->ID=Var_INT;
+            }
         }
         else
         {
             if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            {v->VTy->ID=Var_FLOAT;}
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarFloat;
+                else
+                    v->VTy->ID=Var_FLOAT;
+            }
             else
-            {v->VTy->ID=Var_INT;}
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarInt;
+                else
+                    v->VTy->ID=Var_INT;
+            }
         }
 
         if(is_global_map(this))
@@ -337,10 +412,7 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->define_flag=1;
         else
             v->pdata->define_flag=0;
-        if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            v->pdata->symtab_array_pdata.array_type.ID=Float;
-        else
-            v->pdata->symtab_array_pdata.array_type.ID=Int;
+        v->pdata->symtab_array_pdata.is_init=1;
 
         if(is_global_map(this))
         {
@@ -354,10 +426,31 @@ void insert_var_into_symtab(past type,past p)
             strcpy(v->name,bstr2cstr(p->left->left->sVal,0));
         }
 
-        if(strcmp(bstr2cstr(p->nodeType,'\0'),"ConstDef_array_init")==0)
-            v->VTy->ID=ArrayTyID_Const;
+        if(strcmp(bstr2cstr(p->nodeType,'\0'),"ConstDef_array_init")==0) {
+            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+                v->VTy->ID=ArrayTyID_ConstFLOAT;
+            else
+                v->VTy->ID=ArrayTyID_ConstINT;
+            //v->VTy->ID=ArrayTyID_Const;
+            v->pdata->symtab_array_pdata.is_init=1;
+        }
         else
-            v->VTy->ID=ArrayTyID_Init;
+        {
+            if(is_global_map(this)){
+                if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+                    v->VTy->ID=GlobalArrayFloat;
+                else
+                    v->VTy->ID=GlobalArrayInt;
+            }
+            else{
+                if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+                    v->VTy->ID=ArrayTy_FLOAT;
+                else
+                    v->VTy->ID=ArrayTy_INT;
+            }
+            v->pdata->symtab_array_pdata.is_init=1;
+        }
+            //v->VTy->ID=ArrayTyID_Init;
         v->pdata->symtab_array_pdata.map_list= getCurMapList(this);
 
         //加入维度具体数值
