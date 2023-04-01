@@ -250,7 +250,6 @@ void calculatePhiLiveness(Function *currentFunction){
         }
         if(exitCurr->inst->Opcode == Store){
             Value *alloc = ins_get_rhs(exitCurr->inst);
-
         }
         exitCurr = get_prev_inst(exitCurr);
     }

@@ -37,24 +37,16 @@ DomTreeNode *createDomTreeNode(BasicBlock *block,BasicBlock *parent){
 
 
 void calculate_dominance(Function *currentFunction) {
-    //currentFunction->dominance = HashMapInit();
-
-
     // 注意要删除不可达的BasicBlock
     BasicBlock *entry = currentFunction->entry;
     entry->dom = HashSetInit();
     HashSetAdd(entry->dom,entry);
-    //HashMapPut(currentFunction->dominance, entry, entry->dom);
 
     HashSet *allNode = HashSetInit();
     //拿到第一条InstNode
     BasicBlock *prev = nullptr;
     InstNode *cur = entry->head_node;
     InstNode *end = currentFunction->tail->tail_node;
-
-
-    printf("cur : %d\n",cur->inst->i);
-    printf("end : %d\n",end->inst->i);
     while(cur != end){
         BasicBlock *parent = cur->inst->Parent;
         if(prev != parent){
@@ -161,51 +153,52 @@ void calculate_dominance(Function *currentFunction) {
 }
 
 void calculate_dominance_frontier(Function *currentFunction){
-    //对于每一个节点
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
-    printf("entryBlock : %d",entry->id);
-    printf(" endBlock : %d",end->id);
-    printf("\n");
-    //不动的
-    InstNode *head = entry->head_node;
-    InstNode *tail = end->tail_node;
-
-    clear_visited_flag(head->inst->Parent);
-    //从头来计算
-    InstNode *curNode = head;
-    while(curNode != get_next_inst(tail)){
-        BasicBlock *cur = curNode->inst->Parent;
-
-        //初始化现在的df
-        cur->df = HashSetInit();
-
-        InstNode *temp = head;
-        //找到X支配的节点Y
-        printf("b%d domBlock:",cur->id);
-        while(temp != get_next_inst(tail)){
-            BasicBlock *tempBlock = temp->inst->Parent;
-            if(HashSetFind(tempBlock->dom,cur) ){
-                printf(" %d",tempBlock->id);
-                //如果支配它的话找temp的后继 并且不支配的话
-                if(tempBlock->true_block && !HashSetFind(tempBlock->true_block->dom,cur) && !HashSetFind(cur->df,tempBlock->true_block)){
-                    HashSetAdd(cur->df,tempBlock->true_block);
-                }
-                if(tempBlock->false_block && !HashSetFind(tempBlock->false_block->dom,cur) && !HashSetFind(cur->df,tempBlock->false_block)){
-                    HashSetAdd(cur->df,tempBlock->false_block);
-                }
-            }
-            temp = get_next_inst(temp);
-        }
-        printf("df:");
-        HashSetFirst(cur->df);
-        for(BasicBlock *key = HashSetNext(cur->df); key != NULL; key = HashSetNext(cur->df)){
-            printf(" b%d",key->id);
-        }
-        printf("\n");
-        curNode = get_next_inst(curNode);
+    if(entry == end){
+        entry->df = HashSetInit();
+        return;
     }
+    HashSet *allBlocks = HashSetInit();
+    //
+    clear_visited_flag(entry);
+
+    //
+    InstNode *currNode = entry->head_node;
+    while(currNode != get_next_inst(end->tail_node)){
+        BasicBlock *block = currNode->inst->Parent;
+        if(block->visited == false){
+            block->visited = true;
+            if(!HashSetFind(allBlocks,block)){
+                HashSetAdd(allBlocks,block);
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
+
+    //还需要一个tempSet
+    HashSet *tempSet = HashSetInit();
+    HashSetFirst(allBlocks);
+    for(BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)){
+        HashSetAdd(tempSet,block);
+    }
+
+    //
+    HashSetFirst(allBlocks);
+    for(BasicBlock *X = HashSetNext(allBlocks); X != NULL; X = HashSetNext(allBlocks)){
+        X->df = HashSetInit();
+        HashSetFirst(tempSet);
+        for(BasicBlock *Y = HashSetNext(tempSet); Y != NULL; Y = HashSetNext(tempSet)){
+            if(HashSetFind(Y->dom,X) && Y->true_block != NULL && !HashSetFind(Y->true_block->dom,X)){
+                HashSetAdd(X->df,Y->true_block);
+            }
+            if(HashSetFind(Y->dom,X) && Y->false_block != NULL && !HashSetFind(Y->false_block->dom,X)){
+                HashSetAdd(X->df,Y->false_block);
+            }
+        }
+    }
+
 }
 
 void calculate_iDominator(Function *currentFunction){
