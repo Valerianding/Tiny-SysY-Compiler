@@ -4208,38 +4208,39 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
             case Phi:{
-//                HashSet *phiSet = instruction->user.value.pdata->pairSet;
-//                HashSetFirst(phiSet);
-//                printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
-//                fprintf(fptr," %s = phi i32",instruction->user.value.name);
-//                unsigned int size=HashSetSize(phiSet);
-//                int i=0;
-//                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-//                    BasicBlock *from = phiInfo->from;
-//                    Value *incomingVal = phiInfo->define;
-//                    if(i + 1 == size)      //最后一次
-//                    {
-//                        if(isImm(incomingVal)){
-//                            printf("[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
-//                            fprintf(fptr,"[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
-//                        }else{
-//                            printf("[%s , %%%d]",incomingVal->name,from->id);
-//                            fprintf(fptr,"[%s , %%%d]",incomingVal->name,from->id);
-//                        }
-//                    }
-//                    else
-//                    {
-//                        if(isImm(incomingVal)){
-//                            printf("[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
-//                            fprintf(fptr,"[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
-//                        }else{
-//                            printf("[%s , %%%d], ",incomingVal->name,from->id);
-//                            fprintf(fptr,"[%s , %%%d], ",incomingVal->name,from->id);
-//                        }
-//                    }
-//                    i++;
-//                }
-                printf("a phi instruction\n");
+                HashSet *phiSet = instruction->user.value.pdata->pairSet;
+                HashSetFirst(phiSet);
+                printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
+                fprintf(fptr," %s = phi i32",instruction->user.value.name);
+                unsigned int size=HashSetSize(phiSet);
+                int i=0;
+                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                    BasicBlock *from = phiInfo->from;
+                    Value *incomingVal = phiInfo->define;
+                    if(i + 1 == size)      //最后一次
+                    {
+                        if(isImm(incomingVal)){
+                            printf("[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
+                            fprintf(fptr,"[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
+                        }else{
+                            printf("[%s , %%%d]",incomingVal->name,from->id);
+                            fprintf(fptr,"[%s , %%%d]",incomingVal->name,from->id);
+                        }
+                    }
+                    else
+                    {
+                        if(isImm(incomingVal)){
+                            printf("[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+                            fprintf(fptr,"[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+                        }else{
+                            printf("[%s , %%%d], ",incomingVal->name,from->id);
+                            fprintf(fptr,"[%s , %%%d], ",incomingVal->name,from->id);
+                        }
+                    }
+                    i++;
+                }
+                printf("\n");
+                //printf("a phi instruction\n");
                 break;
             }
             case CopyOperation:{
