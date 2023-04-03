@@ -19,5 +19,5 @@ void deleteLoadStore(Function *currentFunction);
 void renameVariabels(Function *currentFunction);
 void outOfSSA(Function *currentFunction);
 void calculateNonLocals(Function *currentFunction);
-void correctPhiNode(Function *currentFunction);
+bool correctPhiNode(Function *currentFunction);
 #endif //C22V1_MEM2REG_H
