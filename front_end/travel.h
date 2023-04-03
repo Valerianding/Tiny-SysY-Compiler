@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-void test_travel_type(struct _InstNode *instruction_node);
+//void test_travel_type(struct _InstNode *instruction_node);
 void travel_finish_type(struct _InstNode *instruction_node);
 
 void create_blockItemList(past root,Value* v_return);

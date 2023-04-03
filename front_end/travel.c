@@ -4359,25 +4359,25 @@ void print_array(struct _InstNode *instruction_node)
         instruction_node= get_next_inst(instruction_node);
     }
 }
-
-void test_travel_type(struct _InstNode *instruction_node){
-    instruction_node= get_next_inst(instruction_node);
-    Value *v=NULL;Value *vl=NULL;Value *vr=NULL;
-    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
-    {
-        v= ins_get_value(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n");
-        instruction_node= get_next_inst(instruction_node);
-    }
-}
+//
+//void test_travel_type(struct _InstNode *instruction_node){
+//    instruction_node= get_next_inst(instruction_node);
+//    Value *v=NULL;Value *vl=NULL;Value *vr=NULL;
+//    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
+//    {
+//        v= ins_get_value(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n");
+//        instruction_node= get_next_inst(instruction_node);
+//    }
+//}
 
 void travel_finish_type(struct _InstNode *instruction_node)
 {
