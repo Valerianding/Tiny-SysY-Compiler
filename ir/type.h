@@ -8,31 +8,32 @@
 
 enum TypeID {
     Unknown = 0,
-    Param_INT,
-    Param_FLOAT,
-    MAIN_INT,        //只有一个返回语句的main函数
-    MAIN_FLOAT,
+    Param_INT,       //只有前端使用
+    Param_FLOAT,     //只有前端使用
+    MAIN_INT,        //只有一个返回语句的main函数,只有前端使用
+    MAIN_FLOAT,      //只有前端使用
 
-                       // 即使有初始化 值也可能改变
-    Var_INT,          //无初始值的int型    变量
-    Var_FLOAT,        //无初始值的float型  变量
     Int,              //int类型整数
     Float,            //float类型浮点数
 
-    Const_INT,        // 常变量 应该用不到了
-    Const_FLOAT,
+    Const_INT,        // 常变量 只有前端使用
+    Const_FLOAT,      //只有前端使用
 
-    ArrayTyID_ConstINT,
-    ArrayTyID_ConstFLOAT,
-    FunctionTyID,
-    VoidTyID,
+
+    FunctionTyID,      //表明是函数类型的value
+    VoidTyID,          //主要用于标识函数返回值类型
 
     AddressTyID,       //地址
 
-
+    Var_INT,          //无初始值的int型    变量
+    Var_FLOAT,        //无初始值的float型  变量
     GlobalVarInt,  //全局INT类型变量
     GlobalVarFloat, //全局Float类型变量
 
+    ArrayTyID_ConstINT,
+    ArrayTyID_ConstFLOAT,
+    GlobalArrayConstINT,
+    GlobalArrayConstFLOAT,
     ArrayTy_INT,
     ArrayTy_FLOAT,
     GlobalArrayInt, // 全局Int类型数组

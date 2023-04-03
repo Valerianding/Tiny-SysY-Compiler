@@ -44,9 +44,9 @@ struct _PData{
 
     struct {
         struct _mapList* map_list;         //所指向的那张函数作用域的表
-        //Type array_type;
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
+        unsigned int address_type:1;     //type为address的时候标识是int还是float，0是int,1是float
 
         union {
             int array[301];                 //memcpy使用

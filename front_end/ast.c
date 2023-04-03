@@ -428,9 +428,18 @@ void insert_var_into_symtab(past type,past p)
 
         if(strcmp(bstr2cstr(p->nodeType,'\0'),"ConstDef_array_init")==0) {
             if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-                v->VTy->ID=ArrayTyID_ConstFLOAT;
-            else
-                v->VTy->ID=ArrayTyID_ConstINT;
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalArrayConstFLOAT;
+                else
+                    v->VTy->ID=ArrayTyID_ConstFLOAT;
+            }
+            else {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalArrayConstINT;
+                else
+                    v->VTy->ID=ArrayTyID_ConstINT;
+            }
             //v->VTy->ID=ArrayTyID_Const;
             v->pdata->symtab_array_pdata.is_init=1;
         }
@@ -766,6 +775,10 @@ void insert_func_params(past params)
                     get_dimension=get_dimension->next;
                 }
             }
+            if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
+                v->pdata->symtab_array_pdata.address_type=1;
+            else
+                v->pdata->symtab_array_pdata.address_type=0;
         }
         else
         {
