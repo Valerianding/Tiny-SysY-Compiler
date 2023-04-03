@@ -57,6 +57,9 @@ void correctType(Function *currentFunction){
     }
 }
 
+
+// 出现在IR里面的我们都要进行分析了 除了alloca
+// 对于alloca后端是自行建立了一个表去查找位置
 bool isValidOperator(InstNode *insNode){
     switch (insNode->inst->Opcode) {
         case FunBegin:
@@ -64,10 +67,6 @@ bool isValidOperator(InstNode *insNode){
         case Label:
             return false;
         case ALLBEGIN:
-            return false;
-        case bitcast:
-            return false;
-        case GEP:
             return false;
         case Alloca:
             return false;

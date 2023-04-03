@@ -45,11 +45,15 @@ typedef struct _Type{
     unsigned SubclassData : 24;     // Space for subclasses to store data.
 }Type;
 
-bool isIntType(Type *type);
-bool isFloatType(Type *type);
-bool isVarType(Type *type);
-bool isImmType(Type *type);
-bool isArrayType(Type *type);
-bool isGlobalArrayType(Type *type);
-bool isGlobalVarType(Type *type);
+
+bool isImmIntType(Type *type);
+bool isImmFloatType(Type *type);
+bool isLocalVarIntType(Type *type);
+bool isLocalVarFloatType(Type *type);
+bool isLocalArrayIntType(Type *type);
+bool isLocalArrayFloatType(Type *type);
+bool isGlobalVarIntType(Type *type);
+bool isGlobalVarFloatType(Type *type);
+bool isGlobalArrayIntType(Type *type);
+bool isGlobalArrayFloatType(Type *type);
 #endif

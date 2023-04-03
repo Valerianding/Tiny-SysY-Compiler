@@ -23,10 +23,9 @@ void printLiveness(BasicBlock *block){
     HashSetFirst(block->in);
     printf("live in: ");
     for(Value *liveInVariable = HashSetNext(block->in); liveInVariable != NULL; liveInVariable = HashSetNext(block->in)){
+        assert(liveInVariable->name != NULL);
         if(liveInVariable->name != NULL){
             printf("%s ",liveInVariable->name);
-        }else{
-            printf("null ");
         }
     }
     printf("\n");
@@ -35,10 +34,9 @@ void printLiveness(BasicBlock *block){
     HashSetFirst(block->out);
     printf("live out: ");
     for(Value *liveOutVariable = HashSetNext(block->out); liveOutVariable != NULL; liveOutVariable = HashSetNext(block->out)){
+        assert(liveOutVariable->name != NULL);
         if(liveOutVariable->name != NULL){
             printf("%s",liveOutVariable->name);
-        }else{
-            printf("null ");
         }
     }
     printf("\n");
@@ -75,13 +73,10 @@ void cleanLiveSet(Function *currentFunction){
 
 void calculateLiveness(Function *currentFunction){
 
-    // 之前为phi计算的live-in 和 live-out就作废了
-    cleanLiveSet(currentFunction);
-
     // 从exit开始
     BasicBlock *exit = currentFunction->tail;
 
-    //分析exit的变换
+    // 分析exit的变换
     InstNode *exitCurr = exit->tail_node;
     InstNode *exitHead = exit->head_node;
 
@@ -90,8 +85,8 @@ void calculateLiveness(Function *currentFunction){
 
     //因为是最后一个基本块所以我们直接
     while(exitCurr != exitHead){
+        // TODO 解决bitcast 和 偏移量的活跃问题
         if(isValidOperator(exitCurr)){
-            //printf("current Opcode is %d\n",exitCurr->inst->Opcode);
             Value *def = NULL;
             Value *lhs = NULL;
             Value *rhs = NULL;
@@ -106,7 +101,6 @@ void calculateLiveness(Function *currentFunction){
                 def = ins_get_value(exitCurr->inst);
             }
 
-            //现在是否只有可能是
             if(exitCurr->inst->user.value.NumUserOperands == (unsigned int)1){
                 lhs = ins_get_lhs(exitCurr->inst);
             }
@@ -115,12 +109,13 @@ void calculateLiveness(Function *currentFunction){
                 rhs = ins_get_rhs(exitCurr->inst);
             }
 
-            // 不是立即数且不是数组的话我们可以加入分析
-            if(def != NULL && !isImm(def) && !isArray(def)){
+            // 不是立即数且不是数组的话我们可以加入分析 TODO 数组怎么考虑
+            if(def != NULL && !isImm(def)){
                 if(HashSetFind(exitLiveIn,def)){
                     HashSetRemove(exitLiveIn,def);
                 }
             }
+
             if(lhs != NULL && !isImm(lhs) && !isArray(lhs) && !isGlobalVar(lhs)){
                 if(!HashSetFind(exitLiveIn,lhs)){
                     HashSetAdd(exitLiveIn,lhs);

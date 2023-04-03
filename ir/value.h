@@ -84,18 +84,22 @@ struct _Value
 };
 
 void value_init(Value* this);
-Value *value_create();
 void value_add_use(Value* this, struct _Use *U);
-Type *getType(Value* this);
 struct _Symtab* get_sym_tab(Value *V);
 void value_init_int(Value *this,int num);
 void value_init_float(Value *this,float num);
-void value_replace(Value *newValue,Use *use);
 void value_replaceAll(Value *oldValue,Value *newValue);
-void typePrinter(Value *val);
-bool isVar(Value *val);
-bool isImm(Value *val);
-bool isArray(Value *val);
-bool isGlobalVar(Value *val);
-bool isGlobalArray(Value *val);
+bool isImm(Value *val);  //是否是立即数
+bool isImmInt(Value *val); //是否是整数立即数
+bool isImmFloat(Value *val); //是否是浮点立即数
+bool isLocalVarInt(Value *val); //是否是局部整型变量 包含了参数
+bool isLocalVarFloat(Value *val); // 是否是局部浮点型变量 包含了参数
+bool isLocalArray(Value *val); // 是否是局部数组
+bool isLocalArrayInt(Value *val); // 是否是局部int类型数组
+bool isLocalArrayFloat(Value *val); // 是否是局部float类型数组
+bool isGlobalVar(Value *val); // 是否全局变量
+bool isGlobalVarInt(Value *val); // 是否全局int变量
+bool isGlobalVarFloat(Value *val); // 是否全局float变量
+bool isGlobalArrayInt(Value *val); // 是否全局int数组
+bool isGlobalArrayFloat(Value *val); // 是否全局float数组
 #endif

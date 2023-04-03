@@ -1,49 +1,64 @@
 #include "type.h"
 
-bool isIntType(Type *type){
-    if(type->ID == Var_INT || type->ID == Var_initINT){
+bool isImmIntType(Type *type){
+    if(type->ID == Int){
         return true;
     }
     return false;
 }
 
-bool isFloatType(Type *type){
-    if(type->ID == Var_FLOAT || type->ID == Var_initFLOAT){
+bool isImmFloatType(Type *type){
+    if(type->ID == Float){
         return true;
     }
     return false;
 }
 
-bool isVarType(Type *type){
-    if(type->ID == Var_initFLOAT || type->ID == Var_FLOAT || type->ID == Var_initINT || type->ID == Var_INT){
+bool isLocalVarIntType(Type *type){
+    if(type->ID == Var_INT){
         return true;
     }
     return false;
 }
 
-bool isImmType(Type *type){
-    if(type->ID == Int || type->ID == Float){
+bool isLocalVarFloatType(Type *type){
+    if(type->ID == Var_FLOAT){
         return true;
     }
     return false;
 }
 
-bool isArrayType(Type *type){
-    if(type->ID == ArrayTyID || type->ID == ArrayTyID_Const || type->ID == ArrayTyID_Init || type->ID == GlobalArrayInt || type->ID == GlobalArrayFloat){
+bool isLocalArrayIntType(Type *type){
+
+}
+
+bool isLocalArrayFloatType(Type *type){
+
+}
+
+bool isGlobalVarIntType(Type *type){
+    if(type->ID == GlobalVarInt){
         return true;
     }
     return false;
 }
 
-bool isGlobalVarType(Type *type){
-    if(type->ID == GlobalVarFloat || type->ID == GlobalVarInt){
+bool isGlobalVarFloatType(Type *type){
+    if(type->ID == GlobalVarFloat){
         return true;
     }
     return false;
 }
 
-bool isGlobalArrayType(Type *type){
-    if(type->ID == GlobalArrayFloat || type->ID == GlobalArrayInt){
+bool isGlobalArrayIntType(Type *type){
+    if(type->ID == GlobalArrayInt){
+        return true;
+    }
+    return false;
+}
+
+bool isGlobalArrayFloatType(Type *type){
+    if(type->ID == GlobalArrayFloat){
         return true;
     }
     return false;

@@ -38,13 +38,6 @@ void value_init_float(Value *this,float num){
     this->VTy->ID=Float;
 }
 
-//
-void value_replace(Value *newValue,Use *use){
-    use->Val = newValue;
-    use_remove_from_list(use);
-    if(newValue)
-        value_add_use(newValue,use);
-}
 
 void value_replaceAll(Value *oldValue,Value *newValue){
     // 使用两个Use的原因是需要维护Next的正确性
@@ -67,41 +60,86 @@ struct _Symtab* get_sym_tab(Value *V){
     return NULL;
 }
 
-
-bool isVar(Value *val){
-    return isVarType(val->VTy);
-}
-
 bool isImm(Value *val){
-    return isImmType(val->VTy);
-}
-
-bool isArray(Value *val){
-    return isArrayType(val->VTy);
-}
-
-bool isGlobalVar(Value *val){
-    return isGlobalVarType(val->VTy);
-}
-
-bool isGlobalArray(Value *val){
-    return isGlobalArrayType(val->VTy);
-}
-
-void typePrinter(Value *val){
-    if(isIntType(val->VTy)){
-        printf("int type");
-    }else if(isFloatType(val->VTy)){
-        printf("float type");
-    }else if(isArrayType(val->VTy)){
-        printf("array type");
-    }else if(isGlobalVarType(val->VTy)){
-        if(val->VTy->ID == GlobalVarInt){
-            printf("global int var");
-        }else if(val->VTy->ID == GlobalVarFloat){
-            printf("global float var");
-        }else{
-            printf("err type");
-        }
+    if(isImmInt(val) || isImm(val)){
+        return true;
     }
+    return false;
+}
+
+bool isImmInt(Value *val){
+    if(isImmIntType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isImmFloat(Value *val){
+    if(isImmFloatType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isLocalVar(Value *val){
+    if(isLocalVarInt(val) || isLocalVarFloat(val)){
+        return true;
+    }
+    return false;
+}
+
+bool isLocalVarInt(Value *val){
+    if(isLocalVarIntType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isLocalVarFloat(Value *val){
+    if(isLocalVarFloatType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isLocalArrayInt(Value *val){
+    if(isLocalArrayIntType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isLocalArrayFloat(Value *val){
+    if(isLocalArrayFloatType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isGlobalVarInt(Value *val){
+    if(isGlobalVarIntType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isGlobalVarFloat(Value *val){
+    if(isGlobalVarFloatType(val->VTy)){
+        return true;
+    }
+    return false;
+}
+
+bool isGlobalArrayInt(Value *val){
+    if(isGlobalArrayIntType(val->VTy)){
+        return false;
+    }
+    return true;
+}
+
+bool isGlobalArrayFloat(Value *val){
+    if(isGlobalArrayFloatType(val->VTy)){
+        return false;
+    }
+    return true;
 }
