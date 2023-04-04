@@ -28,7 +28,7 @@ struct _PData{
     }instruction_pdata;
 
     struct {
-        struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
+        struct _mapList* map_list;         //所指向的那张函数作用域的表
         union {
             int iVal;
             float fVal;
@@ -43,15 +43,16 @@ struct _PData{
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
 
     struct {
-        struct sc_map_sv* map;         //所指向的那张作用域的表,具体看后端需不需要，不需要其实都可以删了
-        Type array_type;
+        struct _mapList* map_list;         //所指向的那张函数作用域的表
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
+        unsigned int address_type:1;     //type为address的时候标识是int还是float，0是int,1是float
 
         union {
-            int array[100];                 //memcpy使用
-            float f_array[100];
+            int array[301];                 //memcpy使用
+            float f_array[301];
         };
+        unsigned is_init:1;  //用于判断数组是否初始化
     }symtab_array_pdata;
 
     HashSet *pairSet; // 为了phi指令设计的 存pair类型的数据
@@ -59,28 +60,15 @@ struct _PData{
 };
 typedef struct _PData PData;
 typedef struct _Value Value;
-struct _Value
-{
+struct _Value{
     Type *VTy;
     struct _Use *use_list;
-
-    unsigned char HasValueHandle : 1; // Has a ValueHandle pointing to this?
     unsigned NumUserOperands : NumUserOperandsBits;
-
-    // Use the same type as the bitfield above so that MSVC will pack them.
-    unsigned IsUsedByMD : 1;
-    unsigned IsInstruction : 1;
-    unsigned HasName : 1;
-    unsigned HasMetadata : 1; // Has metadata attached to this?
     unsigned HasHungOffUses : 1;
-    unsigned is_in : 1; //入口语句
-    unsigned is_out : 1; //出口语句
-    unsigned is_last : 1;
-
+    unsigned HasName : 1;
     char *name;
     struct _Value *alias;
     PData *pdata;
-
 };
 
 void value_init(Value* this);
@@ -89,17 +77,26 @@ struct _Symtab* get_sym_tab(Value *V);
 void value_init_int(Value *this,int num);
 void value_init_float(Value *this,float num);
 void value_replaceAll(Value *oldValue,Value *newValue);
+
 bool isImm(Value *val);  //是否是立即数
 bool isImmInt(Value *val); //是否是整数立即数
 bool isImmFloat(Value *val); //是否是浮点立即数
+
+bool isLocalVar(Value *val);   //是否是局部变量
 bool isLocalVarInt(Value *val); //是否是局部整型变量 包含了参数
 bool isLocalVarFloat(Value *val); // 是否是局部浮点型变量 包含了参数
+
 bool isLocalArray(Value *val); // 是否是局部数组
 bool isLocalArrayInt(Value *val); // 是否是局部int类型数组
 bool isLocalArrayFloat(Value *val); // 是否是局部float类型数组
+
 bool isGlobalVar(Value *val); // 是否全局变量
 bool isGlobalVarInt(Value *val); // 是否全局int变量
 bool isGlobalVarFloat(Value *val); // 是否全局float变量
+
+bool isGlobalArray(Value *val); // 是否是全局数组
 bool isGlobalArrayInt(Value *val); // 是否全局int数组
 bool isGlobalArrayFloat(Value *val); // 是否全局float数组
+
+bool isArrayInitialize(Value *val); // 判断是否初始化了数组
 #endif

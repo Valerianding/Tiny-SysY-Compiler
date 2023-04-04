@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+//void test_travel_type(struct _InstNode *instruction_node);
+void travel_finish_type(struct _InstNode *instruction_node);
+
 void create_blockItemList(past root,Value* v_return);
 void create_instruction_list(past root,Value* v_return);
 void  create_assign_stmt(past root,Value* v_return);
@@ -19,7 +22,7 @@ void create_if_stmt(past root,Value* v_return);
 void create_if_else_stmt(past root,Value* v_return);
 void create_func_def(past root);
 struct _Value *create_call_func(past root);
-struct _Value *cal_expr(past expr,int* convert);
+struct _Value *cal_expr(past expr,int* convert,int type);    //type代表左值type
 struct _Value* cal_logic_expr(past logic_expr);
 struct _Value *create_param_value();
 void create_store_stmt(Value* v1,Value* v2);
@@ -59,7 +62,6 @@ bool begin_global(const char* name);
 char* no_global_name(const char *name);
 
 char* c2ll(char* file_name);
-
 
 //等着删
 void print_array(struct _InstNode *instruction_node);

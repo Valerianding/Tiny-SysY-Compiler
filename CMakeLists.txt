@@ -19,7 +19,7 @@ file(GLOB_RECURSE DIR_IR ./ir/*.c)
 file(GLOB_RECURSE DIR_OPT ./ir/opt/*.c)
 file(GLOB_RECURSE DIR_CONTAINER ./src/*.c)
 file(GLOB_RECURSE DIR_FRONT ./front_end/*.c)
-file(GLOB_RECURSE DIR_BACK ./back_end/*.c)
+#file(GLOB_RECURSE DIR_BACK ./back_end/*.c)
 
 link_libraries(m)
 
@@ -44,7 +44,6 @@ add_executable(compiler
         ${DIR_OPT}
         ${DIR_LIB}
         ${DIR_CONTAINER}
-        ${DIR_BACK}
         tacmain.c)
 
 set(CMAKE_BUILD_TYPE Debug)

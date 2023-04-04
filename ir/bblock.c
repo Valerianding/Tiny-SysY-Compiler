@@ -73,7 +73,6 @@ void ins_node_add(InstNode *head,InstNode *this){
 InstNode *search_ins_label(InstNode *head,int label_id){
 
     // 需要满足在一个function里面
-
     while(head != NULL){
         if(head->inst->Opcode == Label && head->inst->user.value.pdata->instruction_pdata.true_goto_location == label_id){
             return head;
@@ -93,8 +92,6 @@ void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
     HashSetAdd(posPrevBlocks,prev);
 }
 
-
-
 void print_one_ins_info(InstNode *insNode){
     printf("%d : opcode:", insNode->inst->i);
     print_ins_opcode(insNode->inst);
@@ -108,17 +105,9 @@ void print_one_ins_info(InstNode *insNode){
         if(insNode->inst->user.value.name != NULL){
             printf(" user.value.name : %s", insNode->inst->user.value.name);
         }
-        printf(" alloca type : ");
-        Value *lhs = ins_get_value(insNode->inst);
-        if(lhs != NULL && isArray(lhs)){
-            printf("array type");
-        }else if(lhs != NULL && isVar(lhs)){
-            printf("var type");
-        }else if(lhs != NULL){
-            printf("lhs type : %d",lhs->VTy->ID);
-        }else{
-            printf("null!");
-        }
+        printf("ins type : ");
+        Value *insValue = ins_get_value(insNode->inst);
+        typePrinter(insValue->VTy);
     }else if(insNode->inst->Opcode == Load){
         if(insNode->inst->user.value.name != NULL){
             printf(" name : %s", insNode->inst->user.value.name);
@@ -128,11 +117,8 @@ void print_one_ins_info(InstNode *insNode){
             printf("name : %s", insNode->inst->user.value.name);
         }
         printf(" oprand name : %s", insNode->inst->user.use_list[1].Val->name);
-    }else if(insNode->inst->Opcode == Call){
-
     }
 
-    Value *insValue = ins_get_value(insNode->inst);
     Value *lhs = NULL;
     Value *rhs = NULL;
     if(insNode->inst->user.value.NumUserOperands == 1){
@@ -144,19 +130,6 @@ void print_one_ins_info(InstNode *insNode){
     }
     printf(" number of operands : %d ", insNode->inst->user.value.NumUserOperands);
 
-    //为了以后的type mem2reg分别处理 我们一定要好好区分数组和变量
-    if(insValue != NULL){
-        printf(" insValue type : ");
-        typePrinter(insValue);
-    }
-    if (lhs != NULL){
-        printf(" lhsValue type : ");
-        typePrinter(lhs);
-    }
-    if(rhs != NULL){
-        printf(" rhsValue type : ");
-        typePrinter(rhs);
-    }
 
     if(insNode->inst->Parent != NULL){
         printf(" parent: b%d", insNode->inst->Parent->id);

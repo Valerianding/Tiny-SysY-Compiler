@@ -61,7 +61,7 @@ struct _Symtab* get_sym_tab(Value *V){
 }
 
 bool isImm(Value *val){
-    if(isImmInt(val) || isImm(val)){
+    if(isImmInt(val) || isImmFloat(val)){
         return true;
     }
     return false;
@@ -142,4 +142,33 @@ bool isGlobalArrayFloat(Value *val){
         return false;
     }
     return true;
+}
+
+bool isGlobalVar(Value *val){
+    if(isGlobalVarInt(val) || isGlobalVarFloat(val)){
+        return true;
+    }
+    return false;
+}
+
+bool isLocalArray(Value *val){
+    if(isLocalArrayInt(val) || isLocalArrayFloat(val)){
+        return true;
+    }
+    return false;
+}
+
+bool isGlobalArray(Value *val){
+    if(isGlobalArrayInt(val) || isGlobalArrayFloat(val)){
+        return true;
+    }
+    return false;
+}
+
+bool isArrayInitialize(Value *val){
+    if(val->pdata->symtab_array_pdata.is_init == (unsigned int)1){
+        return true;
+    }else{
+        return false;
+    }
 }

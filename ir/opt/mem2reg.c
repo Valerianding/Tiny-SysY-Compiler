@@ -64,7 +64,7 @@ void mem2reg(Function *currentFunction){
 
         if (curNode->inst->Opcode == Load) {
             Value *loadValue = curNode->inst->user.use_list[0].Val;
-            if(!isArray(loadValue) && !isGlobalVar(loadValue)){
+            if(isLocalVar(loadValue)){
                 if (HashMapContain(currentFunction->loadSet, loadValue)) {
                     //不是第一次加入
                     HashSet *loadSet = HashMapGet(currentFunction->loadSet, loadValue);
@@ -84,7 +84,7 @@ void mem2reg(Function *currentFunction){
         if (curNode->inst->Opcode == Store) {
             //一定对应的是第二个
             Value *storeValue = curNode->inst->user.use_list[1].Val;
-            if(!isGlobalVar(storeValue) && !isArray(storeValue)){
+            if(isLocalVar(storeValue)){
                 if (HashMapContain(currentFunction->storeSet, storeValue)) {
                     //如果存在的话那么之前的HashSet也一定存在
                     HashSet *storeSet = HashMapGet(currentFunction->storeSet, storeValue);
@@ -114,7 +114,9 @@ void mem2reg(Function *currentFunction){
     while(curNode != get_next_inst(tail)){
         //如果alloca没有load就删除这个alloca
         //首先找到对应的value
-        if(curNode->inst->Opcode == Alloca && curNode->inst->user.value.use_list == NULL){
+        //不是alloca的数组并且对这个alloca没有load的话
+        Value *insValue = ins_get_value(curNode->inst);
+        if(curNode->inst->Opcode == Alloca && !isLocalArray(insValue) && !HashMapContain(currentFunction->loadSet,insValue)){
             //不存在loadSet之中不存在这个value
             //删除这个instruction
             InstNode *next = get_next_inst(curNode);
@@ -122,7 +124,7 @@ void mem2reg(Function *currentFunction){
             curNode = next;
         }else if(curNode->inst->Opcode == Store) {
             Value *storeValue = ins_get_rhs(curNode->inst);
-            if(!isGlobalVar(storeValue) && !isArray(storeValue) && !HashMapContain(currentFunction->loadSet, storeValue)){
+            if(isLocalVar(storeValue) && !HashMapContain(currentFunction->loadSet, storeValue)){
                 InstNode *next = get_next_inst(curNode);
                 delete_inst(curNode);
                 curNode = next;
@@ -205,6 +207,7 @@ void mem2reg(Function *currentFunction){
 
     //变量重命名 如果都没有alloc那么就不需要了
     if(HashMapSize(IncomingVals) != 0){
+        printf("---------------------------------------------fuck--------------------------------------- \n");
         dfsTravelDomTree(root,IncomingVals);
     }
 
@@ -269,51 +272,34 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         HashMapPut(countDefine,alloc,defineTimes);
     }
 
-    if(GlobalIncomingVal != nullptr){
-        // 同样的我们也要记录全局变量压栈的次数
-        HashMapFirst(GlobalIncomingVal);
-        for(Pair *pair = HashMapNext(GlobalIncomingVal); pair != NULL; pair = HashMapNext(GlobalIncomingVal)){
-            int *globalDefineTimes = (int *)malloc(sizeof(int));
-            *(globalDefineTimes) = 0;
-            Value *alloc = (Value*)pair->key;
-            HashMapPut(countDefine,alloc,globalDefineTimes);
-        }
-    }
-
     printf("11111 \n");
     // 变量重命名
     while(curr != get_next_inst(tail)){
         switch(curr->inst->Opcode) {
             case Load: {
                 Value *alloc = ins_get_lhs(curr->inst);
-                if(!isArray(alloc) && !isGlobalVar(alloc)){
+                if(isLocalVar(alloc)){
+                    // 对应的alloc
+                    printf("what name : %s\n",alloc->name);
                     // 需要被替换的
                     Value *value = ins_get_value(curr->inst);
-                    // 对应的alloc
                     Value *replace = nullptr;
                     //找到栈
                     stack *allocStack = HashMapGet(IncomingVals, alloc);
-                    printf("what name : %s\n",alloc->name);
                     //如果是nullptr
-                    if(allocStack == nullptr){
-                        //尝试去全局里面去取
-                        stack *globalStack = HashMapGet(GlobalIncomingVal,alloc);
-                        assert(globalStack != nullptr);
-                        stackTop(globalStack,(void *)&replace);
-                        assert(replace != nullptr);
-                    }else{
-                        assert(allocStack != nullptr);
-                        //去里面找
-                        stackTop(allocStack, (void *) &replace);
-                        assert(replace != nullptr);
-                    }
+                    assert(allocStack != nullptr);
+                    //去里面找
+                    stackTop(allocStack, (void *) &replace);
+
+                    //replace 必然不能是nullptr否则会出现未定义错误
+                    assert(replace != nullptr);
                     value_replaceAll(value, replace);
                 }
                 break;
             }
             case Store: {
                 Value *store = ins_get_rhs(curr->inst); // 对应的allocas
-                if(!isArray(store) && !isGlobalVar(store)){
+                if(isLocalVar(store)){
                     //更新变量的使用
                     //对应的{}
                     Value *data = ins_get_lhs(curr->inst);
@@ -362,13 +348,8 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         InstNode *funcHead = ins_get_funcHead(tail);
         BasicBlock *nextBlock = search_ins_label(funcHead,labelId)->inst->Parent;
 
-        //维护这个block内的phiNode
-        InstNode *nextBlockHead = nextBlock->head_node;
-        InstNode *nextBlockCurr = nextBlockHead;
-        //跳过Label
-        if(nextBlockHead->inst->Opcode == Label){
-            nextBlockCurr = get_next_inst(nextBlockHead);
-        }
+        //维护这个block内的phiNode 跳过Label
+        InstNode *nextBlockCurr = get_next_inst(nextBlock->head_node);
 
         while(nextBlockCurr->inst->Opcode == Phi){
             //对应的是哪个
@@ -381,6 +362,8 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
             //填充信息
+
+            // TODO 如果是空那么应该填充Undefine
             if(pairValue != NULL){
                 pair *phiInfo = createPhiInfo(block,pairValue);
                 insertPhiInfo(nextBlockCurr,phiInfo);
@@ -393,15 +376,13 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
     if(tail->inst->Opcode == br_i1){
         int labelId1 = tail->inst->user.value.pdata->instruction_pdata.true_goto_location;
         int labelId2 = tail->inst->user.value.pdata->instruction_pdata.false_goto_location;
-        printf("tail id : %d\n",tail->inst->i);
-        printf("%d %d\n",labelId1, labelId2);
         InstNode *funcHead = ins_get_funcHead(tail);
 
         BasicBlock *trueBlock = search_ins_label(funcHead,labelId1)->inst->Parent;
         BasicBlock *falseBlock = search_ins_label(funcHead,labelId2)->inst->Parent;
 
-        //两次循环里面去维护
-        // TODO 注意第一条语句一定是label <- 不一定因为有可能是第一个基本块
+
+        //跳回第一个基本块没有意义 所以我们都去跳过Label
         InstNode *trueBlockCurr = get_next_inst(trueBlock->head_node);
         InstNode *falseBlockCurr = get_next_inst(falseBlock->head_node);
 
@@ -412,14 +393,12 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
             //取栈里面找那个对应的Value
             stack *allocStack = HashMapGet(IncomingVals,alias);
-            if(allocStack == NULL){
-                allocStack = HashMapGet(GlobalIncomingVal,alias);
-            }
             assert(allocStack != NULL);
 
             Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
 
+            // TODO 还是需要
             if(pairValue != NULL){
                 pair *phiInfo = createPhiInfo(block,pairValue);
                 insertPhiInfo(trueBlockCurr,phiInfo);
@@ -437,6 +416,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
 
+            // TODO pairValue 是NULL的时候需要是Undefine
             if(pairValue != NULL){
                 pair *phiInfo  = createPhiInfo(block,pairValue);
                 insertPhiInfo(falseBlockCurr,phiInfo);
@@ -459,6 +439,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         Value *alloc = pair->key;
 
         stack *allocStack = HashMapGet(IncomingVals,alloc);
+        assert(allocStack != NULL);
         if(allocStack != NULL){
             //去找压栈的次数
             assert(allocStack != NULL);
@@ -467,15 +448,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             printf("block : %d alloc : %s defineTimes : %d\n",block->id,alloc->name,actualTime);
             for(int i = 0; i < actualTime; i++){
                 stackPop(allocStack);
-            }
-        }else{
-            // 全局变量里面去压栈操作
-            stack *globalAllocStack = HashMapGet(GlobalIncomingVal,alloc);
-            assert(globalAllocStack != NULL);
-            int *globalDefineTime = HashMapGet(countDefine,alloc);
-            int actualTime = *(globalDefineTime);
-            for(int i = 0; i < actualTime; i++){
-                stackPop(globalAllocStack);
             }
         }
     }
@@ -502,7 +474,7 @@ void deleteLoadStore(Function *currentFunction){
         switch(curr->inst->Opcode){
             case Alloca:{
                 Value *insValue = ins_get_value(curr->inst);
-                if(!isArray(insValue)){
+                if(isLocalVar(insValue)){
                     InstNode *next = get_next_inst(curr);
                     delete_inst(curr);
                     curr = next;
@@ -513,7 +485,7 @@ void deleteLoadStore(Function *currentFunction){
             }
             case Load:{
                 Value *loadValue = ins_get_lhs(curr->inst);
-                if(!isArray(loadValue) && !isGlobalVar(loadValue)){
+                if(isLocalVar(loadValue)){
                     InstNode *next = get_next_inst(curr);
                     delete_inst(curr);
                     curr = next;
@@ -524,7 +496,7 @@ void deleteLoadStore(Function *currentFunction){
             }
             case Store:{
                 Value *storeValue = ins_get_rhs(curr->inst);
-                if(!isArray(storeValue) && !isGlobalVar(storeValue)){
+                if(isLocalVar(storeValue)){
                     InstNode *next = get_next_inst(curr);
                     delete_inst(curr);
                     curr = next;
@@ -698,14 +670,14 @@ void calculateNonLocals(Function *currentFunction){
         }
         if(currNode->inst->Opcode == Load){
             Value *lhs = ins_get_lhs(currNode->inst);
-            if(lhs != NULL && isVar(lhs) && !HashSetFind(killed,lhs)){
+            if(lhs != NULL && isLocalVar(lhs) && !HashSetFind(killed,lhs)){
                 HashSetAdd(nonLocals,lhs);
             }
         }
 
         if(currNode->inst->Opcode == Store){
             Value *rhs = ins_get_rhs(currNode->inst);
-            if(rhs != NULL && isVar(rhs) && !HashSetFind(killed,rhs)){
+            if(rhs != NULL && isLocalVar(rhs) && !HashSetFind(killed,rhs)){
                 HashSetAdd(killed, rhs);
             }
         }

@@ -67,10 +67,11 @@ int main(int argc, char* argv[]){
     declare_global_alloca(this->value_maps->next);
     c_b_flag[0]=false;c_b_flag[1]=false;
     create_instruction_list(TRoot,NULL);
-    printf_llvm_ir(instruction_list,argv[1]);
-//   fix_array(instruction_list);
-//   print_array(instruction_list);
-//   showAst(TRoot,0);
+    travel_finish_type(instruction_list);
+//    printf_llvm_ir(instruction_list,argv[1]);
+//  fix_array(instruction_list);
+//  print_array(instruction_list);
+//  showAst(TRoot,0);
 
     InstNode *temp2 = instruction_list;
 
@@ -88,13 +89,13 @@ int main(int argc, char* argv[]){
     clear_visited_flag(block);
     print_block_info(block);
     printf("--------- after print block info ---------\n");
-//
-//     //再打印一遍看看类型有没有更改的
-//    temp2 = instruction_list;
-//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
-//        print_one_ins_info(temp2);
-//    }
-//
+
+     //再打印一遍看看类型有没有更改的
+    temp2 = instruction_list;
+    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+        print_one_ins_info(temp2);
+    }
+
     //找到第一个function的
     while(temp->inst->Parent->Parent == NULL){
         temp = get_next_inst(temp);
@@ -121,14 +122,14 @@ int main(int argc, char* argv[]){
     }
 
     // 建立phi 之后的
-    printf_llvm_ir(instruction_list,argv[1]);
-//
-//    temp2 = instruction_list;
-//    /* 测试所有instruction list */
-//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
-//        print_one_ins_info(temp2);
-//    }
-//
+    //printf_llvm_ir(instruction_list,argv[1]);
+
+    temp2 = instruction_list;
+    /* 测试所有instruction list */
+    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+        print_one_ins_info(temp2);
+    }
+
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
 //        outOfSSA(currentFunction);
 //        printf("after out of SSA!\n");
@@ -136,9 +137,9 @@ int main(int argc, char* argv[]){
 //        calculateLiveness(currentFunction);
 //        printLiveness(currentFunction->entry);
 //    }
-
+//
     // 消除phi函数之后
-    //printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();

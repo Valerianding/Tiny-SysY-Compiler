@@ -72,7 +72,6 @@ void cleanLiveSet(Function *currentFunction){
 }
 
 void calculateLiveness(Function *currentFunction){
-
     // 从exit开始
     BasicBlock *exit = currentFunction->tail;
 
@@ -109,20 +108,21 @@ void calculateLiveness(Function *currentFunction){
                 rhs = ins_get_rhs(exitCurr->inst);
             }
 
-            // 不是立即数且不是数组的话我们可以加入分析 TODO 数组怎么考虑
-            if(def != NULL && !isImm(def)){
+            // 不是立即数且不是数组的话我们可以加入分析
+            // 似乎所有的左边应该都要进入分析
+            if(def != NULL ){
                 if(HashSetFind(exitLiveIn,def)){
                     HashSetRemove(exitLiveIn,def);
                 }
             }
 
-            if(lhs != NULL && !isImm(lhs) && !isArray(lhs) && !isGlobalVar(lhs)){
+            if(lhs != NULL && !isImm(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs) && !isLocalArray(lhs)){
                 if(!HashSetFind(exitLiveIn,lhs)){
                     HashSetAdd(exitLiveIn,lhs);
                 }
             }
 
-            if(rhs != NULL && !isImm(rhs) && !isArray(rhs) && !isGlobalVar(rhs)){
+            if(rhs != NULL && !isImm(rhs) && !isGlobalVar(rhs) && !isGlobalArray(rhs) && !isLocalArray(lhs)){
                 if(!HashSetFind(exitLiveIn,rhs)){
                     HashSetAdd(exitLiveIn,rhs);
                 }
@@ -132,7 +132,6 @@ void calculateLiveness(Function *currentFunction){
     }
     //维护一个HashSet
     HashSet *workList = HashSetInit();
-
     // 如果exit有前驱的话我们就加入
     HashSetFirst(exit->preBlocks);
     for(BasicBlock *prevBlock = HashSetNext(exit->preBlocks); prevBlock != NULL; prevBlock = HashSetNext(exit->preBlocks)){
@@ -194,18 +193,18 @@ void calculateLiveness(Function *currentFunction){
                 }
 
                 // 不是立即数且不是数组的话我们可以加入分析
-                if(def != NULL && !isImm(def) && !isArray(def)){
+                if(def != NULL && !isImm(def)){
                     if(HashSetFind(tempSet,def)){
                         HashSetRemove(tempSet,def);
                     }
                 }
-                if(lhs != NULL && !isImm(lhs) && !isArray(lhs)){
+                if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
                     if(!HashSetFind(tempSet,lhs)){
                         HashSetAdd(tempSet,lhs);
                     }
                 }
 
-                if(rhs != NULL && !isImm(rhs) && !isArray(rhs)){
+                if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
                     if(!HashSetFind(tempSet,rhs)){
                         HashSetAdd(tempSet,rhs);
                     }

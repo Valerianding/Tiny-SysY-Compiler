@@ -344,7 +344,6 @@ void calculate_DomTree(Function *currentFunction){
 
 void DomTreePrinter(DomTreeNode *root){
     if(HashSetSize(root->children) == 0){
-        printf("opps\n");
         return;
     }
     HashSetFirst(root->children);
