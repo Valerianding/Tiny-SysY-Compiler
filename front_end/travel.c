@@ -1367,6 +1367,21 @@ int handle_and_or(past root,bool flag)
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
         }
+        else if(strcmp(bstr2cstr(root->left->right->nodeType, '\0'), "LValArray") == 0)
+        {
+            Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->left->right->left->sVal, '\0'));
+            Value *v_get= handle_assign_array(root->left->right->right->left,v_array,1,-1,0);
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_get,v_zero);
+            //v_real
+            v1= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
             //ID
         else
         {
@@ -1445,6 +1460,21 @@ int handle_and_or(past root,bool flag)
                 Value *v_zero=(Value*) malloc(sizeof (Value));
                 value_init_int(v_zero,0);
                 Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v2= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
+            else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "LValArray") == 0)
+            {
+                Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->right->left->sVal, '\0'));
+                Value *v_get= handle_assign_array(root->right->right->left,v_array,1,-1,0);
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_get,v_zero);
                 //v_real
                 v2= ins_get_value_with_name(ins_icmp);
                 //将这个instruction加入总list
@@ -2612,7 +2642,7 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                     else
                     {
                         if(v1->VTy->ID==Float || v1->VTy->ID==Var_FLOAT || v1->VTy->ID==GlobalVarFloat ||
-                                v2->VTy->ID==Float || v2->VTy->ID==Var_FLOAT || v2->VTy->ID==GlobalVarFloat)
+                           v2->VTy->ID==Float || v2->VTy->ID==Var_FLOAT || v2->VTy->ID==GlobalVarFloat)
                         {
                             v_tmp->VTy->ID=Var_FLOAT;
                         }
@@ -4359,25 +4389,6 @@ void print_array(struct _InstNode *instruction_node)
         instruction_node= get_next_inst(instruction_node);
     }
 }
-//
-//void test_travel_type(struct _InstNode *instruction_node){
-//    instruction_node= get_next_inst(instruction_node);
-//    Value *v=NULL;Value *vl=NULL;Value *vr=NULL;
-//    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
-//    {
-//        v= ins_get_value(instruction_node->inst);
-//        vl= ins_get_lhs(instruction_node->inst);
-//        vr= ins_get_rhs(instruction_node->inst);
-//        if(v!=NULL)
-//            printf("left:%s,\t",type_str[v->VTy->ID]);
-//        if(vl!=NULL)
-//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-//        if(vr!=NULL)
-//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n");
-//        instruction_node= get_next_inst(instruction_node);
-//    }
-//}
 
 void travel_finish_type(struct _InstNode *instruction_node)
 {
