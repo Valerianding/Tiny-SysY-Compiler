@@ -4241,22 +4241,29 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     Value *incomingVal = phiInfo->define;
                     if(i + 1 == size)      //最后一次
                     {
-                        if(isImm(incomingVal)){
+                        if(incomingVal != NULL && isImm(incomingVal)){
                             printf("[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
                             fprintf(fptr,"[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
-                        }else{
+                        }else if(incomingVal != NULL){
                             printf("[%s , %%%d]",incomingVal->name,from->id);
                             fprintf(fptr,"[%s , %%%d]",incomingVal->name,from->id);
+                        }else{
+                            //是NULL的话就
+                            printf("[ undef, %%%d] ",from->id);
+                            fprintf(fptr,"[ undef, %%%d] ",from->id);
                         }
                     }
                     else
                     {
-                        if(isImm(incomingVal)){
+                        if(incomingVal != NULL && isImm(incomingVal)){
                             printf("[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
                             fprintf(fptr,"[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
-                        }else{
+                        }else if(incomingVal != NULL){
                             printf("[%s , %%%d], ",incomingVal->name,from->id);
                             fprintf(fptr,"[%s , %%%d], ",incomingVal->name,from->id);
+                        }else{
+                            printf("[ undef, %%%d], ",from->id);
+                            fprintf(fptr,"[ undef, %%%d], ",from->id);
                         }
                     }
                     i++;

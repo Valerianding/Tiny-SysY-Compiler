@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
     }
 
     // 建立phi 之后的
-    //printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 
     temp2 = instruction_list;
     /* 测试所有instruction list */
@@ -130,16 +130,28 @@ int main(int argc, char* argv[]){
         print_one_ins_info(temp2);
     }
 
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        outOfSSA(currentFunction);
-//        printf("after out of SSA!\n");
-//        clear_visited_flag(currentFunction->entry);
-//        calculateLiveness(currentFunction);
-//        printLiveness(currentFunction->entry);
-//    }
-//
+    block =  get_next_inst(instruction_list)->inst->Parent;
+    clear_visited_flag(block);
+    print_block_info(block);
+
+
+
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    block = temp->inst->Parent;
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        outOfSSA(currentFunction);
+        printf("after out of SSA!\n");
+        clear_visited_flag(currentFunction->entry);
+        calculateLiveness(currentFunction);
+        clear_visited_flag(currentFunction->entry);
+        printLiveness(currentFunction->entry);
+    }
+
     // 消除phi函数之后
-    printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();

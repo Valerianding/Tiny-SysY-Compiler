@@ -368,6 +368,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 pair *phiInfo = createPhiInfo(block,pairValue);
                 insertPhiInfo(nextBlockCurr,phiInfo);
                 printf("insert a phi info\n");
+            }else{
+                // 如果是NULL的话就是Undefine
+                pair *phiInfo = createPhiInfo(block,pairValue);
+                insertPhiInfo(nextBlockCurr,phiInfo);
             }
             nextBlockCurr = get_next_inst(nextBlockCurr);
         }
@@ -402,7 +406,9 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             if(pairValue != NULL){
                 pair *phiInfo = createPhiInfo(block,pairValue);
                 insertPhiInfo(trueBlockCurr,phiInfo);
-                printf("insert a phi info\n");
+            }else{
+                pair *phiInfo = createPhiInfo(block,pairValue);
+                insertPhiInfo(trueBlockCurr,phiInfo);
             }
             trueBlockCurr = get_next_inst(trueBlockCurr);
         }
@@ -420,7 +426,9 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             if(pairValue != NULL){
                 pair *phiInfo  = createPhiInfo(block,pairValue);
                 insertPhiInfo(falseBlockCurr,phiInfo);
-                printf("insert a phi info\n");
+            }else{
+                pair *phiInfo  = createPhiInfo(block,pairValue);
+                insertPhiInfo(falseBlockCurr,phiInfo);
             }
             falseBlockCurr = get_next_inst(falseBlockCurr);
         }
@@ -539,27 +547,6 @@ void renameVariabels(Function *currentFunction) {
         if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1) {
 
             if (currNode->inst->Opcode == Label) {
-                //所有有可能用到这个label的都需要更新 只扫描之前的 它一定大于更新了的
-                int prevLabel = currNode->inst->user.value.pdata->instruction_pdata.true_goto_location;
-
-                // 去上面区间里面找
-                InstNode *tempNode = entry->head_node;
-                InstNode *tailNode = end->tail_node;
-                while (tempNode != tailNode) {
-
-                    if (tempNode->inst->Opcode == br || tempNode->inst->Opcode == br_i1) {
-                        if (tempNode->inst->user.value.pdata->instruction_pdata.true_goto_location == prevLabel) {
-
-                            tempNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
-                        } else if (tempNode->inst->user.value.pdata->instruction_pdata.false_goto_location ==
-                                   prevLabel) {
-                            // 直接更新
-                            tempNode->inst->user.value.pdata->instruction_pdata.false_goto_location = countVariable;
-                        }
-                    }
-                    tempNode = get_next_inst(tempNode);
-                }
-
                 //更新一下BasicBlock的ID 顺便就更新了phi
                 BasicBlock *block = currNode->inst->Parent;
                 block->id = countVariable;
@@ -592,10 +579,43 @@ void renameVariabels(Function *currentFunction) {
         }
         currNode = get_next_inst(currNode);
     }
+
+    clear_visited_flag(entry);
+    //通过true false block的方式设置
+    // 跳过funcBegin
+    BasicBlock *tail = currentFunction->tail;
+    currNode = get_next_inst( entry->head_node);
+    while(currNode != get_next_inst(end->tail_node)){
+        BasicBlock *block = currNode->inst->Parent;
+        if(block->visited == false){
+            block->visited = true;
+            InstNode *blockTail = block->tail_node;
+            if(block == tail){
+                blockTail = get_prev_inst(blockTail);
+            }
+            Value *blockTailInsValue = ins_get_value(blockTail->inst);
+            if(block->true_block){
+                blockTailInsValue->pdata->instruction_pdata.true_goto_location = block->true_block->id;
+            }
+            if(block->false_block){
+                blockTailInsValue->pdata->instruction_pdata.false_goto_location = block->false_block->id;
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
 }
 
+void insertPhiCopies(BasicBlock *block, HashMap *varStack){
+
+}
 
 void outOfSSA(Function *currentFunction){
+
+    HashMap *varStack = HashMapInit();
+
+    //
+
+
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
