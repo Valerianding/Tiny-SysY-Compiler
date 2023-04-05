@@ -616,7 +616,7 @@ int cal_easy_expr(past expr)
                     data=(int)v->pdata->var_pdata.fVal;
             }
 
-            stackPush(S,data);
+            stackPush(S,(void*)data);
         }
 
         else
@@ -633,7 +633,7 @@ int cal_easy_expr(past expr)
                 case '/': result = x1 / x2; break;
                 case '%': result = x1 % x2; break;
             }
-            stackPush(S,result);
+            stackPush(S,(void*)result);
         }
         p++;
     }
