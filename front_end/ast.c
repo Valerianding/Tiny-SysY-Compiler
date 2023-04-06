@@ -594,52 +594,53 @@ int cal_easy_expr(past expr)
     }
     str[i]=NULL;
 
-    int x1,x2;
-    int result;
-    int data ;
+    int *x1= malloc(4),*x2= malloc(4);
     past *p=str;
     while(*p)
     {
+        int *data= malloc(4) ;
         if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "expr") != 0)
         {
             if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "num_int") == 0)
-                data=(*p)->iVal;
+                *data=(*p)->iVal;
             else if(strcmp(bstr2cstr((*p)->nodeType, '\0'), "num_float") == 0)
-                data=(int)(*p)->fVal;
+                *data=(int)(*p)->fVal;
             //CONST_INT
             else
             {
                 Value *v= symtab_dynamic_lookup_first(this,bstr2cstr((*p)->sVal, '\0'));
                 if(v->VTy->ID==Const_INT)
-                    data=v->pdata->var_pdata.iVal;
+                    *data=v->pdata->var_pdata.iVal;
                 else
-                    data=(int)v->pdata->var_pdata.fVal;
+                    *data=(int)v->pdata->var_pdata.fVal;
             }
 
-            stackPush(S,(void*)data);
+            stackPush(S,data);
         }
 
         else
         {
+            int *result= malloc(4);
             stackTop(S, (void*)&x2);
             stackPop(S);
             stackTop(S, (void*)&x1);
             stackPop(S);
             switch((*p)->iVal)
             {
-                case '+': result = x1 + x2; break;
-                case '-': result = x1 - x2; break;
-                case '*': result = x1 * x2; break;
-                case '/': result = x1 / x2; break;
-                case '%': result = x1 % x2; break;
+                case '+': *result = *x1 + *x2; break;
+                case '-': *result = *x1 - *x2; break;
+                case '*': *result = *x1 * *x2; break;
+                case '/': *result = *x1 / *x2; break;
+                case '%': *result = *x1 % *x2; break;
             }
-            stackPush(S,(void*)result);
+            stackPush(S,result);
         }
         p++;
     }
+    int *result= malloc(4);
     stackTop(S,(void*)&result);
     stackPop(S);
-    return result;
+    return *result;
 }
 
 float cal_easy_expr_f(past expr)
