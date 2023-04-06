@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-    printf_llvm_ir(instruction_list,argv[1]);
+//    printf_llvm_ir(instruction_list,argv[1]);
 //  fix_array(instruction_list);
 //  print_array(instruction_list);
   //showAst(TRoot,0);
