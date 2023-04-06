@@ -239,13 +239,20 @@ void mem2reg(Function *currentFunction){
     HashMapDeinit(currentFunction->loadSet);
 }
 
-void insertCopies(BasicBlock *block,Value *dest,Value *src){
+Value *insertCopies(BasicBlock *block,Value *src){
     InstNode *tailIns = block->tail_node;
     assert(tailIns != NULL);
-    InstNode *copyIns = newCopyOperation(dest,src);
+    InstNode *copyIns = newCopyOperation(src);
     printf("new a copy Ins!\n");
     assert(copyIns != NULL);
     copyIns->inst->Parent = block;
+    Value *insValue = ins_get_value(copyIns->inst);
+
+    //应该不会超过10位数
+    insValue->name = (char*)malloc(sizeof(char) * 10);
+    strcpy(insValue->name,"%temp");
+
+    //TODO 还没有设置Type
     ins_insert_before(copyIns,tailIns);
 }
 
@@ -605,16 +612,124 @@ void renameVariabels(Function *currentFunction) {
     }
 }
 
-void insertPhiCopies(BasicBlock *block, HashMap *varStack){
+void insertPhiCopies(DomTreeNode *node, HashMap *varStack){
+    BasicBlock *block = node->block;
 
+    HashSet *copySet = HashSetInit();
+
+    HashMap *varReplace = HashMapInit();
+
+    HashSet *used_by_another = HashSetInit();
+
+    // for all successors
+    if(block->true_block){
+        InstNode *trueCurr = block->true_block->head_node;
+        //第一个基本块不可能还有phi node 其他基本块应该都有label
+        trueCurr = get_next_inst(trueCurr);
+        while(trueCurr->inst->Opcode == Phi){
+            Value *phiDest = ins_get_value(trueCurr->inst);
+            //each src, dest
+            HashSet *phiSet = phiDest->pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                Value *src = phiInfo->define;
+                if(src != NULL){
+                    // 如果不是undefine
+                    CopyPair *tempPair = createCopyPair(src,phiDest);
+                    HashSetAdd(copySet,tempPair);
+                    HashMapPut(varReplace,src,src);
+                    HashMapPut(varReplace,phiDest,phiDest);
+                    HashSetAdd(used_by_another,src);
+                }
+            }
+            trueCurr = get_next_inst(trueCurr);
+        }
+    }
+
+    if(block->false_block){
+        InstNode *falseCurr = block->false_block->head_node;
+        falseCurr = get_next_inst(falseCurr);
+        while(falseCurr->inst->Opcode == Phi){
+            Value *phiDest = ins_get_value(falseCurr->inst);
+            HashSet *phiSet = phiDest->pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                Value *src = phiInfo->define;
+                if(src != NULL){
+                    CopyPair *copyPair = createCopyPair(src, phiDest);
+                    HashSetAdd(copySet,copyPair);
+                    HashMapPut(varReplace,src,src);
+                    HashMapPut(varReplace,phiDest,phiDest);
+                    HashSetAdd(used_by_another,src);
+                }
+            }
+            falseCurr = get_next_inst(falseCurr);
+        }
+    }
+
+    HashSet *workList = HashSetInit();
+    HashSetFirst(copySet);
+    for(CopyPair *copyPair = HashSetNext(copySet); copyPair != NULL; copyPair = HashSetNext(copySet)){
+        Value *dest = copyPair->dest;
+        if(!HashSetFind(used_by_another,dest)){
+            HashSetRemove(copySet,copyPair);
+            HashSetAdd(workList,copyPair);
+        }
+    }
+
+    while(HashSetSize(workList) != 0 || HashSetSize(copySet) != 0){
+        while(HashSetSize(workList) != 0){
+            HashSetFirst(copySet);
+            CopyPair *copyPair = HashSetNext(copySet);
+            HashSetRemove(copySet, copyPair);
+
+            // if dest -> live out of b
+
+            //insert a copy from dest to a new temp t at phi node defining dest;
+
+            //push t -> stack [dest]
+
+
+
+            //insert a copy operation from map[src] to dest at the end of b
+            Value *src = HashMapGet(varReplace,copyPair->src);
+
+            // 还有点问题
+            insertCopies(block,src);
+
+            // map[src] <- dest
+            HashMapPut(varReplace,copyPair->src, copyPair->dest);
+
+            HashSetFirst(copySet);
+            for(CopyPair *tempPair = HashSetNext(copySet); tempPair != NULL; tempPair = HashSetNext(copySet)){
+                if(tempPair->dest == src){
+                    HashSetAdd(workList,tempPair);
+                }
+            }
+        }
+
+        if(HashSetSize(copySet) != 0){
+            HashSetFirst(copySet);
+            CopyPair *copyPair = HashSetNext(copySet);
+            HashSetRemove(copySet,copyPair);
+
+            //insert a copy from dest to a new temp t at the end of b
+
+            // map[dest] <- t
+            //HashMapPut(varReplace,copyPair->dest,);
+            HashSetAdd(workList,copyPair);
+        }
+    }
+
+    HashSetFirst(node->children);
+    for(DomTreeNode *domNode = HashSetNext(node->children); domNode != NULL; domNode = HashSetNext(node->children)){
+        insertPhiCopies(domNode,varStack);
+    }
 }
 
 void outOfSSA(Function *currentFunction){
 
     HashMap *varStack = HashMapInit();
-
-    //
-
 
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
@@ -635,7 +750,7 @@ void outOfSSA(Function *currentFunction){
                 Value *dest = ins_get_value(currNode->inst);
                 printf("hashset first!\n");
                 printf("insert copy of %s to b%d\n",src->name, from->id);
-                insertCopies(from,dest,src);
+                //insertCopies(from,dest,src);
                 printf("insert success!\n");
             }
             printf("insert a phi\n");
@@ -649,14 +764,11 @@ void outOfSSA(Function *currentFunction){
 }
 
 
-InstNode *newCopyOperation(Value *dest, Value *src){
+InstNode *newCopyOperation(Value *src){
     // 此时挂载了
-    printf("copy ins created!\n");
     Instruction *copyIns = ins_new_unary_operator(CopyOperation,src);
-    printf("copy ins created!\n");
     assert(copyIns != NULL);
     copyIns->Opcode = CopyOperation;
-    copyIns->user.value.alias = dest;
     InstNode *copyInsNode = new_inst_node(copyIns);
     assert(copyInsNode != NULL);
     return copyInsNode;
@@ -827,4 +939,14 @@ bool correctPhiNode(Function *currentFunction){
         currNode = get_next_inst(currNode);
     }
     if(changed) correctPhiNode(currentFunction);
+}
+
+CopyPair *createCopyPair(Value *src, Value *dest){
+    CopyPair *copyPair = (CopyPair*)malloc(sizeof(CopyPair));
+    assert(src != NULL);
+    assert(dest != NULL);
+
+    copyPair->src = src;
+    copyPair->dest = dest;
+    return copyPair;
 }
