@@ -21,11 +21,11 @@ extern bool c_b_flag[2];
 extern char t_num[5];
 int param_map=0;
 Value *v_cur_func;
+extern int flag_blocklist;        //默认都是非正常
 char type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"main_float"},{"int"},{"float"},{"const_int"},{"const_float"},{"function"},{"void"},{"address"},{"var_int"},{"var_float"},{"globalint"},{"globalfloat"},{"array_const_int"},{"array_const_float"},{"global_array_const_int"},{"global_array_const_float"},{"array_int"},{"array_float"},{"global_arrayint"},{"global_arrayfloat"}};
 
 void create_instruction_list(past root,Value* v_return)
 {
-
     if (root != NULL) {
         if ((strcmp(bstr2cstr(root->nodeType, '\0'), "VarDecl") == 0 || strcmp(bstr2cstr(root->nodeType, '\0'), "ConstDecl") == 0) && is_global_map(this)==true)
             create_var_decl(root,v_return,true);
@@ -34,7 +34,15 @@ void create_instruction_list(past root,Value* v_return)
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "FuncDef") == 0)
             create_func_def(root);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "BlockItemList") == 0)
-            create_blockItemList(root,v_return);
+        {
+            if(flag_blocklist==0)        //正常的
+            {
+                flag_blocklist=1;
+                create_blockItemList(root,v_return,0);
+            }
+            else
+                create_blockItemList(root,v_return,1);
+        }
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "Assign_Stmt") == 0)
             create_assign_stmt(root,v_return);
         else if (strcmp(bstr2cstr(root->nodeType, '\0'), "Return_Stmt") == 0)
@@ -242,12 +250,12 @@ struct _Value *create_call_func(past root)
     return v_result;
 }
 
-void create_blockItemList(past root,Value* v_return)
+void create_blockItemList(past root,Value* v_return,int flag_block)
 {
     scope_forward(this);
     create_instruction_list(root->left,v_return);
     scope_back(this);
-    if(root->next!=NULL)
+    if(flag_block==1 && root->next!=NULL)
         create_instruction_list(root->next,v_return);
 }
 
@@ -1547,6 +1555,8 @@ void create_if_stmt(past root,Value* v_return) {
     if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "Empty_Stmt") == 0 || strcmp(bstr2cstr(root->right->nodeType, '\0'), "Block_EMPTY") == 0)
         if(root->next!=NULL)
         {
+//            if(strcmp(bstr2cstr(root->next->nodeType, '\0'), "BlockItemList") == 0)
+//                flag_blocklist=0;
             create_instruction_list(root->next,v_return);
             return;
         }
@@ -1560,8 +1570,11 @@ void create_if_stmt(past root,Value* v_return) {
     {
         if((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0 && root->left->iVal==0) || (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0 && root->left->fVal==0))
         {
-            if(root->next!=NULL)
+            if(root->next!=NULL) {
+//                if(strcmp(bstr2cstr(root->next->nodeType, '\0'), "BlockItemList") == 0)
+//                    flag_blocklist=0;
                 create_instruction_list(root->next,v_return);
+            }
             return;
         }
     }
@@ -1638,7 +1651,11 @@ void create_if_stmt(past root,Value* v_return) {
         if(result==0)
         {
             if(root->next!=NULL)
+            {
+//                if(strcmp(bstr2cstr(root->next->nodeType, '\0'), "BlockItemList") == 0)
+//                    flag_blocklist=0;
                 create_instruction_list(root->next,v_return);
+            }
             return;
         }
 //        if(result==1)
@@ -1669,6 +1686,8 @@ void create_if_stmt(past root,Value* v_return) {
     int trur_point=t_index-1;
 
     //先走完if为真的所有语句，走完后就可确定否定跳转的位置
+    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "BlockItemList") == 0)
+        flag_blocklist=0;
     create_instruction_list(root->right,v_return);
 
     //填充&&,||的情况
@@ -1805,6 +1824,8 @@ void create_if_else_stmt(past root,Value* v_return) {
     {
         //走完if为真的语句，即可知道else从哪开始
         //走完if为真，目前最后一条是一个编号，示例的9:
+        if(strcmp(bstr2cstr(root->right->left->nodeType, '\0'), "BlockItemList") == 0)
+            flag_blocklist=0;
         create_instruction_list(root->right->left,v_return);          //if为真走的语句
 
         //填充&&,||的情况
@@ -1840,6 +1861,8 @@ void create_if_else_stmt(past root,Value* v_return) {
     if((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && result==-1) || (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result==-1) || ((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0) && root->left->iVal==0) || ((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0) && root->left->fVal==0) || result==0)
     {
         //走完else部分的语句，即可知道从if为真中出来的下一条应该goto到什么位置
+        if(strcmp(bstr2cstr(root->right->right->nodeType, '\0'), "BlockItemList") == 0)
+            flag_blocklist=0;
         create_instruction_list(root->right->right,v_return);         //if为假走的语句
     }
 
@@ -1997,6 +2020,9 @@ void create_while_stmt(past root,Value* v_return)
 
     int trur_point=t_index-1;
 
+    flag_blocklist=0;
+    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "BlockItemList") == 0)
+        flag_blocklist=0;
     create_instruction_list(root->right,v_return);
 
     //填充&&,||的情况
@@ -2175,6 +2201,8 @@ void create_func_def(past root) {
     }
 
     //进入func的blocklist
+    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "BlockItemList") == 0)
+        flag_blocklist=0;
     create_instruction_list(root->right,v_return);
 
     //如果没有return，即void返回

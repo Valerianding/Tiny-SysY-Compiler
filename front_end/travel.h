@@ -13,7 +13,7 @@
 //void test_travel_type(struct _InstNode *instruction_node);
 void travel_finish_type(struct _InstNode *instruction_node);
 
-void create_blockItemList(past root,Value* v_return);
+void create_blockItemList(past root,Value* v_return,int flag);
 void create_instruction_list(past root,Value* v_return);
 void  create_assign_stmt(past root,Value* v_return);
 void create_return_stmt(past root,Value* v_return);
