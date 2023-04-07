@@ -958,11 +958,12 @@ void SSADeconstruction(Function *currentFunction){
                 HashSetFirst(block->preBlocks);
                 for(BasicBlock *prevBlock = HashSetNext(block->preBlocks);
                      prevBlock != NULL; prevBlock = HashSetNext(block->preBlocks)) {
+                    printf("currNode\n");
                     if (prevBlock->true_block && prevBlock->false_block) {// 是关键边
                         // 分割当前关键边
                         BasicBlock *newBlock = bb_create();
                         InstNode *prevTail = prevBlock->tail_node;
-
+                        printf("currNode\n");
                         Instruction *newBlockLabel = ins_new_zero_operator(Label);
                         InstNode *newBlockLabelNode = new_inst_node(newBlockLabel);
 
@@ -987,12 +988,10 @@ void SSADeconstruction(Function *currentFunction){
                         //移除原来那个边
                         HashSetRemove(block->preBlocks, prevBlock);
                         HashSetAdd(block->preBlocks, newBlock);
-
                         // 修改phiInfo里面的信息
                         InstNode *correctNode = get_next_inst(block->head_node);
                         while(correctNode->inst->Opcode == Phi){
                             Value *insValue = ins_get_value(correctNode->inst);
-
                             HashSet *phiSet = insValue->pdata->pairSet;
                             HashSetFirst(phiSet);
                             for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -1021,6 +1020,9 @@ void SSADeconstruction(Function *currentFunction){
                         insertCopies(from,insValue,src);
                     }
                 }
+                InstNode *nextNode = get_next_inst(phiNode);
+                delete_inst(phiNode);
+                phiNode = nextNode;
             }
         }
         currNode = get_next_inst(currNode);
