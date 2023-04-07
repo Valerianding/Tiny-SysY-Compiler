@@ -27,8 +27,6 @@ bool isValidOperator(InstNode *insNode){
             return false;
         case FunEnd:
             return false;
-        case Phi:
-            return false;
     }
     return true;
 }

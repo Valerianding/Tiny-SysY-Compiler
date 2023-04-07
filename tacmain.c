@@ -96,53 +96,53 @@ int main(int argc, char* argv[]){
         print_one_ins_info(temp2);
     }
 
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    block = temp->inst->Parent;
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        printf("-------function  start---------\n");
+        correctType(currentFunction);
+        print_function_info(currentFunction);
+        clear_visited_flag(block);
+        calculate_dominance(currentFunction);
+        clear_visited_flag(block);
+        calculate_dominance_frontier(currentFunction);
+        clear_visited_flag(block);
+        calculate_iDominator(currentFunction);
+        clear_visited_flag(block);
+        calculate_DomTree(currentFunction);
+        clear_visited_flag(block);
+        calculateNonLocals(currentFunction);
+        printf("after non locals\n");
+        mem2reg(currentFunction);
+        printf("------after a function------\n");
+    }
+
+    // 建立phi 之后的
+    printf_llvm_ir(instruction_list,argv[1]);
+
+    temp2 = instruction_list;
+    /* 测试所有instruction list */
+    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+        print_one_ins_info(temp2);
+    }
+
+    block =  get_next_inst(instruction_list)->inst->Parent;
+    clear_visited_flag(block);
+    print_block_info(block);
+
+
+
 //    //找到第一个function的
 //    while(temp->inst->Parent->Parent == NULL){
 //        temp = get_next_inst(temp);
 //    }
 //    block = temp->inst->Parent;
-//
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        printf("-------function  start---------\n");
-//        correctType(currentFunction);
-//        print_function_info(currentFunction);
-//        clear_visited_flag(block);
-//        calculate_dominance(currentFunction);
-//        clear_visited_flag(block);
-//        calculate_dominance_frontier(currentFunction);
-//        clear_visited_flag(block);
-//        calculate_iDominator(currentFunction);
-//        clear_visited_flag(block);
-//        calculate_DomTree(currentFunction);
-//        clear_visited_flag(block);
-//        calculateNonLocals(currentFunction);
-//        printf("after non locals\n");
-//        mem2reg(currentFunction);
-//        printf("------after a function------\n");
-//    }
-//
-//    // 建立phi 之后的
-//    printf_llvm_ir(instruction_list,argv[1]);
-//
-//    temp2 = instruction_list;
-//    /* 测试所有instruction list */
-//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
-//        print_one_ins_info(temp2);
-//    }
-//
-//    block =  get_next_inst(instruction_list)->inst->Parent;
-//    clear_visited_flag(block);
-//    print_block_info(block);
-//
-//
-//
-//    //找到第一个function的
-//    while(temp->inst->Parent->Parent == NULL){
-//        temp = get_next_inst(temp);
-//    }
-//    block = temp->inst->Parent;
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        outOfSSA(currentFunction);
+//        //outOfSSA(currentFunction);
 //        printf("after out of SSA!\n");
 //        clear_visited_flag(currentFunction->entry);
 //        calculateLiveness(currentFunction);

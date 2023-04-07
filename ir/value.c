@@ -132,16 +132,16 @@ bool isGlobalVarFloat(Value *val){
 
 bool isGlobalArrayInt(Value *val){
     if(isGlobalArrayIntType(val->VTy)){
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool isGlobalArrayFloat(Value *val){
     if(isGlobalArrayFloatType(val->VTy)){
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool isGlobalVar(Value *val){

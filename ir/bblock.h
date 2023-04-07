@@ -82,7 +82,6 @@ void print_one_ins_info(InstNode *insNode);
 ///打印基本块的info
 void print_block_info(BasicBlock *this);
 
-
 ///在pos位置后面插入this
 void ins_insert_after(InstNode *this,InstNode *pos);
 

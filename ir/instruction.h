@@ -58,6 +58,7 @@ typedef struct _Instruction{
 Instruction* ins_new(int op_num);
 Instruction* ins_new_binary_operator(int Op, Value *S1, Value *S2);
 Instruction *ins_new_unary_operator(int Op,Value *S1);
+Instruction *ins_new_zero_operator(int Op);
 void ins_set_parent(Instruction *this,struct _BasicBlock *parent);
 // a = b + c 获取a
 Value *ins_get_value(Instruction *ins);

@@ -75,11 +75,16 @@ void calculateLiveness(Function *currentFunction){
     // 从exit开始
     BasicBlock *exit = currentFunction->tail;
 
-    // 分析exit的变换
+    // 注意最后一个基本块有可能不是exit
+    // 找到return
     InstNode *exitCurr = exit->tail_node;
+    while(exitCurr->inst->Opcode != Return){
+        exitCurr = get_prev_inst(exitCurr);
+    }
+
+    // exitCurr现在指向Return 语句
+    exit = exitCurr->inst->Parent;
     InstNode *exitHead = exit->head_node;
-
-
     HashSet *exitLiveIn = exit->in;
 
     //因为是最后一个基本块所以我们直接
@@ -94,6 +99,8 @@ void calculateLiveness(Function *currentFunction){
             if(exitCurr->inst->Opcode == Return || exitCurr->inst->Opcode == Store || exitCurr->inst->Opcode == GIVE_PARAM){
                 def = NULL;
             }else if(exitCurr->inst->Opcode == CopyOperation){
+
+                // TODO 存在问题
                 Value *insValue = ins_get_value(exitCurr->inst);
                 def = insValue->alias;
             }else{
@@ -103,6 +110,7 @@ void calculateLiveness(Function *currentFunction){
             if(exitCurr->inst->user.value.NumUserOperands == (unsigned int)1){
                 lhs = ins_get_lhs(exitCurr->inst);
             }
+
             if(exitCurr->inst->user.value.NumUserOperands == (unsigned int)2){
                 lhs = ins_get_lhs(exitCurr->inst);
                 rhs = ins_get_rhs(exitCurr->inst);
@@ -110,7 +118,7 @@ void calculateLiveness(Function *currentFunction){
 
             // 不是立即数且不是数组的话我们可以加入分析
             // 似乎所有的左边应该都要进入分析
-            if(def != NULL ){
+            if(def != NULL){
                 if(HashSetFind(exitLiveIn,def)){
                     HashSetRemove(exitLiveIn,def);
                 }
@@ -173,6 +181,7 @@ void calculateLiveness(Function *currentFunction){
                 Value *rhs = NULL;
 
                 //如果是return 语句的话就不需要左边这个
+                //不是最后的基本块也可能
                 //如果是CopyOperation也需要的特殊处理
                 if(currNode->inst->Opcode == Return || currNode->inst->Opcode == Store || currNode->inst->Opcode == GIVE_PARAM){
                     def = NULL;
@@ -192,6 +201,7 @@ void calculateLiveness(Function *currentFunction){
                     rhs = ins_get_rhs(currNode->inst);
                 }
 
+
                 // 不是立即数且不是数组的话我们可以加入分析
                 if(def != NULL && !isImm(def)){
                     if(HashSetFind(tempSet,def)){
@@ -207,6 +217,17 @@ void calculateLiveness(Function *currentFunction){
                 if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
                     if(!HashSetFind(tempSet,rhs)){
                         HashSetAdd(tempSet,rhs);
+                    }
+                }
+
+                // 如果现在是phi函数的话我们特殊处理
+                if(currNode->inst->Opcode == Phi){
+                    HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
+                    HashSetFirst(phiSet);
+                    for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                        if(phiInfo->define != NULL){
+                            HashSetAdd(tempSet, phiInfo->define);
+                        }
                     }
                 }
             }

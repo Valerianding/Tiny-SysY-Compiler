@@ -33,6 +33,12 @@ void insert_phi(BasicBlock *block,Value *val){
     ins_insert_after(phiInstNode,instNode);
     // 让这个语句属于BasicBlock
     phiInstNode->inst->Parent = block;
+
+    //设置当前phi函数的type
+    Value *insValue = ins_get_value(phiInstNode->inst);
+    insValue->VTy->ID = val->VTy->ID;
+    printf("%d--------",val->VTy->ID);
+    printf("set PhiNode success !\n");
 }
 
 void insertPhiInfo(InstNode *ins,pair *phiInfo){
@@ -239,22 +245,25 @@ void mem2reg(Function *currentFunction){
     HashMapDeinit(currentFunction->loadSet);
 }
 
-Value *insertCopies(BasicBlock *block,Value *src){
+// 针对的是需要拷贝回原来的
+void insertCopies(BasicBlock *block,Value *dest,Value *src){
     InstNode *tailIns = block->tail_node;
     assert(tailIns != NULL);
     InstNode *copyIns = newCopyOperation(src);
-    printf("new a copy Ins!\n");
     assert(copyIns != NULL);
     copyIns->inst->Parent = block;
     Value *insValue = ins_get_value(copyIns->inst);
+    insValue->alias = dest;
 
     //应该不会超过10位数
+    // 针对这个情况好像没什么用
     insValue->name = (char*)malloc(sizeof(char) * 10);
     strcpy(insValue->name,"%temp");
-
-    //TODO 还没有设置Type
     ins_insert_before(copyIns,tailIns);
+
+    // 由于是CopyOperation 所以phi的type我们已经是设置好了的
 }
+
 
 void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
@@ -613,8 +622,19 @@ void renameVariabels(Function *currentFunction) {
 }
 
 void insertPhiCopies(DomTreeNode *node, HashMap *varStack){
+    // 记录一下哪些会被push
+    HashSet *pushed = HashSetInit();
+
     BasicBlock *block = node->block;
 
+    // replace all use phi 这个block里面对phi函数
+    InstNode *currNode = block->head_node;
+    while(currNode != block->tail_node){
+
+        currNode = get_next_inst(currNode);
+    }
+
+    // schedule_copies
     HashSet *copySet = HashSetInit();
 
     HashMap *varReplace = HashMapInit();
@@ -673,7 +693,7 @@ void insertPhiCopies(DomTreeNode *node, HashMap *varStack){
         Value *dest = copyPair->dest;
         if(!HashSetFind(used_by_another,dest)){
             HashSetRemove(copySet,copyPair);
-            HashSetAdd(workList,copyPair);
+            HashSetAdd(workList,copyPair);//
         }
     }
 
@@ -683,19 +703,22 @@ void insertPhiCopies(DomTreeNode *node, HashMap *varStack){
             CopyPair *copyPair = HashSetNext(copySet);
             HashSetRemove(copySet, copyPair);
 
-            // if dest -> live out of b
 
-            //insert a copy from dest to a new temp t at phi node defining dest;
+            //if dest -> live out of b
+            //不管三七二十一 我们都去insert一个temp
+            if(HashSetFind(block->out,copyPair->dest)){
+                //insert a copy from dest to a new temp t at phi node defining dest;
 
-            //push t -> stack [dest]
+                //push(t, Stack(dest))
+                stack *destStack = HashMapGet(varStack,copyPair->dest);
+                assert(destStack != NULL);
 
+                //push t -> stack [dest]
+            }
 
-
-            //insert a copy operation from map[src] to dest at the end of b
+            //insert a copy operation from map[src] to dest at the end of
             Value *src = HashMapGet(varReplace,copyPair->src);
-
-            // 还有点问题
-            insertCopies(block,src);
+            insertCopies(block,copyPair->dest,src);
 
             // map[src] <- dest
             HashMapPut(varReplace,copyPair->src, copyPair->dest);
@@ -725,44 +748,10 @@ void insertPhiCopies(DomTreeNode *node, HashMap *varStack){
     for(DomTreeNode *domNode = HashSetNext(node->children); domNode != NULL; domNode = HashSetNext(node->children)){
         insertPhiCopies(domNode,varStack);
     }
+
+    // for each name n
+    //for
 }
-
-void outOfSSA(Function *currentFunction){
-
-    HashMap *varStack = HashMapInit();
-
-    BasicBlock *entry = currentFunction->entry;
-    BasicBlock *end = currentFunction->tail;
-
-    printf("in out of ssa\n");
-    InstNode *currNode = entry->head_node;
-
-    while(currNode != get_next_inst(end->tail_node)){
-        if(currNode->inst->Opcode == Phi){
-            assert(currNode->inst->user.value.pdata->pairSet != NULL);
-            printf("recognize a phi!\n");
-            HashSetFirst(currNode->inst->user.value.pdata->pairSet);
-            for(pair *phiInfo = HashSetNext(currNode->inst->user.value.pdata->pairSet); phiInfo != NULL; phiInfo = HashSetNext(currNode->inst->user.value.pdata->pairSet)){
-                BasicBlock *from = phiInfo->from;
-                Value *src = phiInfo->define;
-                assert(from != NULL);
-                assert(src != NULL);
-                Value *dest = ins_get_value(currNode->inst);
-                printf("hashset first!\n");
-                printf("insert copy of %s to b%d\n",src->name, from->id);
-                //insertCopies(from,dest,src);
-                printf("insert success!\n");
-            }
-            printf("insert a phi\n");
-            InstNode *nextNode = get_next_inst(currNode);
-            delete_inst(currNode);
-            currNode = nextNode;
-        }else{
-            currNode = get_next_inst(currNode);
-        }
-    }
-}
-
 
 InstNode *newCopyOperation(Value *src){
     // 此时挂载了
@@ -824,6 +813,7 @@ void calculateNonLocals(Function *currentFunction){
     HashSetDeinit(killed);
 }
 
+// TODO 解决自引用的问题
 bool correctPhiNode(Function *currentFunction){
 
     bool changed = false;
@@ -945,8 +935,94 @@ CopyPair *createCopyPair(Value *src, Value *dest){
     CopyPair *copyPair = (CopyPair*)malloc(sizeof(CopyPair));
     assert(src != NULL);
     assert(dest != NULL);
-
     copyPair->src = src;
     copyPair->dest = dest;
     return copyPair;
+}
+
+void SSADeconstruction(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *end = currentFunction->tail;
+
+    clear_visited_flag(entry);
+    InstNode *currNode = entry->head_node;
+    while(currNode != end->tail_node){
+        // 每个基本块只遍历一次
+        BasicBlock *block = currNode->inst->Parent;
+        if(!block->visited){
+            block->visited = true;
+            //跳过Label
+            InstNode *blockNode = get_next_inst(block->head_node);
+            // 如果当前基本块上存在phi函数
+            if(blockNode->inst->Opcode == Phi) {
+                HashSetFirst(block->preBlocks);
+                for(BasicBlock *prevBlock = HashSetNext(block->preBlocks);
+                     prevBlock != NULL; prevBlock = HashSetNext(block->preBlocks)) {
+                    if (prevBlock->true_block && prevBlock->false_block) {// 是关键边
+                        // 分割当前关键边
+                        BasicBlock *newBlock = bb_create();
+                        InstNode *prevTail = prevBlock->tail_node;
+
+                        Instruction *newBlockLabel = ins_new_zero_operator(Label);
+                        InstNode *newBlockLabelNode = new_inst_node(newBlockLabel);
+
+                        //直接跳转语句
+                        Instruction *newBlockBr = ins_new_zero_operator(br);
+                        InstNode *newBlockBrNode = new_inst_node(newBlockBr);
+
+                        ins_insert_after(prevTail, newBlockLabelNode);
+                        ins_insert_after(newBlockLabelNode, newBlockBrNode);
+                        // 维护这个基本块中的信息 TODO 没有维护支配信息等
+                        bb_set_block(newBlock,newBlockLabelNode, newBlockBrNode);
+                        newBlock->Parent = currentFunction;
+                        newBlock->id = -2; // 如果是-2的话 表示是新的节点
+                        // 前一个基本块到底是true 还是 false 是block
+                        if (prevBlock->true_block == block) {
+                            prevBlock->true_block = newBlock;
+                        } else if (prevBlock->false_block == block) {
+                            prevBlock->false_block = newBlock;
+                        }
+                        HashSetAdd(newBlock->preBlocks, prevBlock);
+                        newBlock->true_block = block;
+                        //移除原来那个边
+                        HashSetRemove(block->preBlocks, prevBlock);
+                        HashSetAdd(block->preBlocks, newBlock);
+
+                        // 修改phiInfo里面的信息
+                        InstNode *correctNode = get_next_inst(block->head_node);
+                        while(correctNode->inst->Opcode == Phi){
+                            Value *insValue = ins_get_value(correctNode->inst);
+
+                            HashSet *phiSet = insValue->pdata->pairSet;
+                            HashSetFirst(phiSet);
+                            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                                if(phiInfo->from == prevBlock){
+                                    //原来是来自prevBlock的更改为来自新的Block
+                                    phiInfo->from = newBlock;
+                                }
+                            }
+                            correctNode = get_next_inst(correctNode);
+                        }
+                    }else{
+                        //不动
+                    }
+                }
+            }
+            //进行拷贝操作
+            InstNode* phiNode = get_next_inst(block->head_node);
+            while(phiNode->inst->Opcode == Phi){
+                Value *insValue = ins_get_value(phiNode->inst);
+                HashSet *phiSet = insValue->pdata->pairSet;
+                HashSetFirst(phiSet);
+                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                    Value *src = phiInfo->define;
+                    if(src != NULL){
+                        BasicBlock *from = phiInfo->from;
+                        insertCopies(from,insValue,src);
+                    }
+                }
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
 }
