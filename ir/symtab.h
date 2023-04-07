@@ -11,13 +11,14 @@ struct _mapList{
     int scope_level;                  //当前表所在的嵌套层数
     struct _mapList* next;            //并列关系，比如说 2个函数是并列关系
     struct _mapList* child;           //嵌套关系，比如说 1个函数之内就有两个for循环（第一个for循环的next指向第二个for循环）
+    //unsigned int flag:1;              //0代表正常出现的{}，1代表无意义的{}
 };
 typedef struct _mapList MapList;
 
 //stack里的内容是指向map的指针
 struct _Stack{
     int top;
-    MapList* value_map[64];
+    MapList* value_map[128];
 };
 typedef struct _Stack Stack;
 

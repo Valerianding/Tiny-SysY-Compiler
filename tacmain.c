@@ -31,6 +31,7 @@ insnode_stack S_or;
 bool c_b_flag[2];
 
 char t_num[5] = {0};
+int flag_blocklist;
 
 struct _InstNode *instruction_list;
 
@@ -66,9 +67,10 @@ int main(int argc, char* argv[]){
     stack_new(this);
     declare_global_alloca(this->value_maps->next);
     c_b_flag[0]=false;c_b_flag[1]=false;
+    flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-    printf_llvm_ir(instruction_list,argv[1]);
+//  printf_llvm_ir(instruction_list,argv[1]);
 //  fix_array(instruction_list);
 //  print_array(instruction_list);`
 //  showAst(TRoot,0);
@@ -141,17 +143,17 @@ int main(int argc, char* argv[]){
         temp = get_next_inst(temp);
     }
     block = temp->inst->Parent;
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        //outOfSSA(currentFunction);
-        SSADeconstruction(currentFunction);
-        printf("after out of SSA!\n");
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        //outOfSSA(currentFunction);
+//        SSADeconstruction(currentFunction);
+//        printf("after out of SSA!\n");
 //        calculateLiveness(currentFunction);
 //        clear_visited_flag(currentFunction->entry);
 //        printLiveness(currentFunction->entry);
-    }
+//   }
 
     // 消除phi函数之后
-    printf_llvm_ir(instruction_list,argv[1]);
+//    printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();

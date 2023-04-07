@@ -21,7 +21,7 @@ void symtab_init(Symtab* this)
 
 void stack_new(Symtab* this)
 {
-    for(int i=0;i<10;i++)
+    for(int i=0;i<128;i++)
         this->S.value_map[i]=NULL;
     this->S.top=0;
     //默认在全局
@@ -219,7 +219,7 @@ void scope_forward(Symtab *this)
 
     this->S.value_map[this->S.top]=m;
 
-    for(int i=this->S.top+1;i<10;i++)
+    for(int i=this->S.top+1;i<128;i++)
         this->S.value_map[i]=NULL;
 }
 
