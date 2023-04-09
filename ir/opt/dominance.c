@@ -334,9 +334,9 @@ void calculate_DomTree(Function *currentFunction){
             HashSet *childSet = domTreeNode->children;
             HashSetFirst(childSet);
             for(DomTreeNode *childNode = HashSetNext(childSet); childNode != NULL; childNode = HashSetNext(childSet)){
-                //printf("b%d ",childNode->block->id);
+                printf("b%d ",childNode->block->id);
             }
-            //printf("\n");
+            printf("\n");
         }
         checkNode = get_next_inst(checkNode);
     }

@@ -66,6 +66,8 @@ struct _Value{
     unsigned NumUserOperands : NumUserOperandsBits;
     unsigned HasHungOffUses : 1;
     unsigned HasName : 1;
+    bool Useless : 1;
+    bool IsPhi : 1;
     char *name;
     struct _Value *alias;
     PData *pdata;

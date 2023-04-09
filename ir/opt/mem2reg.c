@@ -9,6 +9,8 @@ InstNode* new_phi(Value *val){
     Instruction *phiIns = ins_new(0);
     phiIns->Opcode = Phi;
     phiIns->user.value.pdata->pairSet = NULL;
+    phiIns->user.value.IsPhi = true;
+    phiIns->user.value.Useless = false;
     InstNode *phiNode = new_inst_node(phiIns);
     //做一个映射 记录现在对应的是哪个alloca
     phiNode->inst->user.value.alias = val;
@@ -218,12 +220,17 @@ void mem2reg(Function *currentFunction){
     }
 
     printf("after rename !\n");
+
+    prunePhi(currentFunction);
+
     correctPhiNode(currentFunction);
 
     printf("after correct phiNode\n");
 
     // delete load 和 store
     deleteLoadStore(currentFunction);
+
+
 
 
     printf("after delete alloca load store\n");
@@ -621,137 +628,6 @@ void renameVariabels(Function *currentFunction) {
     }
 }
 
-void insertPhiCopies(DomTreeNode *node, HashMap *varStack){
-    // 记录一下哪些会被push
-    HashSet *pushed = HashSetInit();
-
-    BasicBlock *block = node->block;
-
-    // replace all use phi 这个block里面对phi函数
-    InstNode *currNode = block->head_node;
-    while(currNode != block->tail_node){
-
-        currNode = get_next_inst(currNode);
-    }
-
-    // schedule_copies
-    HashSet *copySet = HashSetInit();
-
-    HashMap *varReplace = HashMapInit();
-
-    HashSet *used_by_another = HashSetInit();
-
-    // for all successors
-    if(block->true_block){
-        InstNode *trueCurr = block->true_block->head_node;
-        //第一个基本块不可能还有phi node 其他基本块应该都有label
-        trueCurr = get_next_inst(trueCurr);
-        while(trueCurr->inst->Opcode == Phi){
-            Value *phiDest = ins_get_value(trueCurr->inst);
-            //each src, dest
-            HashSet *phiSet = phiDest->pdata->pairSet;
-            HashSetFirst(phiSet);
-            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                Value *src = phiInfo->define;
-                if(src != NULL){
-                    // 如果不是undefine
-                    CopyPair *tempPair = createCopyPair(src,phiDest);
-                    HashSetAdd(copySet,tempPair);
-                    HashMapPut(varReplace,src,src);
-                    HashMapPut(varReplace,phiDest,phiDest);
-                    HashSetAdd(used_by_another,src);
-                }
-            }
-            trueCurr = get_next_inst(trueCurr);
-        }
-    }
-
-    if(block->false_block){
-        InstNode *falseCurr = block->false_block->head_node;
-        falseCurr = get_next_inst(falseCurr);
-        while(falseCurr->inst->Opcode == Phi){
-            Value *phiDest = ins_get_value(falseCurr->inst);
-            HashSet *phiSet = phiDest->pdata->pairSet;
-            HashSetFirst(phiSet);
-            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                Value *src = phiInfo->define;
-                if(src != NULL){
-                    CopyPair *copyPair = createCopyPair(src, phiDest);
-                    HashSetAdd(copySet,copyPair);
-                    HashMapPut(varReplace,src,src);
-                    HashMapPut(varReplace,phiDest,phiDest);
-                    HashSetAdd(used_by_another,src);
-                }
-            }
-            falseCurr = get_next_inst(falseCurr);
-        }
-    }
-
-    HashSet *workList = HashSetInit();
-    HashSetFirst(copySet);
-    for(CopyPair *copyPair = HashSetNext(copySet); copyPair != NULL; copyPair = HashSetNext(copySet)){
-        Value *dest = copyPair->dest;
-        if(!HashSetFind(used_by_another,dest)){
-            HashSetRemove(copySet,copyPair);
-            HashSetAdd(workList,copyPair);//
-        }
-    }
-
-    while(HashSetSize(workList) != 0 || HashSetSize(copySet) != 0){
-        while(HashSetSize(workList) != 0){
-            HashSetFirst(copySet);
-            CopyPair *copyPair = HashSetNext(copySet);
-            HashSetRemove(copySet, copyPair);
-
-
-            //if dest -> live out of b
-            //不管三七二十一 我们都去insert一个temp
-            if(HashSetFind(block->out,copyPair->dest)){
-                //insert a copy from dest to a new temp t at phi node defining dest;
-
-                //push(t, Stack(dest))
-                stack *destStack = HashMapGet(varStack,copyPair->dest);
-                assert(destStack != NULL);
-
-                //push t -> stack [dest]
-            }
-
-            //insert a copy operation from map[src] to dest at the end of
-            Value *src = HashMapGet(varReplace,copyPair->src);
-            insertCopies(block,copyPair->dest,src);
-
-            // map[src] <- dest
-            HashMapPut(varReplace,copyPair->src, copyPair->dest);
-
-            HashSetFirst(copySet);
-            for(CopyPair *tempPair = HashSetNext(copySet); tempPair != NULL; tempPair = HashSetNext(copySet)){
-                if(tempPair->dest == src){
-                    HashSetAdd(workList,tempPair);
-                }
-            }
-        }
-
-        if(HashSetSize(copySet) != 0){
-            HashSetFirst(copySet);
-            CopyPair *copyPair = HashSetNext(copySet);
-            HashSetRemove(copySet,copyPair);
-
-            //insert a copy from dest to a new temp t at the end of b
-
-            // map[dest] <- t
-            //HashMapPut(varReplace,copyPair->dest,);
-            HashSetAdd(workList,copyPair);
-        }
-    }
-
-    HashSetFirst(node->children);
-    for(DomTreeNode *domNode = HashSetNext(node->children); domNode != NULL; domNode = HashSetNext(node->children)){
-        insertPhiCopies(domNode,varStack);
-    }
-
-    // for each name n
-    //for
-}
 
 InstNode *newCopyOperation(Value *src){
     // 此时挂载了
@@ -814,46 +690,13 @@ void calculateNonLocals(Function *currentFunction){
 }
 
 // TODO 解决自引用的问题
-bool correctPhiNode(Function *currentFunction){
+void correctPhiNode(Function *currentFunction){
 
     bool changed = false;
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
     InstNode *currNode = entry->head_node;
-
-    while(currNode != get_next_inst(end->tail_node)) {
-        if(currNode->inst->Opcode == Phi && currNode->inst->user.value.use_list == NULL){
-            InstNode *tempNode = entry->head_node;
-            bool flag = false;
-            Value *insValue = ins_get_value(currNode->inst);
-            while(tempNode != get_next_inst(end->tail_node)){
-                if(tempNode->inst->Opcode == Phi){
-                    HashSet *pairSet = tempNode->inst->user.value.pdata->pairSet;
-                    HashSetFirst(pairSet);
-                    for(pair *phiInfo = HashSetNext(pairSet); phiInfo != NULL; phiInfo = HashSetNext(pairSet)){
-                        Value *define = phiInfo->define;
-                        if(define == insValue){
-                            flag = true;
-                        }
-                    }
-                }
-                tempNode = get_next_inst(tempNode);
-            }
-            if(flag == true){
-                currNode = get_next_inst(currNode);
-            }else{
-                printf("delete a dead phi\n");
-                InstNode *next = get_next_inst(currNode);
-                delete_inst(currNode);
-                currNode = next;
-                changed = true;
-            }
-        }else{
-            currNode = get_next_inst(currNode);
-        }
-    }
-
 
     currNode = entry->head_node;
     while(currNode != get_next_inst(end->tail_node)){
@@ -929,15 +772,6 @@ bool correctPhiNode(Function *currentFunction){
         currNode = get_next_inst(currNode);
     }
     if(changed) correctPhiNode(currentFunction);
-}
-
-CopyPair *createCopyPair(Value *src, Value *dest){
-    CopyPair *copyPair = (CopyPair*)malloc(sizeof(CopyPair));
-    assert(src != NULL);
-    assert(dest != NULL);
-    copyPair->src = src;
-    copyPair->dest = dest;
-    return copyPair;
 }
 
 void SSADeconstruction(Function *currentFunction){
@@ -1026,5 +860,89 @@ void SSADeconstruction(Function *currentFunction){
             }
         }
         currNode = get_next_inst(currNode);
+    }
+}
+
+void prunePhi(Function *currentFunction){
+    Queue *workList = QueueInit();
+    HashSet *phiStack = HashSetInit();
+
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *end = currentFunction->tail;
+    QueuePush(workList,entry);
+
+    while(QueueSize(workList) != 0){
+        BasicBlock *block = NULL;
+        QueueFront(workList,(void *)&block);
+        QueuePop(workList);
+        assert(block != NULL);
+        InstNode *blockCurr = block->head_node;
+        InstNode *blockTail = block->tail_node;
+        while(blockCurr != get_next_inst(blockTail)){
+            if(blockCurr->inst->Opcode == Phi){
+                Value *phiValue = ins_get_value(blockCurr->inst);
+                phiValue->Useless = true;
+            }else{
+                Value *lhs = ins_get_lhs(blockCurr->inst);
+                if(lhs != NULL && lhs->IsPhi == true){
+                    lhs->Useless = false;
+                    HashSetAdd(phiStack,lhs);
+                }
+                Value *rhs = ins_get_rhs(blockCurr->inst);
+                if(rhs != NULL && rhs->IsPhi == true){
+                    rhs->Useless = false;
+                    HashSetAdd(phiStack,rhs);
+                }
+            }
+            blockCurr = get_next_inst(blockCurr);
+        }
+
+        //
+        DomTreeNode *domTreeNode = block->domTreeNode;
+        HashSetFirst(domTreeNode->children);
+        for(DomTreeNode *childNode = HashSetNext(domTreeNode->children); childNode != NULL; childNode = HashSetNext(domTreeNode->children)){
+            BasicBlock *childBlock = childNode->block;
+            printf("push child %d\n",childBlock->id);
+            QueuePush(workList,childBlock);
+        }
+    }
+    //
+    printf("second while!\n");
+
+    printf("stack size : %d \n",HashSetSize(phiStack));
+
+
+    while(HashSetSize(phiStack) != 0){
+        HashSetFirst(phiStack);
+        Value *phiValue = HashSetNext(phiStack);
+        HashSetRemove(phiStack,phiValue);
+        Instruction *phiIns = (Instruction*)phiValue;
+        HashSet *phiSet = phiValue->pdata->pairSet;
+        HashSetFirst(phiSet);
+        for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+            Value *src = phiInfo->define;
+            if(src != NULL && src->IsPhi == true && src->Useless == true){
+                src->Useless = false;
+                HashSetAdd(phiStack,src);
+            }
+        }
+    }
+
+    //
+    InstNode *currNode = entry->head_node;
+    while(currNode != get_next_inst(end->tail_node)){
+        if(currNode->inst->Opcode == Phi){
+            Value *phiValue = ins_get_value(currNode->inst);
+            if(phiValue->IsPhi == true && phiValue->Useless == true){
+                InstNode *nextNode = get_next_inst(currNode);
+                printf("delete a phiNode! -------\n");
+                delete_inst(currNode);
+                currNode = nextNode;
+            }else{
+                currNode = get_next_inst(currNode);
+            }
+        }else{
+            currNode = get_next_inst(currNode);
+        }
     }
 }

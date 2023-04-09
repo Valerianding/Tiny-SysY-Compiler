@@ -136,15 +136,13 @@ int main(int argc, char* argv[]){
     clear_visited_flag(block);
     print_block_info(block);
 
-
-
     //找到第一个function的
     while(temp->inst->Parent->Parent == NULL){
         temp = get_next_inst(temp);
     }
     block = temp->inst->Parent;
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        //outOfSSA(currentFunction);
+        //outOfSSA(currentFunction);
 //        SSADeconstruction(currentFunction);
 //        printf("after out of SSA!\n");
 //        calculateLiveness(currentFunction);

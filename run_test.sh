@@ -3,10 +3,11 @@
 #用于判断标准输出的结果是否正确
 argu=$#
 single_file_name=$1
-gcc run_test_src/judge_out.c -o judge
+gcc -no-pie run_test_src/judge_out.c -o judge
 #生成静态链接库文件
-gcc -c run_test_src/sylib.c
-ar rcs sylib.a sylib.o
+gcc -no-pie -c run_test_src/sylib.c
+# ar rcs sylib.a sylib.o
+ar cry sylib.a sylib.o
 cp sylib.a test_cases
 cp sylib.o test_cases
 rm -rf sylib.a
@@ -43,14 +44,14 @@ then
         out_value=1
         filename=${file%.*}
         echo ${filename}
-        gcc $filename$file_c -o test
+        gcc -no-pie $filename$file_c -o test
         FILE_IN=$filename$file_in
         if [ ! -f "$FILE_IN" ]
         then
-        gcc $filename$file_c -o test
+        gcc -no-pie $filename$file_c -o test
         ./test
         else
-        gcc -o test $filename$file_c -L./ sylib.a
+        gcc -no-pie -o test $filename$file_c -L./ sylib.a
         ./test < $filename$file_in
         fi
         exp=$?
@@ -60,7 +61,7 @@ then
         ./cmake-build-debug/compiler test_cases/$filename$file_c
         ret=$?
         if [ $ret -ne $stm ]
-        then 
+        then
         let le_count+=1
         echo "$FILE_LL not exist"
         file_err[le_count]=$filename$file_c
@@ -101,15 +102,15 @@ then
         continue
         fi
 
-        gcc -c $filename$file_as -o $filename$file_obj
-        gcc $filename$file_obj sylib.o -o test
+        gcc -no-pie -c $filename$file_as -o $filename$file_obj
+        gcc -no-pie $filename$file_obj sylib.o -o test
         FILE_OUT=$filename$file_out
         FILE_TEMP_OUT=$filename$file_temp_out
         if [ ! -f "$FILE_IN" ]
         then
         ./test
         else
-        ./test < $filename$file_in 
+        ./test < $filename$file_in
         fi
         act=$?
 
@@ -183,7 +184,7 @@ then
         echo ${file_err[i]}"   ir不符合llvm规范  "$exp_str${exp_err[i]}
         continue
         fi
-        
+
         if [ "${out_err[i]}" = "1" ] ;
         then
         echo ${file_err[i]}"    标准输出与out存在差异"
@@ -201,14 +202,14 @@ do
     out_value=1
     filename=${file%.*}
     echo ${filename}
-    gcc $filename$file_c -o test
+    gcc -no-pie $filename$file_c -o test
     FILE_IN=$filename$file_in
     if [ ! -f "$FILE_IN" ]
     then
-    gcc $filename$file_c -o test
+    gcc -no-pie $filename$file_c -o test
     ./test
     else
-    gcc -o test $filename$file_c -L./ sylib.a
+    gcc -no-pie -o test $filename$file_c -L./ sylib.a
     ./test < $filename$file_in
     fi
     exp=$?
@@ -218,7 +219,7 @@ do
     ./cmake-build-debug/compiler test_cases/$filename$file_c
     ret=$?
     if [ $ret -ne $stm ]
-    then 
+    then
     let le_count+=1
     echo "$FILE_LL not exist"
     file_err[le_count]=$filename$file_c
@@ -259,15 +260,15 @@ do
     continue
     fi
 
-    gcc -c $filename$file_as -o $filename$file_obj
-    gcc $filename$file_obj sylib.o -o test
+    gcc -no-pie -c $filename$file_as -o $filename$file_obj
+    gcc -no-pie $filename$file_obj sylib.o -o test
     FILE_OUT=$filename$file_out
     FILE_TEMP_OUT=$filename$file_temp_out
     if [ ! -f "$FILE_IN" ]
     then
     ./test
     else
-    ./test < $filename$file_in 
+    ./test < $filename$file_in
     fi
     act=$?
 
@@ -341,7 +342,7 @@ do
     echo ${file_err[i]}"   ir不符合llvm规范  "$exp_str${exp_err[i]}
     continue
     fi
-    
+
     if [ "${out_err[i]}" = "1" ] ;
     then
     echo ${file_err[i]}"    标准输出与out存在差异"

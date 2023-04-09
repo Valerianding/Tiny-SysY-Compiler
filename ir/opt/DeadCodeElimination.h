@@ -7,4 +7,5 @@
 #include "function.h"
 
 void DeadCodeElimination(Function *currentFunction);
+void DeleteUselessBasicBlocks(Function *currentFunction);
 #endif //C22V1_DEADCODEELIMINATION_H

@@ -28,6 +28,7 @@ void renameVariabels(Function *currentFunction);
 void outOfSSA(Function *currentFunction);
 void SSADeconstruction(Function *currentFunction);
 void calculateNonLocals(Function *currentFunction);
-bool correctPhiNode(Function *currentFunction);
+void correctPhiNode(Function *currentFunction);
+void prunePhi(Function *currentFunction);
 CopyPair *createCopyPair(Value *src, Value *dest);
 #endif //C22V1_MEM2REG_H

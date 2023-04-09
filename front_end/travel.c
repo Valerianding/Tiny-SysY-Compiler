@@ -4288,6 +4288,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
             case Phi:{
+                Value *insValue = ins_get_value(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
                 printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
@@ -4297,6 +4298,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                     BasicBlock *from = phiInfo->from;
                     Value *incomingVal = phiInfo->define;
+                    if(incomingVal == insValue){
+                        printf("WRONG !!!!!!!------------\n");
+                        fprintf(fptr, "WRONG !!!!!!!------------\n");
+                    }
                     if(i + 1 == size)      //最后一次
                     {
                         if(incomingVal != NULL && isImm(incomingVal)){
