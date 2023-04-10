@@ -83,7 +83,7 @@ InstNode * arm_trans_Call(InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap);
 
-//load和store指令已经被删除掉
+//load和store指令
 //InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
 //InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
 

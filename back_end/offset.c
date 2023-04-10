@@ -18,7 +18,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp){
 //            printf("name:%s  keyname:%s\n",name,key->name);
             if(strcmp(name,key->name)>0&& (strlen(name)>= strlen(key->name))){
 //                    表示该参数为传递过来的参数
-                if(key->VTy->ID==ArrayTyID){
+                if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
 //                    处理数组,
                     int size_array= get_array_total_occupy(key,0);
                     offset *temp=offset_node();
@@ -40,7 +40,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp){
                 }
 
             }else if(strcmp(name,key->name)<=0){
-                if(key->VTy->ID==ArrayTyID){
+                if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
 //                    处理数组
                     int size_array= get_array_total_occupy(key,0);
                     offset *temp=offset_node();
@@ -254,3 +254,23 @@ HashMap *offset_init(InstNode*ins){
 //
 //    }
 }
+unsigned HashKey(void* key)
+{
+    return HashDjb2((char*)key);
+}
+
+int CompareKey(void* lhs, void* rhs)
+{
+    return strcmp((char*)lhs, (char*)rhs);
+}
+
+void CleanKey(void* key)
+{
+    free(key);
+}
+
+void CleanValue(void* value)
+{
+    free(value);
+}
+

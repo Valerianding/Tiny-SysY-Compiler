@@ -54,6 +54,12 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp);
  * @param hashMap
  */
 void offset_free(HashMap*hashMap);
+unsigned HashKey(void* key);
 
+int CompareKey(void* lhs, void* rhs);
+
+void CleanKey(void* key);
+
+void CleanValue(void* value);
 
 #endif //C22V1_OFFSET_H
