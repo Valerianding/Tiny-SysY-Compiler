@@ -12,43 +12,32 @@ offset *offset_node(){
     memset(node,0, sizeof(offset));
     return node;
 }
-void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp){
-    if(!isImm(key)){
+void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num){
+    if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
         if(!HashMapContain(hashMap,key)){
 //            printf("name:%s  keyname:%s\n",name,key->name);
-            if(strcmp(name,key->name)>0&& (strlen(name)>= strlen(key->name))){
-//                    表示该参数为传递过来的参数
-                if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
-//                    处理数组,
-                    int size_array= get_array_total_occupy(key,0);
-                    offset *temp=offset_node();
-                    temp->offset_sp=(*sub_sp)-4;
-                    temp->memory=true;
-                    temp->regr=-1;
-                    temp->regs=-1;
-                    (*sub_sp)-=size_array;
-                    HashMapPut(hashMap,key,temp);
-                } else{
-                    offset *temp=offset_node();
-                    (*sub_sp)-=4;
+            if(strcmp(key->name,name)<0 &&  strlen(key->name) <= strlen(name)){
+//                    表示该参数为传递过来的参数,数组是不需要特别的处理的
+                int ri= atoi((key->name)+1);
+                offset *temp=offset_node();
 //                printf("sub_sp=%d\n",*sub_sp);
-                    temp->offset_sp=(*sub_sp);
-                    temp->memory=true;
-                    temp->regr=-1;
-                    temp->regs=-1;
-                    HashMapPut(hashMap,key,temp);
-                }
-
-            }else if(strcmp(name,key->name)<=0){
+                temp->offset_sp=(*local_var_num)*4+ri*4;
+                temp->memory=true;
+                temp->regr=-1;
+                temp->regs=-1;
+//                printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
+                HashMapPut(hashMap,key,temp);
+            }else{
                 if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
 //                    处理数组
-                    int size_array= get_array_total_occupy(key,0);
+                    int size_array= get_array_total_occupy(key->alias,0);
                     offset *temp=offset_node();
                     temp->offset_sp=(*add_sp);
                     (*add_sp)+=size_array;
                     temp->memory=true;
                     temp->regr=-1;
                     temp->regs=-1;
+//                    printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
                     HashMapPut(hashMap,key,temp);
                 }else{
                     offset *temp=(offset*) malloc(sizeof(offset));
@@ -58,14 +47,29 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp){
                     temp->memory=true;
                     temp->regr=-1;
                     temp->regs=-1;
+//                    printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
                     HashMapPut(hashMap,key,temp);
                 }
             }
         }
     }
+    else{
+//        %i为立即数
+        if(!HashMapContain(hashMap,key)){
+//            printf("haha\n");
+            offset *node=offset_node();
+            node->offset_sp=(*add_sp);
+            (*add_sp)+=4;
+            node->memory=true;
+            node->regs=-1;
+            node->regr=-1;
+//            printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
+            HashMapPut(hashMap,key,node);
+        }
+    }
     return;
 }
-HashMap *offset_init(InstNode*ins){
+HashMap *offset_init(InstNode*ins,int *local_var_num){
     HashMap *hashMap=HashMapInit();
     int sub_sp=0;
     int add_sp=0;
@@ -79,136 +83,138 @@ HashMap *offset_init(InstNode*ins){
         Value *value0,*value1,*value2;
         Value *value0_alias;
         switch (ins->inst->Opcode) {
-            case Alloca:
+//            case Alloca:
+//                用来处理数组何全局变量,数组可以不通过这个来获取处理相关的值
+
 //                这个需要补充
 //                Value * value0_alias=&ins->inst->user.value.alias;
-                value0_alias=ins->inst->user.value.alias;
-//                这个是用来处理掉MAIN_INT和其他一些alloca指令的干扰的.
-                if(value0_alias==NULL){
-                    hashmap_add(hashMap,&ins->inst->user.value,name,&sub_sp,&add_sp);
-                }else{
-                    hashmap_add(hashMap,value0_alias,name,&sub_sp,&add_sp);
-                }
-                break;
+//                value0_alias=ins->inst->user.value.alias;
+////                这个是用来处理掉MAIN_INT和其他一些alloca指令的干扰的.
+//                if(value0_alias==NULL){
+//                    hashmap_add(hashMap,&ins->inst->user.value,name,&sub_sp,&add_sp,local_var_num);
+//                }else{
+//                    hashmap_add(hashMap,value0_alias,name,&sub_sp,&add_sp,local_var_num);
+//                }
+//                break;
             case Add:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case Sub:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case Mul:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case Div:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case Call:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case Store:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case Load:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case GIVE_PARAM:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case LESS:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case GREAT:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case LESSEQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case GREATEQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case EQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case NOTEQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case XOR:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case zext:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case bitcast:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
 //            case GEP:
 //                value0=&ins->inst->user.value;
@@ -221,22 +227,22 @@ HashMap *offset_init(InstNode*ins){
             case MEMCPY:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case GLOBAL_VAR:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case MEMSET:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
             default:
                 break;
@@ -244,7 +250,7 @@ HashMap *offset_init(InstNode*ins){
     }
     if(ins->inst->Opcode==Return){
         Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-        hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
+        hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
     }
     return hashMap;
 //    if(param_num==0){

@@ -34,7 +34,7 @@ offset *offset_node();
  * @param ins
  * @return 哈希表
  */
-HashMap *offset_init(InstNode*ins);
+HashMap *offset_init(InstNode*ins,int *local_var_num);
 
 
 /**
@@ -46,7 +46,7 @@ HashMap *offset_init(InstNode*ins);
  * @param add_sp 用来记录临时变量的开辟
  */
 
-void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp);
+void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num);
 
 
 /**

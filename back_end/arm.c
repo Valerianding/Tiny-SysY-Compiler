@@ -23,22 +23,37 @@ int get_value_offset_sp(HashMap *hashMap,Value*value){
     return node->offset_sp;
 }
 
-void give_param_str(HashMap*hashMap,Value*value,char *name,int *ri){
-    if(!isImm(value)){
+void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack){
+// 这种存储方法好像是错的，因为后面用到的同一个value，这里给他分配了不同地址的mykey_node()，所以回得到不的key
+// hashmap不会释放value*对应的内存
+
+//    if(value->VTy->ID==ArrayTyID){
+////        是数组，offset_sp需要加更多
+//    }
+//    是参数,不用处理,这里是用来计算局部变量的栈开多大，再加上param_num*4就可以得到总的栈帧的大小了。
+    if(value->name!=NULL && strcmp(value->name,name)<0 && strlen(value->name)<= strlen(name)){
+        ;
+//        free(key);重复释放的原因有可能在这里
+    } else{
         if(!HashMapContain(hashMap, value)){
-            ;
-        }else{
-            if((strcmp(name,value->name)>0)&& (strlen(name)>= strlen(value->name))){
-//                    表示该参数为传递过来的参数
-//                printf("namelen:%d value_namelen:%d\n", strlen(name), strlen(value->name));
-                int x= get_value_offset_sp(hashMap,value);
-                printf("    str r%d,[sp,#%d]\n",(*ri)++,x);
-                HashMapRemove(hashMap,value);
+            offset *node=offset_node();
+            node->memory=1;
+            node->regs=-1;
+            node->regr=-1;
+            node->offset_sp=*local_stack;
+            (*local_stack)+=4;
+            if(isLocalArrayIntType(value->VTy)||isLocalArrayFloatType(value->VTy)||isGlobalArrayIntType(value->VTy)||isGlobalArrayFloatType(value->VTy)){
+//        是数组，offset_sp需要加更多
+                int x= get_array_total_occupy(value->alias,0);
+                (*local_stack)=(*local_stack)+x-4;
             }
+//            printf("funcBeginhaspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,value->name,value);
+            HashMapPut(hashMap,value,node);
         }
     }
     return;
 }
+
 
 int get_siezof_sp(HashMap*hashMap){
     return HashMapSize(hashMap);
@@ -56,18 +71,23 @@ void arm_translate_ins(InstNode *ins){
     InstNode *head;
     HashMap *hashMap;
     for(;ins!=NULL;ins=get_next_inst(ins)) {
-//        printf("%d\n",x++);
         if(ins->inst->Opcode==FunBegin){
-            head=ins;
-//            在进入函数时将offset初始化好，以供load指令使用
-            hashMap=offset_init(ins);
+//  这个逻辑有问题，现在的设计是再FunBegin里面执行栈帧开辟的sub指令，大小就是局部变量个数加上参数个数*4
+//  然后在sub指令之后执行str r0,r1,r2,r3就是保存这几个寄存器的值，保存的位置就是在sp+局部变量个数*4+参数序号(从0开始)*4
+//  执行完这两个之后，返回局部变量开辟的栈帧大小。返回之后进行
+//  真正栈帧的开辟，参数的存储位置从局部变量位置之上开始存储。
+//  所以说当前这个逻辑和FuncBegin函数的实现逻辑都得大改。
             regi=0;
             regs=0;
-            ins= arm_trans_FunBegin(ins,hashMap);
-            offset_free(hashMap);
-            hashMap=NULL;
-
-            hashMap= offset_init(ins);
+            int stack_size=0;
+            ins= arm_trans_FunBegin(ins,&stack_size);
+            head=ins;
+            int  param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
+            int local_var_num=(stack_size-param_num*4)/4;
+//            在进入函数时将offset初始化好，以供load指令使用
+            hashMap=offset_init(ins,&local_var_num);
+            int hashsize= HashMapSize(hashMap)*4;
+//            printf("hashsize=%d\n",hashsize);
             ins= get_next_inst(ins);
         }
         ins=_arm_translate_ins(ins,head,hashMap);
@@ -3026,186 +3046,211 @@ InstNode * arm_trans_Call(InstNode *ins){
     return ins;
 }
 
-InstNode * arm_trans_FunBegin(InstNode *ins,HashMap*hashMap){
-
+InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
 
     if(!strcmp("main", user_get_operand_use(&ins->inst->user,0)->Val->name)){
         printf("    push {r11,lr}\n");
-        printf("    mov r1,sp\n");
+//        printf("    mov r1,sp\n");
     }
-    int x= get_siezof_sp(hashMap);
-    printf("    sub sp,sp,#%d\n",4*x);
+
+    HashMap *hashMap=HashMapInit();
+//    HashMapSetHash(hashMap,HashKey);
+//    HashMapSetCompare(hashMap,CompareKey);
+//    HashMapSetCleanKey(hashMap,CleanKey);
+//    HashMapSetCleanValue(hashMap,CleanValue);
+
+
+    int local_stack=0;
+//    int x= get_siezof_sp(hashMap);
+//    printf("    sub sp,sp,#%d\n",4*x);
     //    在函数开始的时候要进行参数传递的str的处理
     int param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
-    if(param_num!=0) {
-        char name[20];
-        sprintf(name, "%c", '%');
-        sprintf(name + 1, "%d", param_num);
-        InstNode *temp=ins;
-        int ri=0;
-        for (; ins != NULL && ins->inst->Opcode != Return; ins = get_next_inst(ins)) {
-            Value *value0, *value1, *value2;
-            switch (ins->inst->Opcode) {
-                case Add:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case Sub:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case Mul:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case Div:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case Call:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    break;
-                case Store:
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case Load:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    break;
-                case GIVE_PARAM:
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    give_param_str(hashMap,value1,name,&ri);
-                    break;
-                case LESS:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case GREAT:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case LESSEQ:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case GREATEQ:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case EQ:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case NOTEQ:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case XOR:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    break;
-                case zext:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    break;
-                case bitcast:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    break;
-                case GEP:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case MEMCPY:
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case GLOBAL_VAR:
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value0,name,&ri);
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                case MEMSET:
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                    give_param_str(hashMap,value1,name,&ri);
-                    give_param_str(hashMap,value2,name,&ri);
-                    break;
-                default:
-                    break;
-            }
+    char name[20];
+    sprintf(name, "%c", '%');
+    sprintf(name + 1, "%d", param_num);
+    InstNode *temp=ins;
+    for (; ins != NULL && ins->inst->Opcode != Return; ins = get_next_inst(ins)) {
+        Value *value0, *value1, *value2;
+        switch (ins->inst->Opcode) {
+//            case Alloca:
 
+            case Add:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case Sub:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case Mul:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case Div:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case Call:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
+            case Store:
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case Load:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
+            case GIVE_PARAM:
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
+            case LESS:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case GREAT:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case LESSEQ:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case GREATEQ:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case EQ:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case NOTEQ:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case XOR:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
+            case zext:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
+            case bitcast:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
+            case GEP:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case MEMCPY:
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case GLOBAL_VAR:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case MEMSET:
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            default:
+                break;
         }
-        ins=temp;
-        for(ins= get_next_inst(ins);ins->inst->Opcode==Alloca||ins->inst->Opcode==Store;ins= get_next_inst(ins)){
-            temp=ins;
-        }
-        ins=temp;
+
     }
+//    *stakc_size=mystack+param_num*4;
+//    int x= HashMapSize(hashMap)*4;
+//    printf("FuncBeginhashmapsize=%d\n",x+param_num*4);
+    *stakc_size=local_stack+param_num*4;
+    printf("    sub sp,sp,#%d\n",*stakc_size);
+    if(param_num>0){
+//        存在参数的传递
+//        int local_stack=mystack;
+        for(int j=0;j<param_num && j<4;j++){
+            printf("    str r%d,[sp,#%d]\n",j,local_stack+j*4);
+        }
+    } else{
+        ;
+    }
+
+//    printf("localstack=%d\n",local_stack);
+//    int myx= HashMapSize(hashMap)*4;
+//    printf("hashmapsize=%d\n",myx);
+
+    HashMapDeinit(hashMap);
+
+    ins=temp;
+
 
     return ins;
 }
@@ -3213,7 +3258,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,HashMap*hashMap){
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap){
 
     if(!strcmp("main", user_get_operand_use(&head->inst->user,0)->Val->name)){
-        printf("    mov r11,sp\n");
+        int x1= get_siezof_sp(hashMap);
+
+        printf("    add sp,sp,#%d\n",4*x1);
+//        printf("    mov r11,sp\n");
         printf("    pop {r11,lr}\n");
         printf("    bx lr\n");
         return ins;
@@ -3233,9 +3281,55 @@ InstNode * arm_trans_Alloca(InstNode *ins){
     return ins;
 }
 
-InstNode * arm_trans_GIVE_PARAM(InstNode *ins){
-//  这个是用来标定参数传递的，仅仅是一个指示作用
-//    printf("\n");
+InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap*hashMap){
+//  这个是用来标定参数传递的，这个可不仅仅是一个标定作用，
+//  这个是在处理数组传参（传数组首地址），和地址指针的时候需要用到。
+
+//要考虑吧普通的参数传递和数组地址参数传递，还要考虑参数个数的问题。如果传递的是float型的参数呢？使用IEEE754放在通用寄存器中
+//    Value *value0=&ins->inst->user.value;
+//    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//    计算参数的传递个数
+    int num=0;
+    InstNode *tmp=ins;
+    for(;tmp->inst->Opcode==GIVE_PARAM;tmp= get_next_inst(tmp)){
+        num++;
+    }
+    tmp=ins;
+    if(num<=4){
+        for(int i=0;i<num;i++){
+            Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("    ldr r%d,[sp,#%d]\n",i,x);
+            tmp= get_next_inst(tmp);
+        }
+    }else{
+        tmp= get_next_inst(tmp);
+        for(int i=1;i<4;++i){
+            Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("    ldr r%d,[sp,#%d]\n",i,x);
+            tmp= get_next_inst(tmp);
+        }
+        for (int i = 1; i <=num-4; ++i) {
+            Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("    ldr r0,[sp,#%d]\n",x);
+            printf("    str r0,[sp,#-%d]\n",i*4);
+            tmp= get_next_inst(tmp);
+        }
+        tmp=ins;
+        Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+        int x= get_value_offset_sp(hashMap,value1);
+        printf("    ldr r0,[sp,#%d]\n",x);
+    }
+    tmp=ins;
+    while (get_next_inst(tmp)->inst->Opcode==GIVE_PARAM){
+        tmp= get_next_inst(tmp);
+    }
+    ins=tmp;
+//    int x=get_value_offset_sp(hashMap,value1);
+//    printf("hello world!\n")
     return ins;
 }
 
@@ -3839,8 +3933,8 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
             return arm_trans_Module(ins);
         case Call:
             return arm_trans_Call(ins);
-        case FunBegin:
-            return arm_trans_FunBegin(ins,hashMap);
+//        case FunBegin:
+//            return arm_trans_FunBegin(ins,hashMap);
         case Return:
             return arm_trans_Return(ins,head,hashMap);
         case Store:
@@ -3854,7 +3948,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
         case Alloca:
             return arm_trans_Alloca(ins);
         case GIVE_PARAM:
-            return arm_trans_GIVE_PARAM(ins);
+            return arm_trans_GIVE_PARAM(ins,hashMap);
         case ALLBEGIN:
             return arm_trans_ALLBEGIN(ins);
         case LESS:
