@@ -12,6 +12,7 @@
 #include "offset.h"
 
 
+
 /**
  * 判断立即数int是否有效
  * @param value
@@ -46,7 +47,7 @@ void arm_translate_ins(InstNode *ins);
  * @param hashMap 辅助翻译
  * @return
  */
-InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap);
+InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
 
 
 /**
@@ -81,13 +82,13 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Module(InstNode *ins);
 InstNode * arm_trans_Call(InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
-InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap);
+InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
 
-//load和store指令已经被删除掉
-//InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
-//InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
+//load和store指令已经被删除掉，对于数组是会有的
+InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
+InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
 
-InstNode * arm_trans_Alloca(InstNode *ins);
+InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_ALLBEGIN(InstNode *ins);
 InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
@@ -106,5 +107,8 @@ InstNode * arm_trans_zeroinitializer(InstNode *ins);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode *arm_trans_Phi(InstNode *ins);
 InstNode *arm_trans_MEMSET(InstNode *ins);
-void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *offset_sp);
+void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
+void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack);
+void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
+
 #endif //C22V1_ARM_H

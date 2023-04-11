@@ -12,6 +12,7 @@ offset *offset_node(){
     memset(node,0, sizeof(offset));
     return node;
 }
+
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num){
     if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
         if(!HashMapContain(hashMap,key)){
@@ -28,28 +29,29 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 //                printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
                 HashMapPut(hashMap,key,temp);
             }else{
-                if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
-//                    处理数组
-                    int size_array= get_array_total_occupy(key->alias,0);
-                    offset *temp=offset_node();
-                    temp->offset_sp=(*add_sp);
-                    (*add_sp)+=size_array;
-                    temp->memory=true;
-                    temp->regr=-1;
-                    temp->regs=-1;
-//                    printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
-                    HashMapPut(hashMap,key,temp);
-                }else{
-                    offset *temp=(offset*) malloc(sizeof(offset));
-                    temp->offset_sp=(*add_sp);
+//                if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
+////                    处理数组
+//                    int size_array= get_array_total_occupy(key->alias,0);
+//                    offset *temp=offset_node();
+//                    temp->offset_sp=(*add_sp);
+//                    (*add_sp)+=size_array;
+//                    temp->memory=true;
+//                    temp->regr=-1;
+//                    temp->regs=-1;
+////                    printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
+//                    HashMapPut(hashMap,key,temp);
+//                }else
+//                {
+                offset *temp=(offset*) malloc(sizeof(offset));
+                temp->offset_sp=(*add_sp);
 //                printf("add_sp=%d\n",*add_sp);
-                    (*add_sp)+=4;
-                    temp->memory=true;
-                    temp->regr=-1;
-                    temp->regs=-1;
+                (*add_sp)+=4;
+                temp->memory=true;
+                temp->regr=-1;
+                temp->regs=-1;
 //                    printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
-                    HashMapPut(hashMap,key,temp);
-                }
+                HashMapPut(hashMap,key,temp);
+//                }
             }
         }
     }
@@ -64,6 +66,38 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
             node->regs=-1;
             node->regr=-1;
 //            printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
+            HashMapPut(hashMap,key,node);
+        }
+    }
+    return;
+}
+void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp){
+    if(!HashMapContain(hashMap,key)){
+        if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
+            int size_array= get_array_total_occupy(key->alias,0);
+            offset *node=offset_node();
+            node->offset_sp=(*add_sp);
+            (*add_sp)+=size_array;
+            node->memory=true;
+            node->regs=-1;
+            node->regr=-1;
+            HashMapPut(hashMap,key,node);
+        } else{
+            offset *node=offset_node();
+            node->offset_sp=(*add_sp);
+            (*add_sp)+=4;
+            node->memory=true;
+            node->regs=-1;
+            node->regr=-1;
+            HashMapPut(hashMap,key,node);
+        }
+    }
+    return;
+}
+void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value){
+    if(!HashMapContain(hashMap,key)){
+        if(HashMapContain(hashMap,value)){
+            offset *node= HashMapGet(hashMap,value);
             HashMapPut(hashMap,key,node);
         }
     }
@@ -96,6 +130,11 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
 //                    hashmap_add(hashMap,value0_alias,name,&sub_sp,&add_sp,local_var_num);
 //                }
 //                break;
+            case Alloca:
+                value0 = &ins->inst->user.value;
+//                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                hashmap_alloca_add(hashMap,value0,&add_sp);
+                break;
             case Add:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -213,23 +252,25 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
             case bitcast:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_bitcast_add(hashMap,value0,value1);
+//                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+//                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
-//            case GEP:
-//                value0=&ins->inst->user.value;
-//                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-//                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-//                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp);
-//                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp);
-//                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp);
-//                break;
-            case MEMCPY:
+            case GEP:
+                value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
+                hashmap_bitcast_add(hashMap,value0,value1);
+//                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+//                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+//                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
+//            case MEMCPY:
+//                value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//                value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+//                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
+//                break;
             case GLOBAL_VAR:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -238,12 +279,12 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
-            case MEMSET:
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
-                break;
+//            case MEMSET:
+//                value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//                value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+//                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
+//                break;
             default:
                 break;
         }

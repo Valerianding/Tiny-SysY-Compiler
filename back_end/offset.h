@@ -29,6 +29,7 @@ typedef struct _offset{
 offset *offset_node();
 
 
+
 /**
  * @details 函数开始的时候，开辟栈帧，创建哈希表
  * @param ins
@@ -48,7 +49,8 @@ HashMap *offset_init(InstNode*ins,int *local_var_num);
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num);
 
-
+void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp);
+void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value);
 /**
  * @details 销毁哈希表释放内存
  * @param hashMap

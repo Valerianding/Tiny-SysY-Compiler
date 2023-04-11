@@ -20,7 +20,10 @@ bool imm_is_valid(unsigned int imm){
 
 int get_value_offset_sp(HashMap *hashMap,Value*value){
     offset *node= HashMapGet(hashMap, value);
-    return node->offset_sp;
+    if(node!=NULL){
+        return node->offset_sp;
+    }
+    return -1;
 }
 
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack){
@@ -42,18 +45,69 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
             node->regr=-1;
             node->offset_sp=*local_stack;
             (*local_stack)+=4;
-            if(isLocalArrayIntType(value->VTy)||isLocalArrayFloatType(value->VTy)||isGlobalArrayIntType(value->VTy)||isGlobalArrayFloatType(value->VTy)){
-//        是数组，offset_sp需要加更多
-                int x= get_array_total_occupy(value->alias,0);
-                (*local_stack)=(*local_stack)+x-4;
-            }
+//            数组只在alloca指令里面开辟，其他的不用管
+//            if(isLocalArrayIntType(value->VTy)||isLocalArrayFloatType(value->VTy)||isGlobalArrayIntType(value->VTy)||isGlobalArrayFloatType(value->VTy)){
+////        是数组，offset_sp需要加更多
+//                int x= get_array_total_occupy(value->alias,0);
+//                (*local_stack)=(*local_stack)+x-4;
+//            }
 //            printf("funcBeginhaspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,value->name,value);
             HashMapPut(hashMap,value,node);
         }
     }
     return;
 }
+void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack){
+    if(!HashMapContain(hashMap, value)){
+//        offset *node=offset_node();
+//        node->memory=1;
+//        node->regs=-1;
+//        node->regr=-1;
+//        node->offset_sp=*local_stack;
+//        (*local_stack)+=4;
+//        HashMapPut(hashMap,value,node);
+        if(isLocalArrayIntType(value->VTy)||isLocalArrayFloatType(value->VTy)||isGlobalArrayIntType(value->VTy)||isGlobalArrayFloatType(value->VTy)){
+            int size_array= get_array_total_occupy(value->alias,0);
+            offset *node=offset_node();
+            node->offset_sp=(*local_stack);
+            (*local_stack)+=size_array;
+            node->memory=true;
+            node->regs=-1;
+            node->regr=-1;
+            HashMapPut(hashMap,value,node);
+        } else{
+            offset *node=offset_node();
+            node->offset_sp=(*local_stack);
+            (*local_stack)+=4;
+            node->memory=true;
+            node->regs=-1;
+            node->regr=-1;
+            HashMapPut(hashMap,value,node);
+        }
+    }
+    return;
+}
+void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack){
+//    Value *contain=value1;
+//    while (HashMapContain(hashMap,contain)){
+//
+//    }
+    if(!HashMapContain(hashMap,value0)){
+        if(HashMapContain(hashMap,value1)){
+            offset *node= HashMapGet(hashMap,value1);
+            HashMapPut(hashMap,value0,node);
+        }
+    }
+    return;
 
+//    offset *node=offset_node();
+//    node->offset_sp=(*local_stack);
+//    (*local_stack)+=4;
+//    node->memory=true;
+//    node->regs=-1;
+//    node->regr=-1;
+//    HashMapPut(hashMap,value0,node);
+}
 
 int get_siezof_sp(HashMap*hashMap){
     return HashMapSize(hashMap);
@@ -70,6 +124,7 @@ int get_value_pdata_inspdata_false(Value*value){
 void arm_translate_ins(InstNode *ins){
     InstNode *head;
     HashMap *hashMap;
+    int stack_size=0;
     for(;ins!=NULL;ins=get_next_inst(ins)) {
         if(ins->inst->Opcode==FunBegin){
 //  这个逻辑有问题，现在的设计是再FunBegin里面执行栈帧开辟的sub指令，大小就是局部变量个数加上参数个数*4
@@ -79,7 +134,7 @@ void arm_translate_ins(InstNode *ins){
 //  所以说当前这个逻辑和FuncBegin函数的实现逻辑都得大改。
             regi=0;
             regs=0;
-            int stack_size=0;
+            stack_size=0;
             ins= arm_trans_FunBegin(ins,&stack_size);
             head=ins;
             int  param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
@@ -90,7 +145,7 @@ void arm_translate_ins(InstNode *ins){
 //            printf("hashsize=%d\n",hashsize);
             ins= get_next_inst(ins);
         }
-        ins=_arm_translate_ins(ins,head,hashMap);
+        ins=_arm_translate_ins(ins,head,hashMap,stack_size);
         if(ins->inst->Opcode==Return){
             offset_free(hashMap);
             hashMap=NULL;
@@ -3073,8 +3128,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     for (; ins != NULL && ins->inst->Opcode != Return; ins = get_next_inst(ins)) {
         Value *value0, *value1, *value2;
         switch (ins->inst->Opcode) {
-//            case Alloca:
-
+            case Alloca:
+                value0 = &ins->inst->user.value;
+//                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                FuncBegin_hashmap_alloca_add(hashMap,value0,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
             case Add:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
@@ -3192,23 +3251,25 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case bitcast:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_bitcast_add(hashMap,value0,value1,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 break;
             case GEP:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_bitcast_add(hashMap,value0,value1,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
                 break;
-            case MEMCPY:
-                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                break;
+//            case MEMCPY:
+//                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+//                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+//                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+//                break;
             case GLOBAL_VAR:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
@@ -3217,12 +3278,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
                 break;
-            case MEMSET:
-                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                break;
+//            case MEMSET:
+//                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+//                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+//                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+//                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+//                break;
             default:
                 break;
         }
@@ -3255,29 +3316,38 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     return ins;
 }
 
-InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap){
-
+InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size){
+//涉及到数组的时候，栈帧的大小并不等于HashMapSize(hashmap)*4
     if(!strcmp("main", user_get_operand_use(&head->inst->user,0)->Val->name)){
-        int x1= get_siezof_sp(hashMap);
+        int x1= stack_size;
 
-        printf("    add sp,sp,#%d\n",4*x1);
+        printf("    add sp,sp,#%d\n",x1);
 //        printf("    mov r11,sp\n");
-        printf("    pop {r11,lr}\n");
+//        printf("    pop {r11,lr}\n");
         printf("    bx lr\n");
         return ins;
     }
 
-    int x1= get_siezof_sp(hashMap);
-
-    printf("    add sp,sp,#%d\n",4*x1);
+    int x1= stack_size;
+    printf("    add sp,sp,#%d\n",x1);
     printf("    bx lr\n");
     return ins;
 }
 
-InstNode * arm_trans_Alloca(InstNode *ins){
+InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 //    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
+// 这个现在暂定是用来进行数组的初始话操作。bl memset来进行处理，就不需要调用多次store
     Value *value0=&ins->inst->user.value;
-    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    if(isLocalArrayIntType(value0->VTy)|| isLocalArrayFloatType(value0->VTy)|| isGlobalArrayIntType(value0->VTy)||isGlobalArrayFloatType(value0->VTy)){
+//        printf("%s\n",value0->alias->name);
+        int x=get_value_offset_sp(hashMap,value0);
+        printf("    add r0,sp,#%d\n",x);
+        printf("    mov r1,#0\n");
+        x= get_array_total_occupy(value0->alias,0);
+        printf("    mov r2,#%d\n",x);
+        printf("    bl memset\n");
+    }
     return ins;
 }
 
@@ -3300,7 +3370,16 @@ InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap*hashMap){
         for(int i=0;i<num;i++){
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r%d,[sp,#%d]\n",i,x);
+            if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+//                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
+                printf("    add r%d,sp,#%d\n",i,x);
+
+            } else{
+                printf("    ldr r%d,[sp,#%d]\n",i,x);
+            }
+
+//            直接在这个地方判断类型，然后加上add ri,sp,#%d好像就可以了
+
             tmp= get_next_inst(tmp);
         }
     }else{
@@ -3308,14 +3387,30 @@ InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap*hashMap){
         for(int i=1;i<4;++i){
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r%d,[sp,#%d]\n",i,x);
+            if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+//                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
+                printf("    add r%d,sp,#%d\n",i,x);
+
+
+            } else{
+                printf("    ldr r%d,[sp,#%d]\n",i,x);
+            }
             tmp= get_next_inst(tmp);
         }
         for (int i = 1; i <=num-4; ++i) {
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r0,[sp,#%d]\n",x);
-            printf("    str r0,[sp,#-%d]\n",i*4);
+            if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+//                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
+                printf("    add r0,sp,#%d\n",i,x);
+
+            } else{
+//                printf("    ldr r%d,[sp,#%d]\n",i,x);
+                printf("    ldr r0,[sp,#%d]\n",x);
+                printf("    str r0,[sp,#-%d]\n",i*4);
+            }
+//            printf("    ldr r0,[sp,#%d]\n",x);
+//            printf("    str r0,[sp,#-%d]\n",i*4);
             tmp= get_next_inst(tmp);
         }
         tmp=ins;
@@ -3842,16 +3937,19 @@ InstNode * arm_trans_zext(InstNode *ins){
 }
 
 InstNode * arm_trans_bitcast(InstNode *ins){
-//类型转换
-    printf("arm_trans_bitcast\n");
+//类型转换，已经通过映射解决掉了bitcast产生的 多余的mov和load指令的问题
+//    printf("arm_trans_bitcast\n");
     return ins;
 }
 
 InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
-//数组初始化
-    Value *array= user_get_operand_use(&ins->inst->user,0)->Val->alias;
+// 数组初始化
+// 获取栈帧首地址使用的是%i，不需要进到alias中
+    Value *array= user_get_operand_use(&ins->inst->user,0)->Val;
 
-    for(; get_next_inst(ins)->inst->Opcode == GEP; ins= get_next_inst(ins));
+    for(;get_next_inst(ins)->inst->Opcode == GEP;){
+        ins= get_next_inst(ins);
+    }
 //    这里得到最后一条GMP指令
     int off_sp= get_value_offset_sp(hashMap,array)+ins->inst->user.value.pdata->var_pdata.iVal*4;
 //    Value *value0=&ins->inst->user.value;
@@ -3864,6 +3962,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         printf("    mov r0,#%d\n",x);
 //        int off_sp= get_value_offset_sp(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
         printf("    store r0,[sp,#%d]\n",off_sp);
+        return next;
+    }
+    if(get_next_inst((ins))->inst->Opcode==Load){
+//        如果是load的话，我需要考虑将对应的值load到哪个寄存器
+        InstNode *next= get_next_inst(ins);
+        int x= get_value_offset_sp(hashMap,&next->inst->user.value);
+        printf("    load r1,[sp,#%d]\n",off_sp);
+        printf("    store r1,[sp,#%d]\n",x);
         return next;
     }
 
@@ -3887,8 +3993,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 
 InstNode * arm_trans_MEMCPY(InstNode *ins){
 
-//    涉及到数组的内容
-    printf("arm_trans_MEMCPY\n");
+//    涉及到数组的内容,后端不需要翻译这条ir和memcpy对应的ir
+//    printf("arm_trans_MEMCPY\n");
     return ins;
 }
 
@@ -3907,17 +4013,17 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 
 InstNode *arm_trans_Phi(InstNode *ins){
 
-    printf("arm_trans_Phi\n");
+//    printf("arm_trans_Phi\n");
     return ins;
 }
 
 InstNode *arm_trans_MEMSET(InstNode *ins){
 
-    printf("arm_trans_MEMSET\n");
+//    printf("arm_trans_MEMSET\n");
     return ins;
 }
 
-InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
+InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size){
 
     int x=ins->inst->Opcode;
     switch(x){
@@ -3932,13 +4038,15 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
         case Module:
             return arm_trans_Module(ins);
         case Call:
+//            在进行call之前是需要至少保存lr寄存器的，call调用结束之后还需要将lr出栈恢复
             return arm_trans_Call(ins);
 //        case FunBegin:
 //            return arm_trans_FunBegin(ins,hashMap);
         case Return:
-            return arm_trans_Return(ins,head,hashMap);
+            return arm_trans_Return(ins,head,hashMap,stack_size);
         case Store:
 //            return arm_trans_Store(ins,hashMap);
+
             printf("    store\n");
             return ins;
         case Load:
@@ -3946,7 +4054,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap){
             printf("    load\n");
             return ins;
         case Alloca:
-            return arm_trans_Alloca(ins);
+            return arm_trans_Alloca(ins,hashMap);
         case GIVE_PARAM:
             return arm_trans_GIVE_PARAM(ins,hashMap);
         case ALLBEGIN:
