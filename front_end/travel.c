@@ -4298,10 +4298,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                     BasicBlock *from = phiInfo->from;
                     Value *incomingVal = phiInfo->define;
-                    if(incomingVal == insValue){
-                        printf("WRONG !!!!!!!------------\n");
-                        fprintf(fptr, "WRONG !!!!!!!------------\n");
-                    }
                     if(i + 1 == size)      //最后一次
                     {
                         if(incomingVal != NULL && isImm(incomingVal)){

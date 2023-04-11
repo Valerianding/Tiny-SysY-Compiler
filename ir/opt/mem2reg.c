@@ -689,7 +689,6 @@ void calculateNonLocals(Function *currentFunction){
     HashSetDeinit(killed);
 }
 
-// TODO 解决自引用的问题
 void correctPhiNode(Function *currentFunction){
 
     bool changed = false;
@@ -797,7 +796,8 @@ void SSADeconstruction(Function *currentFunction){
                         // 分割当前关键边
                         BasicBlock *newBlock = bb_create();
                         InstNode *prevTail = prevBlock->tail_node;
-                        printf("currNode\n");
+                        InstNode *prevTailNext = get_next_inst(prevBlock->tail_node);
+
                         Instruction *newBlockLabel = ins_new_zero_operator(Label);
                         InstNode *newBlockLabelNode = new_inst_node(newBlockLabel);
 
@@ -807,6 +807,8 @@ void SSADeconstruction(Function *currentFunction){
 
                         ins_insert_after(prevTail, newBlockLabelNode);
                         ins_insert_after(newBlockLabelNode, newBlockBrNode);
+                        ins_insert_after(newBlockBrNode,prevTailNext);
+
                         // 维护这个基本块中的信息 TODO 没有维护支配信息等
                         bb_set_block(newBlock,newBlockLabelNode, newBlockBrNode);
                         newBlock->Parent = currentFunction;
@@ -849,7 +851,8 @@ void SSADeconstruction(Function *currentFunction){
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                     Value *src = phiInfo->define;
-                    if(src != NULL){
+                    // TODO 这里粗浅的解决了自引用的问题
+                    if(src != NULL && src != insValue){
                         BasicBlock *from = phiInfo->from;
                         insertCopies(from,insValue,src);
                     }

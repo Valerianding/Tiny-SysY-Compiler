@@ -141,17 +141,17 @@ int main(int argc, char* argv[]){
         temp = get_next_inst(temp);
     }
     block = temp->inst->Parent;
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         //outOfSSA(currentFunction);
-//        SSADeconstruction(currentFunction);
+        SSADeconstruction(currentFunction);
 //        printf("after out of SSA!\n");
 //        calculateLiveness(currentFunction);
 //        clear_visited_flag(currentFunction->entry);
 //        printLiveness(currentFunction->entry);
-//   }
+   }
 
     // 消除phi函数之后
-//    printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();
