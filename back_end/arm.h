@@ -80,7 +80,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Module(InstNode *ins);
 InstNode * arm_trans_Call(InstNode *ins);
-InstNode * arm_trans_FunBegin(InstNode *ins,HashMap *hashMap);
+InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap);
 
 //load和store指令已经被删除掉
@@ -88,9 +88,9 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap);
 //InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
 
 InstNode * arm_trans_Alloca(InstNode *ins);
-InstNode * arm_trans_GIVE_PARAM(InstNode *ins);
+InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_ALLBEGIN(InstNode *ins);
- InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_br_i1(InstNode *ins);
 InstNode * arm_trans_br(InstNode *ins);
 InstNode * arm_trans_br_i1_true(InstNode *ins);
@@ -106,5 +106,5 @@ InstNode * arm_trans_zeroinitializer(InstNode *ins);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode *arm_trans_Phi(InstNode *ins);
 InstNode *arm_trans_MEMSET(InstNode *ins);
-
+void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *offset_sp);
 #endif //C22V1_ARM_H
