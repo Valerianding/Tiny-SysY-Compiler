@@ -99,7 +99,6 @@ void calculateLiveness(Function *currentFunction){
             if(exitCurr->inst->Opcode == Return || exitCurr->inst->Opcode == Store || exitCurr->inst->Opcode == GIVE_PARAM){
                 def = NULL;
             }else if(exitCurr->inst->Opcode == CopyOperation){
-
                 // TODO 存在问题
                 Value *insValue = ins_get_value(exitCurr->inst);
                 def = insValue->alias;
@@ -201,13 +200,13 @@ void calculateLiveness(Function *currentFunction){
                     rhs = ins_get_rhs(currNode->inst);
                 }
 
-
                 // 不是立即数且不是数组的话我们可以加入分析
                 if(def != NULL && !isImm(def)){
                     if(HashSetFind(tempSet,def)){
                         HashSetRemove(tempSet,def);
                     }
                 }
+
                 if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
                     if(!HashSetFind(tempSet,lhs)){
                         HashSetAdd(tempSet,lhs);

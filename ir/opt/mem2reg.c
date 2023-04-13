@@ -265,7 +265,7 @@ void insertCopies(BasicBlock *block,Value *dest,Value *src){
     //应该不会超过10位数
     // 针对这个情况好像没什么用
     insValue->name = (char*)malloc(sizeof(char) * 10);
-    strcpy(insValue->name,"%temp");
+    strcpy(insValue->name,"%copy");
     ins_insert_before(copyIns,tailIns);
 
     // 由于是CopyOperation 所以phi的type我们已经是设置好了的
@@ -779,6 +779,8 @@ void SSADeconstruction(Function *currentFunction){
 
     clear_visited_flag(entry);
     InstNode *currNode = entry->head_node;
+
+    // split the edge
     while(currNode != end->tail_node){
         // 每个基本块只遍历一次
         BasicBlock *block = currNode->inst->Parent;
@@ -791,8 +793,8 @@ void SSADeconstruction(Function *currentFunction){
                 HashSetFirst(block->preBlocks);
                 for(BasicBlock *prevBlock = HashSetNext(block->preBlocks);
                      prevBlock != NULL; prevBlock = HashSetNext(block->preBlocks)) {
-                    printf("currNode\n");
                     if (prevBlock->true_block && prevBlock->false_block) {// 是关键边
+                        printf("critical edge splitting!!!!!!!!!\n");
                         // 分割当前关键边
                         BasicBlock *newBlock = bb_create();
                         InstNode *prevTail = prevBlock->tail_node;
@@ -864,6 +866,9 @@ void SSADeconstruction(Function *currentFunction){
         }
         currNode = get_next_inst(currNode);
     }
+
+
+    sequentialCopy(currentFunction);
 }
 
 void prunePhi(Function *currentFunction){
@@ -947,5 +952,142 @@ void prunePhi(Function *currentFunction){
         }else{
             currNode = get_next_inst(currNode);
         }
+    }
+}
+
+void sequentialCopy(Function *currentFunction){
+    //针对的是每一个BasicBlock上去做的
+    BasicBlock *entry = currentFunction->entry;
+    //
+    clear_visited_flag(entry);
+
+    Queue *workList = QueueInit();
+    QueuePush(workList,entry);
+    while(QueueSize(workList) != 0){
+        BasicBlock *block = NULL;
+        QueueFront(workList,(void *)&block);
+        QueuePop(workList);
+        assert(block != NULL);
+        if(block->visited == false){
+            block->visited = true;
+            printf("current block is %d\n",block->id);
+            HashSet *pCopy = HashSetInit(); // copyPair *
+            Queue *seq = QueueInit();
+
+            //对于每一个block我们去收集一下
+            InstNode *copyIns = block->head_node;
+            while(copyIns != block->tail_node){
+                if(copyIns->inst->Opcode == CopyOperation){
+                    Value *src = ins_get_lhs(copyIns->inst);
+                    Value *dest = ins_get_value(copyIns->inst)->alias;
+                    CopyPair *copyPair = createCopyPair(src,dest);
+                    HashSetAdd(pCopy,copyPair);
+                    //找到src的use_list
+                    use_remove_from_list(copyIns->inst->user.use_list);
+                    // 删除parallelCopy语句 再seq的时候我们再进行插入
+                    InstNode *nextIns = get_next_inst(copyIns);
+                    delete_inst(copyIns);
+                    copyIns = nextIns;
+                }else{
+                    copyIns = get_next_inst(copyIns);
+                }
+            }
+
+            printf("out !\n");
+            printf("pCopy size : %d\n", HashSetSize(pCopy));
+            HashSetFirst(pCopy);
+            for(CopyPair *copyPair = HashSetNext(pCopy); copyPair != NULL; copyPair = HashSetNext(pCopy)){
+                printf("%s <- %s ",copyPair->dest->name,copyPair->src->name);
+            }
+            printf("\n");
+
+            while(HashSetSize(pCopy) != 0){
+                bool exist = true;
+                while(exist && HashSetSize(pCopy) != 0) {
+                    printf("pCopy size : %d\n", HashSetSize(pCopy));
+                    HashSet *tempSet = HashSetInit();
+                    HashSetCopyPair(tempSet,pCopy);
+                    exist = false;
+                    printf("contain : ");
+                    HashSetFirst(pCopy);
+                    for (CopyPair *copyPair = HashSetNext(pCopy); copyPair != NULL; copyPair = HashSetNext(pCopy)) {
+                        printf("%s <- %s",copyPair->dest->name,copyPair->src->name);
+
+                        Value *dest = copyPair->dest;
+                        bool usedByOther = false;
+                        HashSetFirst(tempSet);
+                        for(CopyPair *otherPair = HashSetNext(tempSet); otherPair != NULL; otherPair = HashSetNext(tempSet)) {
+                            if(otherPair->src == dest){
+                                usedByOther = true;
+                            }
+                        }
+
+                        if (usedByOther == false) {
+                            printf("pushed a copy %s <- %s!\n", copyPair->dest->name, copyPair->src->name);
+                            bool res = HashSetRemove(pCopy, copyPair);
+                            QueuePush(seq, copyPair);
+                            assert(res == true);
+                            exist = true;
+                        }
+                    }
+                    printf("\n");
+                    HashSetDeinit(tempSet);
+                }
+                printf("out !\n");
+
+                HashSetFirst(pCopy);
+                CopyPair *copyPair = HashSetNext(pCopy);
+
+                if(copyPair != NULL) {
+                    printf("change %s <- %s\n", copyPair->dest->name,copyPair->src->name);
+                    // used by other
+                    // createnewValue;
+                    Value *src = copyPair->src;
+                    Value *tempValue = (Value*)malloc(sizeof(Value));
+                    value_init(tempValue);
+                    tempValue->name = (char*)malloc(sizeof(char) * 4);
+                    strcpy(tempValue->name,"%temp");
+                    // 自己为自己的alias
+                    tempValue->alias = tempValue;
+
+                    // create a new temp
+                    CopyPair *tempPair = createCopyPair(src,tempValue);
+                    QueuePush(seq,tempPair);
+                    //replace pCopy b <- a into b <- a'src = tempValue;
+                    copyPair->src = tempValue;
+                }
+            }
+            CopyPair *seqCopy = NULL;
+            while(QueueSize(seq) != 0) {
+                // 从seq里面取出CopyPair进行还原
+                // 从头去取
+                QueueFront(seq,(void*)&seqCopy);
+                QueuePop(seq);
+                assert(seqCopy != NULL);
+                insertCopies(block,seqCopy->dest,seqCopy->src);
+            }
+            //销毁内存
+            HashSetDeinit(pCopy);
+            QueueDeinit(seq);
+
+            if(block->true_block && block->true_block->visited == false) QueuePush(workList,block->true_block);
+            if(block->false_block && block->false_block->visited == false) QueuePush(workList,block->false_block);
+        }
+    }
+    printf("after all!\n");
+}
+
+CopyPair *createCopyPair(Value *src, Value *dest){
+    CopyPair *copyPair = (CopyPair*)malloc(sizeof(CopyPair));
+    memset(copyPair,0,sizeof(CopyPair));
+    copyPair->src = src;
+    copyPair->dest = dest;
+    return copyPair;
+}
+
+void HashSetCopyPair(HashSet *dest, HashSet *src){
+    HashSetFirst(src);
+    for(CopyPair *copyPair = HashSetNext(src); copyPair != NULL; copyPair = HashSetNext(src)){
+        HashSetAdd(dest,copyPair);
     }
 }

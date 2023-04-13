@@ -1,7 +1,7 @@
 int main(){
-    int a = 10;
-    int b = 20;
-    int c = 10;
+    int a = 5;
+    int b = 10;
+    int c = 15;
     while(c > 5){
         int temp = a;
         a = b;

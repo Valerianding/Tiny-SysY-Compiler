@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-//  printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 //  fix_array(instruction_list);
 //  print_array(instruction_list);`
 //  showAst(TRoot,0);
@@ -140,14 +140,14 @@ int main(int argc, char* argv[]){
     while(temp->inst->Parent->Parent == NULL){
         temp = get_next_inst(temp);
     }
+
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        //outOfSSA(currentFunction);
         SSADeconstruction(currentFunction);
-//        printf("after out of SSA!\n");
-//        calculateLiveness(currentFunction);
-//        clear_visited_flag(currentFunction->entry);
-//        printLiveness(currentFunction->entry);
+        clear_visited_flag(currentFunction->entry);
+        printf("after out of SSA!\n");
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction->entry);
    }
 
     // 消除phi函数之后
