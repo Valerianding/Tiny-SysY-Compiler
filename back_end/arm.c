@@ -17,6 +17,20 @@ bool imm_is_valid(unsigned int imm){
     }
     return false;
 }
+FILE *open_file(char argv[]){
+    int len= strlen(argv);
+    char filepath[50];
+    char *prefix= strncpy(malloc(len-2),argv,len-3);
+    prefix[len-3]='\0';
+    snprintf(filepath, sizeof(filepath),"../test/%s.s",prefix);
+    free(prefix);
+    FILE *myopen= fopen(filepath,"w");
+//    fprintf(myopen,"haha");
+    if(myopen==NULL){
+        perror("open file error");
+    }
+    return myopen;
+}
 
 int get_value_offset_sp(HashMap *hashMap,Value*value){
     offset *node= HashMapGet(hashMap, value);
@@ -154,7 +168,55 @@ void arm_translate_ins(InstNode *ins){
 
     return;
 }
+InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
+//    默认左值的type默认和value1的type是一样的,需要考虑value0和value1是否在寄存器或者说是内存里面，这个可以后面在完善的，现在先把样例过了
+    Value *value0=ins->inst->user.value.alias;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    int x0= get_value_offset_sp(hashMap,value0);
+    int x1= get_value_offset_sp(hashMap,value1);
+    if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
+        int x=value1->pdata->var_pdata.iVal;
+        printf("    mov r0,#%d\n",x);
+        printf("    store r0,[sp,#%d]\n",x0);
+        return ins;
+    }
+    if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
+        int x=value1->pdata->var_pdata.iVal;
+        char arr1[12]="0x";
+        sprintf(arr1+2,"%0x",x);
+        printf("    ldr r1,=%s\n",arr1);
+        printf("    store r0,[sp,#%d]\n",x0);
+        return ins;
+    }
+    if(isImmFloatType(value1->VTy)){
+        return ins;
+        ;
+    }
+    if(isLocalVarIntType(value1->VTy)){
+        offset *node= HashMapGet(hashMap,value1);
+        if(node->memory){
+            printf("    load r0,[sp,#%d]\n",x1);
+            printf("    store r0,[sp,#%d]\n",x0);
+        } else{
+            ;
+        }
+        return ins;
+    }
+    if(isLocalVarFloatType(value1->VTy)){
+        printf("    fload s0,[sp,#%d]\n",x1);
+        printf("    fstr s0,[sp,#%d]\n",x0);
+        return ins;
+    }
+//    两个unknown的情况
+    offset *node= HashMapGet(hashMap,value1);
+    if(node->memory){
+        printf("    load r0,[sp,#%d]\n",x1);
+        printf("    store r0,[sp,#%d]\n",x0);
+    }
 
+//    printf("CopyOperation\n");
+    return ins;
+}
 InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
     Value *value0=&ins->inst->user.value;
@@ -3090,8 +3152,204 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
     return  ins;
 }
 
-InstNode * arm_trans_Module(InstNode *ins){
-    printf("arm_trans_Module\n");
+InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
+//    这个比较简单，只会存在两种情况，就是int=int1 % int2和float=int1 % int2,右边出现非int都是错误的
+// 1 ****************************************
+// 将int1放在r0，将int2放在r1，然后执行bl	__aeabi_idivmod(PLT)
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isImmIntType(value1->VTy)&& isImmIntType(value2->VTy)){
+        int x1=value1->pdata->var_pdata.iVal;
+        int x2=value2->pdata->var_pdata.iVal;
+        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+            printf("    mov r0,#%d\n",x1);
+            printf("    mov r1,#%d\n",x2);
+        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",x1);
+            printf("    ldr r0,=%s\n",arr1);
+            printf("    mov r1,#%d\n",x2);
+        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+            printf("    mov r0,#%d\n",x1);
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",x2);
+            printf("    ldr r1,=%s\n",arr2);
+        }else{
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",x1);
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",x2);
+            printf("    ldr r0,=%s\n",arr1);
+            printf("    ldr r1,=%s\n",arr2);
+        }
+        printf("    bl __aeabi_idivmod(PLT)\n");
+        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    str r1,[sp,#%d]\n",x);
+            } else{
+                int x=node->regr;
+                printf("    mov r%d,r1\n",x);
+            }
+        } else{
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    fcvt.s32.f32 s0,r1\n");
+                printf("    fstr s0,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fcvt.s32.f32 s%d,r1\n",x);
+            }
+        }
+
+    }
+    if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
+        int x1=value1->pdata->var_pdata.iVal;
+        if(imm_is_valid(x1)){
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x);
+                printf("    mov r0,#%d\n",x1);
+            }else{
+                int x=node->regr;
+                printf("    mov r0,#%d\n",x1);
+                printf("    mov r1,r%d\n",x);
+            }
+        }else{
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",x1);
+            printf("    ldr r0,=%s\n",arr1);
+            offset *node= HashMapGet(hashMap,value2);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value2);
+                printf("    load r1,[sp,#%d]\n",x);
+            }else{
+                int x=node->regr;
+                printf("    mov r1,r%d\n",x);
+            }
+        }
+        printf("    bl __aeabi_idivmod(PLT)\n");
+        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    str r1,[sp,#%d]\n",x);
+            } else{
+                int x=node->regr;
+                printf("    mov r%d,r1\n",x);
+            }
+        } else{
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    fcvt.s32.f32 s0,r1\n");
+                printf("    fstr s0,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fcvt.s32.f32 s%d,r1\n",x);
+            }
+        }
+    }
+    if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
+        int x2=value2->pdata->var_pdata.iVal;
+        if((imm_is_valid(x2))){
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    load r0,[sp,#%d]\n",x);
+                printf("    mov r1,#%d\n",x2);
+            }else{
+                int x=node->regr;
+                printf("    mov r0,r%d\n",x);
+                printf("    mov r1,#%d\n",x2);
+            }
+        }else{
+            char arr2[12]="0x";
+            sprintf(arr2+2,"%0x",x2);
+            printf("    ldr r1,=%s\n",arr2);
+            offset *node= HashMapGet(hashMap,value1);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("    load r0,[sp,#%d]\n",x);
+            }else{
+                int x=node->regr;
+                printf("    mov r0,r%d\n",x);
+            }
+        }
+        printf("    bl __aeabi_idivmod(PLT)\n");
+        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    str r1,[sp,#%d]\n",x);
+            } else{
+                int x=node->regr;
+                printf("    mov r%d,r1\n",x);
+            }
+        } else{
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    fcvt.s32.f32 s0,r1\n");
+                printf("    fstr s0,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fcvt.s32.f32 s%d,r1\n",x);
+            }
+        }
+    }
+    if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
+        offset *node1= HashMapGet(hashMap,value1);
+        offset *node2= HashMapGet(hashMap,value2);
+        if(node1->memory&&node2->memory){
+            int x1= get_value_offset_sp(hashMap,value1);
+            int x2= get_value_offset_sp(hashMap,value2);
+            printf("    load r0,[sp,#%d]\n",x1);
+            printf("    load r1,[sp,#%d]\n",x2);
+        }else if(node1->memory&&(!node2->memory)){
+            int x1= get_value_offset_sp(hashMap,value1);
+            printf("    load r0,[sp,#%d]\n",x1);
+            int x2=node2->regr;
+            printf("    mov r1,r%d\n",x2);
+        }else if((!node1->memory)&&node2->memory){
+            int x2= get_value_offset_sp(hashMap,value2);
+            printf("    load r1,[sp,#%d]\n",x2);
+            int x1=node1->regr;
+            printf("    mov r0,r%d\n",x1);
+        }else{
+            int x1=node1->regr;
+            int x2=node2->regr;
+            printf("    mov r0,r%d",x1);
+            printf("    mov r1,r%d\n",x2);
+        }
+        printf("    bl __aeabi_idivmod(PLT)\n");
+        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    str r1,[sp,#%d]\n",x);
+            } else{
+                int x=node->regr;
+                printf("    mov r%d,r1\n",x);
+            }
+        } else{
+            offset *node= HashMapGet(hashMap,value0);
+            if(node->memory){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("    fcvt.s32.f32 s0,r1\n");
+                printf("    fstr s0,[sp,#%d]\n",x);
+            }else{
+                int x=node->regs;
+                printf("    fcvt.s32.f32 s%d,r1\n",x);
+            }
+        }
+    }
+
+//    printf("arm_trans_Module\n");
     return ins;
 }
 
@@ -3159,6 +3417,14 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
                 break;
             case Div:
+                value0 = &ins->inst->user.value;
+                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                break;
+            case Module:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
@@ -3284,6 +3550,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
 //                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
 //                break;
+            case CopyOperation:
+                value0=ins->inst->user.value.alias;
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                break;
             default:
                 break;
         }
@@ -4036,7 +4308,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
         case Div:
             return arm_trans_Div(ins,hashMap);
         case Module:
-            return arm_trans_Module(ins);
+            return arm_trans_Module(ins,hashMap);
         case Call:
 //            在进行call之前是需要至少保存lr寄存器的，call调用结束之后还需要将lr出栈恢复
             return arm_trans_Call(ins);
@@ -4096,6 +4368,8 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_Phi(ins);
         case MEMSET:
             return arm_trans_MEMSET(ins);
+        case CopyOperation:
+            return arm_trans_CopyOperation(ins,hashMap);
         default:
             return ins;
     }

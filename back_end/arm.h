@@ -20,6 +20,8 @@
  */
 bool imm_is_valid(unsigned value);
 
+FILE *open_file(char argv[]);
+
 /**
  * @details 获取哈希表的大小
  * @param hashMap
@@ -79,7 +81,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);
-InstNode * arm_trans_Module(InstNode *ins);
+InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Call(InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
@@ -92,6 +94,7 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_ALLBEGIN(InstNode *ins);
 InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap);
 InstNode * arm_trans_br_i1(InstNode *ins);
 InstNode * arm_trans_br(InstNode *ins);
 InstNode * arm_trans_br_i1_true(InstNode *ins);
