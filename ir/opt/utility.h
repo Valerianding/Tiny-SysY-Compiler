@@ -8,4 +8,5 @@
 bool isValidOperator(InstNode *insNode);
 void clear_visited_flag(BasicBlock *block);
 void correctType(Function *currentFunction);
+bool isSimpleCalculation(InstNode *inst);
 #endif //C22V1_UTILITY_H

@@ -54,3 +54,8 @@ void correctType(Function *currentFunction){
         headNode = get_next_inst(headNode);
     }
 }
+
+
+bool isSimpleCalculation(InstNode *inst){
+    Instruction *ins = inst->inst;
+}
