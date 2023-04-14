@@ -101,7 +101,11 @@ void create_edge(int firstNode,int secondNode);
 void create_variable_list();
 void print_RIG();
 void spill_variable();
-
-void reg_control_block();
+void printf_llvm_ir_withreg(struct _InstNode *instruction_node);
+void reg_control(struct _InstNode *instruction_node,InstNode *temp);
+void reg_control_block(BasicBlock *cur);
+void reg_inmem_one_ins(struct _InstNode *temp);
+int use_type(struct _InstNode *temp);
+int is_Immediate(int type_id);
 void reg_init();
 void end_reg();//未实现
