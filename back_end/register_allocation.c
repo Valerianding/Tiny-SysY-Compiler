@@ -1148,7 +1148,7 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 //fpintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
             case Phi:{
-                Value *insValue = ins_get_value(instruction);
+                Value *insValue = ins_get_dest(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
                 printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
@@ -1208,7 +1208,7 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
         }
 
         Value *v,*vl,*vr;
-        v= ins_get_value(instruction_node->inst);
+        v= ins_get_dest(instruction_node->inst);
         vl= ins_get_lhs(instruction_node->inst);
         vr= ins_get_rhs(instruction_node->inst);
         if(v!=NULL)

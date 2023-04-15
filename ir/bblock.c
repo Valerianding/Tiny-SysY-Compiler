@@ -1,5 +1,6 @@
 #include "bblock.h"
 #include "stdio.h"
+#include <time.h>
 BasicBlock *bb_create(){
     BasicBlock *this = (BasicBlock*)malloc(sizeof(BasicBlock));
     memset(this,0,sizeof(BasicBlock));
@@ -102,7 +103,7 @@ void print_one_ins_info(InstNode *insNode){
             printf(" user.value.name : %s", insNode->inst->user.value.name);
         }
         printf("ins type : ");
-        Value *insValue = ins_get_value(insNode->inst);
+        Value *insValue = ins_get_dest(insNode->inst);
         typePrinter(insValue->VTy);
     }else if(insNode->inst->Opcode == Load){
         if(insNode->inst->user.value.name != NULL){
@@ -201,6 +202,8 @@ void delete_inst(InstNode *this){
 void print_block_info(BasicBlock *this){
     InstNode *currNode = this->head_node;
     while(currNode != NULL) {
+        printf("currNode id is %d\n",currNode->inst->i);
+        sleep(1);
         BasicBlock *block = currNode->inst->Parent;
         if(block->visited == false){
             block->visited = true;

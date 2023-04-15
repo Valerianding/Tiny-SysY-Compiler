@@ -100,10 +100,10 @@ void calculateLiveness(Function *currentFunction){
                 def = NULL;
             }else if(exitCurr->inst->Opcode == CopyOperation){
                 // TODO 存在问题
-                Value *insValue = ins_get_value(exitCurr->inst);
+                Value *insValue = ins_get_dest(exitCurr->inst);
                 def = insValue->alias;
             }else{
-                def = ins_get_value(exitCurr->inst);
+                def = ins_get_dest(exitCurr->inst);
             }
 
             if(exitCurr->inst->user.value.NumUserOperands == (unsigned int)1){
@@ -185,10 +185,10 @@ void calculateLiveness(Function *currentFunction){
                 if(currNode->inst->Opcode == Return || currNode->inst->Opcode == Store || currNode->inst->Opcode == GIVE_PARAM){
                     def = NULL;
                 }else if(currNode->inst->Opcode == CopyOperation){
-                    Value *insValue = ins_get_value(currNode->inst);
+                    Value *insValue = ins_get_dest(currNode->inst);
                     def = insValue->alias;
                 }else{
-                    def = ins_get_value(currNode->inst);
+                    def = ins_get_dest(currNode->inst);
                 }
 
                 //现在是否只有可能是

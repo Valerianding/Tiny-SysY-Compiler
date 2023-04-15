@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "utility.h"
-#include "./back_end/arm.h"
+#include "arm.h"
 #include "value.h"
 #include "instruction.h"
 #include "symtab.h"
@@ -9,9 +9,10 @@
 #include "bb_divide.h"
 #include "dominance.h"
 #include "mem2reg.h"
-#include "front_end/travel.h"
-#include "back_end/register_allocation.h"
+#include "travel.h"
+#include "register_allocation.h"
 #include "livenessanalysis.h"
+#include "PassManager.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
@@ -144,14 +145,14 @@ int main(int argc, char* argv[]){
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
-        clear_visited_flag(currentFunction->entry);
-        printf("after out of SSA!\n");
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction->entry);
+//        clear_visited_flag(currentFunction->entry);
+//        printf("after out of SSA!\n");
+//        calculateLiveness(currentFunction);
+//        printLiveness(currentFunction->entry);
    }
 
     // 消除phi函数之后
-    printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();
