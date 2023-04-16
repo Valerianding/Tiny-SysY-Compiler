@@ -7,7 +7,7 @@ gcc -no-pie run_test_src/judge_out.c -o judge
 #生成静态链接库文件
 gcc -no-pie -c run_test_src/sylib.c
 # ar rcs sylib.a sylib.o
-ar cry sylib.a sylib.o
+ar crv sylib.a sylib.o
 cp sylib.a test_cases
 cp sylib.o test_cases
 rm -rf sylib.a
