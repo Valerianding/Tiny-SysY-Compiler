@@ -873,7 +873,8 @@ void SSADeconstruction(Function *currentFunction){
         currNode = get_next_inst(currNode);
     }
 
-    print_block_info(entry);
+    renameVariabels(currentFunction);
+
     sequentialCopy(currentFunction);
 }
 

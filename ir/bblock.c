@@ -203,7 +203,6 @@ void print_block_info(BasicBlock *this){
     InstNode *currNode = this->head_node;
     while(currNode != NULL) {
         printf("currNode id is %d\n",currNode->inst->i);
-        sleep(1);
         BasicBlock *block = currNode->inst->Parent;
         if(block->visited == false){
             block->visited = true;

@@ -152,7 +152,7 @@ int main(int argc, char* argv[]){
    }
 
     // 消除phi函数之后
-    //printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();
