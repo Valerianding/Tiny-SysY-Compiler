@@ -4379,6 +4379,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     fprintf(fptr,"declare dso_local i32 @putfloat(...) #1\n");
     fprintf(fptr,"declare dso_local i32 @putfarray(...) #1\n");
     fprintf(fptr,"declare dso_local i32 @putf(...) #1\n");
+    fclose(fptr);
 }
 
 
