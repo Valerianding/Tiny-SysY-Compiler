@@ -3574,6 +3574,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         }
 
     }
+    if(ins->inst->Opcode==Return){
+        Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+        FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+    }
 //    *stakc_size=mystack+param_num*4;
 //    int x= HashMapSize(hashMap)*4;
 //    printf("FuncBeginhashmapsize=%d\n",x+param_num*4);
@@ -3614,6 +3618,34 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 //        printf("    bx lr\n");
 //        return ins;
 //    }
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    if(isImmIntType(value1->VTy)){
+        if(imm_is_valid(value1->pdata->var_pdata.iVal)){
+            printf("    mov r0,#%d\n",value1->pdata->var_pdata.iVal);
+        } else{
+            int x=value1->pdata->var_pdata.iVal;
+            char arr[12]="0x";
+            sprintf(arr+2,"%0x",x);
+            printf("    ldr r0,=%s\n",arr);
+        }
+    } else if(isImmFloatType(value1->VTy)){
+        ;
+    } else if(isLocalVarIntType(value1->VTy)){
+        offset *node= HashMapGet(hashMap,value1);
+        if(node->memory){
+            int off= get_value_offset_sp(hashMap,value1);
+            printf("    ldr r0,[sp,#%d]\n",off);
+        } else if(node->regr!=-1){
+//            in ri
+            int regx=node->regr;
+            printf("    mov r0,r%d\n",regx);
+        } else if(node->regs!=-1){
+            ;
+        }
+    } else if(isLocalVarFloatType(value1->VTy)){
+        ;
+    }
+
 
     int x1= stack_size;
     printf("    add sp,sp,#%d\n",x1);
