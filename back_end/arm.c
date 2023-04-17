@@ -3377,7 +3377,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         }
     }
     if(func_call_func>0){
-        printf("    stmfd sp!,{r11,sp}\n");
+        printf("    stmfd sp!,{r11,lr}\n");
     }
 
     HashMap *hashMap=HashMapInit();
