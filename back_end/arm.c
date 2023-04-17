@@ -3354,9 +3354,33 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
     return ins;
 }
 
-InstNode * arm_trans_Call(InstNode *ins){
+InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    printf("CALL\n");
     printf("    bl %s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+    //    还要将r0转移到左值
+    if(isLocalVarIntType(value0->VTy)){
+        offset *node= HashMapGet(hashMap,value0);
+        if(node->memory){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("    str r0,[sp,#%d]\n",x);
+        } else {
+            int x=node->regr;
+            printf("    mov r0,r%d\n",x);
+        }
+    } else if(isLocalVarFloatType(value0->VTy)){
+        offset *node= HashMapGet(hashMap,value0);
+        if(node->memory){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("    vcvt.f32.s32 s0,r0\n");
+            printf("    vstr s0,[sp,#%d]\n",x);
+        } else {
+            int x=node->regs;
+            printf("    vcvt.f32.s32 s0,r0\n");
+            printf("    vmov s%d,s0\n",x);
+        }
+    }
     return ins;
 }
 
@@ -4361,7 +4385,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_Module(ins,hashMap);
         case Call:
 //            在进行call之前是需要至少保存lr寄存器的，call调用结束之后还需要将lr出栈恢复
-            return arm_trans_Call(ins);
+            return arm_trans_Call(ins,hashMap);
 //        case FunBegin:
 //            return arm_trans_FunBegin(ins,hashMap);
         case Return:
