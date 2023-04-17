@@ -1212,7 +1212,7 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
         instruction= ins_new_unary_operator(br_i1_false,NULL);
     else
         instruction= ins_new_unary_operator(Label,NULL);
-    Value *T1= ins_get_value(instruction);
+    Value *T1= ins_get_dest(instruction);
     if(true_goto_location>0)
         T1->pdata->instruction_pdata.true_goto_location=true_goto_location;
 
@@ -1229,7 +1229,7 @@ InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
     Instruction *instruction=NULL;
     if(type==br_i1)
         instruction= ins_new_unary_operator(br_i1,v_real);
-    Value *f1= ins_get_value(instruction);
+    Value *f1= ins_get_dest(instruction);
     f1->pdata->instruction_pdata.false_goto_location=false_goto_location;
     f1->pdata->instruction_pdata.true_goto_location=-2;
 
@@ -1912,7 +1912,7 @@ void create_while_stmt(past root,Value* v_return)
 
     //加进stack，continue用
     Instruction *ins_tmp= ins_new_unary_operator(tmp,NULL);
-    Value *t_in= ins_get_value(ins_tmp);
+    Value *t_in= ins_get_dest(ins_tmp);
     t_in->pdata->instruction_pdata.true_goto_location=t_index;
     insnode_push(&S_continue, new_inst_node(ins_tmp));
 
@@ -2063,11 +2063,11 @@ void create_while_stmt(past root,Value* v_return)
 
     //while结束，加进stack,break用
     Instruction *ins_break_tmp= ins_new_unary_operator(tmp,NULL);
-    Value *t_out= ins_get_value(ins_break_tmp);
+    Value *t_out= ins_get_dest(ins_break_tmp);
     t_out->pdata->instruction_pdata.true_goto_location=t_index-1;
 
     Instruction *ins_1_tmp= ins_new_unary_operator(tmp,NULL);
-    Value *t_1= ins_get_value(ins_1_tmp);
+    Value *t_1= ins_get_dest(ins_1_tmp);
     t_1->pdata->instruction_pdata.true_goto_location=-1;
 
     insnode_push(&S_continue, new_inst_node(ins_1_tmp));
@@ -4288,7 +4288,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
             case Phi:{
-                Value *insValue = ins_get_value(instruction);
+                Value *insValue = ins_get_dest(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
                 printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
@@ -4348,7 +4348,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
         }
 
         Value *v,*vl,*vr;
-        v= ins_get_value(instruction_node->inst);
+        v= ins_get_dest(instruction_node->inst);
         vl= ins_get_lhs(instruction_node->inst);
         vr= ins_get_rhs(instruction_node->inst);
         if(v!=NULL)
@@ -4379,6 +4379,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     fprintf(fptr,"declare dso_local i32 @putfloat(...) #1\n");
     fprintf(fptr,"declare dso_local i32 @putfarray(...) #1\n");
     fprintf(fptr,"declare dso_local i32 @putf(...) #1\n");
+    fclose(fptr);
 }
 
 

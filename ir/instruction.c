@@ -73,7 +73,7 @@ void clear_tmp(char* tmp){
 }
 
 //获取instruction.user.value
-Value *ins_get_value(Instruction *ins){
+Value *ins_get_dest(Instruction *ins){
     return &ins->user.value;
 }
 

@@ -7,7 +7,7 @@ gcc -no-pie run_test_src/judge_out.c -o judge
 #生成静态链接库文件
 gcc -no-pie -c run_test_src/sylib.c
 # ar rcs sylib.a sylib.o
-ar cry sylib.a sylib.o
+ar crv sylib.a sylib.o
 cp sylib.a test_cases
 cp sylib.o test_cases
 rm -rf sylib.a
@@ -44,18 +44,6 @@ then
         out_value=1
         filename=${file%.*}
         echo ${filename}
-        gcc -no-pie $filename$file_c -o test
-        FILE_IN=$filename$file_in
-        if [ ! -f "$FILE_IN" ]
-        then
-        gcc -no-pie $filename$file_c -o test
-        ./test
-        else
-        gcc -no-pie -o test $filename$file_c -L./ sylib.a
-        ./test < $filename$file_in
-        fi
-        exp=$?
-        rm -rf test
         cd ../
         # ./compiler >a.log
         ./cmake-build-debug/compiler test_cases/$filename$file_c
@@ -106,34 +94,27 @@ then
         gcc -no-pie $filename$file_obj sylib.o -o test
         FILE_OUT=$filename$file_out
         FILE_TEMP_OUT=$filename$file_temp_out
-        if [ ! -f "$FILE_IN" ]
-        then
-        ./test
-        else
-        ./test < $filename$file_in
-        fi
-        act=$?
-
         if [ -f "$FILE_OUT" ]
         then
             if [ ! -f "$FILE_IN" ]
             then
-            ./test -al | tee $FILE_TEMP_OUT
-            echo $? -al | tee $FILE_TEMP_OUT
+            ./test > $FILE_TEMP_OUT
+            act=$?
+            echo $act >> $FILE_TEMP_OUT
             else
-            ./test < $filename$file_in -al | tee $FILE_TEMP_OUT
-            echo $? -al | tee $FILE_TEMP_OUT
+            ./test < $filename$file_in > $FILE_TEMP_OUT
+            act=$?
+            echo $act >> $FILE_TEMP_OUT
             fi
         cd ../
         ./judge test_cases/$FILE_OUT  test_cases/$FILE_TEMP_OUT
         out_value=$?
         cd test_cases
-        rm -rf $FILE_TEMP_OUT
+        # rm -rf $FILE_TEMP_OUT
         rm -rf test
         rm -rf $filename$file_ll
         rm -rf $filename$file_as
         rm -rf $filename$file_obj
-        continue
         fi
 
         if [ $out_value -ne $ljw ]
@@ -150,6 +131,8 @@ then
         rm -rf $filename$file_as
         rm -rf $filename$file_obj
         continue
+        else
+        rm -rf $FILE_TEMP_OUT
         fi
 
         rm -rf test
@@ -158,17 +141,6 @@ then
         rm -rf $filename$file_obj
         # echo $exp_str$exp
         # echo $act_str$act
-
-        if [ $exp -ne $act ]
-        then
-        let le_count+=1
-        file_err[le_count]=$filename$file_c
-        exp_err[le_count]=$exp
-        act_err[le_count]=$act
-        ll_err[le_count]=0
-        as_err[le_count]=0
-        out_err[le_count]=0
-        fi
     done
     echo "还有问题的测试用例数："$le_count
     for((i=1;i<=$le_count;i++));
@@ -204,16 +176,6 @@ do
     echo ${filename}
     gcc -no-pie $filename$file_c -o test
     FILE_IN=$filename$file_in
-    if [ ! -f "$FILE_IN" ]
-    then
-    gcc -no-pie $filename$file_c -o test
-    ./test
-    else
-    gcc -no-pie -o test $filename$file_c -L./ sylib.a
-    ./test < $filename$file_in
-    fi
-    exp=$?
-    rm -rf test
     cd ../
     # ./compiler >a.log
     ./cmake-build-debug/compiler test_cases/$filename$file_c
@@ -264,34 +226,30 @@ do
     gcc -no-pie $filename$file_obj sylib.o -o test
     FILE_OUT=$filename$file_out
     FILE_TEMP_OUT=$filename$file_temp_out
-    if [ ! -f "$FILE_IN" ]
-    then
-    ./test
-    else
-    ./test < $filename$file_in
-    fi
-    act=$?
 
     if [ -f "$FILE_OUT" ]
     then
         if [ ! -f "$FILE_IN" ]
         then
-        ./test -al | tee $FILE_TEMP_OUT
-        echo $? -al | tee $FILE_TEMP_OUT
+        ./test > $FILE_TEMP_OUT
+        act=$?
+        echo >> $FILE_TEMP_OUT
+        echo $act >> $FILE_TEMP_OUT
         else
-        ./test < $filename$file_in -al | tee $FILE_TEMP_OUT
-        echo $? -al | tee $FILE_TEMP_OUT
+        ./test < $filename$file_in > $FILE_TEMP_OUT
+        act=$?
+        echo >> $FILE_TEMP_OUT
+        echo $act >> $FILE_TEMP_OUT
         fi
         cd ../
         ./judge test_cases/$FILE_OUT  test_cases/$FILE_TEMP_OUT
         out_value=$?
         cd test_cases
-        rm -rf $FILE_TEMP_OUT
+        # rm -rf $FILE_TEMP_OUT
         rm -rf test
         rm -rf $filename$file_ll
         rm -rf $filename$file_as
         rm -rf $filename$file_obj
-        continue
         fi
 
         if [ $out_value -ne $ljw ]
@@ -308,6 +266,8 @@ do
         rm -rf $filename$file_as
         rm -rf $filename$file_obj
         continue
+        else
+        rm -rf $FILE_TEMP_OUT
         fi
 
         rm -rf test
@@ -316,17 +276,6 @@ do
         rm -rf $filename$file_obj
         # echo $exp_str$exp
         # echo $act_str$act
-
-        if [ $exp -ne $act ]
-        then
-        let le_count+=1
-        file_err[le_count]=$filename$file_c
-        exp_err[le_count]=$exp
-        act_err[le_count]=$act
-        ll_err[le_count]=0
-        as_err[le_count]=0
-        out_err[le_count]=0
-        fi
 done
 echo "还有问题的测试用例数："$le_count
 for((i=1;i<=$le_count;i++));

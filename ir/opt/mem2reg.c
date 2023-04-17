@@ -37,7 +37,7 @@ void insert_phi(BasicBlock *block,Value *val){
     phiInstNode->inst->Parent = block;
 
     //设置当前phi函数的type
-    Value *insValue = ins_get_value(phiInstNode->inst);
+    Value *insValue = ins_get_dest(phiInstNode->inst);
     insValue->VTy->ID = val->VTy->ID;
     printf("%d--------",val->VTy->ID);
     printf("set PhiNode success !\n");
@@ -123,7 +123,7 @@ void mem2reg(Function *currentFunction){
         //如果alloca没有load就删除这个alloca
         //首先找到对应的value
         //不是alloca的数组并且对这个alloca没有load的话
-        Value *insValue = ins_get_value(curNode->inst);
+        Value *insValue = ins_get_dest(curNode->inst);
         if(curNode->inst->Opcode == Alloca && !isLocalArray(insValue) && !HashMapContain(currentFunction->loadSet,insValue)){
             //不存在loadSet之中不存在这个value
             //删除这个instruction
@@ -259,7 +259,7 @@ void insertCopies(BasicBlock *block,Value *dest,Value *src){
     InstNode *copyIns = newCopyOperation(src);
     assert(copyIns != NULL);
     copyIns->inst->Parent = block;
-    Value *insValue = ins_get_value(copyIns->inst);
+    Value *insValue = ins_get_dest(copyIns->inst);
     insValue->alias = dest;
 
     //应该不会超过10位数
@@ -305,7 +305,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                     // 对应的alloc
                     printf("what name : %s\n",alloc->name);
                     // 需要被替换的
-                    Value *value = ins_get_value(curr->inst);
+                    Value *value = ins_get_dest(curr->inst);
                     Value *replace = nullptr;
                     //找到栈
                     stack *allocStack = HashMapGet(IncomingVals, alloc);
@@ -504,7 +504,7 @@ void deleteLoadStore(Function *currentFunction){
     while(curr != get_next_inst(tail)){
         switch(curr->inst->Opcode){
             case Alloca:{
-                Value *insValue = ins_get_value(curr->inst);
+                Value *insValue = ins_get_dest(curr->inst);
                 if(isLocalVar(insValue)){
                     InstNode *next = get_next_inst(curr);
                     delete_inst(curr);
@@ -616,7 +616,7 @@ void renameVariabels(Function *currentFunction) {
             if(block == tail){
                 blockTail = get_prev_inst(blockTail);
             }
-            Value *blockTailInsValue = ins_get_value(blockTail->inst);
+            Value *blockTailInsValue = ins_get_dest(blockTail->inst);
             if(block->true_block){
                 blockTailInsValue->pdata->instruction_pdata.true_goto_location = block->true_block->id;
             }
@@ -707,7 +707,7 @@ void correctPhiNode(Function *currentFunction){
                 HashSetFirst(phiSet);
                 pair *phiInfo = HashSetNext(phiSet);
                 Value *define = phiInfo->define;
-                Value *insValue = ins_get_value(currNode->inst);
+                Value *insValue = ins_get_dest(currNode->inst);
                 value_replaceAll(insValue,define);
 
 
@@ -748,7 +748,7 @@ void correctPhiNode(Function *currentFunction){
     currNode = entry->head_node;
     while(currNode != get_next_inst(end->tail_node)){
         if(currNode->inst->Opcode == Phi){
-            Value *insValue = ins_get_value(currNode->inst);
+            Value *insValue = ins_get_dest(currNode->inst);
             HashSet *pairSet = currNode->inst->user.value.pdata->pairSet;
             HashSetFirst(pairSet);
             unsigned int phiSize = HashSetSize(pairSet);
@@ -797,6 +797,7 @@ void SSADeconstruction(Function *currentFunction){
                         printf("critical edge splitting!!!!!!!!!\n");
                         // 分割当前关键边
                         BasicBlock *newBlock = bb_create();
+                        printf("prev block :%d \n",prevBlock->id);
                         InstNode *prevTail = prevBlock->tail_node;
                         InstNode *prevTailNext = get_next_inst(prevBlock->tail_node);
 
@@ -807,9 +808,14 @@ void SSADeconstruction(Function *currentFunction){
                         Instruction *newBlockBr = ins_new_zero_operator(br);
                         InstNode *newBlockBrNode = new_inst_node(newBlockBr);
 
-                        ins_insert_after(prevTail, newBlockLabelNode);
-                        ins_insert_after(newBlockLabelNode, newBlockBrNode);
-                        ins_insert_after(newBlockBrNode,prevTailNext);
+
+                        ins_insert_after(newBlockLabelNode, prevTail);
+                        ins_insert_after(newBlockBrNode, newBlockLabelNode);
+
+                        //;
+                        newBlockBrNode->list.next = &prevTailNext->list;
+                        prevTailNext->list.prev = &newBlockBrNode->list;
+
 
                         // 维护这个基本块中的信息 TODO 没有维护支配信息等
                         bb_set_block(newBlock,newBlockLabelNode, newBlockBrNode);
@@ -829,7 +835,7 @@ void SSADeconstruction(Function *currentFunction){
                         // 修改phiInfo里面的信息
                         InstNode *correctNode = get_next_inst(block->head_node);
                         while(correctNode->inst->Opcode == Phi){
-                            Value *insValue = ins_get_value(correctNode->inst);
+                            Value *insValue = ins_get_dest(correctNode->inst);
                             HashSet *phiSet = insValue->pdata->pairSet;
                             HashSetFirst(phiSet);
                             for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -848,7 +854,7 @@ void SSADeconstruction(Function *currentFunction){
             //进行拷贝操作
             InstNode* phiNode = get_next_inst(block->head_node);
             while(phiNode->inst->Opcode == Phi){
-                Value *insValue = ins_get_value(phiNode->inst);
+                Value *insValue = ins_get_dest(phiNode->inst);
                 HashSet *phiSet = insValue->pdata->pairSet;
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -867,6 +873,7 @@ void SSADeconstruction(Function *currentFunction){
         currNode = get_next_inst(currNode);
     }
 
+    renameVariabels(currentFunction);
 
     sequentialCopy(currentFunction);
 }
@@ -888,7 +895,7 @@ void prunePhi(Function *currentFunction){
         InstNode *blockTail = block->tail_node;
         while(blockCurr != get_next_inst(blockTail)){
             if(blockCurr->inst->Opcode == Phi){
-                Value *phiValue = ins_get_value(blockCurr->inst);
+                Value *phiValue = ins_get_dest(blockCurr->inst);
                 phiValue->Useless = true;
             }else{
                 Value *lhs = ins_get_lhs(blockCurr->inst);
@@ -940,7 +947,7 @@ void prunePhi(Function *currentFunction){
     InstNode *currNode = entry->head_node;
     while(currNode != get_next_inst(end->tail_node)){
         if(currNode->inst->Opcode == Phi){
-            Value *phiValue = ins_get_value(currNode->inst);
+            Value *phiValue = ins_get_dest(currNode->inst);
             if(phiValue->IsPhi == true && phiValue->Useless == true){
                 InstNode *nextNode = get_next_inst(currNode);
                 printf("delete a phiNode! -------\n");
@@ -979,7 +986,7 @@ void sequentialCopy(Function *currentFunction){
             while(copyIns != block->tail_node){
                 if(copyIns->inst->Opcode == CopyOperation){
                     Value *src = ins_get_lhs(copyIns->inst);
-                    Value *dest = ins_get_value(copyIns->inst)->alias;
+                    Value *dest = ins_get_dest(copyIns->inst)->alias;
                     CopyPair *copyPair = createCopyPair(src,dest);
                     HashSetAdd(pCopy,copyPair);
                     //找到src的use_list
