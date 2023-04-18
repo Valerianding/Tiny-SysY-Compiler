@@ -68,6 +68,7 @@ struct _Value{
     unsigned HasName : 1;
     bool Useless : 1;
     bool IsPhi : 1;
+    bool IsFromArray : 1; // 默认是false
     char *name;
     struct _Value *alias;
     PData *pdata;

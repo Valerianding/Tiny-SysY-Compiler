@@ -957,7 +957,7 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                     }
                 }
                 break;
-            case Module:
+            case Mod:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)

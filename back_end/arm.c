@@ -7,7 +7,7 @@
 int regi=0;
 //si
 int regs=0;
-
+int func_call_func;
 bool imm_is_valid(unsigned int imm){
     int i;
     for (i = 0; i <= 30; i += 2) {
@@ -149,6 +149,7 @@ void arm_translate_ins(InstNode *ins){
             regi=0;
             regs=0;
             stack_size=0;
+            func_call_func=0;
             ins= arm_trans_FunBegin(ins,&stack_size);
             head=ins;
             int  param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
@@ -177,7 +178,7 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
     if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
         int x=value1->pdata->var_pdata.iVal;
         printf("    mov r0,#%d\n",x);
-        printf("    store r0,[sp,#%d]\n",x0);
+        printf("    str r0,[sp,#%d]\n",x0);
         return ins;
     }
     if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
@@ -185,7 +186,7 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",x);
         printf("    ldr r1,=%s\n",arr1);
-        printf("    store r0,[sp,#%d]\n",x0);
+        printf("    str r0,[sp,#%d]\n",x0);
         return ins;
     }
     if(isImmFloatType(value1->VTy)){
@@ -195,23 +196,23 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
     if(isLocalVarIntType(value1->VTy)){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
-            printf("    load r0,[sp,#%d]\n",x1);
-            printf("    store r0,[sp,#%d]\n",x0);
+            printf("    ldr r0,[sp,#%d]\n",x1);
+            printf("    str r0,[sp,#%d]\n",x0);
         } else{
             ;
         }
         return ins;
     }
     if(isLocalVarFloatType(value1->VTy)){
-        printf("    fload s0,[sp,#%d]\n",x1);
-        printf("    fstr s0,[sp,#%d]\n",x0);
+        printf("    vldr s0,[sp,#%d]\n",x1);
+        printf("    vstr s0,[sp,#%d]\n",x0);
         return ins;
     }
 //    两个unknown的情况
     offset *node= HashMapGet(hashMap,value1);
     if(node->memory){
-        printf("    load r0,[sp,#%d]\n",x1);
-        printf("    store r0,[sp,#%d]\n",x0);
+        printf("    ldr r0,[sp,#%d]\n",x1);
+        printf("    str r0,[sp,#%d]\n",x0);
     }
 
 //    printf("CopyOperation\n");
@@ -260,7 +261,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -307,7 +308,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -356,7 +357,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -393,7 +394,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -407,7 +408,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    add r0,#%d,r2\n",x1);
             }else{
                 int x=node->regr;
@@ -420,7 +421,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    add r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -442,7 +443,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -458,7 +459,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fadd s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -472,7 +473,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fadd s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -494,7 +495,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -511,7 +512,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x);
+            printf("    ldr r2,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s2.r2\n");
         }else{
             int x=node->regr;
@@ -533,7 +534,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -550,7 +551,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x);
+            printf("    vldr s2,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s2,s%d\n",x);
@@ -571,7 +572,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -585,7 +586,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    add r0,r1,#%d\n",x2);
             }else{
                 int x=node->regr;
@@ -598,7 +599,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    add r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -620,7 +621,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -637,7 +638,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x);
+            printf("    ldr r1,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s1,r1\n");
         }
         printf("    fadd s0,s1,s2\n");
@@ -656,7 +657,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -671,7 +672,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -685,7 +686,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -707,7 +708,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -724,7 +725,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x);
+            printf("    vldr s1,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s1,s%d\n",x);
@@ -745,7 +746,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -759,16 +760,16 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    mov r2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             int x1=node1->regr;
             printf("    mov r1,r%d\n",x1);
         }else{
@@ -793,7 +794,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -806,12 +807,12 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
@@ -819,7 +820,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
@@ -842,7 +843,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -855,19 +856,19 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    fcvt.s32.f32 s2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else{
             int x1=node1->regs;
@@ -891,7 +892,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -904,18 +905,18 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
@@ -938,7 +939,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -991,7 +992,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -1038,7 +1039,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1087,7 +1088,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1124,7 +1125,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1138,7 +1139,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    sub r0,#%d,r2\n",x1);
             }else{
                 int x=node->regr;
@@ -1151,7 +1152,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    sub r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -1173,7 +1174,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -1189,7 +1190,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fsub s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -1203,7 +1204,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fsub s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -1225,7 +1226,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1242,7 +1243,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x);
+            printf("    ldr r2,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s2.r2\n");
         }else{
             int x=node->regr;
@@ -1264,7 +1265,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1281,7 +1282,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x);
+            printf("    vldr s2,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s2,s%d\n",x);
@@ -1302,7 +1303,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1316,7 +1317,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    sub r0,r1,#%d\n",x2);
             }else{
                 int x=node->regr;
@@ -1329,7 +1330,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    sub r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -1351,7 +1352,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -1368,7 +1369,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x);
+            printf("    ldr r1,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s1,r1\n");
         }
         printf("    fsub s0,s1,s2\n");
@@ -1387,7 +1388,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1402,7 +1403,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -1416,7 +1417,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -1438,7 +1439,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1455,7 +1456,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x);
+            printf("    vldr s1,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s1,s%d\n",x);
@@ -1476,7 +1477,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1490,16 +1491,16 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    mov r2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             int x1=node1->regr;
             printf("    mov r1,r%d\n",x1);
         }else{
@@ -1524,7 +1525,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -1537,12 +1538,12 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
@@ -1550,7 +1551,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
@@ -1573,7 +1574,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1586,19 +1587,19 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    fcvt.s32.f32 s2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else{
             int x1=node1->regs;
@@ -1622,7 +1623,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1635,18 +1636,18 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
@@ -1669,7 +1670,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1723,7 +1724,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -1770,7 +1771,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1819,7 +1820,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1856,7 +1857,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1870,7 +1871,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    mov r1,#%d\n",x1);
                 printf("    mul r0,r1,r2\n");
             }else{
@@ -1886,7 +1887,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    mul r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -1908,7 +1909,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -1924,7 +1925,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fmul s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -1938,7 +1939,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fmul s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -1960,7 +1961,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -1977,7 +1978,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x);
+            printf("    ldr r2,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s2.r2\n");
         }else{
             int x=node->regr;
@@ -1999,7 +2000,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2016,7 +2017,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x);
+            printf("    vldr s2,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s2,s%d\n",x);
@@ -2037,7 +2038,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2051,7 +2052,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    mov r2,#%d\n",x2);
                 printf("    mul r0,r1,r2\n");
             }else{
@@ -2066,7 +2067,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    mul r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -2088,7 +2089,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -2105,7 +2106,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x);
+            printf("    ldr r1,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s1,r1\n");
         }
         printf("    fmul s0,s1,s2\n");
@@ -2124,7 +2125,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2139,7 +2140,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -2153,7 +2154,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -2175,7 +2176,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2192,7 +2193,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x);
+            printf("    vldr s1,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s1,s%d\n",x);
@@ -2213,7 +2214,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2227,16 +2228,16 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    mov r2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             int x1=node1->regr;
             printf("    mov r1,r%d\n",x1);
         }else{
@@ -2261,7 +2262,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -2274,12 +2275,12 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
@@ -2287,7 +2288,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
@@ -2310,7 +2311,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2323,19 +2324,19 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    fcvt.s32.f32 s2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else{
             int x1=node1->regs;
@@ -2359,7 +2360,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2372,18 +2373,18 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
@@ -2406,7 +2407,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2459,7 +2460,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -2506,7 +2507,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2555,7 +2556,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2592,7 +2593,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2606,7 +2607,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    mov r1,#%d\n",x1);
                 printf("    sdiv r0,r1,r2\n");
             }else{
@@ -2622,7 +2623,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
                 printf("    sdiv r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -2644,7 +2645,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -2660,7 +2661,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fdiv s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -2674,7 +2675,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
                 printf("    fdiv s0,s1,s2\n");
             }else{
                 int x= node->regs;
@@ -2696,7 +2697,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2713,7 +2714,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x);
+            printf("    ldr r2,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s2.r2\n");
         }else{
             int x=node->regr;
@@ -2735,7 +2736,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2752,7 +2753,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x);
+            printf("    vldr s2,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s2,s%d\n",x);
@@ -2773,7 +2774,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2787,7 +2788,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    mov r2,#%d\n",x2);
                 printf("    sdiv r0,r1,r2\n");
             }else{
@@ -2802,7 +2803,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    sdiv r0,r1,r2\n");
             }else{
                 int x=node->regr;
@@ -2824,7 +2825,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -2841,7 +2842,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x);
+            printf("    ldr r1,[sp,#%d]\n",x);
             printf("    fcvt.s32.f32 s1,r1\n");
         }
         printf("    fdiv s0,s1,s2\n");
@@ -2860,7 +2861,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2875,7 +2876,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -2889,7 +2890,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory) {
                 int x = get_value_offset_sp(hashMap, value1);
-                printf("    fload s1,[sp,#%d]\n", x);
+                printf("    vldr s1,[sp,#%d]\n", x);
             } else{
                 int x=node->regs;
                 printf("    fmov s1,s%d\n",x);
@@ -2911,7 +2912,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2928,7 +2929,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x);
+            printf("    vldr s1,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s1,s%d\n",x);
@@ -2949,7 +2950,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -2963,16 +2964,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    mov r2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             int x1=node1->regr;
             printf("    mov r1,r%d\n",x1);
         }else{
@@ -2997,7 +2998,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r0\n",x);
@@ -3010,12 +3011,12 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
@@ -3023,7 +3024,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
@@ -3046,7 +3047,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -3059,19 +3060,19 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    fcvt.s32.f32 s2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else{
             int x1=node1->regs;
@@ -3095,7 +3096,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -3108,18 +3109,18 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
@@ -3142,7 +3143,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s%d,s0\n",x);
@@ -3198,7 +3199,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r1\n",x);
@@ -3212,7 +3213,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
                 printf("    mov r0,#%d\n",x1);
             }else{
                 int x=node->regr;
@@ -3226,7 +3227,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
             }else{
                 int x=node->regr;
                 printf("    mov r1,r%d\n",x);
@@ -3247,7 +3248,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r1\n",x);
@@ -3260,7 +3261,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r0,[sp,#%d]\n",x);
+                printf("    ldr r0,[sp,#%d]\n",x);
                 printf("    mov r1,#%d\n",x2);
             }else{
                 int x=node->regr;
@@ -3274,7 +3275,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r0,[sp,#%d]\n",x);
+                printf("    ldr r0,[sp,#%d]\n",x);
             }else{
                 int x=node->regr;
                 printf("    mov r0,r%d\n",x);
@@ -3295,7 +3296,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r1\n",x);
@@ -3308,16 +3309,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r0,[sp,#%d]\n",x1);
-            printf("    load r1,[sp,#%d]\n",x2);
+            printf("    ldr r0,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r0,[sp,#%d]\n",x1);
+            printf("    ldr r0,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    mov r1,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x2);
+            printf("    ldr r1,[sp,#%d]\n",x2);
             int x1=node1->regr;
             printf("    mov r0,r%d\n",x1);
         }else{
@@ -3341,7 +3342,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    fstr s0,[sp,#%d]\n",x);
+                printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fcvt.s32.f32 s%d,r1\n",x);
@@ -3353,18 +3354,54 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
     return ins;
 }
 
-InstNode * arm_trans_Call(InstNode *ins){
+InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    printf("CALL\n");
     printf("    bl %s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+    //    还要将r0转移到左值
+    if(isLocalVarIntType(value0->VTy)){
+        offset *node= HashMapGet(hashMap,value0);
+        if(node->memory){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("    str r0,[sp,#%d]\n",x);
+        } else {
+            int x=node->regr;
+            printf("    mov r0,r%d\n",x);
+        }
+    } else if(isLocalVarFloatType(value0->VTy)){
+        offset *node= HashMapGet(hashMap,value0);
+        if(node->memory){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("    vcvt.f32.s32 s0,r0\n");
+            printf("    vstr s0,[sp,#%d]\n",x);
+        } else {
+            int x=node->regs;
+            printf("    vcvt.f32.s32 s0,r0\n");
+            printf("    vmov s%d,s0\n",x);
+        }
+    }
     return ins;
 }
 
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
-
-    if(!strcmp("main", user_get_operand_use(&ins->inst->user,0)->Val->name)){
-        printf("    push {r11,lr}\n");
-//        printf("    mov r1,sp\n");
+    InstNode *tmp=ins;
+//        这里好像是如果main中调用了其他的函数，就需要将r11,sp压栈,所以说需要查找一下有没有call
+//        这个好像所有函数都是一样的，如果它调用了其他的函数的话，就需要保存r11(也称为fp)和sp，那这样的话
+//        main函数好像和其他的函数就没有什么区别了
+//    if(!strcmp("main", user_get_operand_use(&ins->inst->user,0)->Val->name)){
+//        printf("    push {r11,lr}\n");
+////        printf("    mov r1,sp\n");
+//    }
+    for(;tmp!=NULL && tmp->inst->Opcode!= Return;tmp= get_next_inst(tmp)){
+        if(tmp->inst->Opcode==Call){
+            func_call_func+=1;
+            break;
+        }
+    }
+    if(func_call_func>0){
+        printf("    stmfd sp!,{r11,lr}\n");
     }
 
     HashMap *hashMap=HashMapInit();
@@ -3424,7 +3461,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
                 break;
-            case Module:
+            case Mod:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
@@ -3561,6 +3598,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         }
 
     }
+    if(ins->inst->Opcode==Return){
+        Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+        FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+    }
 //    *stakc_size=mystack+param_num*4;
 //    int x= HashMapSize(hashMap)*4;
 //    printf("FuncBeginhashmapsize=%d\n",x+param_num*4);
@@ -3590,18 +3631,51 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size){
 //涉及到数组的时候，栈帧的大小并不等于HashMapSize(hashmap)*4
-    if(!strcmp("main", user_get_operand_use(&head->inst->user,0)->Val->name)){
-        int x1= stack_size;
-
-        printf("    add sp,sp,#%d\n",x1);
-//        printf("    mov r11,sp\n");
-//        printf("    pop {r11,lr}\n");
-        printf("    bx lr\n");
-        return ins;
+//    if(!strcmp("main", user_get_operand_use(&head->inst->user,0)->Val->name)){
+//        int x1= stack_size;
+//
+//        printf("    add sp,sp,#%d\n",x1);
+////        printf("    mov r11,sp\n");
+//        if(func_call_func>0){
+//            printf("    pop {r11,lr}\n");
+//        }
+//        printf("    bx lr\n");
+//        return ins;
+//    }
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    if(isImmIntType(value1->VTy)){
+        if(imm_is_valid(value1->pdata->var_pdata.iVal)){
+            printf("    mov r0,#%d\n",value1->pdata->var_pdata.iVal);
+        } else{
+            int x=value1->pdata->var_pdata.iVal;
+            char arr[12]="0x";
+            sprintf(arr+2,"%0x",x);
+            printf("    ldr r0,=%s\n",arr);
+        }
+    } else if(isImmFloatType(value1->VTy)){
+        ;
+    } else if(isLocalVarIntType(value1->VTy)){
+        offset *node= HashMapGet(hashMap,value1);
+        if(node->memory){
+            int off= get_value_offset_sp(hashMap,value1);
+            printf("    ldr r0,[sp,#%d]\n",off);
+        } else if(node->regr!=-1){
+//            in ri
+            int regx=node->regr;
+            printf("    mov r0,r%d\n",regx);
+        } else if(node->regs!=-1){
+            ;
+        }
+    } else if(isLocalVarFloatType(value1->VTy)){
+        ;
     }
+
 
     int x1= stack_size;
     printf("    add sp,sp,#%d\n",x1);
+    if(func_call_func>0){
+        printf("    ldmfd sp!,{r11,lr}\n");
+    }
     printf("    bx lr\n");
     return ins;
 }
@@ -3815,7 +3889,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
             }else{
                 int x=node->regr;
                 printf("    mov r2,r%d\n",x);
@@ -3828,7 +3902,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    load r2,[sp,#%d]\n",x);
+                printf("    ldr r2,[sp,#%d]\n",x);
             }else{
                 int x=node->regr;
                 printf("    mov r2,r%d\n",x);
@@ -3845,7 +3919,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s2,s%d\n",x);
@@ -3859,7 +3933,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value2);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    fload s2,[sp,#%d]\n",x);
+                printf("    vldr s2,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
                 printf("    fmov s2,s%d\n",x);
@@ -3877,7 +3951,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x);
+            printf("    ldr r2,[sp,#%d]\n",x);
         }else{
             int x=node->regr;
             printf("    mov r2,r%d\n",x);
@@ -3895,7 +3969,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value2);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x);
+            printf("    vldr s2,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s2,s%d\n",x);
@@ -3909,7 +3983,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
             }else{
                 int x=node->regr;
                 printf("    mov r1,r%d\n",x);
@@ -3922,7 +3996,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             offset *node= HashMapGet(hashMap,value1);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    load r1,[sp,#%d]\n",x);
+                printf("    ldr r1,[sp,#%d]\n",x);
             }else{
                 int x=node->regr;
                 printf("    mov r1,r%d\n",x);
@@ -3940,7 +4014,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x);
+            printf("    ldr r1,[sp,#%d]\n",x);
         }else{
             int x=node->regr;
             printf("    mov r1,r%d\n",x);
@@ -3953,7 +4027,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x);
+            printf("    vldr s1,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s1,s%d\n",x);
@@ -3973,7 +4047,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         offset *node= HashMapGet(hashMap,value1);
         if(node->memory){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x);
+            printf("    vldr s1,[sp,#%d]\n",x);
         }else{
             int x=node->regs;
             printf("    fmov s1,s%d\n",x);
@@ -3993,16 +4067,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    mov r2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             int x1=node1->regr;
             printf("    mov r1,r%d\n",x1);
         }else{
@@ -4019,12 +4093,12 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    load r1,[sp,#%d]\n",x1);
+            printf("    ldr r1,[sp,#%d]\n",x1);
             printf("    fcvt.s32.f32 s1,r1\n");
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
@@ -4032,7 +4106,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regr;
             printf("    fcvt.s32.f32 s1,r%d\n",x1);
@@ -4047,19 +4121,19 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regr;
             printf("    fcvt.s32.f32 s2,r%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    load r2,[sp,#%d]\n",x2);
+            printf("    ldr r2,[sp,#%d]\n",x2);
             printf("    fcvt.s32.f32 s2,r2\n");
         }else{
             int x1=node1->regs;
@@ -4075,18 +4149,18 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(node1->memory&&node2->memory){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s1,[sp,#%d]\n",x1);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s1,[sp,#%d]\n",x1);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else if(node1->memory&&(!node2->memory)){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    fload s1,[sp,#%d]\n",x1);
+            printf("    vldr s1,[sp,#%d]\n",x1);
             int x2=node2->regs;
             printf("    fmov s2,s%d\n",x2);
         }else if((!node1->memory)&&node2->memory){
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    fload s2,[sp,#%d]\n",x2);
+            printf("    vldr s2,[sp,#%d]\n",x2);
         }else{
             int x1=node1->regs;
             printf("    fmov s1,s%d\n",x1);
@@ -4233,15 +4307,15 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         int x= user_get_operand_use(&next->inst->user,0)->Val->pdata->var_pdata.iVal;
         printf("    mov r0,#%d\n",x);
 //        int off_sp= get_value_offset_sp(hashMap, user_get_operand_use(&next->inst->user,1)->Val->alias)+off;
-        printf("    store r0,[sp,#%d]\n",off_sp);
+        printf("    str r0,[sp,#%d]\n",off_sp);
         return next;
     }
     if(get_next_inst((ins))->inst->Opcode==Load){
 //        如果是load的话，我需要考虑将对应的值load到哪个寄存器
         InstNode *next= get_next_inst(ins);
         int x= get_value_offset_sp(hashMap,&next->inst->user.value);
-        printf("    load r1,[sp,#%d]\n",off_sp);
-        printf("    store r1,[sp,#%d]\n",x);
+        printf("    ldr r1,[sp,#%d]\n",off_sp);
+        printf("    str r1,[sp,#%d]\n",x);
         return next;
     }
 
@@ -4307,11 +4381,11 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_Mul(ins,hashMap);
         case Div:
             return arm_trans_Div(ins,hashMap);
-        case Module:
+        case Mod:
             return arm_trans_Module(ins,hashMap);
         case Call:
 //            在进行call之前是需要至少保存lr寄存器的，call调用结束之后还需要将lr出栈恢复
-            return arm_trans_Call(ins);
+            return arm_trans_Call(ins,hashMap);
 //        case FunBegin:
 //            return arm_trans_FunBegin(ins,hashMap);
         case Return:

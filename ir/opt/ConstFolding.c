@@ -3,9 +3,10 @@
 //
 
 #include "ConstFolding.h"
-void ConstFolding(Function *currentFunction){
+bool ConstFolding(Function *currentFunction){
     // runs on function
     // 我们仅仅去检查那些
+    bool effective = false;
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;
     bool changed = true;
@@ -29,7 +30,7 @@ void ConstFolding(Function *currentFunction){
                         switch(currNode->inst->Opcode){
                             case Add:
                                dest->pdata->var_pdata.iVal = left + right;
-                                break;
+                               break;
                             case Sub:
                                 dest->pdata->var_pdata.iVal = left - right;
                                 break;
@@ -39,7 +40,7 @@ void ConstFolding(Function *currentFunction){
                             case Div:
                                 dest->pdata->var_pdata.iVal = left / right;
                                 break;
-                            case Module:
+                            case Mod:
                                 dest->pdata->var_pdata.iVal = left % right;
                                 break;
                         }
@@ -61,6 +62,7 @@ void ConstFolding(Function *currentFunction){
                     }
                     // 还要记得删除这里的语句
                     //我们直接改了dest所以就不用value replace
+                    effective = true;
                     InstNode *nextNode = get_next_inst(currNode);
                     delete_inst(currNode);
                     currNode = nextNode;
@@ -72,9 +74,11 @@ void ConstFolding(Function *currentFunction){
             }
         }
     }
+    return effective;
 }
 
-void BranchOptimizing(Function *currentFunction) {
+bool BranchOptimizing(Function *currentFunction) {
+    bool effective = false;
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;
 
@@ -154,6 +158,7 @@ void BranchOptimizing(Function *currentFunction) {
             Value *cond = ins_get_lhs(branchNode->inst);
             Value *insValue = ins_get_dest(branchNode->inst);
             if (isImm(cond)) {
+                effective = true;
                 if (cond->pdata->var_pdata.iVal) {
                     // true
                     // 需不需要修改

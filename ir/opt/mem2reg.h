@@ -8,6 +8,7 @@
 #include "function.h"
 #include "dominance.h"
 #include "stack.h"
+#include "utility.h"
 #include "livenessanalysis.h"
 #include <time.h>
 typedef struct CopyPair{
@@ -23,7 +24,7 @@ InstNode *newCopyOperation(Value *src);
 InstNode* new_phi(Value *val);
 void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals);
 void deleteLoadStore(Function *currentFunction);
-void renameVariabels(Function *currentFunction);
+
 void SSADeconstruction(Function *currentFunction);
 void calculateNonLocals(Function *currentFunction);
 void correctPhiNode(Function *currentFunction);

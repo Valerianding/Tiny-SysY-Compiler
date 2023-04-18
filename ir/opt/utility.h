@@ -11,4 +11,7 @@ void correctType(Function *currentFunction);
 bool isCalculationOperator(InstNode *inst);
 float getOperandValue(Value *operand);
 bool isCompareOperator(InstNode *insNode);
+void renameVariabels(Function *currentFunction);
+void showInstructionInfo(InstNode *instruction_list);
+void showBlockInfo(InstNode *instruction_list);
 #endif //C22V1_UTILITY_H

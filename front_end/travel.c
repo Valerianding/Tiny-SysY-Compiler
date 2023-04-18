@@ -2628,7 +2628,7 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                         instruction = ins_new_binary_operator(Div, v1, v2);
                         break;
                     case '%':
-                        instruction = ins_new_binary_operator(Module, v1, v2);
+                        instruction = ins_new_binary_operator(Mod, v1, v2);
                         break;
                     case '!':
                         if(strcmp(bstr2cstr((*pp)->sVal, '\0'), "special_!") == 0)
@@ -4097,7 +4097,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     }
                 }
                 break;
-            case Module:
+            case Mod:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
@@ -4492,9 +4492,6 @@ void travel_finish_type(struct _InstNode *instruction_node)
                 instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
                 break;
         }
-
-
-
         instruction_node= get_next_inst(instruction_node);
     }
 }

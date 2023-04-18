@@ -6,6 +6,8 @@
 #define C22V1_DEADCODEELIMINATION_H
 #include "function.h"
 
-void DeadCodeElimination(Function *currentFunction);
-void DeleteUselessBasicBlocks(Function *currentFunction);
+bool DeadCodeElimination(Function *currentFunction);
+
+//phi生成后跑一次 phi函数消除之后
+bool DeleteUselessBasicBlocks(Function *currentFunction);
 #endif //C22V1_DEADCODEELIMINATION_H
