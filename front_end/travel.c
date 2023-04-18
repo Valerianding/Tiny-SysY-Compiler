@@ -1293,7 +1293,11 @@ int handle_and_or(past root,bool flag)
             //包装0
             Value *v_zero=(Value*) malloc(sizeof (Value));
             value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            Instruction *ins_icmp=NULL;
+            if(convert==1)
+                ins_icmp=ins_new_binary_operator(EQ,v_load,v_zero);
+            else
+                ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
             v1= ins_get_value_with_name(ins_icmp);
             //将这个instruction加入总list
@@ -1354,7 +1358,11 @@ int handle_and_or(past root,bool flag)
             //包装0
             Value *v_zero=(Value*) malloc(sizeof (Value));
             value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+            Instruction *ins_icmp= NULL;
+            if(convert==1)
+                ins_icmp=ins_new_binary_operator(EQ,v_load,v_zero);
+            else
+                ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
             //v_real
             v1= ins_get_value_with_name(ins_icmp);
             //将这个instruction加入总list
@@ -1453,7 +1461,11 @@ int handle_and_or(past root,bool flag)
                 //包装0
                 Value *v_zero=(Value*) malloc(sizeof (Value));
                 value_init_int(v_zero,0);
-                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                Instruction *ins_icmp= NULL;
+                if(convert==1)
+                    ins_icmp=ins_new_binary_operator(EQ,v_load,v_zero);
+                else
+                    ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
                 //v_real
                 v2= ins_get_value_with_name(ins_icmp);
                 //将这个instruction加入总list
@@ -2440,7 +2452,7 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                         v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal % x2->pdata->var_pdata.iVal;
                         break;
                     case '!':                                     //TODO !1这种还没处理，目前无法直接判断为假,如果要处理，就定个convert值为一定真和一定假，返回后分别加入if语句那些的num_int的判断
-                        //(*convert)=!(*convert);
+                        (*convert)=!(*convert);
                         break;
                 }
                 push_value(&PS2, v3);
@@ -2856,7 +2868,7 @@ struct _Value* cal_logic_expr(past logic_expr)
         instruction= ins_new_binary_operator(GREAT,v1,v2);
     else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), ">=") == 0)
         instruction= ins_new_binary_operator(GREATEQ,v1,v2);
-    else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), ">=") == 0)
+    else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), "<=") == 0)
         instruction= ins_new_binary_operator(LESSEQ,v1,v2);
     else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), "==") == 0)
         instruction= ins_new_binary_operator(EQ,v1,v2);
@@ -4347,17 +4359,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
         }
 
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
         instruction_node= get_next_inst(instruction_node);
     }
