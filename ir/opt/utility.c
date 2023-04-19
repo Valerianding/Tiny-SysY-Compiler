@@ -220,14 +220,18 @@ BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block){
     InstNode *prevTail = get_prev_inst(block->head_node);
     InstNode *prevNext = block->head_node;
 
-
     // 创建两个语句
     Instruction *newBlockLabel = ins_new_zero_operator(Label);
     Instruction *newBlockBr = ins_new_zero_operator(Br);
     InstNode *newBlockLabelNode = new_inst_node(newBlockLabel);
     InstNode *newBlockBrNode = new_inst_node(newBlockBr);
 
-
     // 进行一些链接
+    ins_insert_after(newBlockLabelNode,prevTail);
+    ins_insert_after(newBlockBrNode,newBlockLabelNode);
 
+    newBlockBrNode->list.next = &prevNext->list;
+    prevNext->list.prev = &newBlockBrNode->list;
+
+    return newBlock;
 }

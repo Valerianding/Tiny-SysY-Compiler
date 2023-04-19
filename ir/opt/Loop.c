@@ -140,9 +140,19 @@ void loopVariant(Function *currentFunction, HashSet *loop, BasicBlock *head){
     // 先看看head有多少个前驱节点
     if(HashSetSize(head->preBlocks) > 1){
         // 需要新建基本块
+        //将所有的前驱基本块连在这个新的基本块上 并且修改内存的
+        BasicBlock *newblock = newBlock(head->preBlocks,head);
+    }else{
+        //
+        assert(HashSetSize(head->preBlocks) == 1);
 
-        //将所有的前驱基本块连在这个新的基本块上
-        BasicBlock *newBlock = bb_create();
+    }
+
+    while(HashSetSize(loopInvariantVariable) != 0){
+        Value *defValue = HashSetNext(loopInvariantVariable);
+
+        //强制转换成InstNode类型
+
     }
     //
     //销毁内存
