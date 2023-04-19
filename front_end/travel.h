@@ -22,7 +22,7 @@ void create_if_stmt(past root,Value* v_return);
 void create_if_else_stmt(past root,Value* v_return);
 void create_func_def(past root);
 struct _Value *create_call_func(past root);
-struct _Value *cal_expr(past expr,int* convert,int type);    //type代表左值type
+struct _Value *cal_expr(past expr,int type,int* real);    //type代表左值type
 struct _Value* cal_logic_expr(past logic_expr);
 struct _Value *create_param_value();
 void create_store_stmt(Value* v1,Value* v2);
