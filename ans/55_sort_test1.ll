@@ -7,17 +7,17 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @bubblesort(i32* %0) #0 {
-  br label %2
+  Br label %2
 
 2:                                                ; preds = %36, %1
   %.01 = phi i32 [ 0, %1 ], [ %37, %36 ]
   %3 = load i32, i32* @n, align 4
   %4 = sub nsw i32 %3, 1
   %5 = icmp slt i32 %.01, %4
-  br i1 %5, label %6, label %38
+  Br i1 %5, label %6, label %38
 
 6:                                                ; preds = %2
-  br label %7
+  Br label %7
 
 7:                                                ; preds = %34, %6
   %.0 = phi i32 [ 0, %6 ], [ %35, %34 ]
@@ -25,7 +25,7 @@ define dso_local i32 @bubblesort(i32* %0) #0 {
   %9 = sub nsw i32 %8, %.01
   %10 = sub nsw i32 %9, 1
   %11 = icmp slt i32 %.0, %10
-  br i1 %11, label %12, label %36
+  Br i1 %11, label %12, label %36
 
 12:                                               ; preds = %7
   %13 = sext i32 %.0 to i64
@@ -36,7 +36,7 @@ define dso_local i32 @bubblesort(i32* %0) #0 {
   %18 = getelementptr inbounds i32, i32* %0, i64 %17
   %19 = load i32, i32* %18, align 4
   %20 = icmp sgt i32 %15, %19
-  br i1 %20, label %21, label %34
+  Br i1 %20, label %21, label %34
 
 21:                                               ; preds = %12
   %22 = add nsw i32 %.0, 1
@@ -53,15 +53,15 @@ define dso_local i32 @bubblesort(i32* %0) #0 {
   %32 = sext i32 %.0 to i64
   %33 = getelementptr inbounds i32, i32* %0, i64 %32
   store i32 %25, i32* %33, align 4
-  br label %34
+  Br label %34
 
 34:                                               ; preds = %21, %12
   %35 = add nsw i32 %.0, 1
-  br label %7
+  Br label %7
 
 36:                                               ; preds = %7
   %37 = add nsw i32 %.01, 1
-  br label %2
+  Br label %2
 
 38:                                               ; preds = %2
   ret i32 0
@@ -93,13 +93,13 @@ define dso_local i32 @main() #0 {
   store i32 8, i32* %11, align 4
   %12 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
   %13 = call i32 @bubblesort(i32* %12)
-  br label %14
+  Br label %14
 
 14:                                               ; preds = %17, %0
   %.0 = phi i32 [ %13, %0 ], [ %23, %17 ]
   %15 = load i32, i32* @n, align 4
   %16 = icmp slt i32 %.0, %15
-  br i1 %16, label %17, label %24
+  Br i1 %16, label %17, label %24
 
 17:                                               ; preds = %14
   %18 = sext i32 %.0 to i64
@@ -108,7 +108,7 @@ define dso_local i32 @main() #0 {
   %21 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %20)
   %22 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %23 = add nsw i32 %.0, 1
-  br label %14
+  Br label %14
 
 24:                                               ; preds = %14
   ret i32 0

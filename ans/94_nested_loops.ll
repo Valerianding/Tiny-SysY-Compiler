@@ -8,68 +8,68 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @loop1(i32 %0, i32 %1) #0 {
-  br label %3
+  Br label %3
 
 3:                                                ; preds = %61, %2
   %.02 = phi i32 [ 0, %2 ], [ %62, %61 ]
   %4 = icmp slt i32 %.02, %0
-  br i1 %4, label %5, label %7
+  Br i1 %4, label %5, label %7
 
 5:                                                ; preds = %3
   %6 = icmp slt i32 %.02, %1
-  br label %7
+  Br label %7
 
 7:                                                ; preds = %5, %3
   %8 = phi i1 [ false, %3 ], [ %6, %5 ]
-  br i1 %8, label %9, label %63
+  Br i1 %8, label %9, label %63
 
 9:                                                ; preds = %7
-  br label %10
+  Br label %10
 
 10:                                               ; preds = %59, %9
   %.03 = phi i32 [ 0, %9 ], [ %60, %59 ]
   %11 = icmp slt i32 %.03, 2
-  br i1 %11, label %12, label %61
+  Br i1 %11, label %12, label %61
 
 12:                                               ; preds = %10
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %57, %12
   %.04 = phi i32 [ 0, %12 ], [ %58, %57 ]
   %14 = icmp slt i32 %.04, 3
-  br i1 %14, label %15, label %59
+  Br i1 %14, label %15, label %59
 
 15:                                               ; preds = %13
-  br label %16
+  Br label %16
 
 16:                                               ; preds = %55, %15
   %.05 = phi i32 [ 0, %15 ], [ %56, %55 ]
   %17 = icmp slt i32 %.05, 4
-  br i1 %17, label %18, label %57
+  Br i1 %17, label %18, label %57
 
 18:                                               ; preds = %16
-  br label %19
+  Br label %19
 
 19:                                               ; preds = %53, %18
   %.06 = phi i32 [ 0, %18 ], [ %54, %53 ]
   %20 = icmp slt i32 %.06, 5
-  br i1 %20, label %21, label %55
+  Br i1 %20, label %21, label %55
 
 21:                                               ; preds = %19
-  br label %22
+  Br label %22
 
 22:                                               ; preds = %51, %21
   %.01 = phi i32 [ 0, %21 ], [ %52, %51 ]
   %23 = icmp slt i32 %.01, 6
-  br i1 %23, label %24, label %53
+  Br i1 %23, label %24, label %53
 
 24:                                               ; preds = %22
-  br label %25
+  Br label %25
 
 25:                                               ; preds = %27, %24
   %.0 = phi i32 [ 0, %24 ], [ %50, %27 ]
   %26 = icmp slt i32 %.0, 2
-  br i1 %26, label %27, label %51
+  Br i1 %26, label %27, label %51
 
 27:                                               ; preds = %25
   %28 = add nsw i32 %.02, %.03
@@ -96,31 +96,31 @@ define dso_local void @loop1(i32 %0, i32 %1) #0 {
   %49 = getelementptr inbounds [2 x i32], [2 x i32]* %47, i64 0, i64 %48
   store i32 %35, i32* %49, align 4
   %50 = add nsw i32 %.0, 1
-  br label %25
+  Br label %25
 
 51:                                               ; preds = %25
   %52 = add nsw i32 %.01, 1
-  br label %22
+  Br label %22
 
 53:                                               ; preds = %22
   %54 = add nsw i32 %.06, 1
-  br label %19
+  Br label %19
 
 55:                                               ; preds = %19
   %56 = add nsw i32 %.05, 1
-  br label %16
+  Br label %16
 
 57:                                               ; preds = %16
   %58 = add nsw i32 %.04, 1
-  br label %13
+  Br label %13
 
 59:                                               ; preds = %13
   %60 = add nsw i32 %.03, 1
-  br label %10
+  Br label %10
 
 61:                                               ; preds = %10
   %62 = add nsw i32 %.02, 1
-  br label %3
+  Br label %3
 
 63:                                               ; preds = %7
   ret void
@@ -128,60 +128,60 @@ define dso_local void @loop1(i32 %0, i32 %1) #0 {
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @loop2() #0 {
-  br label %1
+  Br label %1
 
 1:                                                ; preds = %50, %0
   %.0 = phi i32 [ 0, %0 ], [ %51, %50 ]
   %2 = icmp slt i32 %.0, 10
-  br i1 %2, label %3, label %52
+  Br i1 %2, label %3, label %52
 
 3:                                                ; preds = %1
-  br label %4
+  Br label %4
 
 4:                                                ; preds = %48, %3
   %.01 = phi i32 [ 0, %3 ], [ %49, %48 ]
   %5 = icmp slt i32 %.01, 2
-  br i1 %5, label %6, label %50
+  Br i1 %5, label %6, label %50
 
 6:                                                ; preds = %4
-  br label %7
+  Br label %7
 
 7:                                                ; preds = %46, %6
   %.02 = phi i32 [ 0, %6 ], [ %47, %46 ]
   %8 = icmp slt i32 %.02, 3
-  br i1 %8, label %9, label %48
+  Br i1 %8, label %9, label %48
 
 9:                                                ; preds = %7
-  br label %10
+  Br label %10
 
 10:                                               ; preds = %44, %9
   %.03 = phi i32 [ 0, %9 ], [ %45, %44 ]
   %11 = icmp slt i32 %.03, 2
-  br i1 %11, label %12, label %46
+  Br i1 %11, label %12, label %46
 
 12:                                               ; preds = %10
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %42, %12
   %.04 = phi i32 [ 0, %12 ], [ %43, %42 ]
   %14 = icmp slt i32 %.04, 4
-  br i1 %14, label %15, label %44
+  Br i1 %14, label %15, label %44
 
 15:                                               ; preds = %13
-  br label %16
+  Br label %16
 
 16:                                               ; preds = %40, %15
   %.05 = phi i32 [ 0, %15 ], [ %41, %40 ]
   %17 = icmp slt i32 %.05, 8
-  br i1 %17, label %18, label %42
+  Br i1 %17, label %18, label %42
 
 18:                                               ; preds = %16
-  br label %19
+  Br label %19
 
 19:                                               ; preds = %21, %18
   %.06 = phi i32 [ 0, %18 ], [ %39, %21 ]
   %20 = icmp slt i32 %.06, 7
-  br i1 %20, label %21, label %40
+  Br i1 %20, label %21, label %40
 
 21:                                               ; preds = %19
   %22 = add nsw i32 %.0, %.01
@@ -203,31 +203,31 @@ define dso_local void @loop2() #0 {
   %38 = getelementptr inbounds [7 x i32], [7 x i32]* %36, i64 0, i64 %37
   store i32 %24, i32* %38, align 4
   %39 = add nsw i32 %.06, 1
-  br label %19
+  Br label %19
 
 40:                                               ; preds = %19
   %41 = add nsw i32 %.05, 1
-  br label %16
+  Br label %16
 
 42:                                               ; preds = %16
   %43 = add nsw i32 %.04, 1
-  br label %13
+  Br label %13
 
 44:                                               ; preds = %13
   %45 = add nsw i32 %.03, 1
-  br label %10
+  Br label %10
 
 46:                                               ; preds = %10
   %47 = add nsw i32 %.02, 1
-  br label %7
+  Br label %7
 
 48:                                               ; preds = %7
   %49 = add nsw i32 %.01, 1
-  br label %4
+  Br label %4
 
 50:                                               ; preds = %4
   %51 = add nsw i32 %.0, 1
-  br label %1
+  Br label %1
 
 52:                                               ; preds = %1
   ret void
@@ -235,67 +235,67 @@ define dso_local void @loop2() #0 {
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @loop3(i32 %0, i32 %1, i32 %2, i32 %3, i32 %4, i32 %5, i32 %6) #0 {
-  br label %8
+  Br label %8
 
 8:                                                ; preds = %95, %7
   %.07 = phi i32 [ 0, %7 ], [ %92, %95 ]
   %.0 = phi i32 [ 0, %7 ], [ %.12, %95 ]
   %9 = icmp slt i32 %.07, 10
-  br i1 %9, label %10, label %96
+  Br i1 %9, label %10, label %96
 
 10:                                               ; preds = %8
-  br label %11
+  Br label %11
 
 11:                                               ; preds = %90, %10
   %.06 = phi i32 [ 0, %10 ], [ %87, %90 ]
   %.1 = phi i32 [ %.0, %10 ], [ %.11, %90 ]
   %12 = icmp slt i32 %.06, 100
-  br i1 %12, label %13, label %91
+  Br i1 %12, label %13, label %91
 
 13:                                               ; preds = %11
-  br label %14
+  Br label %14
 
 14:                                               ; preds = %85, %13
   %.05 = phi i32 [ 0, %13 ], [ %82, %85 ]
   %.2 = phi i32 [ %.1, %13 ], [ %.10, %85 ]
   %15 = icmp slt i32 %.05, 1000
-  br i1 %15, label %16, label %86
+  Br i1 %15, label %16, label %86
 
 16:                                               ; preds = %14
-  br label %17
+  Br label %17
 
 17:                                               ; preds = %80, %16
   %.04 = phi i32 [ 0, %16 ], [ %77, %80 ]
   %.3 = phi i32 [ %.2, %16 ], [ %.9, %80 ]
   %18 = icmp slt i32 %.04, 10000
-  br i1 %18, label %19, label %81
+  Br i1 %18, label %19, label %81
 
 19:                                               ; preds = %17
-  br label %20
+  Br label %20
 
 20:                                               ; preds = %75, %19
   %.03 = phi i32 [ 0, %19 ], [ %72, %75 ]
   %.4 = phi i32 [ %.3, %19 ], [ %.8, %75 ]
   %21 = icmp slt i32 %.03, 100000
-  br i1 %21, label %22, label %76
+  Br i1 %21, label %22, label %76
 
 22:                                               ; preds = %20
-  br label %23
+  Br label %23
 
 23:                                               ; preds = %70, %22
   %.02 = phi i32 [ 0, %22 ], [ %67, %70 ]
   %.5 = phi i32 [ %.4, %22 ], [ %.7, %70 ]
   %24 = icmp slt i32 %.02, 1000000
-  br i1 %24, label %25, label %71
+  Br i1 %24, label %25, label %71
 
 25:                                               ; preds = %23
-  br label %26
+  Br label %26
 
 26:                                               ; preds = %65, %25
   %.01 = phi i32 [ 0, %25 ], [ %62, %65 ]
   %.6 = phi i32 [ %.5, %25 ], [ %61, %65 ]
   %27 = icmp slt i32 %.01, 10000000
-  br i1 %27, label %28, label %66
+  Br i1 %27, label %28, label %66
 
 28:                                               ; preds = %26
   %29 = srem i32 %.6, 817
@@ -333,85 +333,85 @@ define dso_local i32 @loop3(i32 %0, i32 %1, i32 %2, i32 %3, i32 %4, i32 %5, i32 
   %61 = add nsw i32 %45, %60
   %62 = add nsw i32 %.01, 1
   %63 = icmp sge i32 %62, %6
-  br i1 %63, label %64, label %65
+  Br i1 %63, label %64, label %65
 
 64:                                               ; preds = %28
-  br label %66
+  Br label %66
 
 65:                                               ; preds = %28
-  br label %26
+  Br label %26
 
 66:                                               ; preds = %64, %26
   %.7 = phi i32 [ %61, %64 ], [ %.6, %26 ]
   %67 = add nsw i32 %.02, 1
   %68 = icmp sge i32 %67, %5
-  br i1 %68, label %69, label %70
+  Br i1 %68, label %69, label %70
 
 69:                                               ; preds = %66
-  br label %71
+  Br label %71
 
 70:                                               ; preds = %66
-  br label %23
+  Br label %23
 
 71:                                               ; preds = %69, %23
   %.8 = phi i32 [ %.7, %69 ], [ %.5, %23 ]
   %72 = add nsw i32 %.03, 1
   %73 = icmp sge i32 %72, %4
-  br i1 %73, label %74, label %75
+  Br i1 %73, label %74, label %75
 
 74:                                               ; preds = %71
-  br label %76
+  Br label %76
 
 75:                                               ; preds = %71
-  br label %20
+  Br label %20
 
 76:                                               ; preds = %74, %20
   %.9 = phi i32 [ %.8, %74 ], [ %.4, %20 ]
   %77 = add nsw i32 %.04, 1
   %78 = icmp sge i32 %77, %3
-  br i1 %78, label %79, label %80
+  Br i1 %78, label %79, label %80
 
 79:                                               ; preds = %76
-  br label %81
+  Br label %81
 
 80:                                               ; preds = %76
-  br label %17
+  Br label %17
 
 81:                                               ; preds = %79, %17
   %.10 = phi i32 [ %.9, %79 ], [ %.3, %17 ]
   %82 = add nsw i32 %.05, 1
   %83 = icmp sge i32 %82, %2
-  br i1 %83, label %84, label %85
+  Br i1 %83, label %84, label %85
 
 84:                                               ; preds = %81
-  br label %86
+  Br label %86
 
 85:                                               ; preds = %81
-  br label %14
+  Br label %14
 
 86:                                               ; preds = %84, %14
   %.11 = phi i32 [ %.10, %84 ], [ %.2, %14 ]
   %87 = add nsw i32 %.06, 1
   %88 = icmp sge i32 %87, %1
-  br i1 %88, label %89, label %90
+  Br i1 %88, label %89, label %90
 
 89:                                               ; preds = %86
-  br label %91
+  Br label %91
 
 90:                                               ; preds = %86
-  br label %11
+  Br label %11
 
 91:                                               ; preds = %89, %11
   %.12 = phi i32 [ %.11, %89 ], [ %.1, %11 ]
   %92 = add nsw i32 %.07, 1
   %93 = icmp sge i32 %92, %0
-  br i1 %93, label %94, label %95
+  Br i1 %93, label %94, label %95
 
 94:                                               ; preds = %91
-  br label %96
+  Br label %96
 
 95:                                               ; preds = %91
-  br label %8
+  Br label %8
 
 96:                                               ; preds = %94, %8
   %.13 = phi i32 [ %.12, %94 ], [ %.0, %8 ]

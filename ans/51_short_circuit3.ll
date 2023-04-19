@@ -34,15 +34,15 @@ define dso_local i32 @main() #0 {
   store i32 3, i32* @b, align 4
   %1 = call i32 @set_a(i32 0)
   %2 = icmp ne i32 %1, 0
-  br i1 %2, label %3, label %7
+  Br i1 %2, label %3, label %7
 
 3:                                                ; preds = %0
   %4 = call i32 @set_b(i32 1)
   %5 = icmp ne i32 %4, 0
-  br i1 %5, label %6, label %7
+  Br i1 %5, label %6, label %7
 
 6:                                                ; preds = %3
-  br label %7
+  Br label %7
 
 7:                                                ; preds = %6, %3, %0
   %8 = load i32, i32* @a, align 4
@@ -55,15 +55,15 @@ define dso_local i32 @main() #0 {
   store i32 3, i32* @b, align 4
   %14 = call i32 @set_a(i32 0)
   %15 = icmp ne i32 %14, 0
-  br i1 %15, label %16, label %20
+  Br i1 %15, label %16, label %20
 
 16:                                               ; preds = %7
   %17 = call i32 @set_b(i32 1)
   %18 = icmp ne i32 %17, 0
-  br i1 %18, label %19, label %20
+  Br i1 %18, label %19, label %20
 
 19:                                               ; preds = %16
-  br label %20
+  Br label %20
 
 20:                                               ; preds = %19, %16, %7
   %21 = load i32, i32* @a, align 4
@@ -75,10 +75,10 @@ define dso_local i32 @main() #0 {
   store i32 2, i32* @d, align 4
   %27 = call i32 @set_d(i32 3)
   %28 = icmp ne i32 %27, 0
-  br i1 %28, label %29, label %30
+  Br i1 %28, label %29, label %30
 
 29:                                               ; preds = %20
-  br label %30
+  Br label %30
 
 30:                                               ; preds = %29, %20
   %31 = load i32, i32* @d, align 4
@@ -91,97 +91,97 @@ define dso_local i32 @main() #0 {
   %38 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 68)
   %39 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 70)
   %40 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  br label %41
+  Br label %41
 
 41:                                               ; preds = %47, %30
   %42 = icmp ne i32 0, 0
-  br i1 %42, label %43, label %45
+  Br i1 %42, label %43, label %45
 
 43:                                               ; preds = %41
   %44 = icmp ne i32 1, 0
-  br label %45
+  Br label %45
 
 45:                                               ; preds = %43, %41
   %46 = phi i1 [ false, %41 ], [ %44, %43 ]
-  br i1 %46, label %47, label %49
+  Br i1 %46, label %47, label %49
 
 47:                                               ; preds = %45
   %48 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 32)
-  br label %41
+  Br label %41
 
 49:                                               ; preds = %45
   %50 = icmp ne i32 0, 0
-  br i1 %50, label %53, label %51
+  Br i1 %50, label %53, label %51
 
 51:                                               ; preds = %49
   %52 = icmp ne i32 1, 0
-  br i1 %52, label %53, label %55
+  Br i1 %52, label %53, label %55
 
 53:                                               ; preds = %51, %49
   %54 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 67)
-  br label %55
+  Br label %55
 
 55:                                               ; preds = %53, %51
   %56 = icmp sge i32 0, 1
-  br i1 %56, label %59, label %57
+  Br i1 %56, label %59, label %57
 
 57:                                               ; preds = %55
   %58 = icmp sle i32 1, 0
-  br i1 %58, label %59, label %61
+  Br i1 %58, label %59, label %61
 
 59:                                               ; preds = %57, %55
   %60 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 72)
-  br label %61
+  Br label %61
 
 61:                                               ; preds = %59, %57
   %62 = icmp sge i32 2, 1
-  br i1 %62, label %63, label %67
+  Br i1 %62, label %63, label %67
 
 63:                                               ; preds = %61
   %64 = icmp ne i32 4, 3
-  br i1 %64, label %65, label %67
+  Br i1 %64, label %65, label %67
 
 65:                                               ; preds = %63
   %66 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 73)
-  br label %67
+  Br label %67
 
 67:                                               ; preds = %65, %63, %61
   %68 = icmp ne i32 1, 0
   %69 = xor i1 %68, true
   %70 = zext i1 %69 to i32
   %71 = icmp eq i32 0, %70
-  br i1 %71, label %72, label %74
+  Br i1 %71, label %72, label %74
 
 72:                                               ; preds = %67
   %73 = icmp slt i32 3, 3
-  br i1 %73, label %76, label %74
+  Br i1 %73, label %76, label %74
 
 74:                                               ; preds = %72, %67
   %75 = icmp sge i32 4, 4
-  br i1 %75, label %76, label %78
+  Br i1 %75, label %76, label %78
 
 76:                                               ; preds = %74, %72
   %77 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 74)
-  br label %78
+  Br label %78
 
 78:                                               ; preds = %76, %74
   %79 = icmp ne i32 1, 0
   %80 = xor i1 %79, true
   %81 = zext i1 %80 to i32
   %82 = icmp eq i32 0, %81
-  br i1 %82, label %87, label %83
+  Br i1 %82, label %87, label %83
 
 83:                                               ; preds = %78
   %84 = icmp slt i32 3, 3
-  br i1 %84, label %85, label %89
+  Br i1 %84, label %85, label %89
 
 85:                                               ; preds = %83
   %86 = icmp sge i32 4, 4
-  br i1 %86, label %87, label %89
+  Br i1 %86, label %87, label %89
 
 87:                                               ; preds = %85, %78
   %88 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 75)
-  br label %89
+  Br label %89
 
 89:                                               ; preds = %87, %85, %83
   %90 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)

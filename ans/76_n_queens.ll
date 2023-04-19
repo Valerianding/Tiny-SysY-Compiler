@@ -15,13 +15,13 @@ define dso_local void @printans() #0 {
   %1 = load i32, i32* @sum, align 4
   %2 = add nsw i32 %1, 1
   store i32 %2, i32* @sum, align 4
-  br label %3
+  Br label %3
 
 3:                                                ; preds = %17, %0
   %.0 = phi i32 [ 1, %0 ], [ %18, %17 ]
   %4 = load i32, i32* @n, align 4
   %5 = icmp sle i32 %.0, %4
-  br i1 %5, label %6, label %19
+  Br i1 %5, label %6, label %19
 
 6:                                                ; preds = %3
   %7 = sext i32 %.0 to i64
@@ -30,19 +30,19 @@ define dso_local void @printans() #0 {
   %10 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %9)
   %11 = load i32, i32* @n, align 4
   %12 = icmp eq i32 %.0, %11
-  br i1 %12, label %13, label %15
+  Br i1 %12, label %13, label %15
 
 13:                                               ; preds = %6
   %14 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  br label %19
+  Br label %19
 
 15:                                               ; preds = %6
   %16 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 32)
-  br label %17
+  Br label %17
 
 17:                                               ; preds = %15
   %18 = add nsw i32 %.0, 1
-  br label %3
+  Br label %3
 
 19:                                               ; preds = %13, %3
   ret void
@@ -54,20 +54,20 @@ declare dso_local i32 @putch(...) #1
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @f(i32 %0) #0 {
-  br label %2
+  Br label %2
 
 2:                                                ; preds = %52, %1
   %.0 = phi i32 [ 1, %1 ], [ %53, %52 ]
   %3 = load i32, i32* @n, align 4
   %4 = icmp sle i32 %.0, %3
-  br i1 %4, label %5, label %54
+  Br i1 %4, label %5, label %54
 
 5:                                                ; preds = %2
   %6 = sext i32 %.0 to i64
   %7 = getelementptr inbounds [50 x i32], [50 x i32]* @row, i64 0, i64 %6
   %8 = load i32, i32* %7, align 4
   %9 = icmp ne i32 %8, 1
-  br i1 %9, label %10, label %52
+  Br i1 %9, label %10, label %52
 
 10:                                               ; preds = %5
   %11 = add nsw i32 %0, %.0
@@ -75,7 +75,7 @@ define dso_local void @f(i32 %0) #0 {
   %13 = getelementptr inbounds [50 x i32], [50 x i32]* @line1, i64 0, i64 %12
   %14 = load i32, i32* %13, align 4
   %15 = icmp eq i32 %14, 0
-  br i1 %15, label %16, label %52
+  Br i1 %15, label %16, label %52
 
 16:                                               ; preds = %10
   %17 = load i32, i32* @n, align 4
@@ -85,7 +85,7 @@ define dso_local void @f(i32 %0) #0 {
   %21 = getelementptr inbounds [100 x i32], [100 x i32]* @line2, i64 0, i64 %20
   %22 = load i32, i32* %21, align 4
   %23 = icmp ne i32 %22, 0
-  br i1 %23, label %52, label %24
+  Br i1 %23, label %52, label %24
 
 24:                                               ; preds = %16
   %25 = sext i32 %0 to i64
@@ -93,11 +93,11 @@ define dso_local void @f(i32 %0) #0 {
   store i32 %.0, i32* %26, align 4
   %27 = load i32, i32* @n, align 4
   %28 = icmp eq i32 %0, %27
-  br i1 %28, label %29, label %30
+  Br i1 %28, label %29, label %30
 
 29:                                               ; preds = %24
   call void @printans()
-  br label %30
+  Br label %30
 
 30:                                               ; preds = %29, %24
   %31 = sext i32 %.0 to i64
@@ -128,11 +128,11 @@ define dso_local void @f(i32 %0) #0 {
   %50 = sext i32 %49 to i64
   %51 = getelementptr inbounds [100 x i32], [100 x i32]* @line2, i64 0, i64 %50
   store i32 0, i32* %51, align 4
-  br label %52
+  Br label %52
 
 52:                                               ; preds = %30, %16, %10, %5
   %53 = add nsw i32 %.0, 1
-  br label %2
+  Br label %2
 
 54:                                               ; preds = %2
   ret void
@@ -141,19 +141,19 @@ define dso_local void @f(i32 %0) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
   %1 = call i32 (...) @getint()
-  br label %2
+  Br label %2
 
 2:                                                ; preds = %4, %0
   %.0 = phi i32 [ %1, %0 ], [ %6, %4 ]
   %3 = icmp sgt i32 %.0, 0
-  br i1 %3, label %4, label %7
+  Br i1 %3, label %4, label %7
 
 4:                                                ; preds = %2
   %5 = call i32 (...) @getint()
   store i32 %5, i32* @n, align 4
   call void @f(i32 1)
   %6 = sub nsw i32 %.0, 1
-  br label %2
+  Br label %2
 
 7:                                                ; preds = %2
   %8 = load i32, i32* @sum, align 4

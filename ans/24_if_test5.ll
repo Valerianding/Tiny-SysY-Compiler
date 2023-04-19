@@ -6,22 +6,22 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @if_if_Else() #0 {
   %1 = icmp eq i32 5, 5
-  br i1 %1, label %2, label %6
+  Br i1 %1, label %2, label %6
 
 2:                                                ; preds = %0
   %3 = icmp eq i32 10, 10
-  br i1 %3, label %4, label %5
+  Br i1 %3, label %4, label %5
 
 4:                                                ; preds = %2
-  br label %5
+  Br label %5
 
 5:                                                ; preds = %4, %2
   %.0 = phi i32 [ 25, %4 ], [ 5, %2 ]
-  br label %8
+  Br label %8
 
 6:                                                ; preds = %0
   %7 = add nsw i32 5, 15
-  br label %8
+  Br label %8
 
 8:                                                ; preds = %6, %5
   %.1 = phi i32 [ %.0, %5 ], [ %7, %6 ]

@@ -17,27 +17,27 @@ define dso_local i32 @inc_a() #0 {
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
-  br label %1
+  Br label %1
 
 1:                                                ; preds = %39, %0
   %.0 = phi i32 [ 5, %0 ], [ %40, %39 ]
   %2 = icmp sge i32 %.0, 0
-  br i1 %2, label %3, label %41
+  Br i1 %2, label %3, label %41
 
 3:                                                ; preds = %1
   %4 = call i32 @inc_a()
   %5 = icmp ne i32 %4, 0
-  br i1 %5, label %6, label %19
+  Br i1 %5, label %6, label %19
 
 6:                                                ; preds = %3
   %7 = call i32 @inc_a()
   %8 = icmp ne i32 %7, 0
-  br i1 %8, label %9, label %19
+  Br i1 %8, label %9, label %19
 
 9:                                                ; preds = %6
   %10 = call i32 @inc_a()
   %11 = icmp ne i32 %10, 0
-  br i1 %11, label %12, label %19
+  Br i1 %11, label %12, label %19
 
 12:                                               ; preds = %9
   %13 = load i32, i32* @a, align 4
@@ -46,17 +46,17 @@ define dso_local i32 @main() #0 {
   %16 = load i32, i32* @b, align 4
   %17 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %16)
   %18 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  br label %19
+  Br label %19
 
 19:                                               ; preds = %12, %9, %6, %3
   %20 = call i32 @inc_a()
   %21 = icmp slt i32 %20, 14
-  br i1 %21, label %31, label %22
+  Br i1 %21, label %31, label %22
 
 22:                                               ; preds = %19
   %23 = call i32 @inc_a()
   %24 = icmp ne i32 %23, 0
-  br i1 %24, label %25, label %37
+  Br i1 %24, label %25, label %37
 
 25:                                               ; preds = %22
   %26 = call i32 @inc_a()
@@ -64,7 +64,7 @@ define dso_local i32 @main() #0 {
   %28 = sub nsw i32 %26, %27
   %29 = add nsw i32 %28, 1
   %30 = icmp ne i32 %29, 0
-  br i1 %30, label %31, label %37
+  Br i1 %30, label %31, label %37
 
 31:                                               ; preds = %25, %19
   %32 = load i32, i32* @a, align 4
@@ -73,15 +73,15 @@ define dso_local i32 @main() #0 {
   %35 = load i32, i32* @b, align 4
   %36 = mul nsw i32 %35, 2
   store i32 %36, i32* @b, align 4
-  br label %39
+  Br label %39
 
 37:                                               ; preds = %25, %22
   %38 = call i32 @inc_a()
-  br label %39
+  Br label %39
 
 39:                                               ; preds = %37, %31
   %40 = sub nsw i32 %.0, 1
-  br label %1
+  Br label %1
 
 41:                                               ; preds = %1
   %42 = load i32, i32* @a, align 4

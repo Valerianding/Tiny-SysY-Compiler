@@ -152,7 +152,7 @@ bool BranchOptimizing(Function *currentFunction) {
     //判断条件现在是否被优化成了
     InstNode *branchNode = entry->head_node;
     while (branchNode != tail->tail_node) {
-        if (branchNode->inst->Opcode == br_i1) {
+        if (branchNode->inst->Opcode == Br_i1) {
             BasicBlock *parent = branchNode->inst->Parent;
             // 看我们的进行判断的Value1的值到底是多少呢
             Value *cond = ins_get_lhs(branchNode->inst);
@@ -179,7 +179,7 @@ bool BranchOptimizing(Function *currentFunction) {
                     parent->true_block = parent->false_block;
                     parent->false_block = NULL;
                 }
-                branchNode->inst->Opcode = br;
+                branchNode->inst->Opcode = Br;
             }
         }
         branchNode = get_next_inst(branchNode);

@@ -37,7 +37,7 @@ void bblock_divide(InstNode *head){
                 curBlockLabel = 0;
             }
         }
-        if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd || cur->inst->Opcode == Return){
+        if(cur->inst->Opcode == Br || cur->inst->Opcode == Br_i1 || cur->inst->Opcode == FunEnd || cur->inst->Opcode == Return){
             InstNode *cur_next = get_next_inst(cur);
             BasicBlock *this = bb_create();
             this->id = curBlockLabel;
@@ -54,7 +54,7 @@ void bblock_divide(InstNode *head){
         if(cur->inst->Opcode == FunBegin){
             entry = cur->inst->Parent;
         }
-        if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd || cur->inst->Opcode == Return) {
+        if(cur->inst->Opcode == Br || cur->inst->Opcode == Br_i1 || cur->inst->Opcode == FunEnd || cur->inst->Opcode == Return) {
             BasicBlock *this = cur->inst->Parent;
             if (cur->inst->Opcode == FunEnd) {
                 Function *cur_func = function_create();
@@ -64,14 +64,14 @@ void bblock_divide(InstNode *head){
                 func_prev = cur_func;
                 printf("Set Function success !\n");
                 func_set(cur_func, entry, this);
-            } else if (cur->inst->Opcode == br) {
+            } else if (cur->inst->Opcode == Br) {
                 InstNode *function_begin = get_func_start(cur);
                 InstNode *true_label = search_ins_label(function_begin,
                                                         cur->inst->user.value.pdata->instruction_pdata.true_goto_location);
                 BasicBlock *true_block = true_label->inst->Parent;
                 bb_add_prev(this, true_block);
                 this->true_block = true_block;
-            } else if (cur->inst->Opcode == br_i1) {
+            } else if (cur->inst->Opcode == Br_i1) {
                 InstNode *function_begin = get_func_start(cur);
                 InstNode *true_label = search_ins_label(function_begin,
                                                         cur->inst->user.value.pdata->instruction_pdata.true_goto_location);

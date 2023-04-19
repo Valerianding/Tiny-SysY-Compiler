@@ -12,19 +12,19 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @my_memset(i32* %0, i32 %1, i32 %2) #0 {
-  br label %4
+  Br label %4
 
 4:                                                ; preds = %6, %3
   %.0 = phi i32 [ 0, %3 ], [ %9, %6 ]
   %5 = icmp slt i32 %.0, %2
-  br i1 %5, label %6, label %10
+  Br i1 %5, label %6, label %10
 
 6:                                                ; preds = %4
   %7 = sext i32 %.0 to i64
   %8 = getelementptr inbounds i32, i32* %0, i64 %7
   store i32 %1, i32* %8, align 4
   %9 = add nsw i32 %.0, 1
-  br label %4
+  Br label %4
 
 10:                                               ; preds = %4
   ret void
@@ -106,16 +106,16 @@ define dso_local void @add_node(i32 %0, i32 %1, i32 %2) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %4 = icmp eq i32 %0, %1
-  br i1 %4, label %5, label %6
+  Br i1 %4, label %5, label %6
 
 5:                                                ; preds = %3
-  br label %101
+  Br label %101
 
 6:                                                ; preds = %3
   %7 = sext i32 %0 to i64
   %8 = getelementptr inbounds [10 x i32], [10 x i32]* @used, i64 0, i64 %7
   store i32 1, i32* %8, align 4
-  br label %9
+  Br label %9
 
 9:                                                ; preds = %98, %33, %24, %6
   %.02 = phi i32 [ 0, %6 ], [ %25, %24 ], [ %34, %33 ], [ %99, %98 ]
@@ -123,7 +123,7 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %11 = getelementptr inbounds [10 x i32], [10 x i32]* @size, i64 0, i64 %10
   %12 = load i32, i32* %11, align 4
   %13 = icmp slt i32 %.02, %12
-  br i1 %13, label %14, label %100
+  Br i1 %13, label %14, label %100
 
 14:                                               ; preds = %9
   %15 = sext i32 %0 to i64
@@ -135,11 +135,11 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %21 = getelementptr inbounds [10 x i32], [10 x i32]* @used, i64 0, i64 %20
   %22 = load i32, i32* %21, align 4
   %23 = icmp ne i32 %22, 0
-  br i1 %23, label %24, label %26
+  Br i1 %23, label %24, label %26
 
 24:                                               ; preds = %14
   %25 = add nsw i32 %.02, 1
-  br label %9
+  Br label %9
 
 26:                                               ; preds = %14
   %27 = sext i32 %0 to i64
@@ -148,11 +148,11 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %30 = getelementptr inbounds [10 x i32], [10 x i32]* %28, i64 0, i64 %29
   %31 = load i32, i32* %30, align 4
   %32 = icmp sle i32 %31, 0
-  br i1 %32, label %33, label %35
+  Br i1 %32, label %33, label %35
 
 33:                                               ; preds = %26
   %34 = add nsw i32 %.02, 1
-  br label %9
+  Br label %9
 
 35:                                               ; preds = %26
   %36 = sext i32 %0 to i64
@@ -161,10 +161,10 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %39 = getelementptr inbounds [10 x i32], [10 x i32]* %37, i64 0, i64 %38
   %40 = load i32, i32* %39, align 4
   %41 = icmp slt i32 %2, %40
-  br i1 %41, label %42, label %43
+  Br i1 %41, label %42, label %43
 
 42:                                               ; preds = %35
-  br label %49
+  Br label %49
 
 43:                                               ; preds = %35
   %44 = sext i32 %0 to i64
@@ -172,7 +172,7 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %46 = sext i32 %.02 to i64
   %47 = getelementptr inbounds [10 x i32], [10 x i32]* %45, i64 0, i64 %46
   %48 = load i32, i32* %47, align 4
-  br label %49
+  Br label %49
 
 49:                                               ; preds = %43, %42
   %.01 = phi i32 [ %2, %42 ], [ %48, %43 ]
@@ -183,7 +183,7 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %54 = load i32, i32* %53, align 4
   %55 = call i32 @dfs(i32 %54, i32 %1, i32 %.01)
   %56 = icmp sgt i32 %55, 0
-  br i1 %56, label %57, label %98
+  Br i1 %56, label %57, label %98
 
 57:                                               ; preds = %49
   %58 = sext i32 %0 to i64
@@ -228,14 +228,14 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
   %96 = sext i32 %95 to i64
   %97 = getelementptr inbounds [10 x i32], [10 x i32]* %90, i64 0, i64 %96
   store i32 %83, i32* %97, align 4
-  br label %101
+  Br label %101
 
 98:                                               ; preds = %49
   %99 = add nsw i32 %.02, 1
-  br label %9
+  Br label %9
 
 100:                                              ; preds = %9
-  br label %101
+  Br label %101
 
 101:                                              ; preds = %100, %57, %5
   %.0 = phi i32 [ %2, %5 ], [ %55, %57 ], [ 0, %100 ]
@@ -244,21 +244,21 @@ define dso_local i32 @dfs(i32 %0, i32 %1, i32 %2) #0 {
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @max_flow(i32 %0, i32 %1) #0 {
-  br label %3
+  Br label %3
 
 3:                                                ; preds = %7, %2
   %.0 = phi i32 [ 0, %2 ], [ %8, %7 ]
   call void @my_memset(i32* getelementptr inbounds ([10 x i32], [10 x i32]* @used, i64 0, i64 0), i32 0, i32 10)
   %4 = call i32 @dfs(i32 %0, i32 %1, i32 1879048192)
   %5 = icmp eq i32 %4, 0
-  br i1 %5, label %6, label %7
+  Br i1 %5, label %6, label %7
 
 6:                                                ; preds = %3
   ret i32 %.0
 
 7:                                                ; preds = %3
   %8 = add nsw i32 %.0, %4
-  br label %3
+  Br label %3
 }
 
 ; Function Attrs: noinline nounwind uwtable
@@ -266,12 +266,12 @@ define dso_local i32 @main() #0 {
   %1 = call i32 (...) @getint()
   %2 = call i32 (...) @getint()
   call void @my_memset(i32* getelementptr inbounds ([10 x i32], [10 x i32]* @size, i64 0, i64 0), i32 0, i32 10)
-  br label %3
+  Br label %3
 
 3:                                                ; preds = %5, %0
   %.0 = phi i32 [ %2, %0 ], [ %9, %5 ]
   %4 = icmp sgt i32 %.0, 0
-  br i1 %4, label %5, label %10
+  Br i1 %4, label %5, label %10
 
 5:                                                ; preds = %3
   %6 = call i32 (...) @getint()
@@ -279,7 +279,7 @@ define dso_local i32 @main() #0 {
   %8 = call i32 (...) @getint()
   call void @add_node(i32 %6, i32 %7, i32 %8)
   %9 = sub nsw i32 %.0, 1
-  br label %3
+  Br label %3
 
 10:                                               ; preds = %3
   %11 = call i32 @max_flow(i32 1, i32 %1)

@@ -13,13 +13,13 @@ define dso_local i32 @main() #0 {
   store i32 1, i32* %4, align 16
   %5 = getelementptr inbounds <{ i32, i32, [18 x i32] }>, <{ i32, i32, [18 x i32] }>* %3, i32 0, i32 1
   store i32 2, i32* %5, align 4
-  br label %6
+  Br label %6
 
 6:                                                ; preds = %8, %0
   %.01 = phi i32 [ 2, %0 ], [ %33, %8 ]
   %.0 = phi i32 [ 0, %0 ], [ %27, %8 ]
   %7 = icmp slt i32 %.01, 20
-  br i1 %7, label %8, label %34
+  Br i1 %7, label %8, label %34
 
 8:                                                ; preds = %6
   %9 = sext i32 %.01 to i64
@@ -48,7 +48,7 @@ define dso_local i32 @main() #0 {
   %31 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %30)
   %32 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %33 = add nsw i32 %.01, 1
-  br label %6
+  Br label %6
 
 34:                                               ; preds = %6
   ret i32 %.0

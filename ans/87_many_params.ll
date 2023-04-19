@@ -5,22 +5,22 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @sort(i32* %0, i32 %1) #0 {
-  br label %3
+  Br label %3
 
 3:                                                ; preds = %31, %2
   %.01 = phi i32 [ 0, %2 ], [ %32, %31 ]
   %4 = sub nsw i32 %1, 1
   %5 = icmp slt i32 %.01, %4
-  br i1 %5, label %6, label %33
+  Br i1 %5, label %6, label %33
 
 6:                                                ; preds = %3
   %7 = add nsw i32 %.01, 1
-  br label %8
+  Br label %8
 
 8:                                                ; preds = %29, %6
   %.0 = phi i32 [ %7, %6 ], [ %30, %29 ]
   %9 = icmp slt i32 %.0, %1
-  br i1 %9, label %10, label %31
+  Br i1 %9, label %10, label %31
 
 10:                                               ; preds = %8
   %11 = sext i32 %.01 to i64
@@ -30,7 +30,7 @@ define dso_local void @sort(i32* %0, i32 %1) #0 {
   %15 = getelementptr inbounds i32, i32* %0, i64 %14
   %16 = load i32, i32* %15, align 4
   %17 = icmp slt i32 %13, %16
-  br i1 %17, label %18, label %29
+  Br i1 %17, label %18, label %29
 
 18:                                               ; preds = %10
   %19 = sext i32 %.01 to i64
@@ -45,15 +45,15 @@ define dso_local void @sort(i32* %0, i32 %1) #0 {
   %27 = sext i32 %.0 to i64
   %28 = getelementptr inbounds i32, i32* %0, i64 %27
   store i32 %21, i32* %28, align 4
-  br label %29
+  Br label %29
 
 29:                                               ; preds = %18, %10
   %30 = add nsw i32 %.0, 1
-  br label %8
+  Br label %8
 
 31:                                               ; preds = %8
   %32 = add nsw i32 %.01, 1
-  br label %3
+  Br label %3
 
 33:                                               ; preds = %3
   ret void
@@ -62,17 +62,17 @@ define dso_local void @sort(i32* %0, i32 %1) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @param32_rec(i32 %0, i32 %1, i32 %2, i32 %3, i32 %4, i32 %5, i32 %6, i32 %7, i32 %8, i32 %9, i32 %10, i32 %11, i32 %12, i32 %13, i32 %14, i32 %15, i32 %16, i32 %17, i32 %18, i32 %19, i32 %20, i32 %21, i32 %22, i32 %23, i32 %24, i32 %25, i32 %26, i32 %27, i32 %28, i32 %29, i32 %30, i32 %31) #0 {
   %33 = icmp eq i32 %0, 0
-  br i1 %33, label %34, label %35
+  Br i1 %33, label %34, label %35
 
 34:                                               ; preds = %32
-  br label %40
+  Br label %40
 
 35:                                               ; preds = %32
   %36 = sub nsw i32 %0, 1
   %37 = add nsw i32 %1, %2
   %38 = srem i32 %37, 998244353
   %39 = call i32 @param32_rec(i32 %36, i32 %38, i32 %3, i32 %4, i32 %5, i32 %6, i32 %7, i32 %8, i32 %9, i32 %10, i32 %11, i32 %12, i32 %13, i32 %14, i32 %15, i32 %16, i32 %17, i32 %18, i32 %19, i32 %20, i32 %21, i32 %22, i32 %23, i32 %24, i32 %25, i32 %26, i32 %27, i32 %28, i32 %29, i32 %30, i32 %31, i32 0)
-  br label %40
+  Br label %40
 
 40:                                               ; preds = %35, %34
   %.0 = phi i32 [ %1, %34 ], [ %39, %35 ]
@@ -375,12 +375,12 @@ define dso_local i32 @main() #0 {
   store i32 %21, i32* %4, align 4
   %22 = getelementptr inbounds i32, i32* %4, i64 1
   store i32 8848, i32* %22, align 4
-  br label %23
+  Br label %23
 
 23:                                               ; preds = %25, %0
   %.0 = phi i32 [ 1, %0 ], [ %44, %25 ]
   %24 = icmp slt i32 %.0, 32
-  br i1 %24, label %25, label %45
+  Br i1 %24, label %25, label %45
 
 25:                                               ; preds = %23
   %26 = sub nsw i32 %.0, 1
@@ -404,7 +404,7 @@ define dso_local i32 @main() #0 {
   %43 = getelementptr inbounds [2 x i32], [2 x i32]* %42, i64 0, i64 1
   store i32 %40, i32* %43, align 4
   %44 = add nsw i32 %.0, 1
-  br label %23
+  Br label %23
 
 45:                                               ; preds = %23
   %46 = getelementptr inbounds [32 x [2 x i32]], [32 x [2 x i32]]* %1, i64 0, i64 0

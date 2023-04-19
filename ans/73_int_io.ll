@@ -7,48 +7,48 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @my_getint() #0 {
-  br label %1
+  Br label %1
 
 1:                                                ; preds = %7, %0
   %2 = call i32 (...) @getch()
   %3 = sub nsw i32 %2, 48
   %4 = icmp slt i32 %3, 0
-  br i1 %4, label %7, label %5
+  Br i1 %4, label %7, label %5
 
 5:                                                ; preds = %1
   %6 = icmp sgt i32 %3, 9
-  br i1 %6, label %7, label %8
+  Br i1 %6, label %7, label %8
 
 7:                                                ; preds = %5, %1
-  br label %1
+  Br label %1
 
 8:                                                ; preds = %5
-  br label %9
+  Br label %9
 
 9:                                                ; preds = %8
-  br label %10
+  Br label %10
 
 10:                                               ; preds = %20, %9
   %.0 = phi i32 [ %3, %9 ], [ %18, %20 ]
   %11 = call i32 (...) @getch()
   %12 = sub nsw i32 %11, 48
   %13 = icmp sge i32 %12, 0
-  br i1 %13, label %14, label %19
+  Br i1 %13, label %14, label %19
 
 14:                                               ; preds = %10
   %15 = icmp sle i32 %12, 9
-  br i1 %15, label %16, label %19
+  Br i1 %15, label %16, label %19
 
 16:                                               ; preds = %14
   %17 = mul nsw i32 %.0, 10
   %18 = add nsw i32 %17, %12
-  br label %20
+  Br label %20
 
 19:                                               ; preds = %14, %10
-  br label %21
+  Br label %21
 
 20:                                               ; preds = %16
-  br label %10
+  Br label %10
 
 21:                                               ; preds = %19
   ret i32 %.0
@@ -59,13 +59,13 @@ declare dso_local i32 @getch(...) #1
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @my_putint(i32 %0) #0 {
   %2 = alloca [16 x i32], align 16
-  br label %3
+  Br label %3
 
 3:                                                ; preds = %5, %1
   %.01 = phi i32 [ 0, %1 ], [ %11, %5 ]
   %.0 = phi i32 [ %0, %1 ], [ %10, %5 ]
   %4 = icmp sgt i32 %.0, 0
-  br i1 %4, label %5, label %12
+  Br i1 %4, label %5, label %12
 
 5:                                                ; preds = %3
   %6 = srem i32 %.0, 10
@@ -75,15 +75,15 @@ define dso_local void @my_putint(i32 %0) #0 {
   store i32 %7, i32* %9, align 4
   %10 = sdiv i32 %.0, 10
   %11 = add nsw i32 %.01, 1
-  br label %3
+  Br label %3
 
 12:                                               ; preds = %3
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %15, %12
   %.1 = phi i32 [ %.01, %12 ], [ %16, %15 ]
   %14 = icmp sgt i32 %.1, 0
-  br i1 %14, label %15, label %21
+  Br i1 %14, label %15, label %21
 
 15:                                               ; preds = %13
   %16 = sub nsw i32 %.1, 1
@@ -91,7 +91,7 @@ define dso_local void @my_putint(i32 %0) #0 {
   %18 = getelementptr inbounds [16 x i32], [16 x i32]* %2, i64 0, i64 %17
   %19 = load i32, i32* %18, align 4
   %20 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 %19)
-  br label %13
+  Br label %13
 
 21:                                               ; preds = %13
   ret void
@@ -102,19 +102,19 @@ declare dso_local i32 @putch(...) #1
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
   %1 = call i32 @my_getint()
-  br label %2
+  Br label %2
 
 2:                                                ; preds = %4, %0
   %.0 = phi i32 [ %1, %0 ], [ %7, %4 ]
   %3 = icmp sgt i32 %.0, 0
-  br i1 %3, label %4, label %8
+  Br i1 %3, label %4, label %8
 
 4:                                                ; preds = %2
   %5 = call i32 @my_getint()
   call void @my_putint(i32 %5)
   %6 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %7 = sub nsw i32 %.0, 1
-  br label %2
+  Br label %2
 
 8:                                                ; preds = %2
   ret i32 0

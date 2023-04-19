@@ -20,7 +20,7 @@ define dso_local i32 @main() #0 {
   %7 = load i32, i32* @d, align 4
   %8 = add nsw i32 %6, %7
   %9 = icmp eq i32 %5, %8
-  br i1 %9, label %10, label %22
+  Br i1 %9, label %10, label %22
 
 10:                                               ; preds = %0
   %11 = load i32, i32* @a, align 4
@@ -34,7 +34,7 @@ define dso_local i32 @main() #0 {
   %19 = load i32, i32* @e, align 4
   %20 = add nsw i32 %18, %19
   %21 = icmp sle i32 %17, %20
-  br i1 %21, label %34, label %22
+  Br i1 %21, label %34, label %22
 
 22:                                               ; preds = %10, %0
   %23 = load i32, i32* @a, align 4
@@ -48,10 +48,10 @@ define dso_local i32 @main() #0 {
   %31 = sdiv i32 %29, %30
   %32 = sub nsw i32 %28, %31
   %33 = icmp eq i32 %27, %32
-  br i1 %33, label %34, label %35
+  Br i1 %33, label %34, label %35
 
 34:                                               ; preds = %22, %10
-  br label %35
+  Br label %35
 
 35:                                               ; preds = %34, %22
   %.0 = phi i32 [ 1, %34 ], [ 0, %22 ]

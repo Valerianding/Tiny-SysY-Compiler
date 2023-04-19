@@ -5,12 +5,12 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @func(i32 %0, [59 x i32]* %1, i32 %2, i32* %3, i32 %4, i32 %5, i32* %6, i32 %7, i32 %8) #0 {
-  br label %10
+  Br label %10
 
 10:                                               ; preds = %12, %9
   %.0 = phi i32 [ 0, %9 ], [ %19, %12 ]
   %11 = icmp slt i32 %.0, 10
-  br i1 %11, label %12, label %20
+  Br i1 %11, label %12, label %20
 
 12:                                               ; preds = %10
   %13 = sext i32 %0 to i64
@@ -20,7 +20,7 @@ define dso_local i32 @func(i32 %0, [59 x i32]* %1, i32 %2, i32* %3, i32 %4, i32 
   %17 = load i32, i32* %16, align 4
   %18 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %17)
   %19 = add nsw i32 %.0, 1
-  br label %10
+  Br label %10
 
 20:                                               ; preds = %10
   %21 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
@@ -29,13 +29,13 @@ define dso_local i32 @func(i32 %0, [59 x i32]* %1, i32 %2, i32* %3, i32 %4, i32 
   %24 = load i32, i32* %23, align 4
   %25 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %24)
   %26 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  br label %27
+  Br label %27
 
 27:                                               ; preds = %29, %20
   %.02 = phi i32 [ %7, %20 ], [ %35, %29 ]
   %.01 = phi i32 [ %8, %20 ], [ %34, %29 ]
   %28 = icmp slt i32 %.01, 10
-  br i1 %28, label %29, label %36
+  Br i1 %28, label %29, label %36
 
 29:                                               ; preds = %27
   %30 = mul nsw i32 %.02, 128875
@@ -45,7 +45,7 @@ define dso_local i32 @func(i32 %0, [59 x i32]* %1, i32 %2, i32* %3, i32 %4, i32 
   store i32 %31, i32* %33, align 4
   %34 = add nsw i32 %.01, 1
   %35 = add nsw i32 %.02, 7
-  br label %27
+  Br label %27
 
 36:                                               ; preds = %27
   %37 = add nsw i32 %4, %5
@@ -116,12 +116,12 @@ define dso_local i32 @main() #0 {
   %45 = load i32, i32* %44, align 4
   %46 = call i32 @func(i32 %25, [59 x i32]* %26, i32 %29, i32* %31, i32 %34, i32 %37, i32* %39, i32 %42, i32 %45)
   %47 = mul nsw i32 %46, 3
-  br label %48
+  Br label %48
 
 48:                                               ; preds = %50, %0
   %.0 = phi i32 [ %47, %0 ], [ %57, %50 ]
   %49 = icmp sge i32 %.0, 0
-  br i1 %49, label %50, label %58
+  Br i1 %49, label %50, label %58
 
 50:                                               ; preds = %48
   %51 = getelementptr inbounds [53 x [59 x i32]], [53 x [59 x i32]]* %2, i64 0, i64 6
@@ -131,7 +131,7 @@ define dso_local i32 @main() #0 {
   %55 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %54)
   %56 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 32)
   %57 = sub nsw i32 %.0, 1
-  br label %48
+  Br label %48
 
 58:                                               ; preds = %48
   %59 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)

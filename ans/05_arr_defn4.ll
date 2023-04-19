@@ -29,14 +29,14 @@ define dso_local i32 @main() #0 {
   store i32 3, i32* %13, align 4
   %14 = getelementptr inbounds i32, i32* %13, i64 1
   %15 = getelementptr inbounds i32, i32* %13, i64 2
-  br label %16
+  Br label %16
 
 16:                                               ; preds = %16, %0
   %17 = phi i32* [ %14, %0 ], [ %18, %16 ]
   store i32 0, i32* %17, align 4
   %18 = getelementptr inbounds i32, i32* %17, i64 1
   %19 = icmp eq i32* %18, %15
-  br i1 %19, label %20, label %16
+  Br i1 %19, label %20, label %16
 
 20:                                               ; preds = %16
   %21 = getelementptr inbounds [2 x i32], [2 x i32]* %12, i64 1
@@ -44,14 +44,14 @@ define dso_local i32 @main() #0 {
   store i32 5, i32* %22, align 4
   %23 = getelementptr inbounds i32, i32* %22, i64 1
   %24 = getelementptr inbounds i32, i32* %22, i64 2
-  br label %25
+  Br label %25
 
 25:                                               ; preds = %25, %20
   %26 = phi i32* [ %23, %20 ], [ %27, %25 ]
   store i32 0, i32* %26, align 4
   %27 = getelementptr inbounds i32, i32* %26, i64 1
   %28 = icmp eq i32* %27, %24
-  br i1 %28, label %29, label %25
+  Br i1 %28, label %29, label %25
 
 29:                                               ; preds = %25
   %30 = getelementptr inbounds [2 x i32], [2 x i32]* %21, i64 1

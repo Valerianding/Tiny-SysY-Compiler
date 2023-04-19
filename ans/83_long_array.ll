@@ -10,12 +10,12 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %2 = alloca [10000 x i32], align 16
   %3 = alloca [10000 x i32], align 16
   %4 = alloca [10000 x i32], align 16
-  br label %5
+  Br label %5
 
 5:                                                ; preds = %7, %1
   %.01 = phi i32 [ 0, %1 ], [ %12, %7 ]
   %6 = icmp slt i32 %.01, 10000
-  br i1 %6, label %7, label %13
+  Br i1 %6, label %7, label %13
 
 7:                                                ; preds = %5
   %8 = mul nsw i32 %.01, %.01
@@ -24,15 +24,15 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %11 = getelementptr inbounds [10000 x i32], [10000 x i32]* %2, i64 0, i64 %10
   store i32 %9, i32* %11, align 4
   %12 = add nsw i32 %.01, 1
-  br label %5
+  Br label %5
 
 13:                                               ; preds = %5
-  br label %14
+  Br label %14
 
 14:                                               ; preds = %16, %13
   %.12 = phi i32 [ 0, %13 ], [ %27, %16 ]
   %15 = icmp slt i32 %.12, 10000
-  br i1 %15, label %16, label %28
+  Br i1 %15, label %16, label %28
 
 16:                                               ; preds = %14
   %17 = sext i32 %.12 to i64
@@ -47,15 +47,15 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %26 = getelementptr inbounds [10000 x i32], [10000 x i32]* %3, i64 0, i64 %25
   store i32 %24, i32* %26, align 4
   %27 = add nsw i32 %.12, 1
-  br label %14
+  Br label %14
 
 28:                                               ; preds = %14
-  br label %29
+  Br label %29
 
 29:                                               ; preds = %31, %28
   %.2 = phi i32 [ 0, %28 ], [ %46, %31 ]
   %30 = icmp slt i32 %.2, 10000
-  br i1 %30, label %31, label %47
+  Br i1 %30, label %31, label %47
 
 31:                                               ; preds = %29
   %32 = sext i32 %.2 to i64
@@ -74,20 +74,20 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %45 = getelementptr inbounds [10000 x i32], [10000 x i32]* %4, i64 0, i64 %44
   store i32 %43, i32* %45, align 4
   %46 = add nsw i32 %.2, 1
-  br label %29
+  Br label %29
 
 47:                                               ; preds = %29
-  br label %48
+  Br label %48
 
 48:                                               ; preds = %116, %47
   %.03 = phi i32 [ 0, %47 ], [ %.6, %116 ]
   %.3 = phi i32 [ 0, %47 ], [ %117, %116 ]
   %49 = icmp slt i32 %.3, 10000
-  br i1 %49, label %50, label %118
+  Br i1 %49, label %50, label %118
 
 50:                                               ; preds = %48
   %51 = icmp slt i32 %.3, 10
-  br i1 %51, label %52, label %59
+  Br i1 %51, label %52, label %59
 
 52:                                               ; preds = %50
   %53 = sext i32 %.3 to i64
@@ -96,20 +96,20 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %56 = add nsw i32 %.03, %55
   %57 = srem i32 %56, 1333
   %58 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %57)
-  br label %116
+  Br label %116
 
 59:                                               ; preds = %50
   %60 = icmp slt i32 %.3, 20
-  br i1 %60, label %61, label %76
+  Br i1 %60, label %61, label %76
 
 61:                                               ; preds = %59
-  br label %62
+  Br label %62
 
 62:                                               ; preds = %64, %61
   %.07 = phi i32 [ 5000, %61 ], [ %73, %64 ]
   %.14 = phi i32 [ %.03, %61 ], [ %72, %64 ]
   %63 = icmp slt i32 %.07, 10000
-  br i1 %63, label %64, label %74
+  Br i1 %63, label %64, label %74
 
 64:                                               ; preds = %62
   %65 = sext i32 %.3 to i64
@@ -121,28 +121,28 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %71 = load i32, i32* %70, align 4
   %72 = sub nsw i32 %68, %71
   %73 = add nsw i32 %.07, 1
-  br label %62
+  Br label %62
 
 74:                                               ; preds = %62
   %75 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %.14)
-  br label %115
+  Br label %115
 
 76:                                               ; preds = %59
   %77 = icmp slt i32 %.3, 30
-  br i1 %77, label %78, label %107
+  Br i1 %77, label %78, label %107
 
 78:                                               ; preds = %76
-  br label %79
+  Br label %79
 
 79:                                               ; preds = %104, %78
   %.25 = phi i32 [ %.03, %78 ], [ %.36, %104 ]
   %.0 = phi i32 [ 5000, %78 ], [ %.1, %104 ]
   %80 = icmp slt i32 %.0, 10000
-  br i1 %80, label %81, label %105
+  Br i1 %80, label %81, label %105
 
 81:                                               ; preds = %79
   %82 = icmp sgt i32 %.0, 2233
-  br i1 %82, label %83, label %93
+  Br i1 %82, label %83, label %93
 
 83:                                               ; preds = %81
   %84 = sext i32 %.3 to i64
@@ -154,7 +154,7 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %90 = load i32, i32* %89, align 4
   %91 = sub nsw i32 %87, %90
   %92 = add nsw i32 %.0, 1
-  br label %104
+  Br label %104
 
 93:                                               ; preds = %81
   %94 = sext i32 %.3 to i64
@@ -167,16 +167,16 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %101 = add nsw i32 %97, %100
   %102 = srem i32 %101, 13333
   %103 = add nsw i32 %.0, 2
-  br label %104
+  Br label %104
 
 104:                                              ; preds = %93, %83
   %.36 = phi i32 [ %91, %83 ], [ %102, %93 ]
   %.1 = phi i32 [ %92, %83 ], [ %103, %93 ]
-  br label %79
+  Br label %79
 
 105:                                              ; preds = %79
   %106 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %.25)
-  br label %114
+  Br label %114
 
 107:                                              ; preds = %76
   %108 = sext i32 %.3 to i64
@@ -185,20 +185,20 @@ define dso_local i32 @long_array(i32 %0) #0 {
   %111 = mul nsw i32 %110, %0
   %112 = add nsw i32 %.03, %111
   %113 = srem i32 %112, 99988
-  br label %114
+  Br label %114
 
 114:                                              ; preds = %107, %105
   %.4 = phi i32 [ %.25, %105 ], [ %113, %107 ]
-  br label %115
+  Br label %115
 
 115:                                              ; preds = %114, %74
   %.5 = phi i32 [ %.14, %74 ], [ %.4, %114 ]
-  br label %116
+  Br label %116
 
 116:                                              ; preds = %115, %52
   %.6 = phi i32 [ %57, %52 ], [ %.5, %115 ]
   %117 = add nsw i32 %.3, 1
-  br label %48
+  Br label %48
 
 118:                                              ; preds = %48
   ret i32 %.03

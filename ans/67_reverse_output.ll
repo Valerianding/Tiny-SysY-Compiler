@@ -6,19 +6,19 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @reverse(i32 %0) #0 {
   %2 = icmp sle i32 %0, 1
-  br i1 %2, label %3, label %6
+  Br i1 %2, label %3, label %6
 
 3:                                                ; preds = %1
   %4 = call i32 (...) @getint()
   %5 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %4)
-  br label %10
+  Br label %10
 
 6:                                                ; preds = %1
   %7 = call i32 (...) @getint()
   %8 = sub nsw i32 %0, 1
   call void @reverse(i32 %8)
   %9 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %7)
-  br label %10
+  Br label %10
 
 10:                                               ; preds = %6, %3
   ret void

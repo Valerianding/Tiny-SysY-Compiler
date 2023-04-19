@@ -107,7 +107,7 @@ int main(int argc, char* argv[]){
         printf("after non locals\n");
         mem2reg(currentFunction);
         printf("------after a function------\n");
-        RunPasses(currentFunction);
+        //RunPasses(currentFunction);
     }
 
     // 建立phi 之后的
@@ -137,8 +137,8 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction->entry);
    }
 
-//    // 消除phi函数之后
-//    printf_llvm_ir(instruction_list,argv[1]);
+    // 消除phi函数之后
+    printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();

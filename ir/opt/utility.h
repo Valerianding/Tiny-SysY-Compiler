@@ -14,4 +14,5 @@ bool isCompareOperator(InstNode *insNode);
 void renameVariabels(Function *currentFunction);
 void showInstructionInfo(InstNode *instruction_list);
 void showBlockInfo(InstNode *instruction_list);
+void HashSetClean(HashSet *set);
 #endif //C22V1_UTILITY_H

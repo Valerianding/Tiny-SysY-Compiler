@@ -26,18 +26,18 @@ define dso_local i32 @swap(i32* %0, i32 %1, i32 %2) #0 {
 define dso_local i32 @heap_ajust(i32* %0, i32 %1, i32 %2) #0 {
   %4 = mul nsw i32 %1, 2
   %5 = add nsw i32 %4, 1
-  br label %6
+  Br label %6
 
 6:                                                ; preds = %35, %3
   %.02 = phi i32 [ %1, %3 ], [ %.1, %35 ]
   %.01 = phi i32 [ %5, %3 ], [ %34, %35 ]
   %7 = add nsw i32 %2, 1
   %8 = icmp slt i32 %.01, %7
-  br i1 %8, label %9, label %36
+  Br i1 %8, label %9, label %36
 
 9:                                                ; preds = %6
   %10 = icmp slt i32 %.01, %2
-  br i1 %10, label %11, label %22
+  Br i1 %10, label %11, label %22
 
 11:                                               ; preds = %9
   %12 = sext i32 %.01 to i64
@@ -48,11 +48,11 @@ define dso_local i32 @heap_ajust(i32* %0, i32 %1, i32 %2) #0 {
   %17 = getelementptr inbounds i32, i32* %0, i64 %16
   %18 = load i32, i32* %17, align 4
   %19 = icmp slt i32 %14, %18
-  br i1 %19, label %20, label %22
+  Br i1 %19, label %20, label %22
 
 20:                                               ; preds = %11
   %21 = add nsw i32 %.01, 1
-  br label %22
+  Br label %22
 
 22:                                               ; preds = %20, %11, %9
   %.1 = phi i32 [ %21, %20 ], [ %.01, %11 ], [ %.01, %9 ]
@@ -63,22 +63,22 @@ define dso_local i32 @heap_ajust(i32* %0, i32 %1, i32 %2) #0 {
   %27 = getelementptr inbounds i32, i32* %0, i64 %26
   %28 = load i32, i32* %27, align 4
   %29 = icmp sgt i32 %25, %28
-  br i1 %29, label %30, label %31
+  Br i1 %29, label %30, label %31
 
 30:                                               ; preds = %22
-  br label %37
+  Br label %37
 
 31:                                               ; preds = %22
   %32 = call i32 @swap(i32* %0, i32 %.02, i32 %.1)
   %33 = mul nsw i32 %.1, 2
   %34 = add nsw i32 %33, 1
-  br label %35
+  Br label %35
 
 35:                                               ; preds = %31
-  br label %6
+  Br label %6
 
 36:                                               ; preds = %6
-  br label %37
+  Br label %37
 
 37:                                               ; preds = %36, %30
   ret i32 0
@@ -88,34 +88,34 @@ define dso_local i32 @heap_ajust(i32* %0, i32 %1, i32 %2) #0 {
 define dso_local i32 @heap_sort(i32* %0, i32 %1) #0 {
   %3 = sdiv i32 %1, 2
   %4 = sub nsw i32 %3, 1
-  br label %5
+  Br label %5
 
 5:                                                ; preds = %7, %2
   %.0 = phi i32 [ %4, %2 ], [ %10, %7 ]
   %6 = icmp sgt i32 %.0, -1
-  br i1 %6, label %7, label %11
+  Br i1 %6, label %7, label %11
 
 7:                                                ; preds = %5
   %8 = sub nsw i32 %1, 1
   %9 = call i32 @heap_ajust(i32* %0, i32 %.0, i32 %8)
   %10 = sub nsw i32 %.0, 1
-  br label %5
+  Br label %5
 
 11:                                               ; preds = %5
   %12 = sub nsw i32 %1, 1
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %15, %11
   %.1 = phi i32 [ %12, %11 ], [ %19, %15 ]
   %14 = icmp sgt i32 %.1, 0
-  br i1 %14, label %15, label %20
+  Br i1 %14, label %15, label %20
 
 15:                                               ; preds = %13
   %16 = call i32 @swap(i32* %0, i32 0, i32 %.1)
   %17 = sub nsw i32 %.1, 1
   %18 = call i32 @heap_ajust(i32* %0, i32 0, i32 %17)
   %19 = sub nsw i32 %.1, 1
-  br label %13
+  Br label %13
 
 20:                                               ; preds = %13
   ret i32 0
@@ -148,13 +148,13 @@ define dso_local i32 @main() #0 {
   %12 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
   %13 = load i32, i32* @n, align 4
   %14 = call i32 @heap_sort(i32* %12, i32 %13)
-  br label %15
+  Br label %15
 
 15:                                               ; preds = %18, %0
   %.0 = phi i32 [ %14, %0 ], [ %24, %18 ]
   %16 = load i32, i32* @n, align 4
   %17 = icmp slt i32 %.0, %16
-  br i1 %17, label %18, label %25
+  Br i1 %17, label %18, label %25
 
 18:                                               ; preds = %15
   %19 = sext i32 %.0 to i64
@@ -163,7 +163,7 @@ define dso_local i32 @main() #0 {
   %22 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %21)
   %23 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %24 = add nsw i32 %.0, 1
-  br label %15
+  Br label %15
 
 25:                                               ; preds = %15
   ret i32 0

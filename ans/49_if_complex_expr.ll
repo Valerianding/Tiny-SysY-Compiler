@@ -8,43 +8,43 @@ define dso_local i32 @main() #0 {
   %1 = mul nsw i32 -2, 1
   %2 = sdiv i32 %1, 2
   %3 = icmp slt i32 %2, 0
-  br i1 %3, label %11, label %4
+  Br i1 %3, label %11, label %4
 
 4:                                                ; preds = %0
   %5 = sub nsw i32 5, 5
   %6 = icmp ne i32 %5, 0
-  br i1 %6, label %7, label %13
+  Br i1 %6, label %7, label %13
 
 7:                                                ; preds = %4
   %8 = add nsw i32 1, 3
   %9 = srem i32 %8, 2
   %10 = icmp ne i32 %9, 0
-  br i1 %10, label %11, label %13
+  Br i1 %10, label %11, label %13
 
 11:                                               ; preds = %7, %0
   %12 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 2)
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %11, %7, %4
   %14 = srem i32 -2, 2
   %15 = add nsw i32 %14, 67
   %16 = icmp slt i32 %15, 0
-  br i1 %16, label %24, label %17
+  Br i1 %16, label %24, label %17
 
 17:                                               ; preds = %13
   %18 = sub nsw i32 5, 5
   %19 = icmp ne i32 %18, 0
-  br i1 %19, label %20, label %26
+  Br i1 %19, label %20, label %26
 
 20:                                               ; preds = %17
   %21 = add nsw i32 1, 2
   %22 = srem i32 %21, 2
   %23 = icmp ne i32 %22, 0
-  br i1 %23, label %24, label %26
+  Br i1 %23, label %24, label %26
 
 24:                                               ; preds = %20, %13
   %25 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 4)
-  br label %26
+  Br label %26
 
 26:                                               ; preds = %24, %20, %17
   ret i32 0

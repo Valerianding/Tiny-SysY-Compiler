@@ -4172,7 +4172,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
     if(ins->inst->Opcode==LESS){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == Br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    bge %d\n",x);
@@ -4181,7 +4181,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==GREAT){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == Br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    ble %d\n",x);
@@ -4190,7 +4190,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==LESSEQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == Br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    bgt %d\n",x);
@@ -4199,7 +4199,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==GREATEQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == Br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    blt %d\n",x);
@@ -4208,7 +4208,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==EQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == Br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    bne %d\n",x);
@@ -4217,7 +4217,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==NOTEQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == Br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    beq %d\n",x);
@@ -4412,9 +4412,9 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
         case EQ:
         case NOTEQ:
             return arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(ins,hashMap);
-        case br_i1:
+        case Br_i1:
             return arm_trans_br_i1(ins);
-        case br:
+        case Br:
             return arm_trans_br(ins);
         case br_i1_true:
             return arm_trans_br_i1_true(ins);

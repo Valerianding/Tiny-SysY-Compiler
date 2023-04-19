@@ -9,32 +9,32 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local void @merge_sort(i32 %0, i32 %1) #0 {
   %3 = add nsw i32 %0, 1
   %4 = icmp sge i32 %3, %1
-  br i1 %4, label %5, label %6
+  Br i1 %4, label %5, label %6
 
 5:                                                ; preds = %2
-  br label %71
+  Br label %71
 
 6:                                                ; preds = %2
   %7 = add nsw i32 %0, %1
   %8 = sdiv i32 %7, 2
   call void @merge_sort(i32 %0, i32 %8)
   call void @merge_sort(i32 %8, i32 %1)
-  br label %9
+  Br label %9
 
 9:                                                ; preds = %37, %6
   %.05 = phi i32 [ %0, %6 ], [ %.16, %37 ]
   %.02 = phi i32 [ %8, %6 ], [ %.13, %37 ]
   %.01 = phi i32 [ %0, %6 ], [ %38, %37 ]
   %10 = icmp slt i32 %.05, %8
-  br i1 %10, label %11, label %13
+  Br i1 %10, label %11, label %13
 
 11:                                               ; preds = %9
   %12 = icmp slt i32 %.02, %1
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %11, %9
   %14 = phi i1 [ false, %9 ], [ %12, %11 ]
-  br i1 %14, label %15, label %39
+  Br i1 %14, label %15, label %39
 
 15:                                               ; preds = %13
   %16 = sext i32 %.05 to i64
@@ -44,7 +44,7 @@ define dso_local void @merge_sort(i32 %0, i32 %1) #0 {
   %20 = getelementptr inbounds [100 x i32], [100 x i32]* getelementptr inbounds ([2 x [100 x i32]], [2 x [100 x i32]]* @buf, i64 0, i64 0), i64 0, i64 %19
   %21 = load i32, i32* %20, align 4
   %22 = icmp slt i32 %18, %21
-  br i1 %22, label %23, label %30
+  Br i1 %22, label %23, label %30
 
 23:                                               ; preds = %15
   %24 = sext i32 %.05 to i64
@@ -54,7 +54,7 @@ define dso_local void @merge_sort(i32 %0, i32 %1) #0 {
   %28 = getelementptr inbounds [100 x i32], [100 x i32]* getelementptr inbounds ([2 x [100 x i32]], [2 x [100 x i32]]* @buf, i64 0, i64 1), i64 0, i64 %27
   store i32 %26, i32* %28, align 4
   %29 = add nsw i32 %.05, 1
-  br label %37
+  Br label %37
 
 30:                                               ; preds = %15
   %31 = sext i32 %.02 to i64
@@ -64,22 +64,22 @@ define dso_local void @merge_sort(i32 %0, i32 %1) #0 {
   %35 = getelementptr inbounds [100 x i32], [100 x i32]* getelementptr inbounds ([2 x [100 x i32]], [2 x [100 x i32]]* @buf, i64 0, i64 1), i64 0, i64 %34
   store i32 %33, i32* %35, align 4
   %36 = add nsw i32 %.02, 1
-  br label %37
+  Br label %37
 
 37:                                               ; preds = %30, %23
   %.16 = phi i32 [ %29, %23 ], [ %.05, %30 ]
   %.13 = phi i32 [ %.02, %23 ], [ %36, %30 ]
   %38 = add nsw i32 %.01, 1
-  br label %9
+  Br label %9
 
 39:                                               ; preds = %13
-  br label %40
+  Br label %40
 
 40:                                               ; preds = %42, %39
   %.27 = phi i32 [ %.05, %39 ], [ %48, %42 ]
   %.1 = phi i32 [ %.01, %39 ], [ %49, %42 ]
   %41 = icmp slt i32 %.27, %8
-  br i1 %41, label %42, label %50
+  Br i1 %41, label %42, label %50
 
 42:                                               ; preds = %40
   %43 = sext i32 %.27 to i64
@@ -90,16 +90,16 @@ define dso_local void @merge_sort(i32 %0, i32 %1) #0 {
   store i32 %45, i32* %47, align 4
   %48 = add nsw i32 %.27, 1
   %49 = add nsw i32 %.1, 1
-  br label %40
+  Br label %40
 
 50:                                               ; preds = %40
-  br label %51
+  Br label %51
 
 51:                                               ; preds = %53, %50
   %.24 = phi i32 [ %.02, %50 ], [ %59, %53 ]
   %.2 = phi i32 [ %.1, %50 ], [ %60, %53 ]
   %52 = icmp slt i32 %.24, %1
-  br i1 %52, label %53, label %61
+  Br i1 %52, label %53, label %61
 
 53:                                               ; preds = %51
   %54 = sext i32 %.24 to i64
@@ -110,15 +110,15 @@ define dso_local void @merge_sort(i32 %0, i32 %1) #0 {
   store i32 %56, i32* %58, align 4
   %59 = add nsw i32 %.24, 1
   %60 = add nsw i32 %.2, 1
-  br label %51
+  Br label %51
 
 61:                                               ; preds = %51
-  br label %62
+  Br label %62
 
 62:                                               ; preds = %64, %61
   %.0 = phi i32 [ %0, %61 ], [ %70, %64 ]
   %63 = icmp slt i32 %.0, %1
-  br i1 %63, label %64, label %71
+  Br i1 %63, label %64, label %71
 
 64:                                               ; preds = %62
   %65 = sext i32 %.0 to i64
@@ -128,7 +128,7 @@ define dso_local void @merge_sort(i32 %0, i32 %1) #0 {
   %69 = getelementptr inbounds [100 x i32], [100 x i32]* getelementptr inbounds ([2 x [100 x i32]], [2 x [100 x i32]]* @buf, i64 0, i64 0), i64 0, i64 %68
   store i32 %67, i32* %69, align 4
   %70 = add nsw i32 %.0, 1
-  br label %62
+  Br label %62
 
 71:                                               ; preds = %62, %5
   ret void

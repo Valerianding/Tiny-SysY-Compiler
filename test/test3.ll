@@ -11,37 +11,37 @@ define dso_local i32 @test(i32 %0) #0{
  %8 = zext i1 %7 to i32
  %9= sub nsw i32 0,%8
  %10 = icmp ne i32 %9,0
- br i1 %10,label %11,label %12
+ Br i1 %10,label %11,label %12
 
 11:
  store i32 -1,i32* %4,align 4
- br label %21
+ Br label %21
 
 12:
  %13 = load i32,i32* %4,align 4
  %14 = icmp slt i32 %13,0
- br i1 %14,label %15,label %19
+ Br i1 %14,label %15,label %19
 
 15:
  %16 = load i32,i32* %4,align 4
  %17 = icmp slt i32 %16,-1
- br i1 %17,label %18,label %19
+ Br i1 %17,label %18,label %19
 
 18:
  store i32 0,i32* %4,align 4
- br label %20
+ Br label %20
 
 19:
  store i32 2,i32* %2,align 4
- br label %23
+ Br label %23
 
 20:
- br label %21
+ Br label %21
 
 21:
  %22 = load i32,i32* %4,align 4
  store i32 %22,i32* %2,align 4
- br label %23
+ Br label %23
 
 23:
  %24 = load i32,i32* %2,align 4

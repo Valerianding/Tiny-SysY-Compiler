@@ -197,13 +197,13 @@ define dso_local i32 @main() #0 {
   store i32 3, i32* @N, align 4
   store i32 3, i32* @M, align 4
   store i32 3, i32* @L, align 4
-  br label %10
+  Br label %10
 
 10:                                               ; preds = %13, %0
   %.0 = phi i32 [ 0, %0 ], [ %32, %13 ]
   %11 = load i32, i32* @M, align 4
   %12 = icmp slt i32 %.0, %11
-  br i1 %12, label %13, label %33
+  Br i1 %12, label %13, label %33
 
 13:                                               ; preds = %10
   %14 = sitofp i32 %.0 to float
@@ -231,7 +231,7 @@ define dso_local i32 @main() #0 {
   %31 = getelementptr inbounds [3 x float], [3 x float]* %6, i64 0, i64 %30
   store float %29, float* %31, align 4
   %32 = add nsw i32 %.0, 1
-  br label %10
+  Br label %10
 
 33:                                               ; preds = %10
   %34 = getelementptr inbounds [3 x float], [3 x float]* %1, i64 0, i64 0
@@ -244,13 +244,13 @@ define dso_local i32 @main() #0 {
   %41 = getelementptr inbounds [3 x float], [3 x float]* %8, i64 0, i64 0
   %42 = getelementptr inbounds [3 x float], [3 x float]* %9, i64 0, i64 0
   %43 = call i32 @mul(float* %34, float* %35, float* %36, float* %37, float* %38, float* %39, float* %40, float* %41, float* %42)
-  br label %44
+  Br label %44
 
 44:                                               ; preds = %47, %33
   %.1 = phi i32 [ %43, %33 ], [ %53, %47 ]
   %45 = load i32, i32* @N, align 4
   %46 = icmp slt i32 %.1, %45
-  br i1 %46, label %47, label %54
+  Br i1 %46, label %47, label %54
 
 47:                                               ; preds = %44
   %48 = sext i32 %.1 to i64
@@ -259,17 +259,17 @@ define dso_local i32 @main() #0 {
   %51 = fptosi float %50 to i32
   %52 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %51)
   %53 = add nsw i32 %.1, 1
-  br label %44
+  Br label %44
 
 54:                                               ; preds = %44
   %55 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  br label %56
+  Br label %56
 
 56:                                               ; preds = %59, %54
   %.2 = phi i32 [ 0, %54 ], [ %65, %59 ]
   %57 = load i32, i32* @N, align 4
   %58 = icmp slt i32 %.2, %57
-  br i1 %58, label %59, label %66
+  Br i1 %58, label %59, label %66
 
 59:                                               ; preds = %56
   %60 = sext i32 %.2 to i64
@@ -278,17 +278,17 @@ define dso_local i32 @main() #0 {
   %63 = fptosi float %62 to i32
   %64 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %63)
   %65 = add nsw i32 %.2, 1
-  br label %56
+  Br label %56
 
 66:                                               ; preds = %56
   %67 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  br label %68
+  Br label %68
 
 68:                                               ; preds = %71, %66
   %.3 = phi i32 [ 0, %66 ], [ %77, %71 ]
   %69 = load i32, i32* @N, align 4
   %70 = icmp slt i32 %.3, %69
-  br i1 %70, label %71, label %78
+  Br i1 %70, label %71, label %78
 
 71:                                               ; preds = %68
   %72 = sext i32 %.3 to i64
@@ -297,7 +297,7 @@ define dso_local i32 @main() #0 {
   %75 = fptosi float %74 to i32
   %76 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %75)
   %77 = add nsw i32 %.3, 1
-  br label %68
+  Br label %68
 
 78:                                               ; preds = %68
   %79 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)

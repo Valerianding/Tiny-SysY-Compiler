@@ -1,6 +1,5 @@
 #include "bblock.h"
 #include "stdio.h"
-#include <time.h>
 BasicBlock *bb_create(){
     BasicBlock *this = (BasicBlock*)malloc(sizeof(BasicBlock));
     memset(this,0,sizeof(BasicBlock));
@@ -10,7 +9,7 @@ BasicBlock *bb_create(){
     return this;
 }
 
-//// 将instruction放在instnode里面
+// 将instruction放在instnode里面
 InstNode* new_inst_node(Instruction* inst){
     InstNode* n = malloc(sizeof(InstNode));
     assert(n != NULL && " out of memory");
@@ -68,7 +67,6 @@ void ins_node_add(InstNode *head,InstNode *this){
 }
 
 InstNode *search_ins_label(InstNode *head,int label_id){
-
     // 需要满足在一个function里面
     while(head != NULL){
         if(head->inst->Opcode == Label && head->inst->user.value.pdata->instruction_pdata.true_goto_location == label_id){
@@ -92,9 +90,9 @@ void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
 void print_one_ins_info(InstNode *insNode){
     printf("%d : opcode:", insNode->inst->i);
     print_ins_opcode(insNode->inst);
-    if(insNode->inst->Opcode == br_i1){
+    if(insNode->inst->Opcode == Br_i1){
         printf("%d %d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location, insNode->inst->user.value.pdata->instruction_pdata.false_goto_location);
-    }else if(insNode->inst->Opcode == br){
+    }else if(insNode->inst->Opcode == Br){
         printf("%d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location);
     }else if(insNode->inst->Opcode == Label){
         printf("%d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location);

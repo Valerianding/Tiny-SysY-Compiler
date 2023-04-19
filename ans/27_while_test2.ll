@@ -5,7 +5,7 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @FourWhile() #0 {
-  br label %1
+  Br label %1
 
 1:                                                ; preds = %21, %0
   %.04 = phi i32 [ 10, %0 ], [ %.15, %21 ]
@@ -13,53 +13,53 @@ define dso_local i32 @FourWhile() #0 {
   %.01 = phi i32 [ 6, %0 ], [ %22, %21 ]
   %.0 = phi i32 [ 5, %0 ], [ %4, %21 ]
   %2 = icmp slt i32 %.0, 20
-  br i1 %2, label %3, label %23
+  Br i1 %2, label %3, label %23
 
 3:                                                ; preds = %1
   %4 = add nsw i32 %.0, 3
-  br label %5
+  Br label %5
 
 5:                                                ; preds = %19, %3
   %.15 = phi i32 [ %.04, %3 ], [ %.26, %19 ]
   %.13 = phi i32 [ %.02, %3 ], [ %20, %19 ]
   %.1 = phi i32 [ %.01, %3 ], [ %8, %19 ]
   %6 = icmp slt i32 %.1, 10
-  br i1 %6, label %7, label %21
+  Br i1 %6, label %7, label %21
 
 7:                                                ; preds = %5
   %8 = add nsw i32 %.1, 1
-  br label %9
+  Br label %9
 
 9:                                                ; preds = %17, %7
   %.26 = phi i32 [ %.15, %7 ], [ %18, %17 ]
   %.2 = phi i32 [ %.13, %7 ], [ %12, %17 ]
   %10 = icmp eq i32 %.2, 7
-  br i1 %10, label %11, label %19
+  Br i1 %10, label %11, label %19
 
 11:                                               ; preds = %9
   %12 = sub nsw i32 %.2, 1
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %15, %11
   %.3 = phi i32 [ %.26, %11 ], [ %16, %15 ]
   %14 = icmp slt i32 %.3, 20
-  br i1 %14, label %15, label %17
+  Br i1 %14, label %15, label %17
 
 15:                                               ; preds = %13
   %16 = add nsw i32 %.3, 3
-  br label %13
+  Br label %13
 
 17:                                               ; preds = %13
   %18 = sub nsw i32 %.3, 1
-  br label %9
+  Br label %9
 
 19:                                               ; preds = %9
   %20 = add nsw i32 %.2, 1
-  br label %5
+  Br label %5
 
 21:                                               ; preds = %5
   %22 = sub nsw i32 %.1, 2
-  br label %1
+  Br label %1
 
 23:                                               ; preds = %1
   %24 = add nsw i32 %.01, %.04

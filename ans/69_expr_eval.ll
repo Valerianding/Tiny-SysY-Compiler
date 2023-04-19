@@ -23,17 +23,17 @@ declare dso_local i32 @getch(...) #1
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @is_space(i32 %0) #0 {
   %2 = icmp eq i32 %0, 32
-  br i1 %2, label %5, label %3
+  Br i1 %2, label %5, label %3
 
 3:                                                ; preds = %1
   %4 = icmp eq i32 %0, 10
-  br i1 %4, label %5, label %6
+  Br i1 %4, label %5, label %6
 
 5:                                                ; preds = %3, %1
-  br label %7
+  Br label %7
 
 6:                                                ; preds = %3
-  br label %7
+  Br label %7
 
 7:                                                ; preds = %6, %5
   %.0 = phi i32 [ 1, %5 ], [ 0, %6 ]
@@ -43,17 +43,17 @@ define dso_local i32 @is_space(i32 %0) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @is_num(i32 %0) #0 {
   %2 = icmp sge i32 %0, 48
-  br i1 %2, label %3, label %6
+  Br i1 %2, label %3, label %6
 
 3:                                                ; preds = %1
   %4 = icmp sle i32 %0, 57
-  br i1 %4, label %5, label %6
+  Br i1 %4, label %5, label %6
 
 5:                                                ; preds = %3
-  br label %7
+  Br label %7
 
 6:                                                ; preds = %3, %1
-  br label %7
+  Br label %7
 
 7:                                                ; preds = %6, %5
   %.0 = phi i32 [ 1, %5 ], [ 0, %6 ]
@@ -62,35 +62,35 @@ define dso_local i32 @is_num(i32 %0) #0 {
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @next_token() #0 {
-  br label %1
+  Br label %1
 
 1:                                                ; preds = %5, %0
   %2 = load i32, i32* @last_char, align 4
   %3 = call i32 @is_space(i32 %2)
   %4 = icmp ne i32 %3, 0
-  br i1 %4, label %5, label %7
+  Br i1 %4, label %5, label %7
 
 5:                                                ; preds = %1
   %6 = call i32 @next_char()
-  br label %1
+  Br label %1
 
 7:                                                ; preds = %1
   %8 = load i32, i32* @last_char, align 4
   %9 = call i32 @is_num(i32 %8)
   %10 = icmp ne i32 %9, 0
-  br i1 %10, label %11, label %25
+  Br i1 %10, label %11, label %25
 
 11:                                               ; preds = %7
   %12 = load i32, i32* @last_char, align 4
   %13 = sub nsw i32 %12, 48
   store i32 %13, i32* @num, align 4
-  br label %14
+  Br label %14
 
 14:                                               ; preds = %18, %11
   %15 = call i32 @next_char()
   %16 = call i32 @is_num(i32 %15)
   %17 = icmp ne i32 %16, 0
-  br i1 %17, label %18, label %24
+  Br i1 %17, label %18, label %24
 
 18:                                               ; preds = %14
   %19 = load i32, i32* @num, align 4
@@ -99,18 +99,18 @@ define dso_local i32 @next_token() #0 {
   %22 = add nsw i32 %20, %21
   %23 = sub nsw i32 %22, 48
   store i32 %23, i32* @num, align 4
-  br label %14
+  Br label %14
 
 24:                                               ; preds = %14
   store i32 0, i32* @cur_token, align 4
-  br label %28
+  Br label %28
 
 25:                                               ; preds = %7
   %26 = load i32, i32* @last_char, align 4
   store i32 %26, i32* @other, align 4
   %27 = call i32 @next_char()
   store i32 1, i32* @cur_token, align 4
-  br label %28
+  Br label %28
 
 28:                                               ; preds = %25, %24
   %29 = load i32, i32* @cur_token, align 4
@@ -134,32 +134,32 @@ declare dso_local i32 @putch(...) #1
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @get_op_prec(i32 %0) #0 {
   %2 = icmp eq i32 %0, 43
-  br i1 %2, label %5, label %3
+  Br i1 %2, label %5, label %3
 
 3:                                                ; preds = %1
   %4 = icmp eq i32 %0, 45
-  br i1 %4, label %5, label %6
+  Br i1 %4, label %5, label %6
 
 5:                                                ; preds = %3, %1
-  br label %14
+  Br label %14
 
 6:                                                ; preds = %3
   %7 = icmp eq i32 %0, 42
-  br i1 %7, label %12, label %8
+  Br i1 %7, label %12, label %8
 
 8:                                                ; preds = %6
   %9 = icmp eq i32 %0, 47
-  br i1 %9, label %12, label %10
+  Br i1 %9, label %12, label %10
 
 10:                                               ; preds = %8
   %11 = icmp eq i32 %0, 37
-  br i1 %11, label %12, label %13
+  Br i1 %11, label %12, label %13
 
 12:                                               ; preds = %10, %8, %6
-  br label %14
+  Br label %14
 
 13:                                               ; preds = %10
-  br label %14
+  Br label %14
 
 14:                                               ; preds = %13, %12, %5
   %.0 = phi i32 [ 10, %5 ], [ 20, %12 ], [ 0, %13 ]
@@ -216,46 +216,46 @@ define dso_local i32 @stack_size(i32* %0) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @eval_op(i32 %0, i32 %1, i32 %2) #0 {
   %4 = icmp eq i32 %0, 43
-  br i1 %4, label %5, label %7
+  Br i1 %4, label %5, label %7
 
 5:                                                ; preds = %3
   %6 = add nsw i32 %1, %2
-  br label %24
+  Br label %24
 
 7:                                                ; preds = %3
   %8 = icmp eq i32 %0, 45
-  br i1 %8, label %9, label %11
+  Br i1 %8, label %9, label %11
 
 9:                                                ; preds = %7
   %10 = sub nsw i32 %1, %2
-  br label %24
+  Br label %24
 
 11:                                               ; preds = %7
   %12 = icmp eq i32 %0, 42
-  br i1 %12, label %13, label %15
+  Br i1 %12, label %13, label %15
 
 13:                                               ; preds = %11
   %14 = mul nsw i32 %1, %2
-  br label %24
+  Br label %24
 
 15:                                               ; preds = %11
   %16 = icmp eq i32 %0, 47
-  br i1 %16, label %17, label %19
+  Br i1 %16, label %17, label %19
 
 17:                                               ; preds = %15
   %18 = sdiv i32 %1, %2
-  br label %24
+  Br label %24
 
 19:                                               ; preds = %15
   %20 = icmp eq i32 %0, 37
-  br i1 %20, label %21, label %23
+  Br i1 %20, label %21, label %23
 
 21:                                               ; preds = %19
   %22 = srem i32 %1, %2
-  br label %24
+  Br label %24
 
 23:                                               ; preds = %19
-  br label %24
+  Br label %24
 
 24:                                               ; preds = %23, %21, %17, %13, %9, %5
   %.0 = phi i32 [ %6, %5 ], [ %10, %9 ], [ %14, %13 ], [ %18, %17 ], [ %22, %21 ], [ 0, %23 ]
@@ -272,42 +272,42 @@ define dso_local i32 @eval() #0 {
   call void @llvm.memset.p0i8.i64(i8* align 16 %4, i8 0, i64 1024, i1 false)
   %5 = load i32, i32* @cur_token, align 4
   %6 = icmp ne i32 %5, 0
-  br i1 %6, label %7, label %9
+  Br i1 %6, label %7, label %9
 
 7:                                                ; preds = %0
   %8 = call i32 @panic()
-  br label %72
+  Br label %72
 
 9:                                                ; preds = %0
   %10 = getelementptr inbounds [256 x i32], [256 x i32]* %1, i64 0, i64 0
   %11 = load i32, i32* @num, align 4
   call void @stack_push(i32* %10, i32 %11)
   %12 = call i32 @next_token()
-  br label %13
+  Br label %13
 
 13:                                               ; preds = %50, %9
   %14 = load i32, i32* @cur_token, align 4
   %15 = icmp eq i32 %14, 1
-  br i1 %15, label %16, label %54
+  Br i1 %15, label %16, label %54
 
 16:                                               ; preds = %13
   %17 = load i32, i32* @other, align 4
   %18 = call i32 @get_op_prec(i32 %17)
   %19 = icmp ne i32 %18, 0
-  br i1 %19, label %21, label %20
+  Br i1 %19, label %21, label %20
 
 20:                                               ; preds = %16
-  br label %54
+  Br label %54
 
 21:                                               ; preds = %16
   %22 = call i32 @next_token()
-  br label %23
+  Br label %23
 
 23:                                               ; preds = %35, %21
   %24 = getelementptr inbounds [256 x i32], [256 x i32]* %2, i64 0, i64 0
   %25 = call i32 @stack_size(i32* %24)
   %26 = icmp ne i32 %25, 0
-  br i1 %26, label %27, label %33
+  Br i1 %26, label %27, label %33
 
 27:                                               ; preds = %23
   %28 = getelementptr inbounds [256 x i32], [256 x i32]* %2, i64 0, i64 0
@@ -315,11 +315,11 @@ define dso_local i32 @eval() #0 {
   %30 = call i32 @get_op_prec(i32 %29)
   %31 = call i32 @get_op_prec(i32 %17)
   %32 = icmp sge i32 %30, %31
-  br label %33
+  Br label %33
 
 33:                                               ; preds = %27, %23
   %34 = phi i1 [ false, %23 ], [ %32, %27 ]
-  br i1 %34, label %35, label %44
+  Br i1 %34, label %35, label %44
 
 35:                                               ; preds = %33
   %36 = getelementptr inbounds [256 x i32], [256 x i32]* %2, i64 0, i64 0
@@ -331,35 +331,35 @@ define dso_local i32 @eval() #0 {
   %42 = getelementptr inbounds [256 x i32], [256 x i32]* %1, i64 0, i64 0
   %43 = call i32 @eval_op(i32 %37, i32 %41, i32 %39)
   call void @stack_push(i32* %42, i32 %43)
-  br label %23
+  Br label %23
 
 44:                                               ; preds = %33
   %45 = getelementptr inbounds [256 x i32], [256 x i32]* %2, i64 0, i64 0
   call void @stack_push(i32* %45, i32 %17)
   %46 = load i32, i32* @cur_token, align 4
   %47 = icmp ne i32 %46, 0
-  br i1 %47, label %48, label %50
+  Br i1 %47, label %48, label %50
 
 48:                                               ; preds = %44
   %49 = call i32 @panic()
-  br label %72
+  Br label %72
 
 50:                                               ; preds = %44
   %51 = getelementptr inbounds [256 x i32], [256 x i32]* %1, i64 0, i64 0
   %52 = load i32, i32* @num, align 4
   call void @stack_push(i32* %51, i32 %52)
   %53 = call i32 @next_token()
-  br label %13
+  Br label %13
 
 54:                                               ; preds = %20, %13
   %55 = call i32 @next_token()
-  br label %56
+  Br label %56
 
 56:                                               ; preds = %60, %54
   %57 = getelementptr inbounds [256 x i32], [256 x i32]* %2, i64 0, i64 0
   %58 = call i32 @stack_size(i32* %57)
   %59 = icmp ne i32 %58, 0
-  br i1 %59, label %60, label %69
+  Br i1 %59, label %60, label %69
 
 60:                                               ; preds = %56
   %61 = getelementptr inbounds [256 x i32], [256 x i32]* %2, i64 0, i64 0
@@ -371,12 +371,12 @@ define dso_local i32 @eval() #0 {
   %67 = getelementptr inbounds [256 x i32], [256 x i32]* %1, i64 0, i64 0
   %68 = call i32 @eval_op(i32 %62, i32 %66, i32 %64)
   call void @stack_push(i32* %67, i32 %68)
-  br label %56
+  Br label %56
 
 69:                                               ; preds = %56
   %70 = getelementptr inbounds [256 x i32], [256 x i32]* %1, i64 0, i64 0
   %71 = call i32 @stack_peek(i32* %70)
-  br label %72
+  Br label %72
 
 72:                                               ; preds = %69, %48, %7
   %.0 = phi i32 [ %8, %7 ], [ %49, %48 ], [ %71, %69 ]
@@ -391,19 +391,19 @@ define dso_local i32 @main() #0 {
   %1 = call i32 (...) @getint()
   %2 = call i32 (...) @getch()
   %3 = call i32 @next_token()
-  br label %4
+  Br label %4
 
 4:                                                ; preds = %6, %0
   %.0 = phi i32 [ %1, %0 ], [ %10, %6 ]
   %5 = icmp ne i32 %.0, 0
-  br i1 %5, label %6, label %11
+  Br i1 %5, label %6, label %11
 
 6:                                                ; preds = %4
   %7 = call i32 @eval()
   %8 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %7)
   %9 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %10 = sub nsw i32 %.0, 1
-  br label %4
+  Br label %4
 
 11:                                               ; preds = %4
   ret i32 0

@@ -78,7 +78,7 @@ void create_continue_stmt(past root,Value* v_return)
     c_b_flag[0]=true;
 
     //遇到continue,push就完事
-    InstNode *node_continue = true_location_handler(br,NULL,0);
+    InstNode *node_continue = true_location_handler(Br, NULL, 0);
 
     insnode_push(&S_continue,node_continue);
 
@@ -91,7 +91,7 @@ void create_break_stmt(past root,Value* v_return)
     c_b_flag[1]=true;
 
     //遇到break,push就完事
-    InstNode *node_break = true_location_handler(br,NULL,0);
+    InstNode *node_break = true_location_handler(Br, NULL, 0);
     //是0就代表是break
     insnode_push(&S_break,node_break);
 
@@ -411,7 +411,7 @@ void create_return_stmt(past root,Value* v_return) {
             //TODO 跳转到最终结束语句
             //先生成一条，并加入return栈，和break的处理道理是一样的
             //生成一条指令，并将其压栈
-            InstNode *return_node=true_location_handler(br,NULL,0);
+            InstNode *return_node=true_location_handler(Br, NULL, 0);
             insnode_push(&S_return,return_node);
         }
             //只有一条返回语句
@@ -435,7 +435,7 @@ void create_return_stmt(past root,Value* v_return) {
         {
             //先生成一条，并加入return栈，和break的处理道理是一样的
             //生成一条指令，并将其压栈
-            InstNode *return_node=true_location_handler(br,NULL,0);
+            InstNode *return_node=true_location_handler(Br, NULL, 0);
             insnode_push(&S_return,return_node);
         }
         else
@@ -1202,10 +1202,10 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
 InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
 {
     Instruction *instruction;
-    if(type==br)
-        instruction= ins_new_unary_operator(br,NULL);
-    else if(type==br_i1)
-        instruction= ins_new_unary_operator(br_i1,v_real);
+    if(type == Br)
+        instruction= ins_new_unary_operator(Br, NULL);
+    else if(type == Br_i1)
+        instruction= ins_new_unary_operator(Br_i1, v_real);
     else if(type==br_i1_true)
         instruction= ins_new_unary_operator(br_i1_true,NULL);
     else if(type==br_i1_false)
@@ -1227,8 +1227,8 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
 InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
 {
     Instruction *instruction=NULL;
-    if(type==br_i1)
-        instruction= ins_new_unary_operator(br_i1,v_real);
+    if(type == Br_i1)
+        instruction= ins_new_unary_operator(Br_i1, v_real);
     Value *f1= ins_get_dest(instruction);
     f1->pdata->instruction_pdata.false_goto_location=false_goto_location;
     f1->pdata->instruction_pdata.true_goto_location=-2;
@@ -1328,14 +1328,14 @@ int handle_and_or(past root,bool flag)
 
         if(v1!=NULL && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0)
         {
-            InstNode *ins1 = true_location_handler(br_i1,v1,t_index++);
+            InstNode *ins1 = true_location_handler(Br_i1, v1, t_index++);
             //入栈
             insnode_push(&S_and,ins1);
         }
             //  ||
         else if(v1!=NULL)
         {
-            InstNode *ins1= false_location_handler(br_i1,v1,t_index++);
+            InstNode *ins1= false_location_handler(Br_i1, v1, t_index++);
             insnode_push(&S_or,ins1);
         }
     }
@@ -1408,7 +1408,7 @@ int handle_and_or(past root,bool flag)
 
 
         //一定是在&&中但用||
-        InstNode *ins1= false_location_handler(br_i1,v1,t_index++);
+        InstNode *ins1= false_location_handler(Br_i1, v1, t_index++);
         insnode_push(&S_or,ins1);
 
         //消调&&栈
@@ -1507,14 +1507,14 @@ int handle_and_or(past root,bool flag)
 
             if(strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0 && v2!=NULL)
             {
-                InstNode *ins1 = true_location_handler(br_i1,v2,t_index++);
+                InstNode *ins1 = true_location_handler(Br_i1, v2, t_index++);
                 //入栈
                 insnode_push(&S_and,ins1);
             }
                 //  ||
             else if(v2!=NULL)
             {
-                InstNode *ins1= true_location_handler(br_i1,v2,t_index++);
+                InstNode *ins1= true_location_handler(Br_i1, v2, t_index++);
                 insnode_push(&S_or,ins1);
             }
 
@@ -1561,7 +1561,7 @@ void create_if_stmt(past root,Value* v_return) {
             return;
         }
 
-    //br i1 label__,label__
+    //Br i1 label__,label__
     Value *v_real=NULL;
     int result=-1;          //如果是&&,||的话，保留调用结果
     //如果是0，直接跳过
@@ -1671,9 +1671,9 @@ void create_if_stmt(past root,Value* v_return) {
         {
             if(convert==0)
                 //正确跳转
-                node1= true_location_handler(br_i1,v_real, t_index++);
+                node1= true_location_handler(Br_i1, v_real, t_index++);
             else
-                node1= false_location_handler(br_i1,v_real,t_index++);
+                node1= false_location_handler(Br_i1, v_real, t_index++);
         }
 
 
@@ -1713,10 +1713,10 @@ void create_if_stmt(past root,Value* v_return) {
     if(get_last_inst(instruction_list)->inst->Opcode!=Return)
     {
         //无break或continue的话就补，有就不补了
-        if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result!=1)
+        if(get_last_inst(instruction_list)->inst->Opcode != Br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result != 1)
         {
             //再补一条br label,使每个基本块结束都是跳转,跳转到end,示例中的br label 9
-            true_location_handler(br,NULL,t_index-1);
+            true_location_handler(Br, NULL, t_index - 1);
         }
     }
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result!=1)
@@ -1808,9 +1808,9 @@ void create_if_else_stmt(past root,Value* v_return) {
         if(!(root->left->sVal!=NULL && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))) {
             if(convert==0)
                 //正确跳转
-                node1= true_location_handler(br_i1,v_real, t_index++);
+                node1= true_location_handler(Br_i1, v_real, t_index++);
             else
-                node1= false_location_handler(br_i1,v_real,t_index++);
+                node1= false_location_handler(Br_i1, v_real, t_index++);
         }
 
         if(get_last_inst(instruction_list)->inst->Opcode!=Label)
@@ -1850,9 +1850,9 @@ void create_if_else_stmt(past root,Value* v_return) {
         }
 
         //可能是return,return的话后面就没有了
-        if(get_last_inst(instruction_list)->inst->Opcode!=br)
+        if(get_last_inst(instruction_list)->inst->Opcode != Br)
             //真的走完之后接一句跳转,跳过else的部分,示例中br label 13的，在当前是br label __
-            node2= true_location_handler(br,NULL,0);
+            node2= true_location_handler(Br, NULL, 0);
 
         //再补一条标号,即示例中10:
         true_location_handler(Label,NULL,t_index-1);
@@ -1876,10 +1876,10 @@ void create_if_else_stmt(past root,Value* v_return) {
 
     if(get_last_inst(instruction_list)->inst->Opcode!=Return)
     {
-        if(get_last_inst(instruction_list)->inst->Opcode!=br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result==-1)
+        if(get_last_inst(instruction_list)->inst->Opcode != Br && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result == -1)
         {
             //补一条br label，示例的br label %13，这个和后面那条都是跳到end
-            true_location_handler(br,NULL,t_index-1);
+            true_location_handler(Br, NULL, t_index - 1);
         }
     }
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result==-1)
@@ -1922,7 +1922,7 @@ void create_while_stmt(past root,Value* v_return)
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0)
     {
         //生成一条br label跳转和标号
-        true_location_handler(br,NULL,t_index++);
+        true_location_handler(Br, NULL, t_index++);
         //标号
         true_location_handler(Label,NULL,t_index-1);
     }
@@ -2005,13 +2005,13 @@ void create_while_stmt(past root,Value* v_return)
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && !(root->left->sVal!=NULL && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0  || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)) )
     {
         if(convert==0)
-            node_first_bri1= true_location_handler(br_i1,v_real,t_index++);
+            node_first_bri1= true_location_handler(Br_i1, v_real, t_index++);
         else
-            node_first_bri1= false_location_handler(br_i1,v_real,t_index++);
+            node_first_bri1= false_location_handler(Br_i1, v_real, t_index++);
     }
         //是常数则直接跳转
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0 || strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0)
-        node_first_bri1= true_location_handler(br,NULL,t_index++);
+        node_first_bri1= true_location_handler(Br, NULL, t_index++);
 
     //标号
     //为真的话，条件式就没有IR，可以直接沿用之前的IR
@@ -2034,10 +2034,10 @@ void create_while_stmt(past root,Value* v_return)
             t_index++;
     }
 
-    if(get_last_inst(instruction_list)->inst->Opcode!=br)
+    if(get_last_inst(instruction_list)->inst->Opcode != Br)
     {
-        //生成循环，br label跳转到first_label处
-        true_location_handler(br,NULL,while_recall);
+        //生成循环，Br label跳转到first_label处
+        true_location_handler(Br, NULL, while_recall);
     }
 
     if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") != 0 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") != 0 && result==-1)
@@ -3379,21 +3379,21 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     fprintf(fptr," store i32* %s,i32** %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                 }
                 break;
-            case br:
-                printf(" br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
-                fprintf(fptr," br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+            case Br:
+                printf(" Br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                fprintf(fptr," Br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 break;
-            case br_i1:
-                printf(" br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
-                fprintf(fptr," br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+            case Br_i1:
+                printf(" Br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                fprintf(fptr," Br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 break;
             case br_i1_false:
-                printf(" br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
-                fprintf(fptr," br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                printf(" Br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                fprintf(fptr," Br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 break;
             case br_i1_true:
-                printf(" br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
-                fprintf(fptr," br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                printf(" Br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                fprintf(fptr," Br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 break;
             case EQ:
                 if(instruction->user.use_list->Val->VTy->ID==Int)

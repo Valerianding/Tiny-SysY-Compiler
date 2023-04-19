@@ -6,34 +6,34 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @deepWhileBr(i32 %0, i32 %1) #0 {
   %3 = add nsw i32 %0, %1
-  br label %4
+  Br label %4
 
 4:                                                ; preds = %15, %2
   %.0 = phi i32 [ %3, %2 ], [ %.2, %15 ]
   %5 = icmp slt i32 %.0, 75
-  br i1 %5, label %6, label %16
+  Br i1 %5, label %6, label %16
 
 6:                                                ; preds = %4
   %7 = icmp slt i32 %.0, 100
-  br i1 %7, label %8, label %15
+  Br i1 %7, label %8, label %15
 
 8:                                                ; preds = %6
   %9 = add nsw i32 %.0, 42
   %10 = icmp sgt i32 %9, 99
-  br i1 %10, label %11, label %14
+  Br i1 %10, label %11, label %14
 
 11:                                               ; preds = %8
   %12 = mul nsw i32 42, 2
   %13 = mul nsw i32 %12, 2
-  br label %14
+  Br label %14
 
 14:                                               ; preds = %11, %8
   %.1 = phi i32 [ %13, %11 ], [ %9, %8 ]
-  br label %15
+  Br label %15
 
 15:                                               ; preds = %14, %6
   %.2 = phi i32 [ %.1, %14 ], [ %.0, %6 ]
-  br label %4
+  Br label %4
 
 16:                                               ; preds = %4
   ret i32 %.0
