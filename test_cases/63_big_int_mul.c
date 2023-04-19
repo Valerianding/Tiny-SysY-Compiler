@@ -5,12 +5,12 @@ int main()
 	int i, j, t, n, temp;
 	int mult1[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
 	int mult2[20] = {2, 3, 4, 2, 5, 7 ,9 ,9, 0, 1, 9, 8, 7, 6, 4, 3, 2, 1, 2, 2};
+
 	int len1 = 20;
 	int len2 = 20;
 	int c1[20 + 5];
 	int c2[20 + 5];
 	int result[20 * 2] = {};
-
 	i = 0;
 	while (i < len1) {
 		c1[i] = mult1[i];

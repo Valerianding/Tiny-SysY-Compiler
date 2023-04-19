@@ -304,8 +304,8 @@ void create_assign_stmt(past root,Value* v_return) {
     else if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "expr") == 0)
     {
         //取出右值
-        int convert=0;
-        v1 = cal_expr(root->right,&convert,v->VTy->ID);
+        int convert=-1;
+        v1 = cal_expr(root->right,v->VTy->ID,&convert);
     }
 
         //赋值右边为普通a,b,c,d
@@ -378,8 +378,8 @@ void create_return_stmt(past root,Value* v_return) {
         }
             //返回表达式
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0){
-            int convert=0;
-            v = cal_expr(root->left,&convert,v_cur_func->pdata->symtab_func_pdata.return_type.ID);
+            int convert=-1;
+            v = cal_expr(root->left,v_cur_func->pdata->symtab_func_pdata.return_type.ID,&convert);
         }
             //整数
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0){
@@ -950,8 +950,8 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
         }
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "expr") == 0)
         {
-            int convert=0;
-            v_num= cal_expr(root, &convert, Var_INT);
+            int convert=-1;
+            v_num= cal_expr(root, Var_INT,&convert);
         }
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "ID") == 0)
             v_num= create_load_stmt(bstr2cstr(root->sVal, '\0'));
@@ -1076,8 +1076,8 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             }
             else if (strcmp(bstr2cstr(vars->right->nodeType, '\0'), "expr") == 0)
             {
-                int convert=0;
-                v1 = cal_expr(vars->right,&convert,v->VTy->ID);
+                int convert=-1;
+                v1 = cal_expr(vars->right,v->VTy->ID,&convert);
             }
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "Call_Func") == 0)
                 v1= create_call_func(vars->right);
@@ -1287,8 +1287,8 @@ int handle_and_or(past root,bool flag)
         }
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
         {
-            int convert=0;
-            Value *v_load= cal_expr(root->left, &convert,Unknown);
+            int convert=-1;
+            Value *v_load= cal_expr(root->left, Unknown,&convert);
             //生成一条icmp ne
             //包装0
             Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -1348,8 +1348,8 @@ int handle_and_or(past root,bool flag)
             v1= cal_logic_expr(root->left->right);
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
         {
-            int convert=0;
-            Value *v_load= cal_expr(root->left->right,&convert,Unknown);
+            int convert=-1;
+            Value *v_load= cal_expr(root->left->right,Unknown,&convert);
             //生成一条icmp ne
             //包装0
             Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -1447,8 +1447,8 @@ int handle_and_or(past root,bool flag)
             }
             else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "expr") == 0)
             {
-                int convert=0;
-                Value *v_load= cal_expr(root->right,&convert,Unknown);
+                int convert=-1;
+                Value *v_load= cal_expr(root->right,Unknown,&convert);
                 //加一条icmp ne
                 //包装0
                 Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -1552,14 +1552,14 @@ void reduce_or(int true_index,int false_index)
 
 void create_if_stmt(past root,Value* v_return) {
     //语句为空，则直接跳过不处理
-    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "Empty_Stmt") == 0 || strcmp(bstr2cstr(root->right->nodeType, '\0'), "Block_EMPTY") == 0)
-        if(root->next!=NULL)
-        {
-//            if(strcmp(bstr2cstr(root->next->nodeType, '\0'), "BlockItemList") == 0)
-//                flag_blocklist=0;
-            create_instruction_list(root->next,v_return);
-            return;
-        }
+//    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "Empty_Stmt") == 0 || strcmp(bstr2cstr(root->right->nodeType, '\0'), "Block_EMPTY") == 0)
+//        if(root->next!=NULL)
+//        {
+////            if(strcmp(bstr2cstr(root->next->nodeType, '\0'), "BlockItemList") == 0)
+////                flag_blocklist=0;
+//            create_instruction_list(root->next,v_return);
+//            return;
+//        }
 
     //Br i1 label__,label__
     Value *v_real=NULL;
@@ -1604,16 +1604,24 @@ void create_if_stmt(past root,Value* v_return) {
             v_load= handle_assign_array(root->left->right->left,v_array,1,-1,0);
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
-            //生成一条icmp ne
-            //包装0
-            Value *v_zero=(Value*) malloc(sizeof (Value));
-            value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-            //v_real
-            v_real= ins_get_value_with_name(ins_icmp);
-            //将这个instruction加入总list
-            InstNode *node = new_inst_node(ins_icmp);
-            ins_node_add(instruction_list,node);
+            if(get_last_inst(instruction_list)->inst->Opcode==zext)
+            {
+                //zext前面一定是xor
+                delete_inst(get_last_inst(instruction_list));
+            }
+            else
+            {
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v_real= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
         }
         else
             v_real=v_load;
@@ -1624,22 +1632,30 @@ void create_if_stmt(past root,Value* v_return) {
         if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
             v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
-            v_load= cal_expr(root->left,&convert,Unknown);
+            v_load= cal_expr(root->left,Unknown,&convert);
         else
             v_load= create_call_func(root->left);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
-            //生成一条icmp ne
-            //包装0
-            Value *v_zero=(Value*) malloc(sizeof (Value));
-            value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-            //v_real
-            v_real= ins_get_value_with_name(ins_icmp);
-            //将这个instruction加入总list
-            InstNode *node = new_inst_node(ins_icmp);
-            ins_node_add(instruction_list,node);
+            if(get_last_inst(instruction_list)->inst->Opcode==zext)
+            {
+                //zext前面一定是xor
+                delete_inst(get_last_inst(instruction_list));
+            }
+            else
+            {
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v_real= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
         }
         else
             v_real=v_load;
@@ -1756,16 +1772,24 @@ void create_if_else_stmt(past root,Value* v_return) {
             v_load= handle_assign_array(root->left->right->left,v_array,1,-1,0);
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
-            //生成一条icmp ne
-            //包装0
-            Value *v_zero=(Value*) malloc(sizeof (Value));
-            value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-            //v_real
-            v_real= ins_get_value_with_name(ins_icmp);
-            //将这个instruction加入总list
-            InstNode *node = new_inst_node(ins_icmp);
-            ins_node_add(instruction_list,node);
+            if(get_last_inst(instruction_list)->inst->Opcode==zext)
+            {
+                //zext前面一定是xor
+                delete_inst(get_last_inst(instruction_list));
+            }
+            else
+            {
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v_real= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
         }
         else
             v_real=v_load;
@@ -1776,22 +1800,30 @@ void create_if_else_stmt(past root,Value* v_return) {
         if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
             v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
-            v_load= cal_expr(root->left,&convert,Unknown);
+            v_load= cal_expr(root->left,Unknown,&convert);
         else
             v_load=create_call_func(root->left);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
-            //生成一条icmp ne
-            //包装0
-            Value *v_zero=(Value*) malloc(sizeof (Value));
-            value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-            //v_real
-            v_real=ins_get_value_with_name(ins_icmp);
-            //将这个instruction加入总list
-            InstNode *node = new_inst_node(ins_icmp);
-            ins_node_add(instruction_list,node);
+            if(get_last_inst(instruction_list)->inst->Opcode==zext)
+            {
+                //zext前面一定是xor
+                delete_inst(get_last_inst(instruction_list));
+            }
+            else
+            {
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v_real=ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
         }
         else
             v_real=v_load;
@@ -1950,16 +1982,24 @@ void create_while_stmt(past root,Value* v_return)
             v_load= handle_assign_array(root->left->right->left,v_array,1,-1,0);
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
-            //生成一条icmp ne
-            //包装0
-            Value *v_zero=(Value*) malloc(sizeof (Value));
-            value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-            //v_real
-            v_real= ins_get_value_with_name(ins_icmp);
-            //将这个instruction加入总list
-            InstNode *node = new_inst_node(ins_icmp);
-            ins_node_add(instruction_list,node);
+            if(get_last_inst(instruction_list)->inst->Opcode==zext)
+            {
+                //zext前面一定是xor
+                delete_inst(get_last_inst(instruction_list));
+            }
+            else
+            {
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v_real= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
         }
         else
             v_real=v_load;
@@ -1970,22 +2010,30 @@ void create_while_stmt(past root,Value* v_return)
         if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
             v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
-            v_load= cal_expr(root->left,&convert,Unknown);
+            v_load= cal_expr(root->left,Unknown,&convert);
         else
             v_load=create_call_func(root->left);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
-            //生成一条icmp ne
-            //包装0
-            Value *v_zero=(Value*) malloc(sizeof (Value));
-            value_init_int(v_zero,0);
-            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
-            //v_real
-            v_real= ins_get_value_with_name(ins_icmp);
-            //将这个instruction加入总list
-            InstNode *node = new_inst_node(ins_icmp);
-            ins_node_add(instruction_list,node);
+            if(get_last_inst(instruction_list)->inst->Opcode==zext)
+            {
+                //zext前面一定是xor
+                delete_inst(get_last_inst(instruction_list));
+            }
+            else
+            {
+                //生成一条icmp ne
+                //包装0
+                Value *v_zero=(Value*) malloc(sizeof (Value));
+                value_init_int(v_zero,0);
+                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+                //v_real
+                v_real= ins_get_value_with_name(ins_icmp);
+                //将这个instruction加入总list
+                InstNode *node = new_inst_node(ins_icmp);
+                ins_node_add(instruction_list,node);
+            }
         }
         else
             v_real=v_load;
@@ -2282,24 +2330,24 @@ void create_func_def(past root) {
 }
 
 //处理!
-void travel_expr(past* str,int length)
-{
-    bool need_xor=false;
-    for(int i=length-1;i>=0;i--)
-    {
-        if(str[i]->iVal=='!')
-        {
-            if(need_xor)
-                str[i]->sVal= bfromcstr("special_!");
-        }
-        if(str[i]->iVal=='+' || str[i]->iVal=='-')
-            need_xor=true;
-    }
-}
+//void travel_expr(past* str,int length)
+//{
+//    bool need_xor=false;
+//    for(int i=length-1;i>=0;i--)
+//    {
+//        if(str[i]->iVal=='!')
+//        {
+//            if(need_xor)
+//                str[i]->sVal= bfromcstr("special_!");
+//        }
+//        if(str[i]->iVal=='+' || str[i]->iVal=='-')
+//            need_xor=true;
+//    }
+//}
 
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
-struct _Value *cal_expr(past expr,int* convert,int type) {
+struct _Value *cal_expr(past expr,int type,int* real) {
     //最后从栈中弹出的
     Value *final_result = (Value*) malloc(sizeof (Value));
     value_init(final_result);
@@ -2346,7 +2394,7 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
     }
     str[i]=NULL;
 
-    travel_expr(str, i);        //TODO:check
+    //travel_expr(str, i);        //TODO:check
 
     //计算后缀表达式
     value_stack PS2;
@@ -2359,7 +2407,9 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
     init_past_stack(&PSC);
     Value* x1;Value *x2;
     past *pp = str;
-    bool have_icmp=false;
+    //与0的icmp
+    Value *v_zero=(Value*) malloc(sizeof (Value));
+    value_init_int(v_zero,0);
     while (*pp) {
         if (strcmp(bstr2cstr((*pp)->nodeType, '\0'), "expr") != 0)
         {
@@ -2439,8 +2489,13 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                     case '%':
                         v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal % x2->pdata->var_pdata.iVal;
                         break;
-                    case '!':                                     //TODO !1这种还没处理，目前无法直接判断为假,如果要处理，就定个convert值为一定真和一定假，返回后分别加入if语句那些的num_int的判断
-                        //(*convert)=!(*convert);
+                        //!是只有x2的，x1都是0
+                    case '!':                                     //TODO !1这种还没处理，目前无法直接判断为假,如果要处理，就定个convert值为一定真和一定假，返回后分别加入if语句那些的num_int
+                     //   (*convert)=!(*convert);
+                        if(x2->pdata->var_pdata.iVal==0)
+                            v3->pdata->var_pdata.iVal=1;
+                        else
+                            v3->pdata->var_pdata.iVal=0;
                         break;
                 }
                 push_value(&PS2, v3);
@@ -2484,7 +2539,10 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                             v3->pdata->var_pdata.fVal = (float)x1->pdata->var_pdata.iVal / x2->pdata->var_pdata.fVal;
                         break;
                     case '!':                                     //TODO !1这种还没处理，目前无法直接判断为假,如果要处理，就定个convert值为一定真和一定假，返回后分别加入if语句那些的num_int的判断
-                        //(*convert)=!(*convert);
+                        if(x2->pdata->var_pdata.iVal==0)
+                            v3->pdata->var_pdata.iVal=1;
+                        else
+                            v3->pdata->var_pdata.iVal=0;
                         break;
                 }
                 push_value(&PS2, v3);
@@ -2601,18 +2659,20 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                     v2=x2;
 
                 //TODO 除了把'+'禁掉，还有无更好的处理
-                if((*pp)->iVal!='!' && (*pp)->iVal!='+' && get_last_inst(instruction_list)->inst->Opcode==XOR)
-                {
-                    //生成一条zext
-                    Instruction *ins_zext= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
-                    Value *v_zext= ins_get_value_with_name(ins_zext);
+//                if((*pp)->iVal!='!' && (*pp)->iVal!='+' && get_last_inst(instruction_list)->inst->Opcode==XOR)
+//                {
+//                    //生成一条zext
+//                    Instruction *ins_zext= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
+//                    Value *v_zext= ins_get_value_with_name(ins_zext);
+//
+//                    InstNode *node = new_inst_node(ins_zext);
+//                    ins_node_add(instruction_list,node);
+//
+//                    v2=v_zext;
+//                }
 
-                    InstNode *node = new_inst_node(ins_zext);
-                    ins_node_add(instruction_list,node);
-
-                    v2=v_zext;
-                }
-
+                Value *v_real=NULL;
+                Instruction *ins_icmp=NULL;
                 switch ((*pp)->iVal) {
                     case '+':
                         if(!((v1->VTy->ID==Int && v2->pdata->var_pdata.iVal==0) || (v2->VTy->ID==Int && v2->pdata->var_pdata.iVal==0)))
@@ -2631,33 +2691,27 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                         instruction = ins_new_binary_operator(Mod, v1, v2);
                         break;
                     case '!':
-                        if(strcmp(bstr2cstr((*pp)->sVal, '\0'), "special_!") == 0)
+                        if(*real==0)
                         {
-                            Value *v_real=NULL;
-                            if(!have_icmp)
-                            {
-                                //与0的icmp
-                                Value *v_zero=(Value*) malloc(sizeof (Value));
-                                value_init_int(v_zero,0);
-                                Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v2,v_zero);
-                                //v_real
-                                v_real= ins_get_value_with_name(ins_icmp);
-                                //将这个instruction加入总list
-                                InstNode *node_icmp = new_inst_node(ins_icmp);
-                                ins_node_add(instruction_list,node_icmp);
-                            }
+                            (*real)=!(*real);
+                        } else
+                        {
+                            ins_icmp= ins_new_binary_operator(NOTEQ,v2,v_zero);
+                            //v_real
+                            v_real= ins_get_value_with_name(ins_icmp);
+                            //将这个instruction加入总list
+                            InstNode *node_icmp = new_inst_node(ins_icmp);
+                            ins_node_add(instruction_list,node_icmp);
 
                             //xor
-                            if(!have_icmp)
-                                instruction= ins_new_unary_operator(XOR,v_real);
-                            else
-                                instruction= ins_new_unary_operator(XOR,v2);
+                            instruction= ins_new_unary_operator(XOR,v_real);
+                            Value *v_xor= ins_get_value_with_name(instruction);
+                            InstNode *node_xor = new_inst_node(instruction);
+                            ins_node_add(instruction_list,node_xor);
 
-                            have_icmp=true;
+                            //加zext
+                            instruction= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
                         }
-                            //以!开头
-                        else
-                            (*convert)=!(*convert);
 
                         break;
                 }
@@ -2683,7 +2737,7 @@ struct _Value *cal_expr(past expr,int* convert,int type) {
                     ins_node_add(instruction_list,node);
                     push_value(&PS2, v_tmp);
                 }
-                else if((*pp)->iVal=='!')
+                else if((*pp)->iVal=='!' && (*real)==0)
                 {
                     //如果是!a就将a压入就好
                     push_value(&PS2,v2);
@@ -2719,8 +2773,8 @@ struct _Value* cal_logic_expr(past logic_expr)
     //value1
     if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "expr") == 0)
     {
-        int convert=0;
-        v1= cal_expr(logic_expr->left,&convert,Unknown);
+        int convert=-1;
+        v1= cal_expr(logic_expr->left,Unknown,&convert);
     }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "ID") == 0)
     {
@@ -2728,12 +2782,12 @@ struct _Value* cal_logic_expr(past logic_expr)
         if(v_test->VTy->ID==Const_INT)
         {
             v1=(Value*) malloc(sizeof (Value));
-            value_init_int(v1,logic_expr->left->iVal);
+            value_init_int(v1,v_test->pdata->var_pdata.iVal);
         }
         else if(v_test->VTy->ID==Const_FLOAT)
         {
             v1=(Value*) malloc(sizeof (Value));
-            value_init_float(v1,logic_expr->left->fVal);
+            value_init_float(v1,v_test->pdata->var_pdata.fVal);
         }
         else
             v1= create_load_stmt(bstr2cstr(logic_expr->left->sVal,'\0'));
@@ -2785,8 +2839,8 @@ struct _Value* cal_logic_expr(past logic_expr)
     //value2
     if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "expr") == 0)
     {
-        int convert=0;
-        v2= cal_expr(logic_expr->right,&convert,Unknown);
+        int convert=-1;
+        v2= cal_expr(logic_expr->right,Unknown,&convert);
     }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "ID") == 0)
     {
@@ -2794,12 +2848,12 @@ struct _Value* cal_logic_expr(past logic_expr)
         if(v_test->VTy->ID==Const_INT)
         {
             v2=(Value*) malloc(sizeof (Value));
-            value_init_int(v2,logic_expr->right->iVal);
+            value_init_int(v2,v_test->pdata->var_pdata.iVal);
         }
         else if(v_test->VTy->ID==Const_FLOAT)
         {
             v2=(Value*) malloc(sizeof (Value));
-            value_init_float(v2,logic_expr->right->fVal);
+            value_init_float(v2,v_test->pdata->var_pdata.fVal);
         }
         else
             v2= create_load_stmt(bstr2cstr(logic_expr->right->sVal,'\0'));
@@ -2856,7 +2910,7 @@ struct _Value* cal_logic_expr(past logic_expr)
         instruction= ins_new_binary_operator(GREAT,v1,v2);
     else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), ">=") == 0)
         instruction= ins_new_binary_operator(GREATEQ,v1,v2);
-    else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), ">=") == 0)
+    else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), "<=") == 0)
         instruction= ins_new_binary_operator(LESSEQ,v1,v2);
     else if(strcmp(bstr2cstr(logic_expr->sVal, '\0'), "==") == 0)
         instruction= ins_new_binary_operator(EQ,v1,v2);
@@ -3079,8 +3133,8 @@ void create_params_stmt(past func_params,Value * v_func)
         }
         else if(strcmp(bstr2cstr(params->nodeType, '\0'), "expr") == 0)
         {
-            int convert=0;
-            v= cal_expr(params,&convert,v_func->pdata->symtab_func_pdata.param_type_lists[p_num].ID);
+            int convert=-1;
+            v= cal_expr(params,v_func->pdata->symtab_func_pdata.param_type_lists[p_num].ID,&convert);
         }
             //是IDent
         else
@@ -4347,17 +4401,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
         }
 
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
         instruction_node= get_next_inst(instruction_node);
     }
