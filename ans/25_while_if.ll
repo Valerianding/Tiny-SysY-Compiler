@@ -11,43 +11,43 @@ define dso_local i32 @get_one(i32 %0) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @deepWhileBr(i32 %0, i32 %1) #0 {
   %3 = add nsw i32 %0, %1
-  Br label %4
+  br label %4
 
 4:                                                ; preds = %19, %2
   %.0 = phi i32 [ %3, %2 ], [ %.3, %19 ]
   %5 = icmp slt i32 %.0, 75
-  Br i1 %5, label %6, label %20
+  br i1 %5, label %6, label %20
 
 6:                                                ; preds = %4
   %7 = icmp slt i32 %.0, 100
-  Br i1 %7, label %8, label %19
+  br i1 %7, label %8, label %19
 
 8:                                                ; preds = %6
   %9 = add nsw i32 %.0, 42
   %10 = icmp sgt i32 %9, 99
-  Br i1 %10, label %11, label %18
+  br i1 %10, label %11, label %18
 
 11:                                               ; preds = %8
   %12 = mul nsw i32 42, 2
   %13 = call i32 @get_one(i32 0)
   %14 = icmp eq i32 %13, 1
-  Br i1 %14, label %15, label %17
+  br i1 %14, label %15, label %17
 
 15:                                               ; preds = %11
   %16 = mul nsw i32 %12, 2
-  Br label %17
+  br label %17
 
 17:                                               ; preds = %15, %11
   %.1 = phi i32 [ %16, %15 ], [ %9, %11 ]
-  Br label %18
+  br label %18
 
 18:                                               ; preds = %17, %8
   %.2 = phi i32 [ %.1, %17 ], [ %9, %8 ]
-  Br label %19
+  br label %19
 
 19:                                               ; preds = %18, %6
   %.3 = phi i32 [ %.2, %18 ], [ %.0, %6 ]
-  Br label %4
+  br label %4
 
 20:                                               ; preds = %4
   ret i32 %.0

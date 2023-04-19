@@ -363,10 +363,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
     }
 
     // 维护该基本块所有的后继基本块中的phi指令 修改phi函数中的参数
-    if(tail->inst->Opcode == Br){
+    if(tail->inst->Opcode == br){
         //label的编号是
         int labelId = tail->inst->user.value.pdata->instruction_pdata.true_goto_location;
-        printf("Br %d\n",labelId);
+        printf("br %d\n",labelId);
         //从function的头节点开始向后寻找
         InstNode *funcHead = ins_get_funcHead(tail);
         BasicBlock *nextBlock = search_ins_label(funcHead,labelId)->inst->Parent;
@@ -400,7 +400,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         }
     }
 
-    if(tail->inst->Opcode == Br_i1){
+    if(tail->inst->Opcode == br_i1){
         int labelId1 = tail->inst->user.value.pdata->instruction_pdata.true_goto_location;
         int labelId2 = tail->inst->user.value.pdata->instruction_pdata.false_goto_location;
         InstNode *funcHead = ins_get_funcHead(tail);
@@ -714,7 +714,7 @@ void SSADeconstruction(Function *currentFunction){
                         InstNode *newBlockLabelNode = new_inst_node(newBlockLabel);
 
                         //直接跳转语句
-                        Instruction *newBlockBr = ins_new_zero_operator(Br);
+                        Instruction *newBlockBr = ins_new_zero_operator(br);
                         InstNode *newBlockBrNode = new_inst_node(newBlockBr);
 
 

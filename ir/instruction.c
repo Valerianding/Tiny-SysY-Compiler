@@ -151,11 +151,11 @@ void print_ins_opcode(Instruction *ins){
         case ALLBEGIN:
             printf("ALLBegin");
             break;
-        case Br:
-            printf("Br");
+        case br:
+            printf("br");
             break;
-        case Br_i1:
-            printf("Br_i1");
+        case br_i1:
+            printf("br_i1");
             break;
         case Label:
             printf("Label");

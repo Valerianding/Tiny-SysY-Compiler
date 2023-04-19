@@ -14,14 +14,14 @@ define dso_local i32 @main() #0 {
   %7 = zext i1 %6 to i32
   %8 = sub nsw i32 0, %7
   %9 = icmp ne i32 %8, 0
-  Br i1 %9, label %10, label %11
+  br i1 %9, label %10, label %11
 
 10:                                               ; preds = %0
-  Br label %13
+  br label %13
 
 11:                                               ; preds = %0
   %12 = add nsw i32 0, 4
-  Br label %13
+  br label %13
 
 13:                                               ; preds = %11, %10
   %.0 = phi i32 [ -1, %10 ], [ %12, %11 ]

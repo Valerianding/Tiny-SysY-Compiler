@@ -107,7 +107,7 @@ void renameVariabels(Function *currentFunction) {
 
     currNode = get_next_inst(currNode);
     while (currNode != get_next_inst(end->tail_node)) {
-        if (currNode->inst->Opcode != Br && currNode->inst->Opcode != Br_i1) {
+        if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1) {
 
             if (currNode->inst->Opcode == Label) {
                 //更新一下BasicBlock的ID 顺便就更新了phi
@@ -222,7 +222,7 @@ BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block){
 
     // 创建两个语句
     Instruction *newBlockLabel = ins_new_zero_operator(Label);
-    Instruction *newBlockBr = ins_new_zero_operator(Br);
+    Instruction *newBlockBr = ins_new_zero_operator(br);
     InstNode *newBlockLabelNode = new_inst_node(newBlockLabel);
     InstNode *newBlockBrNode = new_inst_node(newBlockBr);
 

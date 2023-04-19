@@ -15,18 +15,18 @@ define dso_local i32 @main() #0 {
   %3 = load i32, i32* @a, align 4
   %4 = load i32, i32* @b, align 4
   %5 = icmp eq i32 %3, %4
-  Br i1 %5, label %6, label %10
+  br i1 %5, label %6, label %10
 
 6:                                                ; preds = %0
   %7 = load i32, i32* @a, align 4
   %8 = icmp ne i32 %7, 3
-  Br i1 %8, label %9, label %10
+  br i1 %8, label %9, label %10
 
 9:                                                ; preds = %6
-  Br label %11
+  br label %11
 
 10:                                               ; preds = %6, %0
-  Br label %11
+  br label %11
 
 11:                                               ; preds = %10, %9
   %.0 = phi i32 [ 1, %9 ], [ 0, %10 ]

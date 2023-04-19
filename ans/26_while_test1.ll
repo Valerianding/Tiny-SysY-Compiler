@@ -5,30 +5,30 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @doubleWhile() #0 {
-  Br label %1
+  br label %1
 
 1:                                                ; preds = %9, %0
   %.01 = phi i32 [ 7, %0 ], [ %10, %9 ]
   %.0 = phi i32 [ 5, %0 ], [ %4, %9 ]
   %2 = icmp slt i32 %.0, 100
-  Br i1 %2, label %3, label %11
+  br i1 %2, label %3, label %11
 
 3:                                                ; preds = %1
   %4 = add nsw i32 %.0, 30
-  Br label %5
+  br label %5
 
 5:                                                ; preds = %7, %3
   %.1 = phi i32 [ %.01, %3 ], [ %8, %7 ]
   %6 = icmp slt i32 %.1, 100
-  Br i1 %6, label %7, label %9
+  br i1 %6, label %7, label %9
 
 7:                                                ; preds = %5
   %8 = add nsw i32 %.1, 6
-  Br label %5
+  br label %5
 
 9:                                                ; preds = %5
   %10 = sub nsw i32 %.1, 100
-  Br label %1
+  br label %1
 
 11:                                               ; preds = %1
   ret i32 %.01

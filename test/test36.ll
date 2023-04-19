@@ -22,7 +22,7 @@ define i32 @main() #0 {
   %9 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
   %10 = load i32, i32* %9, align 16
   %11 = icmp sgt i32 %10, 1
-  Br i1 %11, label %12, label %17
+  br i1 %11, label %12, label %17
 
 12:                                               ; preds = %0
   %13 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
@@ -30,7 +30,7 @@ define i32 @main() #0 {
   %15 = add nsw i32 %14, 1
   %16 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
   store i32 %15, i32* %16, align 16
-  Br label %22
+  br label %22
 
 17:                                               ; preds = %0
   %18 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
@@ -38,7 +38,7 @@ define i32 @main() #0 {
   %20 = sub nsw i32 %19, 1
   %21 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
   store i32 %20, i32* %21, align 16
-  Br label %22
+  br label %22
 
 22:                                               ; preds = %17, %12
   %23 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0

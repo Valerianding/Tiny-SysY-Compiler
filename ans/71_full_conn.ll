@@ -6,20 +6,20 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @relu_reg(i32 %0) #0 {
   %2 = icmp sgt i32 %0, 127
-  Br i1 %2, label %3, label %4
+  br i1 %2, label %3, label %4
 
 3:                                                ; preds = %1
-  Br label %8
+  br label %8
 
 4:                                                ; preds = %1
   %5 = icmp slt i32 %0, 0
-  Br i1 %5, label %6, label %7
+  br i1 %5, label %6, label %7
 
 6:                                                ; preds = %4
-  Br label %8
+  br label %8
 
 7:                                                ; preds = %4
-  Br label %8
+  br label %8
 
 8:                                                ; preds = %7, %6, %3
   %.0 = phi i32 [ 127, %3 ], [ 0, %6 ], [ %0, %7 ]
@@ -1298,13 +1298,13 @@ define dso_local i32 @model([5 x i32]* %0) #0 {
   %1269 = mul nsw i32 %1268, 46
   %1270 = add nsw i32 %1143, %1269
   %1271 = icmp sgt i32 %1270, 0
-  Br i1 %1271, label %1272, label %1273
+  br i1 %1271, label %1272, label %1273
 
 1272:                                             ; preds = %1
-  Br label %1274
+  br label %1274
 
 1273:                                             ; preds = %1
-  Br label %1274
+  br label %1274
 
 1274:                                             ; preds = %1273, %1272
   %.0 = phi i32 [ 1, %1272 ], [ 0, %1273 ]
@@ -1315,28 +1315,28 @@ define dso_local i32 @model([5 x i32]* %0) #0 {
 define dso_local i32 @main() #0 {
   %1 = alloca [5 x [5 x i32]], align 16
   %2 = call i32 (...) @getint()
-  Br label %3
+  br label %3
 
 3:                                                ; preds = %34, %0
   %.01 = phi i32 [ %2, %0 ], [ %35, %34 ]
   %4 = icmp sgt i32 %.01, 0
-  Br i1 %4, label %5, label %36
+  br i1 %4, label %5, label %36
 
 5:                                                ; preds = %3
-  Br label %6
+  br label %6
 
 6:                                                ; preds = %18, %5
   %.02 = phi i32 [ 0, %5 ], [ %19, %18 ]
   %7 = icmp slt i32 %.02, 5
-  Br i1 %7, label %8, label %20
+  br i1 %7, label %8, label %20
 
 8:                                                ; preds = %6
-  Br label %9
+  br label %9
 
 9:                                                ; preds = %11, %8
   %.0 = phi i32 [ 0, %8 ], [ %17, %11 ]
   %10 = icmp slt i32 %.0, 5
-  Br i1 %10, label %11, label %18
+  br i1 %10, label %11, label %18
 
 11:                                               ; preds = %9
   %12 = call i32 (...) @getint()
@@ -1346,35 +1346,35 @@ define dso_local i32 @main() #0 {
   %16 = getelementptr inbounds [5 x i32], [5 x i32]* %14, i64 0, i64 %15
   store i32 %12, i32* %16, align 4
   %17 = add nsw i32 %.0, 1
-  Br label %9
+  br label %9
 
 18:                                               ; preds = %9
   %19 = add nsw i32 %.02, 1
-  Br label %6
+  br label %6
 
 20:                                               ; preds = %6
   %21 = getelementptr inbounds [5 x [5 x i32]], [5 x [5 x i32]]* %1, i64 0, i64 0
   %22 = call i32 @model([5 x i32]* %21)
   %23 = icmp ne i32 %22, 0
-  Br i1 %23, label %24, label %29
+  br i1 %23, label %24, label %29
 
 24:                                               ; preds = %20
   %25 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 99)
   %26 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 97)
   %27 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 116)
   %28 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  Br label %34
+  br label %34
 
 29:                                               ; preds = %20
   %30 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 100)
   %31 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 111)
   %32 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 103)
   %33 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  Br label %34
+  br label %34
 
 34:                                               ; preds = %29, %24
   %35 = sub nsw i32 %.01, 1
-  Br label %3
+  br label %3
 
 36:                                               ; preds = %3
   ret i32 0

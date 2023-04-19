@@ -10,7 +10,7 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @putstr(i32* %0) #0 {
-  Br label %2
+  br label %2
 
 2:                                                ; preds = %7, %1
   %.0 = phi i32 [ 0, %1 ], [ %12, %7 ]
@@ -18,7 +18,7 @@ define dso_local i32 @putstr(i32* %0) #0 {
   %4 = getelementptr inbounds i32, i32* %0, i64 %3
   %5 = load i32, i32* %4, align 4
   %6 = icmp ne i32 %5, 0
-  Br i1 %6, label %7, label %13
+  br i1 %6, label %7, label %13
 
 7:                                                ; preds = %2
   %8 = sext i32 %.0 to i64
@@ -26,7 +26,7 @@ define dso_local i32 @putstr(i32* %0) #0 {
   %10 = load i32, i32* %9, align 4
   %11 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 %10)
   %12 = add nsw i32 %.0, 1
-  Br label %2
+  br label %2
 
 13:                                               ; preds = %2
   ret i32 %.0
@@ -37,14 +37,14 @@ declare dso_local i32 @putch(...) #1
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
   %1 = call i32 @putstr(i32* getelementptr inbounds ([100 x i32], [100 x i32]* bitcast (<{ [28 x i32], [72 x i32] }>* @__HELLO to [100 x i32]*), i64 0, i64 0))
-  Br label %2
+  br label %2
 
 2:                                                ; preds = %23, %0
   %.0 = phi i32 [ 0, %0 ], [ %20, %23 ]
   %3 = sdiv i32 %.0, 6
   %4 = srem i32 %.0, 6
   %5 = icmp ne i32 %3, %4
-  Br i1 %5, label %6, label %17
+  br i1 %5, label %6, label %17
 
 6:                                                ; preds = %2
   %7 = sext i32 %3 to i64
@@ -57,20 +57,20 @@ define dso_local i32 @main() #0 {
   %14 = getelementptr inbounds [50 x i32], [50 x i32]* %13, i64 0, i64 0
   %15 = call i32 @putstr(i32* %14)
   %16 = call i32 @putstr(i32* getelementptr inbounds ([5 x i32], [5 x i32]* @RET, i64 0, i64 0))
-  Br label %17
+  br label %17
 
 17:                                               ; preds = %6, %2
   %18 = mul nsw i32 %.0, 17
   %19 = add nsw i32 %18, 23
   %20 = srem i32 %19, 32
   %21 = icmp eq i32 %20, 0
-  Br i1 %21, label %22, label %23
+  br i1 %21, label %22, label %23
 
 22:                                               ; preds = %17
-  Br label %24
+  br label %24
 
 23:                                               ; preds = %17
-  Br label %2
+  br label %2
 
 24:                                               ; preds = %22
   ret i32 0

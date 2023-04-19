@@ -9,14 +9,14 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @exgcd(i32 %0, i32 %1, i32* %2, i32* %3) #0 {
   %5 = icmp eq i32 %1, 0
-  Br i1 %5, label %6, label %9
+  br i1 %5, label %6, label %9
 
 6:                                                ; preds = %4
   %7 = getelementptr inbounds i32, i32* %2, i64 0
   store i32 1, i32* %7, align 4
   %8 = getelementptr inbounds i32, i32* %3, i64 0
   store i32 0, i32* %8, align 4
-  Br label %23
+  br label %23
 
 9:                                                ; preds = %4
   %10 = srem i32 %0, %1
@@ -34,7 +34,7 @@ define dso_local i32 @exgcd(i32 %0, i32 %1, i32* %2, i32* %3) #0 {
   %21 = sub nsw i32 %13, %20
   %22 = getelementptr inbounds i32, i32* %3, i64 0
   store i32 %21, i32* %22, align 4
-  Br label %23
+  br label %23
 
 23:                                               ; preds = %9, %6
   %.0 = phi i32 [ %0, %6 ], [ %11, %9 ]

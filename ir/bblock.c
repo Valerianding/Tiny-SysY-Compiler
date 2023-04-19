@@ -90,9 +90,9 @@ void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
 void print_one_ins_info(InstNode *insNode){
     printf("%d : opcode:", insNode->inst->i);
     print_ins_opcode(insNode->inst);
-    if(insNode->inst->Opcode == Br_i1){
+    if(insNode->inst->Opcode == br_i1){
         printf("%d %d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location, insNode->inst->user.value.pdata->instruction_pdata.false_goto_location);
-    }else if(insNode->inst->Opcode == Br){
+    }else if(insNode->inst->Opcode == br){
         printf("%d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location);
     }else if(insNode->inst->Opcode == Label){
         printf("%d", insNode->inst->user.value.pdata->instruction_pdata.true_goto_location);

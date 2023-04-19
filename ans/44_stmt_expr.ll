@@ -9,12 +9,12 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
   store i32 1, i32* @k, align 4
-  Br label %1
+  br label %1
 
 1:                                                ; preds = %3, %0
   %.0 = phi i32 [ 0, %0 ], [ %4, %3 ]
   %2 = icmp sle i32 %.0, 9
-  Br i1 %2, label %3, label %10
+  br i1 %2, label %3, label %10
 
 3:                                                ; preds = %1
   %4 = add nsw i32 %.0, 1
@@ -24,7 +24,7 @@ define dso_local i32 @main() #0 {
   %8 = load i32, i32* @k, align 4
   %9 = add nsw i32 %7, %8
   store i32 %9, i32* @k, align 4
-  Br label %1
+  br label %1
 
 10:                                               ; preds = %1
   %11 = load i32, i32* @k, align 4

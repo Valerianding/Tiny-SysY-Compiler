@@ -6,16 +6,16 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @func1(i32 %0, i32 %1, i32 %2) #0 {
   %4 = icmp eq i32 %2, 0
-  Br i1 %4, label %5, label %7
+  br i1 %4, label %5, label %7
 
 5:                                                ; preds = %3
   %6 = mul nsw i32 %0, %1
-  Br label %10
+  br label %10
 
 7:                                                ; preds = %3
   %8 = sub nsw i32 %1, %2
   %9 = call i32 @func1(i32 %0, i32 %8, i32 0)
-  Br label %10
+  br label %10
 
 10:                                               ; preds = %7, %5
   %.0 = phi i32 [ %6, %5 ], [ %9, %7 ]
@@ -25,15 +25,15 @@ define dso_local i32 @func1(i32 %0, i32 %1, i32 %2) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @func2(i32 %0, i32 %1) #0 {
   %3 = icmp ne i32 %1, 0
-  Br i1 %3, label %4, label %7
+  br i1 %3, label %4, label %7
 
 4:                                                ; preds = %2
   %5 = srem i32 %0, %1
   %6 = call i32 @func2(i32 %5, i32 0)
-  Br label %8
+  br label %8
 
 7:                                                ; preds = %2
-  Br label %8
+  br label %8
 
 8:                                                ; preds = %7, %4
   %.0 = phi i32 [ %6, %4 ], [ %0, %7 ]
@@ -43,16 +43,16 @@ define dso_local i32 @func2(i32 %0, i32 %1) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @func3(i32 %0, i32 %1) #0 {
   %3 = icmp eq i32 %1, 0
-  Br i1 %3, label %4, label %6
+  br i1 %3, label %4, label %6
 
 4:                                                ; preds = %2
   %5 = add nsw i32 %0, 1
-  Br label %9
+  br label %9
 
 6:                                                ; preds = %2
   %7 = add nsw i32 %0, %1
   %8 = call i32 @func3(i32 %7, i32 0)
-  Br label %9
+  br label %9
 
 9:                                                ; preds = %6, %4
   %.0 = phi i32 [ %5, %4 ], [ %8, %6 ]
@@ -62,13 +62,13 @@ define dso_local i32 @func3(i32 %0, i32 %1) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @func4(i32 %0, i32 %1, i32 %2) #0 {
   %4 = icmp ne i32 %0, 0
-  Br i1 %4, label %5, label %6
+  br i1 %4, label %5, label %6
 
 5:                                                ; preds = %3
-  Br label %7
+  br label %7
 
 6:                                                ; preds = %3
-  Br label %7
+  br label %7
 
 7:                                                ; preds = %6, %5
   %.0 = phi i32 [ %1, %5 ], [ %2, %6 ]
@@ -84,17 +84,17 @@ define dso_local i32 @func5(i32 %0) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @func6(i32 %0, i32 %1) #0 {
   %3 = icmp ne i32 %0, 0
-  Br i1 %3, label %4, label %7
+  br i1 %3, label %4, label %7
 
 4:                                                ; preds = %2
   %5 = icmp ne i32 %1, 0
-  Br i1 %5, label %6, label %7
+  br i1 %5, label %6, label %7
 
 6:                                                ; preds = %4
-  Br label %8
+  br label %8
 
 7:                                                ; preds = %4, %2
-  Br label %8
+  br label %8
 
 8:                                                ; preds = %7, %6
   %.0 = phi i32 [ 1, %6 ], [ 0, %7 ]
@@ -104,13 +104,13 @@ define dso_local i32 @func6(i32 %0, i32 %1) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @func7(i32 %0) #0 {
   %2 = icmp ne i32 %0, 0
-  Br i1 %2, label %4, label %3
+  br i1 %2, label %4, label %3
 
 3:                                                ; preds = %1
-  Br label %5
+  br label %5
 
 4:                                                ; preds = %1
-  Br label %5
+  br label %5
 
 5:                                                ; preds = %4, %3
   %.0 = phi i32 [ 0, %4 ], [ 1, %3 ]
@@ -124,12 +124,12 @@ define dso_local i32 @main() #0 {
   %3 = call i32 (...) @getint()
   %4 = call i32 (...) @getint()
   %5 = call i32 (...) @getint()
-  Br label %6
+  br label %6
 
 6:                                                ; preds = %8, %0
   %.0 = phi i32 [ 0, %0 ], [ %12, %8 ]
   %7 = icmp slt i32 %.0, 10
-  Br i1 %7, label %8, label %13
+  br i1 %7, label %8, label %13
 
 8:                                                ; preds = %6
   %9 = call i32 (...) @getint()
@@ -137,7 +137,7 @@ define dso_local i32 @main() #0 {
   %11 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 %10
   store i32 %9, i32* %11, align 4
   %12 = add nsw i32 %.0, 1
-  Br label %6
+  br label %6
 
 13:                                               ; preds = %6
   %14 = call i32 @func7(i32 %2)

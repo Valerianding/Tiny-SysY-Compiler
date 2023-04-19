@@ -14,22 +14,22 @@ define dso_local i32 @main() #0 {
   %4 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 3)
   %5 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 1)
   %6 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  Br label %7
+  br label %7
 
 7:                                                ; preds = %13, %0
   %8 = icmp slt i32 1, 5
-  Br i1 %8, label %9, label %14
+  br i1 %8, label %9, label %14
 
 9:                                                ; preds = %7
   %10 = add nsw i32 0, 1
   %11 = icmp ne i32 %10, 0
-  Br i1 %11, label %12, label %13
+  br i1 %11, label %12, label %13
 
 12:                                               ; preds = %9
-  Br label %14
+  br label %14
 
 13:                                               ; preds = %9
-  Br label %7
+  br label %7
 
 14:                                               ; preds = %12, %7
   %15 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 1)
@@ -48,7 +48,7 @@ define dso_local i32 @main() #0 {
   store i32 3, i32* %23, align 4
   %24 = load i32, i32* getelementptr inbounds ([4 x i32], [4 x i32]* @c, i64 0, i64 2), align 8
   %25 = icmp ne i32 %24, 0
-  Br i1 %25, label %26, label %52
+  br i1 %25, label %26, label %52
 
 26:                                               ; preds = %14
   %27 = bitcast [7 x [1 x [5 x i32]]]* %2 to i8*
@@ -80,7 +80,7 @@ define dso_local i32 @main() #0 {
   %49 = getelementptr inbounds [5 x i32], [5 x i32]* %48, i64 0, i64 2
   %50 = load i32, i32* %49, align 4
   %51 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %50)
-  Br label %52
+  br label %52
 
 52:                                               ; preds = %26, %14
   %53 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)

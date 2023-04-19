@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
     }
 
     // 建立phi 之后的
-    printf_llvm_ir(instruction_list,argv[1]);
+//    printf_llvm_ir(instruction_list,argv[1]);
 
     InstNode *temp2 = instruction_list;
     /* 测试所有instruction list */
@@ -138,7 +138,7 @@ int main(int argc, char* argv[]){
    }
 
     // 消除phi函数之后
-    printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
     // reg_control();

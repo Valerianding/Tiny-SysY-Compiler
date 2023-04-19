@@ -9,12 +9,12 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @sub(float* %0, float* %1, float* %2, float* %3, float* %4, float* %5, float* %6, float* %7, float* %8) #0 {
-  Br label %10
+  br label %10
 
 10:                                               ; preds = %12, %9
   %.0 = phi i32 [ 0, %9 ], [ %40, %12 ]
   %11 = icmp slt i32 %.0, 3
-  Br i1 %11, label %12, label %41
+  br i1 %11, label %12, label %41
 
 12:                                               ; preds = %10
   %13 = sext i32 %.0 to i64
@@ -48,7 +48,7 @@ define dso_local i32 @sub(float* %0, float* %1, float* %2, float* %3, float* %4,
   %39 = getelementptr inbounds float, float* %8, i64 %38
   store float %37, float* %39, align 4
   %40 = add nsw i32 %.0, 1
-  Br label %10
+  br label %10
 
 41:                                               ; preds = %10
   ret i32 0
@@ -68,12 +68,12 @@ define dso_local i32 @main() #0 {
   store i32 3, i32* @N, align 4
   store i32 3, i32* @M, align 4
   store i32 3, i32* @L, align 4
-  Br label %10
+  br label %10
 
 10:                                               ; preds = %12, %0
   %.0 = phi i32 [ 0, %0 ], [ %31, %12 ]
   %11 = icmp slt i32 %.0, 3
-  Br i1 %11, label %12, label %32
+  br i1 %11, label %12, label %32
 
 12:                                               ; preds = %10
   %13 = sitofp i32 %.0 to float
@@ -101,7 +101,7 @@ define dso_local i32 @main() #0 {
   %30 = getelementptr inbounds [3 x float], [3 x float]* %6, i64 0, i64 %29
   store float %28, float* %30, align 4
   %31 = add nsw i32 %.0, 1
-  Br label %10
+  br label %10
 
 32:                                               ; preds = %10
   %33 = getelementptr inbounds [3 x float], [3 x float]* %1, i64 0, i64 0
@@ -114,12 +114,12 @@ define dso_local i32 @main() #0 {
   %40 = getelementptr inbounds [3 x float], [3 x float]* %8, i64 0, i64 0
   %41 = getelementptr inbounds [3 x float], [3 x float]* %9, i64 0, i64 0
   %42 = call i32 @sub(float* %33, float* %34, float* %35, float* %36, float* %37, float* %38, float* %39, float* %40, float* %41)
-  Br label %43
+  br label %43
 
 43:                                               ; preds = %45, %32
   %.1 = phi i32 [ %42, %32 ], [ %51, %45 ]
   %44 = icmp slt i32 %.1, 3
-  Br i1 %44, label %45, label %52
+  br i1 %44, label %45, label %52
 
 45:                                               ; preds = %43
   %46 = sext i32 %.1 to i64
@@ -128,16 +128,16 @@ define dso_local i32 @main() #0 {
   %49 = fptosi float %48 to i32
   %50 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %49)
   %51 = add nsw i32 %.1, 1
-  Br label %43
+  br label %43
 
 52:                                               ; preds = %43
   %53 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  Br label %54
+  br label %54
 
 54:                                               ; preds = %56, %52
   %.2 = phi i32 [ 0, %52 ], [ %62, %56 ]
   %55 = icmp slt i32 %.2, 3
-  Br i1 %55, label %56, label %63
+  br i1 %55, label %56, label %63
 
 56:                                               ; preds = %54
   %57 = sext i32 %.2 to i64
@@ -146,16 +146,16 @@ define dso_local i32 @main() #0 {
   %60 = fptosi float %59 to i32
   %61 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %60)
   %62 = add nsw i32 %.2, 1
-  Br label %54
+  br label %54
 
 63:                                               ; preds = %54
   %64 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
-  Br label %65
+  br label %65
 
 65:                                               ; preds = %67, %63
   %.3 = phi i32 [ 0, %63 ], [ %73, %67 ]
   %66 = icmp slt i32 %.3, 3
-  Br i1 %66, label %67, label %74
+  br i1 %66, label %67, label %74
 
 67:                                               ; preds = %65
   %68 = sext i32 %.3 to i64
@@ -164,7 +164,7 @@ define dso_local i32 @main() #0 {
   %71 = fptosi float %70 to i32
   %72 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %71)
   %73 = add nsw i32 %.3, 1
-  Br label %65
+  br label %65
 
 74:                                               ; preds = %65
   %75 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)

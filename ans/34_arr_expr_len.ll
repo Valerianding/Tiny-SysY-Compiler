@@ -8,13 +8,13 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
-  Br label %1
+  br label %1
 
 1:                                                ; preds = %3, %0
   %.01 = phi i32 [ 0, %0 ], [ %8, %3 ]
   %.0 = phi i32 [ 0, %0 ], [ %7, %3 ]
   %2 = icmp slt i32 %.01, 6
-  Br i1 %2, label %3, label %9
+  br i1 %2, label %3, label %9
 
 3:                                                ; preds = %1
   %4 = sext i32 %.01 to i64
@@ -22,7 +22,7 @@ define dso_local i32 @main() #0 {
   %6 = load i32, i32* %5, align 4
   %7 = add nsw i32 %.0, %6
   %8 = add nsw i32 %.01, 1
-  Br label %1
+  br label %1
 
 9:                                                ; preds = %1
   ret i32 %.0

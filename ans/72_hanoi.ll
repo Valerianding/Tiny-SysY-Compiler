@@ -20,11 +20,11 @@ declare dso_local i32 @putch(...) #1
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @hanoi(i32 %0, i32 %1, i32 %2, i32 %3) #0 {
   %5 = icmp eq i32 %0, 1
-  Br i1 %5, label %6, label %7
+  br i1 %5, label %6, label %7
 
 6:                                                ; preds = %4
   call void @move(i32 %1, i32 %3)
-  Br label %10
+  br label %10
 
 7:                                                ; preds = %4
   %8 = sub nsw i32 %0, 1
@@ -32,7 +32,7 @@ define dso_local void @hanoi(i32 %0, i32 %1, i32 %2, i32 %3) #0 {
   call void @move(i32 %1, i32 %3)
   %9 = sub nsw i32 %0, 1
   call void @hanoi(i32 %9, i32 %2, i32 %1, i32 %3)
-  Br label %10
+  br label %10
 
 10:                                               ; preds = %7, %6
   ret void
@@ -41,19 +41,19 @@ define dso_local void @hanoi(i32 %0, i32 %1, i32 %2, i32 %3) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
   %1 = call i32 (...) @getint()
-  Br label %2
+  br label %2
 
 2:                                                ; preds = %4, %0
   %.0 = phi i32 [ %1, %0 ], [ %7, %4 ]
   %3 = icmp sgt i32 %.0, 0
-  Br i1 %3, label %4, label %8
+  br i1 %3, label %4, label %8
 
 4:                                                ; preds = %2
   %5 = call i32 (...) @getint()
   call void @hanoi(i32 %5, i32 1, i32 2, i32 3)
   %6 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %7 = sub nsw i32 %.0, 1
-  Br label %2
+  br label %2
 
 8:                                                ; preds = %2
   ret i32 0

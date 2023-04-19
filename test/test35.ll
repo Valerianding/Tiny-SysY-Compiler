@@ -14,12 +14,12 @@ define i32 @main() #0 {
   store i32 0, i32* %1, align 4
   store i32 0, i32* %2, align 4
   store i32 0, i32* %3, align 4
-  Br label %4
+  br label %4
 
 4:                                                ; preds = %7, %0
   %5 = load i32, i32* %2, align 4
   %6 = icmp slt i32 %5, 6
-  Br i1 %6, label %7, label %16
+  br i1 %6, label %7, label %16
 
 7:                                                ; preds = %4
   %8 = load i32, i32* %3, align 4
@@ -32,7 +32,7 @@ define i32 @main() #0 {
   %14 = load i32, i32* %2, align 4
   %15 = add nsw i32 %14, 1
   store i32 %15, i32* %2, align 4
-  Br label %4, !llvm.loop !4
+  br label %4, !llvm.loop !4
 
 16:                                               ; preds = %4
   %17 = load i32, i32* %3, align 4

@@ -6,13 +6,13 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 {
   %1 = alloca [100 x i32], align 16
-  Br label %2
+  br label %2
 
 2:                                                ; preds = %5, %0
   %.01 = phi i32 [ 0, %0 ], [ %9, %5 ]
   %3 = call i32 (...) @getint()
   %4 = icmp ne i32 %3, 0
-  Br i1 %4, label %5, label %10
+  br i1 %4, label %5, label %10
 
 5:                                                ; preds = %2
   %6 = call i32 (...) @getint()
@@ -20,16 +20,16 @@ define dso_local i32 @main() #0 {
   %8 = getelementptr inbounds [100 x i32], [100 x i32]* %1, i64 0, i64 %7
   store i32 %6, i32* %8, align 4
   %9 = add nsw i32 %.01, 1
-  Br label %2
+  br label %2
 
 10:                                               ; preds = %2
-  Br label %11
+  br label %11
 
 11:                                               ; preds = %13, %10
   %.1 = phi i32 [ %.01, %10 ], [ %14, %13 ]
   %.0 = phi i32 [ 0, %10 ], [ %18, %13 ]
   %12 = icmp ne i32 %.1, 0
-  Br i1 %12, label %13, label %19
+  br i1 %12, label %13, label %19
 
 13:                                               ; preds = %11
   %14 = sub nsw i32 %.1, 1
@@ -37,7 +37,7 @@ define dso_local i32 @main() #0 {
   %16 = getelementptr inbounds [100 x i32], [100 x i32]* %1, i64 0, i64 %15
   %17 = load i32, i32* %16, align 4
   %18 = add nsw i32 %.0, %17
-  Br label %11
+  br label %11
 
 19:                                               ; preds = %11
   %20 = srem i32 %.0, 79

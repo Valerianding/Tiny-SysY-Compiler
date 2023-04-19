@@ -22,14 +22,14 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local float @float_abs(float %0) #0 {
   %2 = fcmp olt float %0, 0.000000e+00
-  Br i1 %2, label %3, label %5
+  br i1 %2, label %3, label %5
 
 3:                                                ; preds = %1
   %4 = fneg float %0
-  Br label %6
+  br label %6
 
 5:                                                ; preds = %1
-  Br label %6
+  br label %6
 
 6:                                                ; preds = %5, %3
   %.0 = phi float [ %4, %3 ], [ %0, %5 ]
@@ -55,13 +55,13 @@ define dso_local i32 @float_eq(float %0, float %1) #0 {
   %3 = fsub float %0, %1
   %4 = call float @float_abs(float %3)
   %5 = fcmp olt float %4, 0x3EB0C6F7A0000000
-  Br i1 %5, label %6, label %7
+  br i1 %5, label %6, label %7
 
 6:                                                ; preds = %2
-  Br label %8
+  br label %8
 
 7:                                                ; preds = %2
-  Br label %8
+  br label %8
 
 8:                                                ; preds = %7, %6
   %.0 = phi i32 [ 1, %6 ], [ 0, %7 ]
@@ -92,15 +92,15 @@ define dso_local void @ok() #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @assert(i32 %0) #0 {
   %2 = icmp ne i32 %0, 0
-  Br i1 %2, label %4, label %3
+  br i1 %2, label %4, label %3
 
 3:                                                ; preds = %1
   call void @error()
-  Br label %5
+  br label %5
 
 4:                                                ; preds = %1
   call void @ok()
-  Br label %5
+  br label %5
 
 5:                                                ; preds = %4, %3
   ret void
@@ -109,15 +109,15 @@ define dso_local void @assert(i32 %0) #0 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local void @assert_not(i32 %0) #0 {
   %2 = icmp ne i32 %0, 0
-  Br i1 %2, label %3, label %4
+  br i1 %2, label %3, label %4
 
 3:                                                ; preds = %1
   call void @error()
-  Br label %5
+  br label %5
 
 4:                                                ; preds = %1
   call void @ok()
-  Br label %5
+  br label %5
 
 5:                                                ; preds = %4, %3
   ret void
@@ -138,11 +138,11 @@ define dso_local i32 @main() #0 {
   call void @assert(i32 %7)
   %8 = call i32 @float_eq(float 2.330000e+02, float 4.095000e+03)
   call void @assert_not(i32 %8)
-  Br i1 true, label %9, label %10
+  br i1 true, label %9, label %10
 
 9:                                                ; preds = %0
   call void @ok()
-  Br label %10
+  br label %10
 
 10:                                               ; preds = %9, %0
   call void @ok()
@@ -156,13 +156,13 @@ define dso_local i32 @main() #0 {
   store float 2.000000e+00, float* %14, align 4
   %15 = getelementptr inbounds [10 x float], [10 x float]* %1, i64 0, i64 0
   %16 = call i32 (float*, ...) bitcast (i32 (...)* @getfarray to i32 (float*, ...)*)(float* %15)
-  Br label %17
+  br label %17
 
 17:                                               ; preds = %19, %10
   %.01 = phi i32 [ 1, %10 ], [ %40, %19 ]
   %.0 = phi i32 [ 0, %10 ], [ %41, %19 ]
   %18 = icmp slt i32 %.01, 1000000000
-  Br i1 %18, label %19, label %42
+  br i1 %18, label %19, label %42
 
 19:                                               ; preds = %17
   %20 = call i32 (...) @getfloat()
@@ -188,7 +188,7 @@ define dso_local i32 @main() #0 {
   %39 = fmul double %38, 1.000000e+01
   %40 = fptosi double %39 to i32
   %41 = add nsw i32 %.0, 1
-  Br label %17
+  br label %17
 
 42:                                               ; preds = %17
   %43 = getelementptr inbounds [10 x float], [10 x float]* %1, i64 0, i64 0

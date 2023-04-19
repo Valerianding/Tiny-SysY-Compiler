@@ -9,20 +9,20 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @MAX(i32 %0, i32 %1) #0 {
   %3 = icmp eq i32 %0, %1
-  Br i1 %3, label %4, label %5
+  br i1 %3, label %4, label %5
 
 4:                                                ; preds = %2
-  Br label %9
+  br label %9
 
 5:                                                ; preds = %2
   %6 = icmp sgt i32 %0, %1
-  Br i1 %6, label %7, label %8
+  br i1 %6, label %7, label %8
 
 7:                                                ; preds = %5
-  Br label %9
+  br label %9
 
 8:                                                ; preds = %5
-  Br label %9
+  br label %9
 
 9:                                                ; preds = %8, %7, %4
   %.0 = phi i32 [ %0, %4 ], [ %0, %7 ], [ %1, %8 ]
@@ -45,12 +45,12 @@ define dso_local i32 @max_sum_nonadjacent(i32* %0, i32 %1) #0 {
   %12 = call i32 @MAX(i32 %9, i32 %11)
   %13 = getelementptr inbounds [16 x i32], [16 x i32]* %3, i64 0, i64 1
   store i32 %12, i32* %13, align 4
-  Br label %14
+  br label %14
 
 14:                                               ; preds = %16, %2
   %.0 = phi i32 [ 2, %2 ], [ %32, %16 ]
   %15 = icmp slt i32 %.0, %1
-  Br i1 %15, label %16, label %33
+  br i1 %15, label %16, label %33
 
 16:                                               ; preds = %14
   %17 = sub nsw i32 %.0, 2
@@ -70,7 +70,7 @@ define dso_local i32 @max_sum_nonadjacent(i32* %0, i32 %1) #0 {
   %31 = getelementptr inbounds [16 x i32], [16 x i32]* %3, i64 0, i64 %30
   store i32 %29, i32* %31, align 4
   %32 = add nsw i32 %.0, 1
-  Br label %14
+  br label %14
 
 33:                                               ; preds = %14
   %34 = sub nsw i32 %1, 1
@@ -88,20 +88,20 @@ define dso_local i32 @longest_common_subseq(i32* %0, i32 %1, i32* %2, i32 %3) #0
   %5 = alloca [16 x [16 x i32]], align 16
   %6 = bitcast [16 x [16 x i32]]* %5 to i8*
   call void @llvm.memset.p0i8.i64(i8* align 16 %6, i8 0, i64 1024, i1 false)
-  Br label %7
+  br label %7
 
 7:                                                ; preds = %55, %4
   %.01 = phi i32 [ 1, %4 ], [ %56, %55 ]
   %8 = icmp sle i32 %.01, %1
-  Br i1 %8, label %9, label %57
+  br i1 %8, label %9, label %57
 
 9:                                                ; preds = %7
-  Br label %10
+  br label %10
 
 10:                                               ; preds = %53, %9
   %.0 = phi i32 [ 1, %9 ], [ %54, %53 ]
   %11 = icmp sle i32 %.0, %3
-  Br i1 %11, label %12, label %55
+  br i1 %11, label %12, label %55
 
 12:                                               ; preds = %10
   %13 = sub nsw i32 %.01, 1
@@ -113,7 +113,7 @@ define dso_local i32 @longest_common_subseq(i32* %0, i32 %1, i32* %2, i32 %3) #0
   %19 = getelementptr inbounds i32, i32* %2, i64 %18
   %20 = load i32, i32* %19, align 4
   %21 = icmp eq i32 %16, %20
-  Br i1 %21, label %22, label %35
+  br i1 %21, label %22, label %35
 
 22:                                               ; preds = %12
   %23 = sub nsw i32 %.01, 1
@@ -129,7 +129,7 @@ define dso_local i32 @longest_common_subseq(i32* %0, i32 %1, i32* %2, i32 %3) #0
   %33 = sext i32 %.0 to i64
   %34 = getelementptr inbounds [16 x i32], [16 x i32]* %32, i64 0, i64 %33
   store i32 %30, i32* %34, align 4
-  Br label %53
+  br label %53
 
 35:                                               ; preds = %12
   %36 = sub nsw i32 %.01, 1
@@ -150,15 +150,15 @@ define dso_local i32 @longest_common_subseq(i32* %0, i32 %1, i32* %2, i32 %3) #0
   %51 = sext i32 %.0 to i64
   %52 = getelementptr inbounds [16 x i32], [16 x i32]* %50, i64 0, i64 %51
   store i32 %48, i32* %52, align 4
-  Br label %53
+  br label %53
 
 53:                                               ; preds = %35, %22
   %54 = add nsw i32 %.0, 1
-  Br label %10
+  br label %10
 
 55:                                               ; preds = %10
   %56 = add nsw i32 %.01, 1
-  Br label %7
+  br label %7
 
 57:                                               ; preds = %7
   %58 = sext i32 %1 to i64

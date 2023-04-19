@@ -8,27 +8,27 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @QuickSort(i32* %0, i32 %1, i32 %2) #0 {
   %4 = icmp slt i32 %1, %2
-  Br i1 %4, label %5, label %62
+  br i1 %4, label %5, label %62
 
 5:                                                ; preds = %3
   %6 = sext i32 %1 to i64
   %7 = getelementptr inbounds i32, i32* %0, i64 %6
   %8 = load i32, i32* %7, align 4
-  Br label %9
+  br label %9
 
 9:                                                ; preds = %54, %5
   %.01 = phi i32 [ %1, %5 ], [ %.23, %54 ]
   %.0 = phi i32 [ %2, %5 ], [ %.2, %54 ]
   %10 = icmp slt i32 %.01, %.0
-  Br i1 %10, label %11, label %55
+  br i1 %10, label %11, label %55
 
 11:                                               ; preds = %9
-  Br label %12
+  br label %12
 
 12:                                               ; preds = %22, %11
   %.1 = phi i32 [ %.0, %11 ], [ %23, %22 ]
   %13 = icmp slt i32 %.01, %.1
-  Br i1 %13, label %14, label %20
+  br i1 %13, label %14, label %20
 
 14:                                               ; preds = %12
   %15 = sext i32 %.1 to i64
@@ -36,19 +36,19 @@ define dso_local i32 @QuickSort(i32* %0, i32 %1, i32 %2) #0 {
   %17 = load i32, i32* %16, align 4
   %18 = sub nsw i32 %8, 1
   %19 = icmp sgt i32 %17, %18
-  Br label %20
+  br label %20
 
 20:                                               ; preds = %14, %12
   %21 = phi i1 [ false, %12 ], [ %19, %14 ]
-  Br i1 %21, label %22, label %24
+  br i1 %21, label %22, label %24
 
 22:                                               ; preds = %20
   %23 = sub nsw i32 %.1, 1
-  Br label %12
+  br label %12
 
 24:                                               ; preds = %20
   %25 = icmp slt i32 %.01, %.1
-  Br i1 %25, label %26, label %33
+  br i1 %25, label %26, label %33
 
 26:                                               ; preds = %24
   %27 = sext i32 %.1 to i64
@@ -58,35 +58,35 @@ define dso_local i32 @QuickSort(i32* %0, i32 %1, i32 %2) #0 {
   %31 = getelementptr inbounds i32, i32* %0, i64 %30
   store i32 %29, i32* %31, align 4
   %32 = add nsw i32 %.01, 1
-  Br label %33
+  br label %33
 
 33:                                               ; preds = %26, %24
   %.12 = phi i32 [ %32, %26 ], [ %.01, %24 ]
-  Br label %34
+  br label %34
 
 34:                                               ; preds = %43, %33
   %.23 = phi i32 [ %.12, %33 ], [ %44, %43 ]
   %35 = icmp slt i32 %.23, %.1
-  Br i1 %35, label %36, label %41
+  br i1 %35, label %36, label %41
 
 36:                                               ; preds = %34
   %37 = sext i32 %.23 to i64
   %38 = getelementptr inbounds i32, i32* %0, i64 %37
   %39 = load i32, i32* %38, align 4
   %40 = icmp slt i32 %39, %8
-  Br label %41
+  br label %41
 
 41:                                               ; preds = %36, %34
   %42 = phi i1 [ false, %34 ], [ %40, %36 ]
-  Br i1 %42, label %43, label %45
+  br i1 %42, label %43, label %45
 
 43:                                               ; preds = %41
   %44 = add nsw i32 %.23, 1
-  Br label %34
+  br label %34
 
 45:                                               ; preds = %41
   %46 = icmp slt i32 %.23, %.1
-  Br i1 %46, label %47, label %54
+  br i1 %46, label %47, label %54
 
 47:                                               ; preds = %45
   %48 = sext i32 %.23 to i64
@@ -96,11 +96,11 @@ define dso_local i32 @QuickSort(i32* %0, i32 %1, i32 %2) #0 {
   %52 = getelementptr inbounds i32, i32* %0, i64 %51
   store i32 %50, i32* %52, align 4
   %53 = sub nsw i32 %.1, 1
-  Br label %54
+  br label %54
 
 54:                                               ; preds = %47, %45
   %.2 = phi i32 [ %53, %47 ], [ %.1, %45 ]
-  Br label %9
+  br label %9
 
 55:                                               ; preds = %9
   %56 = sext i32 %.01 to i64
@@ -110,7 +110,7 @@ define dso_local i32 @QuickSort(i32* %0, i32 %1, i32 %2) #0 {
   %59 = call i32 @QuickSort(i32* %0, i32 %1, i32 %58)
   %60 = add nsw i32 %.01, 1
   %61 = call i32 @QuickSort(i32* %0, i32 %60, i32 %2)
-  Br label %62
+  br label %62
 
 62:                                               ; preds = %55, %3
   ret i32 0
@@ -142,13 +142,13 @@ define dso_local i32 @main() #0 {
   store i32 8, i32* %11, align 4
   %12 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
   %13 = call i32 @QuickSort(i32* %12, i32 0, i32 9)
-  Br label %14
+  br label %14
 
 14:                                               ; preds = %17, %0
   %.0 = phi i32 [ %13, %0 ], [ %23, %17 ]
   %15 = load i32, i32* @n, align 4
   %16 = icmp slt i32 %.0, %15
-  Br i1 %16, label %17, label %24
+  br i1 %16, label %17, label %24
 
 17:                                               ; preds = %14
   %18 = sext i32 %.0 to i64
@@ -157,7 +157,7 @@ define dso_local i32 @main() #0 {
   %21 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %20)
   %22 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %23 = add nsw i32 %.0, 1
-  Br label %14
+  br label %14
 
 24:                                               ; preds = %14
   ret i32 0

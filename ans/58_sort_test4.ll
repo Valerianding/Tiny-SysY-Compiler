@@ -7,23 +7,23 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @select_sort(i32* %0, i32 %1) #0 {
-  Br label %3
+  br label %3
 
 3:                                                ; preds = %34, %2
   %.02 = phi i32 [ 0, %2 ], [ %35, %34 ]
   %4 = sub nsw i32 %1, 1
   %5 = icmp slt i32 %.02, %4
-  Br i1 %5, label %6, label %36
+  br i1 %5, label %6, label %36
 
 6:                                                ; preds = %3
   %7 = add nsw i32 %.02, 1
-  Br label %8
+  br label %8
 
 8:                                                ; preds = %19, %6
   %.01 = phi i32 [ %7, %6 ], [ %20, %19 ]
   %.0 = phi i32 [ %.02, %6 ], [ %.1, %19 ]
   %9 = icmp slt i32 %.01, %1
-  Br i1 %9, label %10, label %21
+  br i1 %9, label %10, label %21
 
 10:                                               ; preds = %8
   %11 = sext i32 %.0 to i64
@@ -33,19 +33,19 @@ define dso_local i32 @select_sort(i32* %0, i32 %1) #0 {
   %15 = getelementptr inbounds i32, i32* %0, i64 %14
   %16 = load i32, i32* %15, align 4
   %17 = icmp sgt i32 %13, %16
-  Br i1 %17, label %18, label %19
+  br i1 %17, label %18, label %19
 
 18:                                               ; preds = %10
-  Br label %19
+  br label %19
 
 19:                                               ; preds = %18, %10
   %.1 = phi i32 [ %.01, %18 ], [ %.0, %10 ]
   %20 = add nsw i32 %.01, 1
-  Br label %8
+  br label %8
 
 21:                                               ; preds = %8
   %22 = icmp ne i32 %.0, %.02
-  Br i1 %22, label %23, label %34
+  br i1 %22, label %23, label %34
 
 23:                                               ; preds = %21
   %24 = sext i32 %.0 to i64
@@ -60,11 +60,11 @@ define dso_local i32 @select_sort(i32* %0, i32 %1) #0 {
   %32 = sext i32 %.02 to i64
   %33 = getelementptr inbounds i32, i32* %0, i64 %32
   store i32 %26, i32* %33, align 4
-  Br label %34
+  br label %34
 
 34:                                               ; preds = %23, %21
   %35 = add nsw i32 %.02, 1
-  Br label %3
+  br label %3
 
 36:                                               ; preds = %3
   ret i32 0
@@ -97,13 +97,13 @@ define dso_local i32 @main() #0 {
   %12 = getelementptr inbounds [10 x i32], [10 x i32]* %1, i64 0, i64 0
   %13 = load i32, i32* @n, align 4
   %14 = call i32 @select_sort(i32* %12, i32 %13)
-  Br label %15
+  br label %15
 
 15:                                               ; preds = %18, %0
   %.0 = phi i32 [ %14, %0 ], [ %24, %18 ]
   %16 = load i32, i32* @n, align 4
   %17 = icmp slt i32 %.0, %16
-  Br i1 %17, label %18, label %25
+  br i1 %17, label %18, label %25
 
 18:                                               ; preds = %15
   %19 = sext i32 %.0 to i64
@@ -112,7 +112,7 @@ define dso_local i32 @main() #0 {
   %22 = call i32 (i32, ...) bitcast (i32 (...)* @putint to i32 (i32, ...)*)(i32 %21)
   %23 = call i32 (i32, ...) bitcast (i32 (...)* @putch to i32 (i32, ...)*)(i32 10)
   %24 = add nsw i32 %.0, 1
-  Br label %15
+  br label %15
 
 25:                                               ; preds = %15
   ret i32 0
