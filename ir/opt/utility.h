@@ -16,4 +16,6 @@ void showInstructionInfo(InstNode *instruction_list);
 void showBlockInfo(InstNode *instruction_list);
 void HashSetClean(HashSet *set);
 BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block);
+bool hasNoDestOperator(InstNode *insNode);
+InstNode *findNode(BasicBlock *block,Instruction *inst);
 #endif //C22V1_UTILITY_H

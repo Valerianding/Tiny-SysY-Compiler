@@ -8,6 +8,7 @@
 const Opcode invalidOpcodes[] = {FunBegin, Label, ALLBEGIN, Alloca, tmp, zext, MEMCPY, zeroinitializer, GLOBAL_VAR, FunEnd};
 const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod};
 const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
+const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label};
 bool isValidOperator(InstNode *insNode){
     for (int i = 0; i < sizeof(invalidOpcodes) / sizeof(Opcode); i++) {
         if (insNode->inst->Opcode == invalidOpcodes[i]) {
@@ -29,6 +30,15 @@ bool isCalculationOperator(InstNode *inst){
 bool isCompareOperator(InstNode *insNode){
     for(int i = 0; i < sizeof(compareOpcodes) / sizeof(Opcode); i++){
         if(insNode->inst->Opcode == compareOpcodes[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool hasNoDestOperator(InstNode *insNode){
+    for(int i = 0; i < sizeof(hasNoDestOpcodes) / sizeof(Opcode); i++){
+        if(insNode->inst->Opcode == hasNoDestOpcodes[i]){
             return true;
         }
     }
@@ -216,7 +226,6 @@ BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block){
     HashSetAdd(block->preBlocks,newBlock);
 
 
-    //
     InstNode *prevTail = get_prev_inst(block->head_node);
     InstNode *prevNext = block->head_node;
 
@@ -233,5 +242,17 @@ BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block){
     newBlockBrNode->list.next = &prevNext->list;
     prevNext->list.prev = &newBlockBrNode->list;
 
+    bb_set_block(newBlock,newBlockLabelNode,newBlockBrNode);
     return newBlock;
+}
+
+InstNode *findNode(BasicBlock *block,Instruction *inst){
+    InstNode *currNode = block->head_node;
+    while(currNode != get_next_inst(block->tail_node)){
+        if(currNode->inst == inst){
+            return currNode;
+        }
+        currNode = get_next_inst(currNode);
+    }
+    return NULL;
 }

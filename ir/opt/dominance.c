@@ -330,7 +330,7 @@ void calculate_DomTree(Function *currentFunction){
         if(parent->visited == false){
             parent->visited = true;
             DomTreeNode *domTreeNode = parent->domTreeNode;
-            printf("b%d, DomNode : ",parent->id);
+            printf("b%d ",parent->id);
             if(parent->iDom != nullptr)
                 printf("idom : b%d ",parent->iDom->id);
             HashSet *childSet = domTreeNode->children;

@@ -8,4 +8,6 @@
 #include "utility.h"
 #include <stack.h>
 void loop(Function *currentFunction);
+void findbody(BasicBlock *head,BasicBlock *tail);
+void loopVariant(HashSet *loop, BasicBlock *head);
 #endif //C22V1_LOOP_H

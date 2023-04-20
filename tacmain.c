@@ -107,6 +107,7 @@ int main(int argc, char* argv[]){
         printf("after non locals\n");
         mem2reg(currentFunction);
         printf("------after a function------\n");
+        loop(currentFunction);
         //RunPasses(currentFunction);
     }
 
