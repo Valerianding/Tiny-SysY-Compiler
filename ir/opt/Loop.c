@@ -152,6 +152,10 @@ void loopVariant(Function *currentFunction, HashSet *loop, BasicBlock *head){
         Value *defValue = HashSetNext(loopInvariantVariable);
 
         //强制转换成InstNode类型
+        InstNode *instNode = (InstNode*)defValue;
+
+        // remove from
+        delete_inst(instNode);
 
     }
     //
