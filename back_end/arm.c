@@ -3355,6 +3355,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
+//    现在这个call简单修复了一下，就是返回值为Unkonwn的话，
+//    将相当于使void没有返回值，这个时候是不需要进行将r0移到左值里
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    printf("CALL\n");
@@ -3472,7 +3474,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case Call:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                if(value0->VTy!=Unknown){
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                }
+
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 break;
             case Store:
