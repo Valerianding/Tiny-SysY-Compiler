@@ -2816,7 +2816,16 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "logic_expr") == 0)
     {
-        v1= cal_logic_expr(logic_expr->left);
+        Value *v_tmp= (Value*) malloc(sizeof (Value));
+        value_init(v_tmp);
+        v_tmp=cal_logic_expr(logic_expr->left);
+        //补一条
+        Instruction *ins= ins_new_unary_operator(zext,v_tmp);
+        v1= ins_get_value_with_name(ins);
+        v1->VTy->ID=Var_INT;
+        //将这个instruction加入总list
+        InstNode *node__ = new_inst_node(ins);
+        ins_node_add(instruction_list,node__);
     }
 //    else
 //    {
@@ -2882,7 +2891,16 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "logic_expr") == 0)
     {
-        v2= cal_logic_expr(logic_expr->right);
+        Value *v_tmp= (Value*) malloc(sizeof (Value));
+        value_init(v_tmp);
+        v_tmp=cal_logic_expr(logic_expr->right);
+        //补一条
+        Instruction *ins= ins_new_unary_operator(zext,v_tmp);
+        v2= ins_get_value_with_name(ins);
+        v2->VTy->ID=Var_INT;
+        //将这个instruction加入总list
+        InstNode *node__ = new_inst_node(ins);
+        ins_node_add(instruction_list,node__);
     }
 //    else
 //    {
