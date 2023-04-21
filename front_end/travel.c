@@ -4537,12 +4537,12 @@ void travel_finish_type(struct _InstNode *instruction_node)
                 break;
             case bitcast:
             case zext:
-            case EQ:
-            case NOTEQ:
-            case GREAT:
-            case GREATEQ:
-            case LESS:
-            case LESSEQ:
+//            case EQ:
+//            case NOTEQ:
+//            case GREAT:
+//            case GREATEQ:
+//            case LESS:
+//            case LESSEQ:
                 instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
                 break;
         }
