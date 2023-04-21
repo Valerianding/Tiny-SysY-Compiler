@@ -10,7 +10,7 @@ typedef enum OpcodeType{
     Sub = 1,
     Mul = 2,
     Div = 3,
-    Module = 4,
+    Mod = 4,
     Call = 5,
     FunBegin = 6,
     Return = 7,

@@ -210,6 +210,7 @@ void calculate_dominance_frontier(Function *currentFunction){
     }
     HashSetDeinit(allBlocks);
     HashSetDeinit(tempSet);
+    clear_visited_flag(entry);
 }
 
 void calculate_iDominator(Function *currentFunction){
@@ -258,6 +259,7 @@ void calculate_iDominator(Function *currentFunction){
             curNode = get_next_inst(curNode);
         }
     }
+    clear_visited_flag(entry);
 }
 
 void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child){
@@ -328,7 +330,7 @@ void calculate_DomTree(Function *currentFunction){
         if(parent->visited == false){
             parent->visited = true;
             DomTreeNode *domTreeNode = parent->domTreeNode;
-            printf("b%d, DomNode : ",parent->id);
+            printf("b%d ",parent->id);
             if(parent->iDom != nullptr)
                 printf("idom : b%d ",parent->iDom->id);
             HashSet *childSet = domTreeNode->children;

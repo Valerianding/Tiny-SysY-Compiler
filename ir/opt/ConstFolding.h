@@ -6,6 +6,6 @@
 #define C22V1_CONSTFOLDING_H
 #include "function.h"
 #include "utility.h"
-void ConstFolding(Function *currentFunction);
-void BranchOptimizing(Function *currentFunction);
+bool ConstFolding(Function *currentFunction);
+bool BranchOptimizing(Function *currentFunction);
 #endif //C22V1_CONSTFOLDING_H

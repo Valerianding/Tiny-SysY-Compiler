@@ -115,6 +115,11 @@ void calculateLiveness(Function *currentFunction){
                 rhs = ins_get_rhs(exitCurr->inst);
             }
 
+            if(exitCurr->inst->Opcode == Call){
+                lhs = NULL;
+                rhs = NULL;
+            }
+
             // 不是立即数且不是数组的话我们可以加入分析
             // 似乎所有的左边应该都要进入分析
             if(def != NULL){
@@ -200,6 +205,15 @@ void calculateLiveness(Function *currentFunction){
                     rhs = ins_get_rhs(currNode->inst);
                 }
 
+                if(currNode->inst->Opcode == Call){
+                    lhs = NULL;
+                    rhs = NULL;
+                }
+
+                if(currNode->inst->Opcode == GIVE_PARAM){
+                    rhs = NULL;
+                }
+
                 // 不是立即数且不是数组的话我们可以加入分析
                 if(def != NULL && !isImm(def)){
                     if(HashSetFind(tempSet,def)){
@@ -219,7 +233,7 @@ void calculateLiveness(Function *currentFunction){
                     }
                 }
 
-                // 如果现在是phi函数的话我们特殊处理
+                // TODO phi函数是不是别处理了啊 如果现在是phi函数的话我们特殊处理
                 if(currNode->inst->Opcode == Phi){
                     HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
                     HashSetFirst(phiSet);

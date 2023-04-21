@@ -3,16 +3,17 @@
 //
 
 #include "DeadCodeElimination.h"
-void DeadCodeElimination(Function *currentFunction){
+bool DeadCodeElimination(Function *currentFunction){
 
 }
 
-void combineBlocks(Function *currentFunction){
 
-    // SSA之！！
-    // 如果一个Block只有一个前驱的话我们是否应该
+bool combineBlocks(Function *currentFunction){
+    // SSA 构建后跑一次 SSA消除后跑一次
+
+
+    // 如果一个Block只有phi函数和跳转语句我们就可以优化
     BasicBlock *entry = currentFunction->entry;
-
     //
 
 }

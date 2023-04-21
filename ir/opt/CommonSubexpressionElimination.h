@@ -5,11 +5,14 @@
 #ifndef C22V1_COMMONSUBEXPRESSIONELIMINATION_H
 #define C22V1_COMMONSUBEXPRESSIONELIMINATION_H
 #include "function.h"
+#include "utility.h"
 typedef struct Subexpression{
     Value *lhs;
     Value *rhs;
     Opcode op;
 }Subexpression;
 
-
+Subexpression *createSubExpression(Value *lhs, Value *rhs, Opcode op);
+bool commonSubexpressionElimination(Function *currentFunction);
+bool commonSubexpression(BasicBlock *block);
 #endif //C22V1_COMMONSUBEXPRESSIONELIMINATION_H

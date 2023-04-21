@@ -89,14 +89,14 @@ bool isLocalVar(Value *val){
 }
 
 bool isLocalVarInt(Value *val){
-    if(isLocalVarIntType(val->VTy)){
+    if(isLocalVarIntType(val->VTy) && val->IsFromArray == false){
         return true;
     }
     return false;
 }
 
 bool isLocalVarFloat(Value *val){
-    if(isLocalVarFloatType(val->VTy)){
+    if(isLocalVarFloatType(val->VTy) && val->IsFromArray == false){
         return true;
     }
     return false;

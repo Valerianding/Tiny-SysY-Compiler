@@ -3463,7 +3463,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
                 break;
-            case Module:
+            case Mod:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
@@ -4177,7 +4177,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
     if(ins->inst->Opcode==LESS){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    bge %d\n",x);
@@ -4186,7 +4186,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==GREAT){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    ble %d\n",x);
@@ -4195,7 +4195,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==LESSEQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    bgt %d\n",x);
@@ -4204,7 +4204,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==GREATEQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    blt %d\n",x);
@@ -4213,7 +4213,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==EQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    bne %d\n",x);
@@ -4222,7 +4222,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==NOTEQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode==br_i1){
+        if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
             printf("    beq %d\n",x);
@@ -4386,7 +4386,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_Mul(ins,hashMap);
         case Div:
             return arm_trans_Div(ins,hashMap);
-        case Module:
+        case Mod:
             return arm_trans_Module(ins,hashMap);
         case Call:
 //            在进行call之前是需要至少保存lr寄存器的，call调用结束之后还需要将lr出栈恢复
