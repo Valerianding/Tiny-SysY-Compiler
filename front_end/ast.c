@@ -252,7 +252,7 @@ void insert_var_into_symtab(past type,past p)
                     Value *v_id_n= symtab_dynamic_lookup_first(this,bstr2cstr(one_dimention->sVal,'\0'));
                     v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_id_n->pdata->var_pdata.iVal;
                 }
-                else if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
+                else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"expr")==0)
                 {
                     int result= cal_easy_expr(one_dimention);
                     v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=result;

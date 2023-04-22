@@ -22,7 +22,7 @@ void create_if_stmt(past root,Value* v_return);
 void create_if_else_stmt(past root,Value* v_return);
 void create_func_def(past root);
 struct _Value *create_call_func(past root);
-struct _Value *cal_expr(past expr,int type,int* real);    //type代表左值type
+struct _Value *cal_expr(past expr,int type,int* real);   //type是左值
 struct _Value* cal_logic_expr(past logic_expr);
 struct _Value *create_param_value();
 void create_store_stmt(Value* v1,Value* v2);
@@ -65,5 +65,7 @@ char* c2ll(char* file_name);
 
 //等着删
 void print_array(struct _InstNode *instruction_node);
+
+void get_param_list(Value* v_func,int* give_count);
 
 #endif
