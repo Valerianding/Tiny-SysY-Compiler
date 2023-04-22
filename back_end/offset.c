@@ -3,6 +3,9 @@
 //
 
 #include "offset.h"
+HashMap *global_hashmap;
+int func_num=0;
+
 void offset_free(HashMap*hashMap){
     HashMapDeinit(hashMap);
     return;
@@ -12,8 +15,26 @@ offset *offset_node(){
     memset(node,0, sizeof(offset));
     return node;
 }
+void globalint_mapping(Value*value0,Value*value1){
+
+}
+
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num){
+//    全局变量放在全局变量的global_hashmap里面
+//    if(isGlobalArrayFloatType(key->VTy)){
+//        ;
+//    }else if(isGlobalArrayIntType(key->VTy)){
+//        ;
+//    } else if(isGlobalVarFloatType(key->VTy)){
+//        ;
+//    }else if(isGlobalVarIntType(key->VTy)){
+//        ;
+//        printf("\n");
+//    }
+
+//    局部变量就是直接放在hashmap里面
+//    else
     if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
         if(!HashMapContain(hashMap,key)){
 //            printf("name:%s  keyname:%s\n",name,key->name);
@@ -199,6 +220,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+
                 break;
             case GIVE_PARAM:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
