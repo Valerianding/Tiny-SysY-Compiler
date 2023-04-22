@@ -291,6 +291,28 @@ void insert_var_into_symtab(past type,past p)
             else
                 v->VTy->ID=Var_FLOAT;
         }
+            //是expr
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
+        {
+            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarFloat;
+                else
+                    v->VTy->ID=Var_FLOAT;
+
+                v->pdata->var_pdata.fVal=cal_easy_expr_f(p->right);
+            }
+            else
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarInt;
+                else
+                    v->VTy->ID=Var_INT;
+
+                v->pdata->var_pdata.iVal= cal_easy_expr(p->right);
+            }
+        }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
             Value *v_num= symtab_dynamic_lookup_first(this,bstr2cstr(p->right->sVal,'\0'));
@@ -351,24 +373,6 @@ void insert_var_into_symtab(past type,past p)
                     else
                         v->VTy->ID=Var_INT;
                 }
-            }
-        }
-        //是expr
-        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
-        {
-            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarFloat;
-                else
-                    v->VTy->ID=Var_FLOAT;
-            }
-            else
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarInt;
-                else
-                    v->VTy->ID=Var_INT;
             }
         }
         else
