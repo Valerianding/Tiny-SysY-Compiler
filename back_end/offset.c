@@ -5,7 +5,7 @@
 #include "offset.h"
 HashMap *global_hashmap;
 int func_num=0;
-
+int in_func_num=0;
 void offset_free(HashMap*hashMap){
     HashMapDeinit(hashMap);
     return;
@@ -22,16 +22,27 @@ void globalint_mapping(Value*value0,Value*value1){
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num){
 //    全局变量放在全局变量的global_hashmap里面
-//    if(isGlobalArrayFloatType(key->VTy)){
-//        ;
-//    }else if(isGlobalArrayIntType(key->VTy)){
-//        ;
-//    } else if(isGlobalVarFloatType(key->VTy)){
-//        ;
-//    }else if(isGlobalVarIntType(key->VTy)){
-//        ;
-//        printf("\n");
-//    }
+    if(isGlobalVarFloatType(key->VTy)){
+
+        if(!HashMapContain(global_hashmap,key)){
+            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+            HashMapPut(global_hashmap,key,lcptLabel);
+        }
+
+    }else if(isGlobalVarIntType(key->VTy)){
+
+        if(!HashMapContain(global_hashmap,key)){
+            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+            HashMapPut(global_hashmap,key,lcptLabel);
+        }
+
+    }else if(isGlobalArrayIntType(key->VTy)){
+        ;
+    } else if(isGlobalArrayIntType(key->VTy)){
+        ;
+    }
 
 //    局部变量就是直接放在hashmap里面
 //    else
@@ -333,6 +344,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 break;
         }
     }
+    func_num++;
     if(ins->inst->Opcode==Return){
         Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
         hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
