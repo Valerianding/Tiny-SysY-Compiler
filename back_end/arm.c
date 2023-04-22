@@ -3355,6 +3355,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
+//    现在这个call简单修复了一下，就是返回值为Unkonwn的话，
+//    将相当于使void没有返回值，这个时候是不需要进行将r0移到左值里
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    printf("CALL\n");
@@ -3472,7 +3474,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case Call:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                if(value0->VTy!=Unknown){
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                }
+
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 break;
             case Store:
@@ -3754,6 +3759,9 @@ InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap*hashMap){
 //                printf("    ldr r%d,[sp,#%d]\n",i,x);
                 printf("    ldr r0,[sp,#%d]\n",x);
                 printf("    str r0,[sp,#-%d]\n",i*4);
+//                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
+//                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
+//                所以说这个后面翻译的时候是需要改的。
             }
 //            printf("    ldr r0,[sp,#%d]\n",x);
 //            printf("    str r0,[sp,#-%d]\n",i*4);
@@ -4330,6 +4338,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        printf("    store r0,[sp,#%d]\n",off_sp*4);
 //        return next;
 //    }
+
 
 
 

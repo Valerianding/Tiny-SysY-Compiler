@@ -252,7 +252,7 @@ void insert_var_into_symtab(past type,past p)
                     Value *v_id_n= symtab_dynamic_lookup_first(this,bstr2cstr(one_dimention->sVal,'\0'));
                     v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=v_id_n->pdata->var_pdata.iVal;
                 }
-                else if(strcmp(bstr2cstr(one_dimention->left->nodeType,'\0'),"expr")==0)
+                else if(strcmp(bstr2cstr(one_dimention->nodeType,'\0'),"expr")==0)
                 {
                     int result= cal_easy_expr(one_dimention);
                     v->pdata->symtab_array_pdata.dimentions[dimention_figure++]=result;
@@ -290,6 +290,28 @@ void insert_var_into_symtab(past type,past p)
                 v->VTy->ID=GlobalVarFloat;
             else
                 v->VTy->ID=Var_FLOAT;
+        }
+            //是expr
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
+        {
+            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarFloat;
+                else
+                    v->VTy->ID=Var_FLOAT;
+
+                v->pdata->var_pdata.fVal=cal_easy_expr_f(p->right);
+            }
+            else
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarInt;
+                else
+                    v->VTy->ID=Var_INT;
+
+                v->pdata->var_pdata.iVal= cal_easy_expr(p->right);
+            }
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
@@ -351,24 +373,6 @@ void insert_var_into_symtab(past type,past p)
                     else
                         v->VTy->ID=Var_INT;
                 }
-            }
-        }
-        //是expr
-        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
-        {
-            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarFloat;
-                else
-                    v->VTy->ID=Var_FLOAT;
-            }
-            else
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarInt;
-                else
-                    v->VTy->ID=Var_INT;
             }
         }
         else

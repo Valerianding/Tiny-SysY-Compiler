@@ -178,7 +178,9 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
             case Call:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                if(value0->VTy!=Unknown){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
+                }
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 break;
             case Store:
@@ -287,6 +289,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
                 hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num);
                 break;
+
 //            case MEMSET:
 //                value1=user_get_operand_use(&ins->inst->user,0)->Val;
 //                value2= user_get_operand_use(&ins->inst->user,1)->Val;

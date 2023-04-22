@@ -24,6 +24,9 @@ Value *v_cur_func;
 extern int flag_blocklist;        //默认都是非正常
 char type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"main_float"},{"int"},{"float"},{"const_int"},{"const_float"},{"function"},{"void"},{"address"},{"var_int"},{"var_float"},{"globalint"},{"globalfloat"},{"array_const_int"},{"array_const_float"},{"global_array_const_int"},{"global_array_const_float"},{"array_int"},{"array_float"},{"global_arrayint"},{"global_arrayfloat"}};
 
+InstNode * one_param[50];   //存放单次正确位置的参数
+InstNode* params[50];      //存放所有参数
+
 void create_instruction_list(past root,Value* v_return)
 {
     if (root != NULL) {
@@ -1096,6 +1099,18 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             //有初值数组
         else if((strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_array_init") == 0) || (strcmp(bstr2cstr(vars->nodeType,'\0'),"ConstDef_array_init")==0))
         {
+//            if(vars->right->left==NULL)
+//            {
+//                Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(vars->left->left->sVal,'\0'));
+//                v_array->pdata->define_flag=1;
+//                if(is_global)
+//                {
+//                    past ident_array=vars->left;         //到IdentArray结点
+//                    handle_global_array(v_array,true,vars,0);
+//                }
+//                vars=vars->next;
+//                continue;
+//            }
             if(is_global==false)
             {
                 past ident_array=vars->left;         //到IdentArray结点
@@ -1118,7 +1133,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
 
                 //一维数组,拷贝式赋初值,memcpy
                 //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
-                if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
+                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
                 {
                     //以全局，memcpy的方式处理
                     if(vars->right->left==NULL)
@@ -2182,13 +2197,13 @@ void create_func_def(past root) {
     if (root->left->next->left != NULL) {
 
         //params走到第一个FuncParam处
-        past params=root->left->next->left->left;
+        past paramss=root->left->next->left->left;
 
         //先生成参数的alloca
-        while(params!=NULL)
+        while(paramss!=NULL)
         {
             //参数Value
-            char *nn=bstr2cstr(params->left->next->sVal, '\0');
+            char *nn=bstr2cstr(paramss->left->next->sVal, '\0');
             Value *param= symtab_lookup_withmap(this,nn, &v->pdata->symtab_func_pdata.map_list->map);
 
             Instruction *instruction= ins_new_unary_operator(Alloca,param);
@@ -2212,25 +2227,25 @@ void create_func_def(past root) {
             InstNode *node = new_inst_node(instruction);
             ins_node_add(instruction_list,node);
 
-            params=params->next;
+            paramss=paramss->next;
         }
 
         //普通变量的allcoa
         declare_all_alloca(v->pdata->symtab_func_pdata.map_list,true);
 
         //进行参数的store
-        params=root->left->next->left->left;
-        while(params!=NULL)
+        paramss=root->left->next->left->left;
+        while(paramss!=NULL)
         {
             //参数Value
-            Value *param= symtab_lookup_withmap(this,bstr2cstr(params->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map)->alias;
+            Value *param= symtab_lookup_withmap(this,bstr2cstr(paramss->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map)->alias;
 
             Value *v_num_param=create_param_value();
             v_num_param->VTy->ID=param->VTy->ID;
             v_num_param->pdata=param->pdata;
             create_store_stmt(v_num_param,param);
 
-            params=params->next;
+            paramss=paramss->next;
         }
         param_map=0;
     }
@@ -2675,7 +2690,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 Instruction *ins_icmp=NULL;
                 switch ((*pp)->iVal) {
                     case '+':
-                        if(!((v1->VTy->ID==Int && v2->pdata->var_pdata.iVal==0) || (v2->VTy->ID==Int && v2->pdata->var_pdata.iVal==0)))
+                        if(!((v1->VTy->ID==Int && v1->pdata->var_pdata.iVal==0) || (v2->VTy->ID==Int && v2->pdata->var_pdata.iVal==0)))
                             instruction = ins_new_binary_operator(Add, v1, v2);
                         break;
                     case '-':
@@ -2816,7 +2831,16 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "logic_expr") == 0)
     {
-        v1= cal_logic_expr(logic_expr->left);
+        Value *v_tmp= (Value*) malloc(sizeof (Value));
+        value_init(v_tmp);
+        v_tmp=cal_logic_expr(logic_expr->left);
+        //补一条
+        Instruction *ins= ins_new_unary_operator(zext,v_tmp);
+        v1= ins_get_value_with_name(ins);
+        v1->VTy->ID=Var_INT;
+        //将这个instruction加入总list
+        InstNode *node__ = new_inst_node(ins);
+        ins_node_add(instruction_list,node__);
     }
 //    else
 //    {
@@ -2882,7 +2906,16 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "logic_expr") == 0)
     {
-        v2= cal_logic_expr(logic_expr->right);
+        Value *v_tmp= (Value*) malloc(sizeof (Value));
+        value_init(v_tmp);
+        v_tmp=cal_logic_expr(logic_expr->right);
+        //补一条
+        Instruction *ins= ins_new_unary_operator(zext,v_tmp);
+        v2= ins_get_value_with_name(ins);
+        v2->VTy->ID=Var_INT;
+        //将这个instruction加入总list
+        InstNode *node__ = new_inst_node(ins);
+        ins_node_add(instruction_list,node__);
     }
 //    else
 //    {
@@ -3068,27 +3101,27 @@ void declare_global_alloca(struct _mapList* func_map)
 //参数传递
 void create_params_stmt(past func_params,Value * v_func)
 {
-    past params=func_params->left;
+    past paramss=func_params->left;
     int p_num=0;
-    while(params!=NULL)
+    while(paramss!=NULL)
     {
         Instruction *instruction=NULL;
         Value *v=NULL;
-        if(strcmp(bstr2cstr(params->nodeType, '\0'), "num_int") == 0)
+        if(strcmp(bstr2cstr(paramss->nodeType, '\0'), "num_int") == 0)
         {
             v=(Value*) malloc(sizeof (Value));
-            value_init_int(v, params->iVal);
+            value_init_int(v, paramss->iVal);
         }
-        else if(strcmp(bstr2cstr(params->nodeType, '\0'), "num_float") == 0)
+        else if(strcmp(bstr2cstr(paramss->nodeType, '\0'), "num_float") == 0)
         {
             v=(Value*) malloc(sizeof (Value));
-            value_init_float(v,params->fVal);
+            value_init_float(v,paramss->fVal);
         }
-        else if(strcmp(bstr2cstr(params->nodeType, '\0'), "Call_Func") == 0)
-            v= create_call_func(params);
-        else if(strcmp(bstr2cstr(params->nodeType, '\0'), "LValArray") == 0)
+        else if(strcmp(bstr2cstr(paramss->nodeType, '\0'), "Call_Func") == 0)
+            v= create_call_func(paramss);
+        else if(strcmp(bstr2cstr(paramss->nodeType, '\0'), "LValArray") == 0)
         {
-            Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(params->left->sVal, '\0'));
+            Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(paramss->left->sVal, '\0'));
             if(v_array->VTy->ID==AddressTyID)
             {
                 //先load出这个address
@@ -3099,12 +3132,12 @@ void create_params_stmt(past func_params,Value * v_func)
                 v_load->alias=v_array;
                 v_load->VTy->ID=AddressTyID;
                 v_load->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
-                v= handle_assign_array(params->right->left,v_load,1,-1,0);
+                v= handle_assign_array(paramss->right->left,v_load,1,-1,0);
             }
             else
             {
                 //先计数，看看传进去的是几维
-                past var=params->right->left;
+                past var=paramss->right->left;
                 int dimension_count=0;
                 while(var!=NULL)
                 {
@@ -3112,11 +3145,11 @@ void create_params_stmt(past func_params,Value * v_func)
                     var=var->next;
                 }
                 if(dimension_count==v_array->pdata->symtab_array_pdata.dimention_figure)
-                    v= handle_assign_array(params->right->left,v_array,1,-1,0);
+                    v= handle_assign_array(paramss->right->left,v_array,1,-1,0);
                 else
                 {
                     //1.传n维度，走n+1个gmp,这里先走n
-                    Value *v_f= handle_assign_array(params->right->left,v_array,1,dimension_count,1);
+                    Value *v_f= handle_assign_array(paramss->right->left,v_array,1,dimension_count,1);
                     //2.最后一维，要自己补0
                     Value *v_z=(Value*) malloc(sizeof (Value));
                     value_init_int(v_z,0);
@@ -3131,16 +3164,16 @@ void create_params_stmt(past func_params,Value * v_func)
                 }
             }
         }
-        else if(strcmp(bstr2cstr(params->nodeType, '\0'), "expr") == 0)
+        else if(strcmp(bstr2cstr(paramss->nodeType, '\0'), "expr") == 0)
         {
             int convert=-1;
-            v= cal_expr(params,v_func->pdata->symtab_func_pdata.param_type_lists[p_num].ID,&convert);
+            v= cal_expr(paramss,v_func->pdata->symtab_func_pdata.param_type_lists[p_num].ID,&convert);
         }
             //是IDent
         else
         {
             //取出value，先区别是数组还是普通id
-            Value *v_test= symtab_dynamic_lookup(this,bstr2cstr(params->sVal, '\0'));
+            Value *v_test= symtab_dynamic_lookup(this,bstr2cstr(paramss->sVal, '\0'));
             if(v_test->VTy->ID==Const_INT)
             {
                 v=(Value*) malloc(sizeof (Value));
@@ -3166,7 +3199,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 ins_node_add(instruction_list,node);
             }
             else
-                v= create_load_stmt(bstr2cstr(params->sVal, '\0'));
+                v= create_load_stmt(bstr2cstr(paramss->sVal, '\0'));
         }
 
         //传递参数的IR
@@ -3175,7 +3208,7 @@ void create_params_stmt(past func_params,Value * v_func)
         InstNode *node = new_inst_node(instruction);
         ins_node_add(instruction_list,node);
 
-        params=params->next;
+        paramss=paramss->next;
         p_num++;
     }
 }
@@ -3363,11 +3396,12 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     Value *v_cur_array=NULL;
 
     int p=0;
-    InstNode* params[50];
-    InstNode * one_param[50];
+
     int give_count=0;
     for(int i=0;i<50;i++)
         params[i]=NULL;
+    for(int k=0;k<50;k++)
+        one_param[k]=NULL;
 
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
@@ -3689,6 +3723,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
 //                fprintf(fptr,"}\n\n");
                 break;
             case Call:
+                get_param_list(instruction->user.use_list->Val,&give_count);
                 if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
                 {
                     //非库函数
@@ -3734,26 +3769,26 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
 
                 //扫一下params数组
                 //还是得从后往前走
-                int start=0;
-                for(int i=give_count-1;i>0;i--)
-                {
-                    if(strcmp(instruction->user.use_list->Val->name,params[i]->inst->user.use_list[1].Val->name)==0)
-                    {
-                        start=i;
-                        break;
-                    }
-                }
+//                int start=0;
+//                for(int i=give_count-1;i>0;i--)
+//                {
+//                    if(strcmp(instruction->user.use_list->Val->name,params[i]->inst->user.use_list[1].Val->name)==0)
+//                    {
+//                        start=i;
+//                        break;
+//                    }
+//                }
                 //找出one_param参数列表
-                int record_start=start;int j=0;
-                while (j<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
-                {
-                    if(strcmp(instruction->user.use_list->Val->name,params[record_start]->inst->user.use_list[1].Val->name)==0)
-                    {
-                        one_param[instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-j-1]=params[record_start];
-                        j++;
-                    }
-                    record_start--;
-                }
+//                int record_start=start;int j=0;
+//                while (j<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
+//                {
+//                    if(strcmp(instruction->user.use_list->Val->name,params[record_start]->inst->user.use_list[1].Val->name)==0)
+//                    {
+//                        one_param[instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-j-1]=params[record_start];
+//                        j++;
+//                    }
+//                    record_start--;
+//                }
 
                 //参数
                 if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)==NULL && instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
@@ -3902,26 +3937,26 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 printf(")\n");
                 fprintf(fptr,")\n");
 
-                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
-                {
-                    j=0;
-                    //将参数全部置0
-                    while(j<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
-                    {
-                        if(strcmp(instruction->user.use_list->Val->name,params[start]->inst->user.use_list[1].Val->name)==0)
-                        {
-                            params[start--]=NULL;
-                            j++;
-                        }
-                    }
-                    j=0;
-                    for(int k=0;k<give_count;k++)
-                    {
-                        if(params[k]!=NULL)
-                            params[j++]=params[k];
-                    }
-                    give_count-=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
-                }
+//                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+//                {
+//                    j=0;
+//                    //将参数全部置0
+//                    while(j<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
+//                    {
+//                        if(strcmp(instruction->user.use_list->Val->name,params[start]->inst->user.use_list[1].Val->name)==0)
+//                        {
+//                            params[start--]=NULL;
+//                            j++;
+//                        }
+//                    }
+//                    j=0;
+//                    for(int k=0;k<give_count;k++)
+//                    {
+//                        if(params[k]!=NULL)
+//                            params[j++]=params[k];
+//                    }
+//                    give_count-=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
+//                }
                 break;
             case Label:
                 printf("%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
@@ -4537,15 +4572,67 @@ void travel_finish_type(struct _InstNode *instruction_node)
                 break;
             case bitcast:
             case zext:
-            case EQ:
-            case NOTEQ:
-            case GREAT:
-            case GREATEQ:
-            case LESS:
-            case LESSEQ:
+//            case EQ:
+//            case NOTEQ:
+//            case GREAT:
+//            case GREATEQ:
+//            case LESS:
+//            case LESSEQ:
                 instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
                 break;
         }
         instruction_node= get_next_inst(instruction_node);
+    }
+}
+
+void get_param_list(Value* v_func,int* give_count)
+{
+    //用于返回的InsNode[]
+//    InstNode *one_param[50];
+//    for(int i=0;i<50;i++)
+//        one_param[i]=NULL;
+
+    //扫一下params数组
+    //还是得从后往前走
+    int start=0;
+    for(int i=*give_count-1;i>0;i--)
+    {
+        if(strcmp(v_func->name,params[i]->inst->user.use_list[1].Val->name)==0)
+        {
+            start=i;
+            break;
+        }
+    }
+    //找出one_param参数列表
+    int record_start=start;int j=0;
+    while (j<v_func->pdata->symtab_func_pdata.param_num)
+    {
+        if(strcmp(v_func->name,params[record_start]->inst->user.use_list[1].Val->name)==0)
+        {
+            one_param[v_func->pdata->symtab_func_pdata.param_num-j-1]=params[record_start];
+            j++;
+        }
+        record_start--;
+    }
+
+    if(v_func->pdata->symtab_func_pdata.param_num!=0)
+    {
+        j=0;
+        //将参数全部置0
+        while(j<v_func->pdata->symtab_func_pdata.param_num)
+        {
+            if(strcmp(v_func->name,params[start]->inst->user.use_list[1].Val->name)==0)
+            {
+                params[start--]=NULL;
+                j++;
+            }
+        }
+        j=0;
+        for(int k=0;k<*give_count;k++)
+        {
+            if(params[k]!=NULL)
+                params[j++]=params[k];
+        }
+        (*give_count)-=v_func->pdata->symtab_func_pdata.param_num;
     }
 }
