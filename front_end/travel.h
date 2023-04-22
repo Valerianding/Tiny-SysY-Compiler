@@ -66,4 +66,6 @@ char* c2ll(char* file_name);
 //等着删
 void print_array(struct _InstNode *instruction_node);
 
+void get_param_list(Value* v_func,int* give_count);
+
 #endif
