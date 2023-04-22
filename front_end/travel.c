@@ -1099,6 +1099,18 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
             //有初值数组
         else if((strcmp(bstr2cstr(vars->nodeType, '\0'), "VarDef_array_init") == 0) || (strcmp(bstr2cstr(vars->nodeType,'\0'),"ConstDef_array_init")==0))
         {
+//            if(vars->right->left==NULL)
+//            {
+//                Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(vars->left->left->sVal,'\0'));
+//                v_array->pdata->define_flag=1;
+//                if(is_global)
+//                {
+//                    past ident_array=vars->left;         //到IdentArray结点
+//                    handle_global_array(v_array,true,vars,0);
+//                }
+//                vars=vars->next;
+//                continue;
+//            }
             if(is_global==false)
             {
                 past ident_array=vars->left;         //到IdentArray结点
@@ -1121,7 +1133,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
 
                 //一维数组,拷贝式赋初值,memcpy
                 //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
-                if(v_array->pdata->symtab_array_pdata.dimention_figure==1)
+                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
                 {
                     //以全局，memcpy的方式处理
                     if(vars->right->left==NULL)
