@@ -198,6 +198,7 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
         printf("    ldr r0,=%s\n",arr1);
         printf("    str r0,[sp,#%d]\n",x0);
         return ins;
+
     }
     if(isImmFloatType(value1->VTy)){
         float y=value1->pdata->var_pdata.fVal;

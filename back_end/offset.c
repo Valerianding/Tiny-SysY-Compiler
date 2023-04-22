@@ -123,6 +123,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
 //            case Alloca:
 //                用来处理数组何全局变量,数组可以不通过这个来获取处理相关的值
 
+
 //                这个需要补充
 //                Value * value0_alias=&ins->inst->user.value.alias;
 //                value0_alias=ins->inst->user.value.alias;
