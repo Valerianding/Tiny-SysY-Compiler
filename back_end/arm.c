@@ -10,8 +10,12 @@ int regs=0;
 int func_call_func;
 extern InstNode *one_param[];
 extern InstNode *params[];
+extern HashMap *global_hashmap;
 int give_count=0;
 int globalvar_num;
+char globalvar_message[10000];
+
+
 bool imm_is_valid(unsigned int imm){
     int i;
     for (i = 0; i <= 30; i += 2) {
@@ -146,6 +150,7 @@ int get_value_pdata_inspdata_false(Value*value){
 }
 
 void arm_translate_ins(InstNode *ins){
+//    global_hashmap=HashMapInit();
     InstNode *head;
     HashMap *hashMap;
     int stack_size=0;
@@ -156,6 +161,7 @@ void arm_translate_ins(InstNode *ins){
 //  执行完这两个之后，返回局部变量开辟的栈帧大小。返回之后进行
 //  真正栈帧的开辟，参数的存储位置从局部变量位置之上开始存储。
 //  所以说当前这个逻辑和FuncBegin函数的实现逻辑都得大改。
+            global_hashmap=HashMapInit();
             regi=0;
             regs=0;
             stack_size=0;
@@ -173,10 +179,13 @@ void arm_translate_ins(InstNode *ins){
         ins=_arm_translate_ins(ins,head,hashMap,stack_size);
         if(ins->inst->Opcode==Return){
             offset_free(hashMap);
+            HashMapDeinit(global_hashmap);
+            global_hashmap=NULL;
             hashMap=NULL;
         }
     }
-
+//    HashMapDeinit(hashMap);
+    printf("%s\n",globalvar_message);
     return;
 }
 InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
@@ -4294,54 +4303,54 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    bge %d\n",x);
+            printf("    bge LABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b %d\n",x);
+            printf("    b LABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==GREAT){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    ble %d\n",x);
+            printf("    ble LABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b %d\n",x);
+            printf("    b LABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==LESSEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    bgt %d\n",x);
+            printf("    bgt LABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b %d\n",x);
+            printf("    b LABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==GREATEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    blt %d\n",x);
+            printf("    blt LABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b %d\n",x);
+            printf("    b LABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==EQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    bne %d\n",x);
+            printf("    bne LABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b %d\n",x);
+            printf("    b LABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==NOTEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    beq %d\n",x);
+            printf("    beq LABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b %d\n",x);
+            printf("    b LABEL%d\n",x);
         }
     }
     return ins;
@@ -4352,16 +4361,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 InstNode * arm_trans_br_i1(InstNode *ins){
 //    int i=ins->inst->i;
     int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-    printf("    bne %d\n",x);
+    printf("    bne LABEL%d\n",x);
     x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-    printf("    b %d\n",x);
+    printf("    b LABEL%d\n",x);
     return  ins;
 }
 
 InstNode * arm_trans_br(InstNode *ins){
 
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-    printf("    b %d\n",x);
+    printf("    b LABEL%d\n",x);
     return ins;
 }
 
@@ -4452,7 +4461,6 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 
 
 
-
 //    printf("\n");
     return ins;
 }
@@ -4473,7 +4481,39 @@ InstNode * arm_trans_zeroinitializer(InstNode *ins){
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 
 //全局变量声明
-    printf("arm_trans_GLOBAL_VAR\n");
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isGlobalVarIntType(value1->VTy)){
+        char name[270];
+        sprintf(name,"%s:",value1->name+1);
+        strcat(globalvar_message,name);
+        strcat(globalvar_message,"\n\t.long\t");
+        char value_int[12];
+        sprintf(value_int,"%d",value1->pdata->var_pdata.iVal);
+        strcat(globalvar_message,value_int);
+        strcat(globalvar_message,"\n");
+        
+    } else if(isGlobalVarFloatType(value1->VTy)){
+        char name[270];
+        sprintf(name,"%s:",value1->name+1);
+        strcat(globalvar_message,name);
+        strcat(globalvar_message,"\n\t.long\t");
+
+        char value_int[12]="0x";
+        float x=value1->pdata->var_pdata.fVal;
+        int xx=*(int*)&x;
+        sprintf(value_int,"%0x",xx);
+        strcat(globalvar_message,value_int);
+        strcat(globalvar_message,"\n");
+
+    } else if(isGlobalArrayIntType(value1->VTy)){
+
+    } else if(isGlobalArrayFloatType(value1->VTy)){
+
+    }
+
+//    printf("arm_trans_GLOBAL_VAR\n");
     return ins;
 }
 
