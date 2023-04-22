@@ -2593,7 +2593,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 }
                 else if(x1->VTy->ID==Int || x1->VTy->ID==Float)
                     v1=x1;
-                else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==GlobalVarInt || x1->VTy->ID==Param_INT || x1->VTy->ID==Var_FLOAT || x1->VTy->ID==Param_FLOAT))
+                else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==GlobalVarInt || x1->VTy->ID==GlobalVarFloat || x1->VTy->ID==Param_INT || x1->VTy->ID==Var_FLOAT || x1->VTy->ID==Param_FLOAT))
                 {
                     if(!begin_global(x1->name))
                         v1= create_load_stmt(x1->name);
@@ -2640,7 +2640,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 }
                 else if(x2->VTy->ID==Int || x2->VTy->ID==Float)
                     v2=x2;
-                else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==GlobalVarInt || x2->VTy->ID==Param_INT || x2->VTy->ID==Var_FLOAT || x2->VTy->ID==Param_FLOAT))
+                else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==GlobalVarInt || x2->VTy->ID==GlobalVarFloat || x2->VTy->ID==Param_INT || x2->VTy->ID==Var_FLOAT || x2->VTy->ID==Param_FLOAT))
                 {
                     if(!begin_global(x2->name))
                         v2= create_load_stmt(x2->name);
