@@ -2735,7 +2735,14 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                     //临时变量左值,v_tmp的pdata是没有实际内容的
                     Value *v_tmp= ins_get_value_with_name(instruction);
                     if(type!=Unknown)
-                        v_tmp->VTy->ID=type;
+                    {
+                        if(type==GlobalVarInt)
+                            v_tmp->VTy->ID=Var_INT;
+                        else if(type==GlobalVarFloat)
+                            v_tmp->VTy->ID=Var_FLOAT;
+                        else
+                            v_tmp->VTy->ID=type;
+                    }
                     else
                     {
                         if(v1->VTy->ID==Float || v1->VTy->ID==Var_FLOAT || v1->VTy->ID==GlobalVarFloat ||
