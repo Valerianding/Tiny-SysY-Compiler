@@ -310,7 +310,9 @@ void insert_var_into_symtab(past type,past p)
                 else
                     v->VTy->ID=Var_INT;
 
-                v->pdata->var_pdata.iVal= cal_easy_expr(p->right);
+                int res= cal_easy_expr(p->right);
+                if(res!=-12345678)
+                    v->pdata->var_pdata.iVal=res;
             }
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
@@ -613,6 +615,8 @@ int cal_easy_expr(past expr)
             else
             {
                 Value *v= symtab_dynamic_lookup_first(this,bstr2cstr((*p)->sVal, '\0'));
+                if(v==NULL ||( v->VTy->ID!=Const_INT && v->VTy->ID!=Const_FLOAT))
+                    return -12345678;
                 if(v->VTy->ID==Const_INT)
                     *data=v->pdata->var_pdata.iVal;
                 else
