@@ -55,20 +55,23 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
             }
         }
     }
-    else{
-//        %i为立即数
-        if(!HashMapContain(hashMap,key)){
-//            printf("haha\n");
-            offset *node=offset_node();
-            node->offset_sp=(*add_sp);
-            (*add_sp)+=4;
-            node->memory=true;
-            node->regs=-1;
-            node->regr=-1;
-//            printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
-            HashMapPut(hashMap,key,node);
-        }
-    }
+
+//    else{
+////        %i为立即数
+//        if(!HashMapContain(hashMap,key)){
+////            printf("haha\n");
+//            offset *node=offset_node();
+//            node->offset_sp=(*add_sp);
+//            (*add_sp)+=4;
+//            node->memory=true;
+//            node->regs=-1;
+//            node->regr=-1;
+////            printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
+//            HashMapPut(hashMap,key,node);
+//        }
+//    }
+
+
     return;
 }
 void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp){
@@ -179,6 +182,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 if(value0->VTy!=Unknown){
+//                    ==unknow说明回值为void
                     hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
                 }
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
