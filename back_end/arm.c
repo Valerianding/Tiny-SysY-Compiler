@@ -3759,6 +3759,9 @@ InstNode * arm_trans_GIVE_PARAM(InstNode *ins,HashMap*hashMap){
 //                printf("    ldr r%d,[sp,#%d]\n",i,x);
                 printf("    ldr r0,[sp,#%d]\n",x);
                 printf("    str r0,[sp,#-%d]\n",i*4);
+//                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
+//                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
+//                所以说这个后面翻译的时候是需要改的。
             }
 //            printf("    ldr r0,[sp,#%d]\n",x);
 //            printf("    str r0,[sp,#-%d]\n",i*4);
