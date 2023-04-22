@@ -356,3 +356,10 @@ void DomTreePrinter(DomTreeNode *root){
     }
     return;
 }
+
+
+void constructReverseCfg(Function *currentFunction){
+    // 构建逆序图 方便我们计算RDF和
+
+    // 同时我们希望能在原本的BasicBlock里面保留这些计算的结果
+}

@@ -3,7 +3,19 @@
 //
 
 #include "DeadCodeElimination.h"
-bool DeadCodeElimination(Function *currentFunction){
+
+void Mark(Function *currentFunction){
+    //
+    HashSet *workList = HashSetInit();
+
+    //计算每条
+}
+
+void Sweep(){
+
+}
+bool DeadCodeElimination(Function *currentFunction) {
+
 
 }
 

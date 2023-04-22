@@ -64,15 +64,27 @@
 //    return 0;
 //}
 //
-int main(){
+int test(){
     int a = getint();
     int b = getint();
-    int c = 0;
-    int temp = 3;
-    int arr[10];
-    while(c <= 1){
-        arr[c] = a + b;
-        temp = a + b;
-        c = c + 1;
+    int c = 1;
+
+    while(c < 10){
+        int temp2 = a + b;
+        while(c < 5){
+            int temp = temp2 + b;
+        }
     }
+    return 0;
 }
+//int sub(int a,int b){
+//    int c=a-b;
+//    return c;
+//}
+//int main(){
+//    int a;
+//    int b;
+//    int c;
+//    c=sub(a,b);
+//    return 0;
+//}

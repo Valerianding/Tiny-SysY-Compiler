@@ -3,7 +3,6 @@
 //
 
 #include "Loop.h"
-struct _InstNode *instruction_list;
 void HashSetCopyBlock(HashSet *dest, HashSet *src){
     HashSetFirst(src);
     BasicBlock* block = NULL;
@@ -15,7 +14,7 @@ void HashSetCopyBlock(HashSet *dest, HashSet *src){
 void loop(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
 
-    showBlockInfo(instruction_list);
+    //showBlockInfo(instruction_list);
     // 寻找循环体结构
     HashSet *workList = HashSetInit();  // 先把所有的基本块放在这里面 bfs
     clear_visited_flag(entry);
@@ -54,6 +53,9 @@ void loop(Function *currentFunction){
             }
         }
     }
+
+
+    renameVariabels(currentFunction);
 }
 
 void findbody(BasicBlock *head,BasicBlock *tail){
@@ -400,7 +402,6 @@ void loopVariant(HashSet *loop, BasicBlock *head){
             ins_insert_before(instNode,loopPrevTail);
         }
     }
-
     //
     //销毁内存
     HashSetDeinit(loopInvariantVariable);

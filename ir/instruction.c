@@ -17,6 +17,8 @@ Instruction* ins_new(int op_num){
     memset(storage, 0 , use_size);
     /* 为Instruction的Value初始化 */
     Instruction* ins = (Instruction*)(storage+use_size);
+    ins->Parent = NULL;
+    ins->isCritical = false;
     value_init((Value*)ins);
     /* 在这里已经设置了指令的操作数个数 */
     user_construct(storage, op_num);

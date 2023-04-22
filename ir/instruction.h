@@ -51,7 +51,7 @@ typedef struct _Instruction{
     struct _BasicBlock *Parent;
     int _reg_[3];
     int i; //指令的编号
-
+    bool isCritical;
 }Instruction;
 
 
