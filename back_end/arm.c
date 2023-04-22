@@ -148,7 +148,32 @@ int get_value_pdata_inspdata_true(Value*value){
 int get_value_pdata_inspdata_false(Value*value){
     return value->pdata->instruction_pdata.false_goto_location;
 }
+void usage_of_global_variables(){
+//    HashMap *tmp=HashMapInit();
+    HashMapFirst(global_hashmap);
+    Pair * ptr_pair;
+    while ((ptr_pair=HashMapNext(global_hashmap))!=NULL){
+//        直接遍历会得到一个顺序相反的情况，按这个顺序再存一边就可以了
+        Value *key=(Value*)ptr_pair->key;
+        LCPTLabel *lcptLabel=(LCPTLabel*)ptr_pair->value;
+        printf("%s:\n\t.long\t%s\n",lcptLabel->LCPI,key->name+1);
+        free(lcptLabel);
+        lcptLabel=NULL;
+//        HashMapPut(tmp,key,lcptLabel);
+    }
+//    HashMapFirst(tmp);
+//    while ((ptr_pair= HashMapNext(tmp))!=NULL){
+//        Value *key=(Value*)ptr_pair->key;
+//        LCPTLabel *lcptLabel=(LCPTLabel*)ptr_pair->value;
+//        printf("%s:\n\t.long\t%s\n",lcptLabel->LCPI,key->name+1);
+//        free(lcptLabel);
+//        lcptLabel=NULL;
+//    }
+//    HashMapDeinit(tmp);
+//    tmp=NULL;
 
+    return;
+}
 void arm_translate_ins(InstNode *ins){
 //    global_hashmap=HashMapInit();
     InstNode *head;
@@ -179,6 +204,8 @@ void arm_translate_ins(InstNode *ins){
         ins=_arm_translate_ins(ins,head,hashMap,stack_size);
         if(ins->inst->Opcode==Return){
             offset_free(hashMap);
+//            将全局变量的使用打印
+            usage_of_global_variables();
             HashMapDeinit(global_hashmap);
             global_hashmap=NULL;
             hashMap=NULL;
@@ -4528,6 +4555,100 @@ InstNode *arm_trans_MEMSET(InstNode *ins){
 //    printf("arm_trans_MEMSET\n");
     return ins;
 }
+InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
+//    value1是要保存的东西，一般通运算之后保存的，是保存在add等指令的左值，
+//    所以是应该在add指令的左值判断该变量是否为全局变量，而不是在store指令里面执行吧
+//    不对，在全局变量的add之后，会有一条store %i @a这样的指令
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    value2是要保存到的地方
+    Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    if(isGlobalVarIntType(value1->VTy)){
+        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+        if(lcptLabel==NULL){
+            printf("HashMapGet(global_hashmap,value1); error\n");
+        }
+        printf("    ldr r1,%s\n",lcptLabel->LCPI);
+        printf("    ldr r1,[r1]\n");
+    } else if(isGlobalVarFloatType(value1->VTy)){
+        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+        if(lcptLabel==NULL){
+            printf("HashMapGet(global_hashmap,value1); error\n");
+        }
+        printf("    ldr r1,%s\n",lcptLabel->LCPI);
+        printf("    vldr s1,[r1]\n");
+    } else if(isGlobalArrayIntType(value1->VTy)){
+        ;
+    } else if(isGlobalArrayFloatType(value1->VTy)){
+        ;
+    } else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
+        printf("    mov r1,#%d\n",value1->pdata->var_pdata.iVal);
+    }else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
+        char arr[12]="0x";
+        int xx=value1->pdata->var_pdata.iVal;
+        sprintf(arr+2,"%0x",xx);
+        printf("    ldr r1,=%s\n",arr);
+    }else if(isImmFloatType(value1->VTy)){
+        char arr[12]="0x";
+        float x=value1->pdata->var_pdata.fVal;
+        int xx=*(int*)&x;
+        sprintf(arr+2,"%0x",xx);
+        printf("    ldr r1,=%s\n",arr);
+    }else if(isLocalVarIntType(value1->VTy)){
+        int x= get_value_offset_sp(hashMap,value1);
+        printf("    ldr r1,[sp,%d]\n",x);
+    }else if(isLocalVarFloatType(value1->VTy)){
+        int x= get_value_offset_sp(hashMap,value1);
+        printf("    ldr r1,[sp,%d]\n",x);
+    }
+    if(isGlobalVarIntType(value2->VTy)){
+        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
+        if(lcptLabel==NULL){
+            printf("HashMapGet(global_hashmap,value1); error\n");
+        }
+        printf("    ldr r2,%s\n",lcptLabel->LCPI);
+        printf("    str r1,[r2]\n");
+    } else if(isGlobalVarFloatType(value2->VTy)){
+        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
+        if(lcptLabel==NULL){
+            printf("HashMapGet(global_hashmap,value1); error\n");
+        }
+        printf("    ldr r2,%s\n",lcptLabel->LCPI);
+        printf("    str r1,[r2]\n");
+    } else if(isGlobalArrayIntType(value1->VTy)){
+        ;
+    } else if(isGlobalArrayFloatType(value1->VTy)){
+        ;
+    }
+    return ins;
+}
+InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    if(isGlobalVarIntType(value1->VTy)){
+        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+        if(lcptLabel==NULL){
+            printf("HashMapGet(global_hashmap,value1); error\n");
+        }
+        printf("    ldr r1,%s\n",lcptLabel->LCPI);
+        printf("    ldr r1,[r1]\n");
+        int x= get_value_offset_sp(hashMap,value0);
+        printf("    str r1,[sp,%d]\n",x);
+    } else if(isGlobalVarFloatType(value1->VTy)){
+        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+        if(lcptLabel==NULL){
+            printf("HashMapGet(global_hashmap,value1); error\n");
+        }
+        printf("    ldr r1,%s\n",lcptLabel->LCPI);
+        printf("    vldr s1,[r1]\n");
+        int x= get_value_offset_sp(hashMap,value0);
+        printf("    vstr s1,[sp,%d]\n",x);
+    } else if(isGlobalArrayIntType(value1->VTy)){
+        ;
+    } else if(isGlobalArrayFloatType(value1->VTy)){
+        ;
+    }
+    return ins;
+}
 
 InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size){
 
@@ -4551,12 +4672,12 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
         case Return:
             return arm_trans_Return(ins,head,hashMap,stack_size);
         case Store:
-//            return arm_trans_Store(ins,hashMap);
+            return arm_trans_Store(ins,hashMap);
 
             printf("    store\n");
             return ins;
         case Load:
-//            return arm_trans_Load(ins,hashMap);
+            return arm_trans_Load(ins,hashMap);
             printf("    load\n");
             return ins;
         case Alloca:
