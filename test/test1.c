@@ -64,17 +64,20 @@
 //    return 0;
 //}
 //
+int g = 1;
 int test(){
     int a = getint();
     int b = getint();
     int c = 1;
+    int arr[10];
 
     while(c < 10){
         int temp2 = a + b;
-        while(c < 5){
-            int temp = temp2 + b;
-        }
+        int temp = temp2 + b;
+        arr[1] = temp;
+        g = temp;
     }
+    putint(a);
     return 0;
 }
 //int sub(int a,int b){

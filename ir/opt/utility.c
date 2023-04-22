@@ -9,6 +9,7 @@ const Opcode invalidOpcodes[] = {FunBegin, Label, ALLBEGIN, Alloca, tmp, zext, M
 const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod};
 const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
 const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label};
+const Opcode CriticalOpcodes[] = {Return,Call,Store,};
 bool isValidOperator(InstNode *insNode){
     for (int i = 0; i < sizeof(invalidOpcodes) / sizeof(Opcode); i++) {
         if (insNode->inst->Opcode == invalidOpcodes[i]) {
@@ -18,9 +19,9 @@ bool isValidOperator(InstNode *insNode){
     return true;
 }
 
-bool isCalculationOperator(InstNode *inst){
+bool isCalculationOperator(InstNode *instNode){
     for (int i = 0; i < sizeof(simpleOpcodes) / sizeof(Opcode); i++){
-        if (inst->inst->Opcode == simpleOpcodes[i]){
+        if (instNode->inst->Opcode == simpleOpcodes[i]){
             return true;
         }
     }
@@ -30,6 +31,15 @@ bool isCalculationOperator(InstNode *inst){
 bool isCompareOperator(InstNode *insNode){
     for(int i = 0; i < sizeof(compareOpcodes) / sizeof(Opcode); i++){
         if(insNode->inst->Opcode == compareOpcodes[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isCriticalOperator(InstNode *insNode){
+    for(int i = 0; i < sizeof(CriticalOpcodes) / sizeof(Opcode); i++){
+        if(insNode->inst->Opcode == CriticalOpcodes[i]) {
             return true;
         }
     }
