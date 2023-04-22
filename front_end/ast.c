@@ -291,6 +291,30 @@ void insert_var_into_symtab(past type,past p)
             else
                 v->VTy->ID=Var_FLOAT;
         }
+            //是expr
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
+        {
+            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarFloat;
+                else
+                    v->VTy->ID=Var_FLOAT;
+
+                v->pdata->var_pdata.fVal=cal_easy_expr_f(p->right);
+            }
+            else
+            {
+                if(is_global_map(this))
+                    v->VTy->ID=GlobalVarInt;
+                else
+                    v->VTy->ID=Var_INT;
+
+                int res= cal_easy_expr(p->right);
+                if(res!=-12345678)
+                    v->pdata->var_pdata.iVal=res;
+            }
+        }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"ID")==0)
         {
             Value *v_num= symtab_dynamic_lookup_first(this,bstr2cstr(p->right->sVal,'\0'));
@@ -351,24 +375,6 @@ void insert_var_into_symtab(past type,past p)
                     else
                         v->VTy->ID=Var_INT;
                 }
-            }
-        }
-        //是expr
-        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
-        {
-            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarFloat;
-                else
-                    v->VTy->ID=Var_FLOAT;
-            }
-            else
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarInt;
-                else
-                    v->VTy->ID=Var_INT;
             }
         }
         else
@@ -609,6 +615,8 @@ int cal_easy_expr(past expr)
             else
             {
                 Value *v= symtab_dynamic_lookup_first(this,bstr2cstr((*p)->sVal, '\0'));
+                if(v==NULL ||( v->VTy->ID!=Const_INT && v->VTy->ID!=Const_FLOAT))
+                    return -12345678;
                 if(v->VTy->ID==Const_INT)
                     *data=v->pdata->var_pdata.iVal;
                 else

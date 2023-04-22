@@ -2690,7 +2690,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 Instruction *ins_icmp=NULL;
                 switch ((*pp)->iVal) {
                     case '+':
-                        if(!((v1->VTy->ID==Int && v2->pdata->var_pdata.iVal==0) || (v2->VTy->ID==Int && v2->pdata->var_pdata.iVal==0)))
+                        if(!((v1->VTy->ID==Int && v1->pdata->var_pdata.iVal==0) || (v2->VTy->ID==Int && v2->pdata->var_pdata.iVal==0)))
                             instruction = ins_new_binary_operator(Add, v1, v2);
                         break;
                     case '-':
