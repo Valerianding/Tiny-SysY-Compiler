@@ -139,13 +139,13 @@ int main(int argc, char* argv[]){
    }
 
     // 消除phi函数之后
-    //printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 
     //ljw_begin
-    // reg_control();
+    reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
     //    ljf
-    //arm_translate_ins(instruction_list);
+    // arm_translate_ins(instruction_list);
     return 0;
 }
