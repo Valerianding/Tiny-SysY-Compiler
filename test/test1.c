@@ -64,22 +64,22 @@
 //    return 0;
 //}
 //
-int g = 1;
-int test(){
-    int a = getint();
-    int b = getint();
-    int c = 1;
-    int arr[10];
-
-    while(c < 10){
-        int temp2 = a + b;
-        int temp = temp2 + b;
-        arr[1] = temp;
-        g = temp;
-    }
-    putint(a);
-    return 0;
-}
+//int g = 1;
+//int test(){
+//    int a = getint();
+//    int b = getint();
+//    int c = 1;
+//    int arr[10];
+//
+//    while(c < 10){
+//        int temp2 = a + b;
+//        int temp = temp2 + b;
+//        arr[1] = temp;
+//        g = temp;
+//    }
+//    putint(a);
+//    return 0;
+//}
 //int sub(int a,int b){
 //    int c=a-b;
 //    return c;
@@ -91,3 +91,14 @@ int test(){
 //    c=sub(a,b);
 //    return 0;
 //}
+int test(){
+    int a = 1;
+    a = getint() + 1;
+    if(a > 1){
+        a = a + 1;
+    }else{
+        a = a - 1;
+    }
+    int c = 2;
+    return c;
+}

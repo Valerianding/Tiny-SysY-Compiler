@@ -99,6 +99,7 @@ int main(int argc, char* argv[]){
         print_function_info(currentFunction);
         clear_visited_flag(block);
         calculate_dominance(currentFunction);
+        calculatePostDominance(currentFunction);
         clear_visited_flag(block);
         calculate_dominance_frontier(currentFunction);
         calculate_iDominator(currentFunction);

@@ -10,6 +10,7 @@ struct _DomNode;
 typedef struct _BasicBlock BasicBlock;
 typedef struct _Function Function;
 typedef struct _DomNode DomTreeNode;
+typedef struct _PostDomNode PostDomNode;
 static int count; // 记录全局基本块
 /* 这里的设计结构 */
 typedef struct _InstNode{
@@ -29,8 +30,12 @@ struct _BasicBlock{
     int visited;
     HashSet *dom; // 记录支配该节点的集合 注意是支配该节点！！
     HashSet *df; // 记录支配边界
+    HashSet *pDom;  //
+    HashSet *rdf;  // reverse dominance frontier
     BasicBlock *iDom;
+    BasicBlock *iPDom; // post immediate dominance
     DomTreeNode *domTreeNode;
+    PostDomNode *postDomNode;
     HashSet *in; // 对应live-in
     HashSet *out; // 对应live-out
 

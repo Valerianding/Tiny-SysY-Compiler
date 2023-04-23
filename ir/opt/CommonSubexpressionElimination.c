@@ -3,6 +3,8 @@
 //
 
 #include "CommonSubexpressionElimination.h"
+
+//TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
 Subexpression *createSubExpression(Value *lhs, Value *rhs, Opcode op){
     Subexpression *subexpression = (Subexpression*)malloc(sizeof(Subexpression));
     memset(subexpression, 0, sizeof(Subexpression));

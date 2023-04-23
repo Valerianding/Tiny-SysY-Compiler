@@ -17,6 +17,13 @@ struct _DomNode{
     int flag;
 };
 
+struct _PostDomNode{
+    BasicBlock *parent;
+    BasicBlock *block;
+    HashSet *children; // 保存PostDomNode *类型
+    int flag;
+};
+
 void calculate_dominance(Function *currentFunction);
 void calculate_dominance_frontier(Function *currentFunction);
 void calculate_iDominator(Function *currentFunction);
@@ -25,4 +32,6 @@ void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child);
 void DomTreePrinter(DomTreeNode *root);
 void HashSetCopy(HashSet *dest,HashSet *src);
 bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
+void constructReverseCfg(Function *currentFunction);
+void calculatePostDominance(Function *currentFunction);
 #endif //C22V1_DOMINANCE_H

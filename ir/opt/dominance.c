@@ -2,6 +2,7 @@
 // Created by Valerian on 2023/1/18.
 //
 #include "dominance.h"
+HashMap *mapping; // 不想再改数据结构了 就这样将就用吧
 
 //只针对BasicBlock类型
 void HashSetCopy(HashSet *dest,HashSet *src){
@@ -357,12 +358,159 @@ void DomTreePrinter(DomTreeNode *root){
     return;
 }
 
+void calculatePostDominance(Function *currentFunction){
+    //还是先记录全集
+    BasicBlock *entry = currentFunction->entry;
 
-void constructReverseCfg(Function *currentFunction){
-    // 构建逆序图 方便我们计算RDF和post dominance
+    clear_visited_flag(entry);
 
-    // 同时我们希望能在原本的BasicBlock里面保留这些计算的结果
+    BasicBlock *tail = currentFunction->tail;
+    InstNode *exitNode = tail->tail_node;
+    while(exitNode->inst->Opcode != Return){
+        exitNode = get_prev_inst(exitNode);
+    }
 
-    //保留一个HashMap如何？
+    // tail 不一定是exit 需要找到exit
+    BasicBlock *exit = exitNode->inst->Parent;
+
+    HashSet *allBlocks = HashSetInit();
+    HashSet *workList = HashSetInit();
+    HashSetAdd(workList,entry);
+
+    //bfs 一下
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+        HashSetAdd(allBlocks,block);
+        //当前基本块一定是没有遍历过的
+        block->visited = true;
+
+        //把内存开了
+        block->pDom = HashSetInit();
+        block->rdf = HashSetInit();
+
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
+        }
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
+        }
+    }
+    HashSetAdd(exit->pDom,exit);
+
+    HashSetFirst(allBlocks);
+    HashSet *tempSet = HashSetInit();
+    HashSetCopy(tempSet,allBlocks);
+    HashSetFirst(allBlocks);
+    for(BasicBlock *tempBlock = HashSetNext(allBlocks); tempBlock != NULL; tempBlock = HashSetNext(allBlocks)){
+        //除了exit
+        if(tempBlock != exit){
+            HashSetCopy(tempBlock->pDom,tempSet);
+        }
+    }
+
+
+    bool changed = true;
+    while(changed){
+        changed = false;
+        HashSetFirst(allBlocks);
+        for(BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)){
+            //
+
+            if(block != exit){
+                HashSet *newSet = HashSetInit();
+                HashSetCopy(newSet,tempSet);
+
+                //for each successor block p
+                if(block->true_block){
+                    newSet = HashSetIntersect(newSet,block->true_block->pDom);
+                }
+
+                if(block->false_block){
+                    newSet = HashSetIntersect(newSet,block->false_block->pDom);
+                }
+
+                HashSetAdd(newSet,block);
+
+                if(HashSetDifferent(newSet,block->pDom)){
+                    //如果不同 释放原来的
+
+                    printf("different!\n");
+                    HashSetDeinit(block->pDom);
+                    block->pDom = newSet;
+                    changed |= true;
+
+
+                    printf("block %d",block->id);
+                    printf("pdom :");
+                    HashSetFirst(newSet);
+                    for(BasicBlock *block = HashSetNext(newSet); block != NULL; block = HashSetNext(newSet)){
+                        printf("b%d ",block->id);
+                    }
+                    printf("\n");
+                }else{
+                    HashSetDeinit(newSet);
+                }
+            }
+        }
+    }
+
+
+    HashSetFirst(allBlocks);
+    for(BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)){
+        //打印看看求的对不对
+        printf("block b%d : pdom : ",block->id);
+        HashSetFirst(block->pDom);
+        for(BasicBlock *pDomBlock = HashSetNext(block->pDom); pDomBlock != NULL; pDomBlock = HashSetNext(block->pDom)){
+            printf("b%d",pDomBlock->id);
+        }
+        printf("\n");
+    }
+
+    //好好好现在是对的了 我们继续求rdf
+    HashSetFirst(allBlocks);
+    for(BasicBlock *X = HashSetNext(allBlocks); X != NULL; X = HashSetNext(allBlocks)){
+        //
+        HashSetFirst(tempSet);
+        for(BasicBlock *Y = HashSetNext(tempSet); Y != NULL; Y = HashSetNext(tempSet)){
+            // 如果Y->pDom 含有X
+            if(HashSetFind(Y->pDom,X)){
+                // Y 的preds里面的Z又没有X的就是X的reverse dominance froniter
+                HashSetFirst(Y->preBlocks);
+                for(BasicBlock *Z = HashSetNext(Y->preBlocks); Z != NULL; Z = HashSetNext(Y->preBlocks)){
+                    if(!HashSetFind(Z->pDom,X)){
+                        // 那么就代表了 X的RDF里面
+                        HashSetAdd(X->rdf, Z);
+
+                    }
+                }
+            }
+        }
+    }
+
+
+    HashSetFirst(allBlocks);
+    for(BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)){
+        //
+        printf("block b%d rdfs:",block->id);
+        HashSetFirst(block->rdf);
+        for(BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)){
+            // 这样打印一下reverse dominance frontier
+            printf("b%d",rdf->id);
+        }
+
+        printf("\n");
+    }
+
+
+
+    // 接下来我们再来求一下 post immediate dominance
+
+
+    HashSetDeinit(tempSet);
+}
+
+void calculatePostDominanceTree(){
 
 }
