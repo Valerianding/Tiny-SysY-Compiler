@@ -65,6 +65,29 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
     } else if(isImmIntType(value->VTy)|| isImmFloatType(value->VTy)){
 //        立即数也是不用处理的;
     }
+//    全局变量也是不用处理的，因为全局变量的值并不会存在栈帧里面，
+//    全变量使用global_hashmap来进行记录，所以说全局变量不需要添加
+    else if(isGlobalVarFloatType(value->VTy)){
+
+//        if(!HashMapContain(global_hashmap,key)){
+//            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+//            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+//            HashMapPut(global_hashmap,key,lcptLabel);
+//        }
+
+    }else if(isGlobalVarIntType(value->VTy)){
+
+//        if(!HashMapContain(global_hashmap,key)){
+//            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+//            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+//            HashMapPut(global_hashmap,key,lcptLabel);
+//        }
+
+    }else if(isGlobalArrayIntType(value->VTy)){
+        ;
+    } else if(isGlobalArrayIntType(value->VTy)){
+        ;
+    }
     else{
         if(!HashMapContain(hashMap, value)){
             offset *node=offset_node();
