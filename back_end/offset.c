@@ -46,7 +46,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 
 //    局部变量就是直接放在hashmap里面
 //    else
-    if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
+    else if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
         if(!HashMapContain(hashMap,key)){
 //            printf("name:%s  keyname:%s\n",name,key->name);
             if(strcmp(key->name,name)<0 &&  strlen(key->name) <= strlen(name)){
@@ -139,6 +139,7 @@ void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value){
     return;
 }
 HashMap *offset_init(InstNode*ins,int *local_var_num){
+//    printf("local var num=%d\n",*local_var_num);
     HashMap *hashMap=HashMapInit();
     int sub_sp=0;
     int add_sp=0;
@@ -344,11 +345,13 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 break;
         }
     }
-    func_num++;
+
     if(ins->inst->Opcode==Return){
         Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
         hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
     }
+    func_num++;
+    in_func_num=0;
     return hashMap;
 //    if(param_num==0){
 ////        表示不存在参数传递
