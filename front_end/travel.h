@@ -55,7 +55,7 @@ past array_all_zeros(past init_val_list);
 //借位-1,比如是三维数组，返回借位的结束处的index是0,1,2
 void borrow_save(Value* v_array,int carry[]);
 
-int handle_and_or(past root,bool flag);
+int handle_and_or(past root,bool flag,bool last_or);
 
 bool begin_tmp(const char* name);
 bool begin_global(const char* name);

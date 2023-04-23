@@ -1256,7 +1256,7 @@ InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
 //root是&&或||,flag为是不是root为||，root->left是&&
 //结果为0是恒为假，为1是恒为真；为-1则表示没有经过短路判断
 //TODO 如果是b==1 && 0 && a==1这种常数在中间的情况，目前没有做短路，有llvm方式一样
-int handle_and_or(past root,bool flag)
+int handle_and_or(past root,bool flag,bool last_or)
 {
     //子层是否遇到||后&&的情况的本层记录，不影响本层的flag
     bool flag_notice=false;
@@ -1270,10 +1270,12 @@ int handle_and_or(past root,bool flag)
         if(strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0)
         {
             flag_notice=true;
-            result=handle_and_or(root->left,true);
+            result=handle_and_or(root->left,true,true);
         }
+        else if(strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)
+            result= handle_and_or(root->left,false,false);
         else
-            result=handle_and_or(root->left,false);
+            result=handle_and_or(root->left,false,true);
 
         //短路
         if(result==1 && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
@@ -1441,7 +1443,7 @@ int handle_and_or(past root,bool flag)
         //右边
         Value *v2=NULL;
         if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->right->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->right->sVal, '\0'), "||") == 0))
-            handle_and_or(root->right,false);
+            handle_and_or(root->right,false,true);
         else
         {
             if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0)
@@ -1529,7 +1531,11 @@ int handle_and_or(past root,bool flag)
                 //  ||
             else if(v2!=NULL)
             {
-                InstNode *ins1= true_location_handler(br_i1, v2, t_index++);
+                InstNode *ins1=NULL;
+                if(last_or==true)
+                    ins1= true_location_handler(br_i1, v2, t_index++);
+                else
+                    ins1= false_location_handler(br_i1,v2,t_index++);
                 insnode_push(&S_or,ins1);
             }
 
@@ -1677,7 +1683,7 @@ void create_if_stmt(past root,Value* v_return) {
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
-        result=handle_and_or(root->left,false);
+        result=handle_and_or(root->left,false,true);
         //一定为假，不用走了
         if(result==0)
         {
@@ -1845,7 +1851,7 @@ void create_if_else_stmt(past root,Value* v_return) {
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
-        result=handle_and_or(root->left,false);
+        result=handle_and_or(root->left,false,true);
     }
 
     InstNode *node1=NULL;
@@ -2055,7 +2061,7 @@ void create_while_stmt(past root,Value* v_return)
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
-        result=handle_and_or(root->left,false);
+        result=handle_and_or(root->left,false,true);
 
         if(result==0)
         {
@@ -4450,17 +4456,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
         }
 
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
         instruction_node= get_next_inst(instruction_node);
     }
