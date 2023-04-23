@@ -812,7 +812,11 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     //这里+1后可能溢出
                     value_init_int(v_offset,carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]++);
 
-                    Instruction *gmp_last = ins_new_binary_operator(GEP, record[v_array->pdata->symtab_array_pdata.dimention_figure - 2], v_offset);
+                    Instruction *gmp_last=NULL;
+                    if(v_array->pdata->symtab_array_pdata.dimention_figure>1)
+                        gmp_last=ins_new_binary_operator(GEP, record[v_array->pdata->symtab_array_pdata.dimention_figure - 2], v_offset);
+                    else
+                        gmp_last= ins_new_binary_operator(GEP,begin_offset_value,v_offset);
                     //是最后一层吧
                     Value *v_gmp= ins_get_value_with_name(gmp_last);
                     //v_gmp->VTy->ID=AddressTyID;
@@ -845,7 +849,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
 
                     }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
-                        num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                        num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
                         num= create_call_func(p);
                     create_store_stmt(num,v_gmp);
@@ -1133,51 +1137,48 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
 
                 //一维数组,拷贝式赋初值,memcpy
                 //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
-                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
+//                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
+//                {
+//                    //以全局，memcpy的方式处理
+//                    if(vars->right->left==NULL)
+//                        handle_global_array(v_array,is_global,vars,0);
+//                    else
+//                        handle_global_array(v_array,is_global,vars,1);
+//
+//                    Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
+//                    //将这个instruction加入总list
+//                    InstNode *node = new_inst_node(instruction);
+//                    ins_node_add(instruction_list,node);
+//                }
+
+                int mem= get_array_total_occupy(v_array,0);
+                Value *v_mem=(Value*) malloc(sizeof (Value));
+                value_init_int(v_mem,mem);
+                Instruction *mem_set= ins_new_binary_operator(MEMSET,v1,v_mem);
+                //将这个instruction加入总list
+                InstNode *node_mem_set = new_inst_node(mem_set);
+                ins_node_add(instruction_list,node_mem_set);
+
+                if(vars->right->left!=NULL)
                 {
-                    //以全局，memcpy的方式处理
-                    if(vars->right->left==NULL)
-                        handle_global_array(v_array,is_global,vars,0);
-                    else
-                        handle_global_array(v_array,is_global,vars,1);
-
-                    Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
+                    //再来一条bitcast
+                    //!!!后续第一条一直用v2
+                    Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
+                    Value *v2= ins_get_value_with_name(ins_bitcast2);
+                    v2->alias=v1->alias;
                     //将这个instruction加入总list
-                    InstNode *node = new_inst_node(instruction);
-                    ins_node_add(instruction_list,node);
+                    InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
+                    ins_node_add(instruction_list,node_bitcast2);
+
+                    //存储num_int用的进位
+                    int carry[v_array->pdata->symtab_array_pdata.dimention_figure];
+                    for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                        carry[i]=0;
+
+                    //多维数组,挨个赋值型
+                    handle_one_dimention(init_val_list->left,v_array,v2,0,0,carry);
                 }
-                    //
-                else
-                {
-                    //TODO memset是否还需要我处理?
-                    int mem= get_array_total_occupy(v_array,0);
-                    Value *v_mem=(Value*) malloc(sizeof (Value));
-                    value_init_int(v_mem,mem);
-                    Instruction *mem_set= ins_new_binary_operator(MEMSET,v1,v_mem);
-                    //将这个instruction加入总list
-                    InstNode *node_mem_set = new_inst_node(mem_set);
-                    ins_node_add(instruction_list,node_mem_set);
 
-                    if(vars->right->left!=NULL)
-                    {
-                        //再来一条bitcast
-                        //!!!后续第一条一直用v2
-                        Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
-                        Value *v2= ins_get_value_with_name(ins_bitcast2);
-                        v2->alias=v1->alias;
-                        //将这个instruction加入总list
-                        InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
-                        ins_node_add(instruction_list,node_bitcast2);
-
-                        //存储num_int用的进位
-                        int carry[v_array->pdata->symtab_array_pdata.dimention_figure];
-                        for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
-                            carry[i]=0;
-
-                        //多维数组,挨个赋值型
-                        handle_one_dimention(init_val_list->left,v_array,v2,0,0,carry);
-                    }
-                }
             }
                 //TODO 是全局有初始化数组
             else
