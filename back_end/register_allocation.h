@@ -22,7 +22,7 @@
 #define SPILLED -3
 
 
-#define all_in_memory 1
+#define all_in_memory 0
 struct queue
 {
     int variable_index;
@@ -35,12 +35,6 @@ struct variable {
     int neighbor_count;
 };
 
-struct tac_var
-{
-    char * dest;
-    char * left;
-    char * right;
-};
 
 struct var_def_use
 {
@@ -56,19 +50,29 @@ typedef struct numnum
     pn next;
 }numnum;
 
+// struct  reg_now
+// {
+//     int call;
+//     int exist;
+//     int op;
+//     char * name[13];
+//     char * dest;
+//     char * left;
+//     char * right;
+//     char * param;
+// };
+
 struct  reg_now
 {
-    int call;
-    int exist;
-    int op;
-    char * name[13];
-    char * dest;
-    char * left;
-    char * right;
-    char * param;
+    int node_id;
+    Instruction * irnode;
+    char * dest_name;
+    char * left_name;
+    char * right_name;
+    int dest_use;//0为def，1为use
+    int left_use;
+    int right_use;
 };
-
-
 
 
 
@@ -97,15 +101,22 @@ void init_RIG();
 int supercmp(char *a ,char *b);
 //void create_RIG(FILE * re_in);
 void create_RIG();
+int check_edge();//检查rig
 void create_edge(int firstNode,int secondNode);
 void create_variable_list();
 void print_RIG();
 void spill_variable();
 void printf_llvm_ir_withreg(struct _InstNode *instruction_node);
 void reg_control(struct _InstNode *instruction_node,InstNode *temp);
+void reg_control_func(Function *currentFunction);
 void reg_control_block(BasicBlock *cur);
-void reg_inmem_one_ins(struct _InstNode *temp);
+void reg_inmem_one_ins(int id);
 int use_type(struct _InstNode *temp);
 int is_Immediate(int type_id);
 void reg_init();
 void end_reg();//未实现
+void travel_ir(InstNode *instruction_node);//部分ir浮点数未考虑，数组偏移量未考虑
+void addtolive(char * name,int tacid);
+void create_bian(int i,int j);
+void add_to_ir();
+void clean_reg();//完成后释放内存，未做

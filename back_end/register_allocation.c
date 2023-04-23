@@ -12,22 +12,27 @@ int var_num=0;
 char *func_name_reg;
 int k=6;
 int rig_num;
+int var_num;
 struct var_fist_last * var_f_l;
-struct reg_now *reg_now_tac;
+// struct reg_now *reg_now_tac;
 //char varnum[1000][40];
 int func_start;
 int func_end;
 int _b_start;
 int _b_end;
 int _numnum;
-int block_num;
 int if_neicun=0;
-
+struct  reg_now echo_tac[10000];
+BasicBlock * block_list[1000];
+int block_num;
+int tac_cnt;
 struct name_num
 {
     int num;
     char *name;
     int ifparam;
+    int first;
+    int last;
 }*live;
 
 struct  edge
@@ -36,6 +41,63 @@ struct  edge
     int b;
 }*_bian;
 
+void live_init()
+{
+    rig_num=0;
+    edge_num=0;
+    _numnum=tac_cnt;
+    //var_num=0;
+    // for(int i=0;i<1000;i++)
+    // {
+    //     live[i].num=i;
+    //     var_f_l[i].name=NULL;
+    //     var_f_l[i].first=0;
+    //     var_f_l[i].last=0;
+    // // }
+    // free(var_f_l);
+    // free(live);
+    // free(_bian);
+    //var_f_l=(struct var_fist_last *)malloc(sizeof(struct var_fist_last)*(_numnum+1));
+    live=(struct name_num *)malloc(sizeof(struct name_num)*(_numnum+1));
+    for(int i=0;i<_numnum+1;i++)    live[i].ifparam=0;
+    _bian=(struct edge *)malloc(sizeof(struct edge)*_numnum*(_numnum+1)/2);
+}
+
+void live_init_block()
+{
+    rig_num=0;
+    edge_num=0;
+    //var_num=0;
+    // for(int i=0;i<1000;i++)
+    // {
+    //     live[i].num=i;
+    //     var_f_l[i].name=NULL;
+    //     var_f_l[i].first=0;
+    //     var_f_l[i].last=0;
+    // // }
+    // free(var_f_l);
+    // free(live);
+    // free(_bian);
+    //var_f_l=(struct var_fist_last *)malloc(sizeof(struct var_fist_last)*(_numnum+1));
+    live=(struct name_num *)malloc(sizeof(struct name_num)*(2000));
+    for(int i=0;i<block_num+1;i++)
+    {
+        live[i].num=i;
+        live[i].name=NULL;
+    }
+    _bian=(struct edge *)malloc(sizeof(struct edge)*2000*1000);
+}
+
+int in_live(char * str)
+{
+    //printf("in_live:%s\n",str);
+    if(str==NULL)    return 0;
+    for(int i=0;i<rig_num;i++)
+    {
+        if(supercmp(live[i].name,str)==0) return 1;
+    }
+    return 0;
+}
 void minimize_RIG()
 {
    for(int i = 0; i <rig_num; i++)
@@ -1218,16 +1280,17 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
         if(vr!=NULL)
             printf("value2:%s,\t",_type_str[vr->VTy->ID]);
         printf("\n");
-        if(use_type(instruction_node))
-        {
-            if(v!=NULL&&is_Immediate(v->VTy->ID)==0)
-            printf("%d\t",instruction->_reg_[0]);
-            if(vl!=NULL&&is_Immediate(vl->VTy->ID)==0)
-                printf("%d\t",instruction->_reg_[1]);
-            if(vr!=NULL&&is_Immediate(vr->VTy->ID)==0)
-                printf("%d\t",instruction->_reg_[2]);   
-            printf("\n");
-        }
+        // if(use_type(instruction_node))
+        // {
+        //     if(v!=NULL&&is_Immediate(v->VTy->ID)==0)
+        //     printf("%d\t",instruction->_reg_[0]);
+        //     if(vl!=NULL&&is_Immediate(vl->VTy->ID)==0)
+        //         printf("%d\t",instruction->_reg_[1]);
+        //     if(vr!=NULL&&is_Immediate(vr->VTy->ID)==0)
+        //         printf("%d\t",instruction->_reg_[2]);   
+        //     printf("\n");
+        // }
+        printf("%d\t%d\t%d\n",instruction->_reg_[0],instruction->_reg_[1],instruction->_reg_[2]);
         printf("\n"); 
         instruction_node= get_next_inst(instruction_node);
     }
@@ -1251,45 +1314,1463 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
     //fpintf(fptr,"declare dso_local i32 @putf(...) #1\n");
 }
 
+
+void travel_ir(InstNode *instruction_node)
+{
+    bool flag_func=false;
+    tac_cnt=0;
+    instruction_node= get_next_inst(instruction_node);
+    // const char* ll_file= c2ll(file_name);
+
+    // FILE *fptr= fopen(ll_file,"w");
+
+    Value *v_cur_array=NULL;
+    for(int i=0;i<10000;i++)
+    {
+        echo_tac[i].dest_name=NULL;
+        echo_tac[i].left_name=NULL;
+        echo_tac[i].right_name=NULL;
+        echo_tac[i].dest_use=-1;
+        echo_tac[i].left_use=-1;
+        echo_tac[i].right_use=-1;
+        echo_tac[i].irnode=NULL;
+    }
+    int p=0;
+    InstNode* params[50];
+    InstNode * one_param[50];
+    int give_count=0;
+    for(int i=0;i<50;i++)
+        params[i]=NULL;
+
+    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br_i1 
+    && instruction_node->inst->Opcode!=br && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
+    && instruction_node->inst->Opcode!=FunEnd)
+    {
+        // printf("%d\t%d\n", __LINE__,instruction_node->inst->i); 
+
+        Instruction *instruction=instruction_node->inst;
+        echo_tac[tac_cnt].node_id=instruction->i;
+        echo_tac[tac_cnt].irnode=instruction;
+        switch (instruction_node->inst->Opcode)
+        {
+            case Alloca:
+                if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                }
+                else if(instruction->user.use_list->Val!=NULL && instruction->user.use_list->Val->VTy->ID==AddressTyID)
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                }
+                else
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                }
+                break;
+            case Load:
+                if(instruction->user.use_list->Val->VTy->ID==AddressTyID)
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                    instruction->user.value.VTy->ID=AddressTyID;
+                } else
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                }
+                break;
+            case Store:
+                if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
+                {
+                   
+                }
+                else if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID==AddressTyID)
+                {
+                   
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float || instruction->user.use_list->Val->VTy->ID==Const_FLOAT)
+                {
+                   
+                }
+                else if(instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                }
+                else
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                }
+                break;
+            case br:
+               
+                break;
+            case br_i1:
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].dest_use=1;
+                    break;
+                }
+            case br_i1_false:
+    
+                break;
+            case br_i1_true:
+                
+                break;
+            case EQ:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp eq i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp eq i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+
+                break;
+            case LESS:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp slt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp slt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s = icmp slt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp slt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp slt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp slt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case NOTEQ:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp ne i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp ne i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case GREAT:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp sgt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp sgt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s = icmp sgt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp sgt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp sgt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp sgt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case GREATEQ:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp sge i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp sge i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s = icmp sge i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp sge i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp sge i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp sge i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case LESSEQ:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp sle i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp sle i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s = icmp sle i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s = icmp sle i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s = icmp sle i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s = icmp sle i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case FunBegin:
+                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID==VoidTyID)
+                {
+                    // printf("define dso_local void @%s(",instruction->user.use_list->Val->name);
+                    //fpintf(fptr,"define dso_local void @%s(",instruction->user.use_list->Val->name);
+                } else
+                {
+                    // printf("define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+                    //fpintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+                }
+                p=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
+                int ii=p;
+                while (p>0)
+                {
+                    if(p==instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
+                    {
+                        if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
+                        {
+                            // printf("i32* %%0");
+                            //fpintf(fptr,"i32* %%0");
+                        }
+                        else
+                        {
+                            // printf("i32 %%0");
+                            //fpintf(fptr,"i32 %%0");
+                        }
+                    }
+                    else
+                    {
+                        if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
+                        {
+                            // printf(",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            //fpintf(fptr,",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                        }
+                        else
+                        {
+                            // printf(",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            //fpintf(fptr,",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                        }
+                    }
+                    p--;
+                }
+                // printf(") #0{\n");
+                //fpintf(fptr,") #0{\n");
+                break;
+            case Return:
+                if(instruction->user.use_list->Val==NULL)
+                {
+                    // printf(" ret void\n");
+                    //fpintf(fptr," ret void\n");
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    // printf(" ret i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                    //fpintf(fptr," ret i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    // printf(" ret i32 %f\n",instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                    //fpintf(fptr," ret i32 %f\n",instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                }
+                else
+                {
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                    // printf(" ret i32 %s\n",instruction->user.use_list->Val->name);
+                    //fpintf(fptr," ret i32 %s\n",instruction->user.use_list->Val->name);
+                }
+
+//                printf("}\n\n");
+//                //fpintf(fptr,"}\n\n");
+                break;
+            case Call:
+                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
+                {
+                    //非库函数
+                    if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                        //fpintf(fptr," %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    }
+                        //是库函数
+                    else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = call i32 (",instruction->user.value.name);
+                        //fpintf(fptr," %s = call i32 (",instruction->user.value.name);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s = call i32 (...) @%s (",instruction->user.value.name,instruction->user.use_list->Val->name);
+                        //fpintf(fptr," %s = call i32 (...) @%s (",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    }
+                }
+                else     //voidTypeID
+                {
+                    //非库函数
+                    if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
+                    {
+                        // printf(" call void @%s(",instruction->user.use_list->Val->name);
+                        //fpintf(fptr," call void @%s(",instruction->user.use_list->Val->name);
+                    }
+                        //是库函数
+                    else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
+                    {
+                        // printf(" call void (");
+                        //fpintf(fptr," call void (");
+                        //printf(" call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
+                        ////fpintf(fptr," call void (i32, ...) bitcast (i32 (...)* @%s to i32 (i32, ...)*)(",instruction->user.use_list->Val->name);
+                    }
+                    else
+                    {
+                        // printf(" call void (...) @%s (",instruction->user.use_list->Val->name);
+                        //fpintf(fptr," void i32 (...) @%s (",instruction->user.use_list->Val->name);
+                    }
+                }
+
+                //扫一下params数组
+                //还是得从后往前走
+                int start=0;
+                for(int i=give_count-1;i>0;i--)
+                {
+                    if(strcmp(instruction->user.use_list->Val->name,params[i]->inst->user.use_list[1].Val->name)==0)
+                    {
+                        start=i;
+                        break;
+                    }
+                }
+                //找出one_param参数列表
+                int record_start=start;int j=0;
+                while (j<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
+                {
+                    if(strcmp(instruction->user.use_list->Val->name,params[record_start]->inst->user.use_list[1].Val->name)==0)
+                    {
+                        one_param[instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-j-1]=params[record_start];
+                        j++;
+                    }
+                    record_start--;
+                }
+
+                //参数
+                if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)==NULL && instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+                {
+                    for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
+                    {
+                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                        {
+                            v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+                            //就i32*
+                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                            {
+                                // printf("i32*,");
+                                //fpintf(fptr,"i32*,");
+                            }
+                            else
+                            {
+                                //printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                // printf("*,");
+                                //fpintf(fptr,"*,");
+                            }
+                        }
+                        else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+                        {
+                            // printf("i32*,");
+                            //fpintf(fptr,"i32*,");
+                        }
+                        else
+                        {
+                            // printf("i32,");
+                            //fpintf(fptr,"i32,");
+                        }
+                    }
+                    // printf("...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
+                    //fpintf(fptr,"...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
+
+                    for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
+                    {
+                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                        {
+                            v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                            {
+                                // printf("i32*,");
+                                //fpintf(fptr,"i32*,");
+                            }
+                            else
+                            {
+                                //printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                // printf("*,");
+                                //fpintf(fptr,"*,");
+                            }
+                        }
+                        else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+                        {
+                            // printf("i32*,");
+                            //fpintf(fptr,"i32*,");
+                        }
+                        else
+                        {
+                            // printf("i32,");
+                            //fpintf(fptr,"i32,");
+                        }
+                    }
+                    // printf("...)*)(");
+                    //fpintf(fptr,"...)*)(");
+                }
+
+                //参数
+                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+                {
+                    for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
+                    {
+                        if(i==0)
+                        {
+                            if(one_param[i]->inst->user.use_list->Val->VTy->ID==Int)
+                            {
+                                // printf("i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+                                //fpintf(fptr,"i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+                            }
+                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                            {
+                                v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+                                if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                                {
+                                    // printf("i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                                    //fpintf(fptr,"i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                                }
+                                else
+                                {
+                                    //printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                    // printf("* %s",one_param[i]->inst->user.use_list->Val->name);
+                                    //fpintf(fptr,"* %s",one_param[i]->inst->user.use_list->Val->name);
+                                }
+                            }
+                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+                            {
+                                // printf("i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                                //fpintf(fptr,"i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                            }
+                            else
+                            {
+                                // printf("i32 %s",one_param[i]->inst->user.use_list->Val->name);
+                                //fpintf(fptr,"i32 %s",one_param[i]->inst->user.use_list->Val->name);
+                            }
+
+                        }
+                        else
+                        {
+                            if(one_param[i]->inst->user.use_list->Val->VTy->ID==Int)
+                            {
+                                // printf(",i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+                                //fpintf(fptr,",i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+                            }
+                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                            {
+                                v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+                                if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                                {
+                                    // printf(",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                                    //fpintf(fptr,",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                                }
+                                else
+                                {
+                                    // printf(",");
+                                    //fpintf(fptr,",");
+                                    //printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                    // printf("* ");
+                                    //fpintf(fptr,"* ");
+                                }
+                            }
+                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+                            {
+                                // printf(",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                                //fpintf(fptr,",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+                            }
+                            else
+                            {
+                                // printf(",i32 %s",one_param[i]->inst->user.use_list->Val->name);
+                                //fpintf(fptr,",i32 %s",one_param[i]->inst->user.use_list->Val->name);
+                            }
+                        }
+                    }
+                }
+
+                // printf(")\n");
+                //fpintf(fptr,")\n");
+
+                if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+                {
+                    j=0;
+                    //将参数全部置0
+                    while(j<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
+                    {
+                        if(strcmp(instruction->user.use_list->Val->name,params[start]->inst->user.use_list[1].Val->name)==0)
+                        {
+                            params[start--]=NULL;
+                            j++;
+                        }
+                    }
+                    j=0;
+                    for(int k=0;k<give_count;k++)
+                    {
+                        if(params[k]!=NULL)
+                            params[j++]=params[k];
+                    }
+                    give_count-=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
+                }
+                break;
+            case Label:
+                // printf("%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                //fpintf(fptr,"%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                break;
+            case Add:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= add nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= add nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= add nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= add nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= add nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= add nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= add nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= add nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= add nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= add nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= add nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= add nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= add nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= add nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= add nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= add nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= add nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= add nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case Sub:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sub nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= sub nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sub nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= sub nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= sub nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= sub nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sub nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= sub nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sub nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= sub nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= sub nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= sub nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= sub nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= sub nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= sub nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= sub nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= sub nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= sub nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case Mul:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= mul nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= mul nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= mul nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= mul nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= mul nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= mul nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= mul nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= mul nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= mul nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= mul nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= mul nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= mul nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= mul nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= mul nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= mul nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= mul nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= mul nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= mul nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case Div:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sdiv i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= sdiv i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sdiv i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= sdiv i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= sdiv i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= sdiv i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sdiv i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= sdiv i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= sdiv i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= sdiv i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= sdiv i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= sdiv i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= sdiv i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= sdiv i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= sdiv i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        //fpintf(fptr," %s= sdiv i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= sdiv i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= sdiv i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case Mod:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf(" %s= srem i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= srem i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= srem i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= srem i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        // printf(" %s= srem i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr," %s= srem i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
+                        // printf(" %s= srem i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr," %s= srem i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                break;
+            case bitcast:
+                //第一条bitcast
+                if(instruction->user.value.pdata->var_pdata.iVal==1)
+                {
+                    //v_cur_array=instruction->user.use_list->Val->alias;
+                    // printf(" %s=bitcast ",instruction->user.value.name);
+                    //fpintf(fptr," %s=bitcast ",instruction->user.value.name);
+                    //printf_array(instruction->user.use_list->Val->alias,0,fptr);
+                    // printf("* %s to i8*\n",instruction->user.use_list->Val->name);
+                    //fpintf(fptr,"* %s to i8*\n",instruction->user.use_list->Val->name);
+                }
+                else
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                    // printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    //fpintf(fptr," %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    //printf_array(instruction->user.use_list->Val->alias,0,fptr);
+                    // printf("*\n");
+                    //fpintf(fptr,"*\n");
+                }
+                break;
+
+            case GEP:
+                if(instruction->user.value.alias!=NULL)
+                    v_cur_array=instruction->user.value.alias;
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
+                // printf(" %s=getelementptr inbounds ",instruction->user.value.name);
+                //fpintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
+                if(instruction->user.use_list->Val->VTy->ID!=AddressTyID )
+                {
+                    //是对数组参数的最后一个自造的gmp
+                    if(instruction->user.value.VTy->ID==AddressTyID)
+                    {
+                        //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
+                        // printf(",");
+                        //fpintf(fptr,",");
+                        //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
+                        // printf("* ");
+                        //fpintf(fptr,"* ");
+                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                        {
+                            // printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            //fpintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        }
+                        else
+                        {
+                            // printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            //fpintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        }
+                    }
+                        //正常的
+                    else{
+                        //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                        printf(",");
+                        //fpintf(fptr,",");
+                        //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                        printf("* ");
+                        //fpintf(fptr,"* ");
+                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                        {
+                            // printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            //fpintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        }
+                        else
+                        {
+                            // printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            //fpintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        }
+                    }
+
+                }
+                else {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        // printf("i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        //fpintf(fptr,"i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        // printf("i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        //fpintf(fptr,"i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+
+//                if(instruction->user.value.VTy->ID==AddressTyID && (instruction->user.value.pdata->var_pdata.iVal+1<instruction->user.use_list->Val->pdata->symtab_array_pdata.dimention_figure))
+//                {
+//                    for(int i= instruction->user.value.pdata->var_pdata.iVal+1;i<v_cur_array->pdata->symtab_array_pdata.dimention_figure;i++)
+//                    {
+//                        printf(",i32 0\n");
+//                        //fpintf(fptr,",i32 0\n");
+//                    }
+//                }
+//                else
+//                {
+                // printf("\n");
+                //fpintf(fptr,"\n");
+                //}
+                break;
+            case MEMSET:
+                flag_func=true;
+                // printf(" call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                //fpintf(fptr," call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                break;
+            case MEMCPY:
+                flag_func=true;
+                // printf(" call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
+                //fpintf(fptr," call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
+                //printf_array(instruction->user.use_list[1].Val,0,fptr);
+                // printf("* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
+                       get_array_total_occupy(instruction->user.use_list[1].Val,0);
+                //fpintf(fptr,"* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
+                        // get_array_total_occupy(instruction->user.use_list[1].Val,0));
+                break;
+            case GLOBAL_VAR:
+                if(instruction->user.use_list->Val->VTy->ID!=ArrayTy_INT && instruction->user.use_list->Val->VTy->ID!=ArrayTy_FLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayInt && instruction->user.use_list->Val->VTy->ID!=GlobalArrayFloat && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstINT && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstINT)
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    // printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    //fpintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                }
+                else
+                {
+                    v_cur_array=instruction->user.use_list->Val;
+                    if(instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT)
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf("%s= internal constant ",instruction->user.use_list->Val->name);
+                        //fpintf(fptr,"%s= internal constant ",instruction->user.use_list->Val->name);
+                        ////printf_global_array(instruction->user.use_list->Val,fptr);
+                        // printf("align 4\n");
+                        //fpintf(fptr,"align 4\n");
+                    }
+                    else
+                    {
+                        echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].dest_use=0;
+                        // printf("%s=dso_local global ",instruction->user.use_list->Val->name);
+                        //fpintf(fptr,"%s=dso_local global ",instruction->user.use_list->Val->name);
+                        ////printf_global_array(instruction->user.use_list->Val,fptr);
+                        if(instruction->user.use_list->Val->pdata->symtab_array_pdata.is_init==0)
+                        {
+                            // printf(" zeroinitializer, align 4\n");
+                            //fpintf(fptr," zeroinitializer, align 4\n");
+                        }
+                        else
+                        {
+                            // printf("align 4\n");
+                            //fpintf(fptr,"align 4\n");
+                        }
+                    }
+                }
+                break;
+            case GIVE_PARAM:
+                params[give_count++]=instruction_node;
+                break;
+            case FunEnd:
+                // printf("}\n\n");
+                //fpintf(fptr,"}\n\n");
+                break;
+            case zext:
+                echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                echo_tac[tac_cnt].dest_use=0;
+                echo_tac[tac_cnt].left_name=instruction->user.value.name;
+                echo_tac[tac_cnt].left_use=1;
+                // printf(" %s = zext i1 %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                //fpintf(fptr," %s = zext i1 %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                break;
+            case XOR:
+                echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                echo_tac[tac_cnt].dest_use=0;
+                echo_tac[tac_cnt].left_name=instruction->user.value.name;
+                echo_tac[tac_cnt].left_use=1;
+                // printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                //fpintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                break;
+            case Phi:{
+                Value *insValue = ins_get_dest(instruction);
+                HashSet *phiSet = instruction->user.value.pdata->pairSet;
+                HashSetFirst(phiSet);
+                printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
+                //fpintf(fptr," %s = phi i32",instruction->user.value.name);
+                unsigned int size=HashSetSize(phiSet);
+                int i=0;
+                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                    BasicBlock *from = phiInfo->from;
+                    Value *incomingVal = phiInfo->define;
+                    if(i + 1 == size)      //最后一次
+                    {
+                        if(incomingVal != NULL && isImm(incomingVal)){
+                            // printf("[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
+                            //fpintf(fptr,"[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
+                        }else if(incomingVal != NULL){
+                            // printf("[%s , %%%d]",incomingVal->name,from->id);
+                            //fpintf(fptr,"[%s , %%%d]",incomingVal->name,from->id);
+                        }else{
+                            //是NULL的话就
+                            // printf("[ undef, %%%d] ",from->id);
+                            //fpintf(fptr,"[ undef, %%%d] ",from->id);
+                        }
+                    }
+                    else
+                    {
+                        if(incomingVal != NULL && isImm(incomingVal)){
+                            // printf("[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+                            //fpintf(fptr,"[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+                        }else if(incomingVal != NULL){
+                            // printf("[%s , %%%d], ",incomingVal->name,from->id);
+                            //fpintf(fptr,"[%s , %%%d], ",incomingVal->name,from->id);
+                        }else{
+                            // printf("[ undef, %%%d], ",from->id);
+                            //fpintf(fptr,"[ undef, %%%d], ",from->id);
+                        }
+                    }
+                    i++;
+                }
+                // printf("\n");
+                //printf("a phi instruction\n");
+                break;
+            }
+            case CopyOperation:{
+                Value *dest = instruction->user.value.alias;
+                Value *src = ins_get_lhs(instruction);
+                if(isImm(src)){
+                    echo_tac[tac_cnt].dest_name=dest->alias->name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    // printf(" %s(%s) = %d\n",dest->name,dest->alias->name,src->pdata->var_pdata.iVal);
+                }else{
+                    echo_tac[tac_cnt].dest_name=dest->alias->name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=src->name;
+                    echo_tac[tac_cnt].left_use=1;
+                    // printf(" %s(%s) = %s\n", dest->name,dest->alias->name,src->name);
+                }
+
+                //printf("a copy operation\n");
+                break;
+            }
+            default:
+                break;
+        }
+        tac_cnt++;
+        instruction_node= get_next_inst(instruction_node);
+    }
+    return ;
+}
+
+void addtolive(char * name,int tacid)
+{
+    for(int i=0;i<var_num;i++)
+        if(strcmp(name,live[i].name)==0)
+        {
+            live[i].last=tacid;
+            return ;
+        }
+    live[var_num].name=name;
+    live[var_num++].first=tacid;
+    return ;
+}
+
+void create_bian(int i,int j)
+{
+    for(int i=0;i<edge_num;i++)
+    {
+        if((_bian[i].a==i&&_bian[i].b==j)||(_bian[i].a==j&&_bian[i].b==i))
+        {
+            return ;
+        }
+    }
+    _bian[edge_num].a=i;
+    _bian[edge_num++].b=j;
+    // printf("边:%s--%s\n",live[i].name,live[j].name);
+    return ;
+}
+
+void bian_init()
+{
+    var_num=0;
+    edge_num=0;
+    for(int i=0;i<tac_cnt;i++)
+    {
+        if(echo_tac[i].dest_use>=0)
+        {
+            addtolive(echo_tac[i].dest_name,i);
+        }
+        if(echo_tac[i].left_use>=0)
+        {
+            addtolive(echo_tac[i].left_name,i);
+        }
+        if(echo_tac[i].right_use>=0)
+        {
+            addtolive(echo_tac[i].right_name,i);
+        }
+    }
+    for(int i=0;i<var_num;i++)
+    {
+        for(int j=i+1;j<var_num;j++)
+        {
+            create_bian(i,j);
+        }
+    }
+    for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%s\t%s\n",i,echo_tac[i].dest_name,echo_tac[i].left_name,echo_tac[i].right_name);
+    for(int i=0;i<var_num;i++)  printf("%d:%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+}
+
+
 void reg_control(struct _InstNode *instruction_node,InstNode *temp)
 {
-    printf("/*******************reg******************/\n");
+    printf("/*******************reg_start******************/\n");
     // while(temp->inst->Parent->Parent == NULL)   temp = get_next_inst(temp);]
 
     BasicBlock *block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next)
     {
-        InstNode *currNode = block->head_node;
-        while(currNode != NULL) 
-        {
-            BasicBlock *cblock = currNode->inst->Parent;
-            reg_control_block(cblock);
-            currNode = get_next_inst(currNode);
-        }
+        reg_control_func(currentFunction);
     }
     printf_llvm_ir_withreg(instruction_node);
+    printf("/*******************reg_end******************/\n");
+    return ;
+}
+
+
+
+void reg_control_func(Function *currentFunction)
+{
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *end = currentFunction->tail;
+
+    clear_visited_flag(entry);
+    block_num=0;
+    InstNode *currNode = entry->head_node;
+    BasicBlock *currNodeParent = currNode->inst->Parent;
+    block_list[block_num++]=currNode->inst->Parent;
+    block_list[0]->visited=1;
+    while(currNode != get_next_inst(end->tail_node)){
+        currNodeParent = currNode->inst->Parent;
+        if(currNodeParent->visited == false){
+            block_list[block_num++]=currNode->inst->Parent;
+        }
+        currNode = get_next_inst(currNode);
+    }
+    clear_visited_flag(entry);
+    for(int i=0;i<block_num;i++)
+        reg_control_block(block_list[i]);
     return ;
 }
 
 void reg_control_block(BasicBlock *cur)
 {
-    #ifdef all_in_memory
-    InstNode *temp =cur->head_node;
-    for(;temp != NULL;temp = get_next_inst(temp))
-    {
-        // temp->inst->_reg_[0]=104;
-        // temp->inst->_reg_[1]=-4;
-        // temp->inst->_reg_[2]=-5;
-        reg_inmem_one_ins(temp);
-    }
+    #if all_in_memory
+
+    travel_ir(cur->head_node);
+    for(int j=0;j<tac_cnt;j++)
+        reg_inmem_one_ins(j);
     return ;
 
     #else
+    travel_ir(cur->head_node);
+    live_init_block();
+    bian_init();
     init_RIG();
     create_RIG();
     check_edge();
     //print_info();
-    minimize_RIG();
+    // minimize_RIG();
     init_non_available_colors();
 
     while(first_fit_coloring())
@@ -1298,21 +2779,149 @@ void reg_control_block(BasicBlock *cur)
         reset_queue();
         spill_variable();
     }
-
+    add_to_ir();
     color_removed(); 
-    end_reg(); //分配并打印
+    clean_reg();
     return ;
     #endif
 }
 
-
-void reg_inmem_one_ins(struct _InstNode *temp)
+void add_to_ir()
 {
-    if(use_type(temp))
+    int var_uid;
+    int reg_uid;
+    for(int i=0;i<tac_cnt;i++)
     {
-        temp->inst->_reg_[0]=104;
-        temp->inst->_reg_[1]=-4;
-        temp->inst->_reg_[2]=-5;
+        var_uid=find_var(echo_tac[i].dest_name);
+        if(var_uid>=0)  
+        {
+            reg_uid=list_of_variables[var_uid].color;
+            if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
+            else
+            {
+                reg_uid+=6;
+                if(echo_tac[i].dest_use==0)
+                {
+                    if(i==live[var_uid].last) 
+                        echo_tac[i].irnode->_reg_[0]=reg_uid+100;
+                    else
+                        echo_tac[i].irnode->_reg_[0]=reg_uid;
+                }
+                if(echo_tac[i].dest_use==1)
+                {
+                    if(i==live[var_uid].first) 
+                        echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
+                    else
+                        echo_tac[i].irnode->_reg_[0]=reg_uid;
+                }
+            }
+        }
+        
+
+        var_uid=find_var(echo_tac[i].left_name);
+        if(var_uid>=0)  
+        {
+            reg_uid=list_of_variables[var_uid].color;
+            if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=-4;
+            else
+            {
+                reg_uid+=6;
+                if(echo_tac[i].left_use==0)
+                {
+                    if(i==live[var_uid].last) 
+                        echo_tac[i].irnode->_reg_[1]=reg_uid+100;
+                    else
+                        echo_tac[i].irnode->_reg_[1]=reg_uid;
+                }
+                if(echo_tac[i].left_use==1)
+                {
+                    if(i==live[var_uid].first) 
+                        echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
+                    else
+                        echo_tac[i].irnode->_reg_[1]=reg_uid;
+                }
+            }
+        }
+
+        var_uid=find_var(echo_tac[i].right_name);
+        if(var_uid>=0)  
+        {
+            reg_uid=list_of_variables[var_uid].color;
+            if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=-5;
+            else
+            {
+                reg_uid+=6;
+                if(echo_tac[i].right_use==0)
+                {
+                    if(i==live[var_uid].last) 
+                        echo_tac[i].irnode->_reg_[2]=reg_uid+100;
+                    else
+                        echo_tac[i].irnode->_reg_[2]=reg_uid;
+                }
+                if(echo_tac[i].right_use==1)
+                {
+                    if(i==live[var_uid].first) 
+                        echo_tac[i].irnode->_reg_[2]=reg_uid*-1;
+                    else
+                        echo_tac[i].irnode->_reg_[2]=reg_uid;
+                }
+            }
+        }
+    }
+    return ;
+}
+
+void clean_reg()
+{
+    return ;
+}
+
+int check_edge()
+{
+    for(int x=0;x<edge_num;x++)
+    {
+        if(_bian[x].a==_bian[x].b)  printf("error::%d\n",x);
+        for(int y=x+1;y<edge_num;y++)
+        {
+            if((_bian[x].a==_bian[y].a&&_bian[x].b==_bian[y].b)||(_bian[x].a==_bian[y].b&&_bian[x].b==_bian[y].a))
+            {
+                printf("error::%d %d\n",x,y);
+            }
+        }
+    }
+}
+
+void reg_inmem_one_ins(int id)
+{
+    // if(use_type(temp))
+    // {
+    //     temp->inst->_reg_[0]=104;
+    //     temp->inst->_reg_[1]=-4;
+    //     temp->inst->_reg_[2]=-5;
+    // }
+    if(echo_tac[id].dest_use==0)
+    {
+        echo_tac[id].irnode->_reg_[0]=104;
+    }
+    else if(echo_tac[id].dest_use==1)
+    {
+        echo_tac[id].irnode->_reg_[0]=-4;
+    }
+    if(echo_tac[id].left_use==0)
+    {
+        echo_tac[id].irnode->_reg_[1]=105;
+    }
+    else if(echo_tac[id].left_use==1)
+    {
+        echo_tac[id].irnode->_reg_[1]=-5;
+    }
+    if(echo_tac[id].right_use==0)
+    {
+        echo_tac[id].irnode->_reg_[2]=106;
+    }
+    else if(echo_tac[id].right_use==1)
+    {
+        echo_tac[id].irnode->_reg_[2]=-6;
     }
     return ;
 }
@@ -1469,7 +3078,8 @@ void init_RIG()
 
 void create_RIG()
 {
-    int size = rig_num;
+    rig_num=var_num;
+    int size = var_num;
     int temp = 0;
     size = size * size;
     temp = size % 32 != 0;
