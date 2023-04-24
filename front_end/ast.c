@@ -174,7 +174,7 @@ void insert_var_into_symtab(past type,past p)
             v->name=(char*) malloc(strlen(bstr2cstr(p->sVal,0)));
             strcpy(v->name,bstr2cstr(p->sVal,0));
         }
-        v->pdata->var_pdata.map_list= getCurMapList(this);
+        v->pdata->map_list= getCurMapList(this);
         if(is_global_map(this))
             v->pdata->define_flag=1;
         else
@@ -213,7 +213,7 @@ void insert_var_into_symtab(past type,past p)
             strcpy(v->name,bstr2cstr(p->left->sVal,0));
         }
 
-        v->pdata->symtab_array_pdata.map_list= getCurMapList(this);
+        v->pdata->map_list= getCurMapList(this);
         if(is_global_map(this))
             v->pdata->define_flag=1;
         else
@@ -270,7 +270,7 @@ void insert_var_into_symtab(past type,past p)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
-        v->pdata->var_pdata.map_list=getCurMapList(this);
+        v->pdata->map_list=getCurMapList(this);
         if(is_global_map(this))
             v->pdata->define_flag=1;
         else
@@ -466,7 +466,7 @@ void insert_var_into_symtab(past type,past p)
             v->pdata->symtab_array_pdata.is_init=1;
         }
             //v->VTy->ID=ArrayTyID_Init;
-        v->pdata->symtab_array_pdata.map_list= getCurMapList(this);
+        v->pdata->map_list= getCurMapList(this);
 
         //加入维度具体数值
         past one_dimention = p->left->left->next;
@@ -495,7 +495,7 @@ void insert_var_into_symtab(past type,past p)
     {
         Value *v=(Value*) malloc(sizeof (Value));
         value_init(v);
-        v->pdata->var_pdata.map_list= getCurMapList(this);
+        v->pdata->map_list= getCurMapList(this);
         if(is_global_map(this))
             v->pdata->define_flag=1;
         else
@@ -791,7 +791,7 @@ void insert_func_params(past params)
         }
         else
         {
-            v->pdata->var_pdata.map_list= getCurMapList(this);
+            v->pdata->map_list= getCurMapList(this);
             v->pdata->define_flag=1;
             if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
                 //函数参数默认为有初始值
@@ -814,7 +814,7 @@ void insert_func_into_symtab(past return_type,past pname,past params)
     value_init(v);
     v->VTy->ID=FunctionTyID;
     //!!!!!它指向的map是函数体的map，不是函数名的map,函数名永远在全局Map中
-    v->pdata->symtab_func_pdata.map_list= symtab_get_latest_func_maplist(this);
+    v->pdata->map_list= symtab_get_latest_func_maplist(this);
 
     //return_type
     if(strcmp(bstr2cstr(return_type->sVal,'\0'),"float")==0)

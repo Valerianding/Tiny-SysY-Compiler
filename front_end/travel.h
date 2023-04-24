@@ -38,7 +38,8 @@ InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
 void create_continue_stmt(past root,Value* v_return);
 void create_break_stmt(past root,Value* v_return);
 void reduce_continue();
-void reduce_break();
+//void reduce_break();
+void reduce_break_solo(int location);
 void reduce_return();
 void reduce_and(int false_index);
 void reduce_or(int true_index,int false_index);

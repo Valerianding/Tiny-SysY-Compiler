@@ -28,7 +28,6 @@ struct _PData{
     }instruction_pdata;
 
     struct {
-        struct _mapList* map_list;         //所指向的那张函数作用域的表
         union {
             int iVal;
             float fVal;
@@ -38,12 +37,10 @@ struct _PData{
     struct {
         Type return_type;            //返回类型
         Type param_type_lists[50];   //参数类型数组
-        struct _mapList* map_list;         //所指向的那张函数作用域的表
         int param_num;              //TODO 可能要，也可能不要
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
 
     struct {
-        struct _mapList* map_list;         //所指向的那张函数作用域的表
         int dimention_figure;               //一维、二维......
         int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
         unsigned int address_type:1;     //type为address的时候标识是int还是float，0是int,1是float
@@ -54,6 +51,8 @@ struct _PData{
         };
         unsigned is_init:1;  //用于判断数组是否初始化
     }symtab_array_pdata;
+
+    struct _mapList* map_list;
 
     HashSet *pairSet; // 为了phi指令设计的 存pair类型的数据
     unsigned int define_flag:1;

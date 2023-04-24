@@ -27,6 +27,8 @@ char type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"
 InstNode * one_param[50];   //存放单次正确位置的参数
 InstNode* params[50];      //存放所有参数
 
+int while_scope=0;
+
 void create_instruction_list(past root,Value* v_return)
 {
     if (root != NULL) {
@@ -95,6 +97,8 @@ void create_break_stmt(past root,Value* v_return)
 
     //遇到break,push就完事
     InstNode *node_break = true_location_handler(br, NULL, 0);
+    node_break->inst->user.value.pdata->map_list= getCurMapList(this);
+    node_break->inst->user.value.pdata->instruction_pdata.false_goto_location=-while_scope;
     //是0就代表是break
     insnode_push(&S_break,node_break);
 
@@ -172,24 +176,19 @@ void reduce_return()
     }
 }
 
-//一次只能跳出去一层
-void reduce_break()
+void reduce_break_solo(int location)
 {
-    do{
-        InstNode * go_location;
-        insnode_pop(&S_break,&go_location);
-
-        InstNode * break_point;
-        insnode_top(&S_break,&break_point);
-        //确定是break了，再pop出来
-        while (break_point->inst->user.value.pdata->instruction_pdata.true_goto_location==0 && !insnode_is_empty(S_break))
+    InstNode *breaks=NULL;
+    while(insnode_top(&S_break,&breaks))
+    {
+        //如果while的scope一样，则说明可以消除
+        if(-breaks->inst->user.value.pdata->instruction_pdata.false_goto_location== while_scope+1)
         {
-            insnode_pop(&S_break,&break_point);
-            break_point->inst->user.value.pdata->instruction_pdata.true_goto_location=go_location->inst->user.value.pdata->instruction_pdata.true_goto_location;
-            insnode_top(&S_break,&break_point);
-        }
-        go_location->inst->user.value.pdata->instruction_pdata.true_goto_location=break_point->inst->user.value.pdata->instruction_pdata.true_goto_location;
-    } while (!insnode_is_empty(S_break));
+            insnode_pop(&S_break,&breaks);
+            breaks->inst->user.value.pdata->instruction_pdata.true_goto_location=location;
+        } else
+            break;
+    }
 }
 
 struct _Value *create_call_func(past root)
@@ -223,7 +222,7 @@ struct _Value *create_call_func(past root)
                 }
             }
             v->pdata->symtab_func_pdata.param_num=params_count;
-            v->pdata->symtab_func_pdata.map_list=this->value_maps->next->next;
+            v->pdata->map_list=this->value_maps->next->next;
 
             v->name=(char*) malloc(sizeof(bstr2cstr(root->left->sVal,0)));
             strcpy(v->name,bstr2cstr(root->left->sVal,0));
@@ -294,7 +293,7 @@ void create_assign_stmt(past root,Value* v_return) {
     //右值value
     Value *v1=(Value*) malloc(sizeof (Value));
     value_init(v1);
-    v1->pdata->var_pdata.map_list= getCurMapList(this);
+    v1->pdata->map_list= getCurMapList(this);
 
     //赋值右边为常数(整数),只有一句store
     if (strcmp(bstr2cstr(root->right->nodeType, '\0'), "num_int") == 0)
@@ -2093,7 +2092,10 @@ void create_while_stmt(past root,Value* v_return)
     flag_blocklist=0;
     if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "BlockItemList") == 0)
         flag_blocklist=0;
+
+    while_scope++;
     create_instruction_list(root->right,v_return);
+    while_scope--;
 
     //填充&&,||的情况
     if(result==-1 && strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
@@ -2131,23 +2133,22 @@ void create_while_stmt(past root,Value* v_return)
     if(ins_false!=NULL)
         ins_false->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index-1;
 
-    //while结束，加进stack,break用
-    Instruction *ins_break_tmp= ins_new_unary_operator(tmp,NULL);
-    Value *t_out= ins_get_dest(ins_break_tmp);
-    t_out->pdata->instruction_pdata.true_goto_location=t_index-1;
-
     Instruction *ins_1_tmp= ins_new_unary_operator(tmp,NULL);
     Value *t_1= ins_get_dest(ins_1_tmp);
     t_1->pdata->instruction_pdata.true_goto_location=-1;
 
     insnode_push(&S_continue, new_inst_node(ins_1_tmp));
-    insnode_push(&S_break, new_inst_node(ins_break_tmp));
+
+    //在while结束时就开始reduce,如果scope_level相等就约束，不等的就不加入
+    //栈中只会有br语句的ins_node,没有tmp
+    reduce_break_solo(t_index-1);
 
     if(root->next!=NULL)
         create_instruction_list(root->next,v_return);
 }
 
 void create_func_def(past root) {
+    while_scope=0;
     Instruction *instruction_begin;
     //拿出存在符号表中的函数信息
     Value *v=symtab_lookup_withmap(this, bstr2cstr(root->left->next->sVal, '\0'), &this->value_maps->next->map);
@@ -2211,7 +2212,7 @@ void create_func_def(past root) {
         {
             //参数Value
             char *nn=bstr2cstr(paramss->left->next->sVal, '\0');
-            Value *param= symtab_lookup_withmap(this,nn, &v->pdata->symtab_func_pdata.map_list->map);
+            Value *param= symtab_lookup_withmap(this,nn, &v->pdata->map_list->map);
 
             Instruction *instruction= ins_new_unary_operator(Alloca,param);
             Value *v_param= ins_get_value_with_name(instruction);
@@ -2238,14 +2239,14 @@ void create_func_def(past root) {
         }
 
         //普通变量的allcoa
-        declare_all_alloca(v->pdata->symtab_func_pdata.map_list,true);
+        declare_all_alloca(v->pdata->map_list,true);
 
         //进行参数的store
         paramss=root->left->next->left->left;
         while(paramss!=NULL)
         {
             //参数Value
-            Value *param= symtab_lookup_withmap(this,bstr2cstr(paramss->left->next->sVal, '\0'), &v->pdata->symtab_func_pdata.map_list->map)->alias;
+            Value *param= symtab_lookup_withmap(this,bstr2cstr(paramss->left->next->sVal, '\0'), &v->pdata->map_list->map)->alias;
 
             Value *v_num_param=create_param_value();
             v_num_param->VTy->ID=param->VTy->ID;
@@ -2259,7 +2260,7 @@ void create_func_def(past root) {
     else
         //普通变量的allcoa
         //是函数进来的,先声明一顿alloca
-        declare_all_alloca(v->pdata->symtab_func_pdata.map_list,true);
+        declare_all_alloca(v->pdata->map_list,true);
 
 
     if(strcmp(v->name,"main")==0)
@@ -2318,11 +2319,11 @@ void create_func_def(past root) {
     t_index=0;
 
     //解决填充continue和break
-    if(c_b_flag[1]==true)
-    {
-        reduce_break();
-        c_b_flag[1]=false;
-    }
+//    if(c_b_flag[1]==true)
+//    {
+//        reduce_break();
+//        c_b_flag[1]=false;
+//    }
     if(c_b_flag[0]==true)
     {
         reduce_continue();
@@ -2786,7 +2787,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
 
     //弹出最终值
     pop_value(&PS2, &final_result);
-    final_result->pdata->var_pdata.map_list= getCurMapList(this);
+    final_result->pdata->map_list= getCurMapList(this);
 
     return final_result;
 }
@@ -2985,7 +2986,7 @@ struct _Value *create_param_value()
     strcat(t,t_num);
     Value *v_tmp=(Value*) malloc(sizeof (Value));
     value_init(v_tmp);
-    v_tmp->pdata->var_pdata.map_list= getCurMapList(this);
+    v_tmp->pdata->map_list= getCurMapList(this);
     v_tmp->name=(char*) malloc(strlen (t));
     strcpy(v_tmp->name,t);
     clear_tmp(t);
@@ -3097,7 +3098,7 @@ void declare_global_alloca(struct _mapList* func_map)
                     v_replace->alias=((Value*)value);
                     //拷贝一下其他信息
                     v_replace->VTy->ID=((Value*)value)->VTy->ID;
-                    v_replace->pdata->var_pdata.map_list= getCurMapList(this);
+                    v_replace->pdata->map_list= getCurMapList(this);
                     v_replace->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
 
                     //将这个instruction加入总list

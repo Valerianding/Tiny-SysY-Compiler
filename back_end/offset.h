@@ -16,9 +16,14 @@
  */
 typedef struct _offset{
     int offset_sp;
-    bool memory;
     int regr;
     int regs;
+    bool memory;
+//    true代表int，false代表float
+    bool INTTRUE__FLOATFALSE;
+
+//    int load;
+//    int store;
 }offset;
 
 
@@ -31,6 +36,11 @@ typedef struct _offset{
 //LCPILabel
 typedef struct _LCPILabel{
     char LCPI[100];
+    bool INTTRUE__FLOATFALSE;
+//    bool memory;
+//    int regr;
+//    int load;
+//    int store;
 }LCPTLabel;
 
 /**
@@ -59,6 +69,9 @@ HashMap *offset_init(InstNode*ins,int *local_var_num);
  */
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num);
+
+//void hashmap_add_left(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
+//void hashmap_add_right(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
 
 void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp);
 void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value);

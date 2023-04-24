@@ -1290,7 +1290,11 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
         //         printf("%d\t",instruction->_reg_[2]);   
         //     printf("\n");
         // }
-        printf("%d\t%d\t%d\n",instruction->_reg_[0],instruction->_reg_[1],instruction->_reg_[2]);
+        for(int i=0;i<3;i++)
+        {
+            if(instruction->_reg_[i]!=0)    printf("reg%d:%d",i,instruction->_reg_[i]);
+            printf("\t\t");
+        }
         printf("\n"); 
         instruction_node= get_next_inst(instruction_node);
     }
@@ -2803,14 +2807,14 @@ void add_to_ir()
                 if(echo_tac[i].dest_use==0)
                 {
                     if(i==live[var_uid].last) 
-                        echo_tac[i].irnode->_reg_[0]=reg_uid+100;
+                        echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
                     else
                         echo_tac[i].irnode->_reg_[0]=reg_uid;
                 }
                 if(echo_tac[i].dest_use==1)
                 {
                     if(i==live[var_uid].first) 
-                        echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
+                        echo_tac[i].irnode->_reg_[0]=reg_uid+100;
                     else
                         echo_tac[i].irnode->_reg_[0]=reg_uid;
                 }
@@ -2822,21 +2826,21 @@ void add_to_ir()
         if(var_uid>=0)  
         {
             reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=-4;
+            if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
             else
             {
                 reg_uid+=6;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last) 
-                        echo_tac[i].irnode->_reg_[1]=reg_uid+100;
+                        echo_tac[i].irnode->_reg_[1]=reg_uid-1;
                     else
                         echo_tac[i].irnode->_reg_[1]=reg_uid;
                 }
                 if(echo_tac[i].left_use==1)
                 {
                     if(i==live[var_uid].first) 
-                        echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
+                        echo_tac[i].irnode->_reg_[1]=reg_uid+100;
                     else
                         echo_tac[i].irnode->_reg_[1]=reg_uid;
                 }
@@ -2847,21 +2851,21 @@ void add_to_ir()
         if(var_uid>=0)  
         {
             reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=-5;
+            if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=106;
             else
             {
                 reg_uid+=6;
                 if(echo_tac[i].right_use==0)
                 {
                     if(i==live[var_uid].last) 
-                        echo_tac[i].irnode->_reg_[2]=reg_uid+100;
+                        echo_tac[i].irnode->_reg_[2]=reg_uid-1;
                     else
                         echo_tac[i].irnode->_reg_[2]=reg_uid;
                 }
                 if(echo_tac[i].right_use==1)
                 {
                     if(i==live[var_uid].first) 
-                        echo_tac[i].irnode->_reg_[2]=reg_uid*-1;
+                        echo_tac[i].irnode->_reg_[2]=reg_uid+100;
                     else
                         echo_tac[i].irnode->_reg_[2]=reg_uid;
                 }
