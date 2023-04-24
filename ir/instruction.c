@@ -82,7 +82,7 @@ Value *ins_get_value_with_name(Instruction *ins){
     Value *v_tmp = &ins->user.value;
     sprintf(t_num, "%d", t_index++);
     strcat(t,t_num);
-    v_tmp->pdata->var_pdata.map_list = getCurMapList(this);
+    v_tmp->pdata->map_list = getCurMapList(this);
     v_tmp->name = (char*) malloc(strlen (t));
     strcpy(v_tmp->name,t);
     clear_tmp(t);
@@ -93,7 +93,7 @@ Value *ins_get_value_with_name(Instruction *ins){
 Value *ins_get_global_value(Instruction *ins,char* name)
 {
     Value *v_tmp = &ins->user.value;
-    v_tmp->pdata->var_pdata.map_list = getCurMapList(this);
+    v_tmp->pdata->map_list = getCurMapList(this);
     v_tmp->name = (char*) malloc(strlen (name));
     strcpy(v_tmp->name,name);
     return v_tmp;
