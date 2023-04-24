@@ -7,6 +7,15 @@ HashMap *global_hashmap;
 int func_num=0;
 int in_func_num=0;
 void offset_free(HashMap*hashMap){
+    HashMapFirst(hashMap);
+    Pair *ptr_pair;
+    while ((ptr_pair= HashMapNext(hashMap))!=NULL){
+        offset *node=(offset*)ptr_pair->value;
+        if(node!=NULL){
+            free(node);
+        }
+        node=NULL;
+    }
     HashMapDeinit(hashMap);
     return;
 }
@@ -15,9 +24,9 @@ offset *offset_node(){
     memset(node,0, sizeof(offset));
     return node;
 }
-void globalint_mapping(Value*value0,Value*value1){
-
-}
+//void globalint_mapping(Value*value0,Value*value1){
+//
+//}
 
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num){
@@ -26,6 +35,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 
         if(!HashMapContain(global_hashmap,key)){
             LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            lcptLabel->INTTRUE__FLOATFALSE=false;
             sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
             HashMapPut(global_hashmap,key,lcptLabel);
         }
@@ -34,6 +44,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 
         if(!HashMapContain(global_hashmap,key)){
             LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            lcptLabel->INTTRUE__FLOATFALSE=true;
             sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
             HashMapPut(global_hashmap,key,lcptLabel);
         }
@@ -55,6 +66,12 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
                 offset *temp=offset_node();
 //                printf("sub_sp=%d\n",*sub_sp);
                 temp->offset_sp=(*local_var_num)*4+ri*4;
+//                这里还要处理unknow的情况,默认为int
+                if(isLocalVarFloatType(key->VTy)|| isLocalArrayFloatType(key->VTy)){
+                    temp->INTTRUE__FLOATFALSE=false;
+                } else{
+                    temp->INTTRUE__FLOATFALSE=true;
+                }
                 temp->memory=true;
                 temp->regr=-1;
                 temp->regs=-1;
@@ -78,6 +95,11 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
                 temp->offset_sp=(*add_sp);
 //                printf("add_sp=%d\n",*add_sp);
                 (*add_sp)+=4;
+                if(isLocalVarFloatType(key->VTy)|| isLocalArrayFloatType(key->VTy)){
+                    temp->INTTRUE__FLOATFALSE=false;
+                } else{
+                    temp->INTTRUE__FLOATFALSE=true;
+                }
                 temp->memory=true;
                 temp->regr=-1;
                 temp->regs=-1;
@@ -103,9 +125,56 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 //        }
 //    }
 
-
     return;
 }
+
+
+//void hashmap_add_left(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri){
+////    全局变量放在全局变量的global_hashmap里面
+//    if(isGlobalVarFloatType(key->VTy)){
+//        if(!HashMapContain(global_hashmap,key)){
+//            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+//            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+//            HashMapPut(global_hashmap,key,lcptLabel);
+//        }
+//    }else if(isGlobalVarIntType(key->VTy)){
+//        if(!HashMapContain(global_hashmap,key)){
+//            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+//            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+//            HashMapPut(global_hashmap,key,lcptLabel);
+//        }
+//    }else if(isGlobalArrayIntType(key->VTy)){
+//        ;
+//    } else if(isGlobalArrayIntType(key->VTy)){
+//        ;
+//    }
+////    局部变量就是直接放在hashmap里面
+//    else if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
+//        if(!HashMapContain(hashMap,key)){
+//            if(strcmp(key->name,name)<0 &&  strlen(key->name) <= strlen(name)){
+////                    表示该参数为传递过来的参数,数组是不需要特别的处理的
+//                int ri= atoi((key->name)+1);
+//                offset *temp=offset_node();
+//                temp->offset_sp=(*local_var_num)*4+ri*4;
+//                temp->memory=true;
+//                temp->regr=-1;
+//                temp->regs=-1;
+//                HashMapPut(hashMap,key,temp);
+//            }else{
+//                offset *temp=(offset*) malloc(sizeof(offset));
+//                temp->offset_sp=(*add_sp);
+//                (*add_sp)+=4;
+//                temp->memory=true;
+//                temp->regr=-1;
+//                temp->regs=-1;
+//                HashMapPut(hashMap,key,temp);
+//            }
+//        }
+//    }
+//
+//    return;
+//}
+//void hashmap_add_right(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
 void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp){
     if(!HashMapContain(hashMap,key)){
         if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
@@ -138,6 +207,7 @@ void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value){
     }
     return;
 }
+
 HashMap *offset_init(InstNode*ins,int *local_var_num){
 //    printf("local var num=%d\n",*local_var_num);
     HashMap *hashMap=HashMapInit();

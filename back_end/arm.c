@@ -180,7 +180,10 @@ void usage_of_global_variables(){
         Value *key=(Value*)ptr_pair->key;
         LCPTLabel *lcptLabel=(LCPTLabel*)ptr_pair->value;
         printf("%s:\n\t.long\t%s\n",lcptLabel->LCPI,key->name+1);
-        free(lcptLabel);
+        if(lcptLabel!=NULL){
+            free(lcptLabel);
+        }
+
         lcptLabel=NULL;
 //        HashMapPut(tmp,key,lcptLabel);
     }
@@ -294,26 +297,36 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
 //    printf("CopyOperation\n");
     return ins;
 }
+
+//更新寄存器的话，add、sub、mul、div、less等是每个都要改的
+
+
 InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
+        int result=ins->inst->_reg_[0];
+        int result_regri= abs(result);
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("    add r0,#%d,#%d\n",x1,x2);
+            printf("    mov r1,#%d\n",x1);
+            printf("    add r0,r1,#%d\n",x2);
+//            printf("    add r%d,#%d,#%d\n",result_regri,x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             printf("    ldr r1,=%s\n",arr1);
             printf("    add r0,r1,#%d\n",x2);
+//            printf("    add r%d,r1,#%d\n",result_regri,x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
             printf("    ldr r2,=%s\n",arr2);
-            printf("    add r0,#%d,r2\n",x1);
+            printf("    add r0,r2,#%d\n",x1);
+//            printf("    add r%d,r2,#%d\n",result_regri,x1);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
@@ -322,27 +335,51 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             printf("    ldr r1,=%s\n",arr1);
             printf("    ldr r2,=%s\n",arr2);
             printf("    add r0,r1,r2\n");
+//            printf("    add r%d,r1,r2\n",result_regri);
         }
+//        if(result>0){
+////            这样子表明是不需要存回内存的，也就是说结果存放在对应的寄存器之后就不需要操作了
+//            ;
+//        } else {
+//            需要将该值存回内存
+//            if(isLocalVarIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)){
+//                offset *node= HashMapGet(hashMap,value0);
+//
+////            if(node->memory){
+////                int x= get_value_offset_sp(hashMap,value0);
+////                printf("    str r0,[sp,#%d]\n",x);
+////            } else{
+////                int x=node->regr;
+////                printf("    mov r%d,r0\n",x);
+////            }
+//            } else if(isLocalArrayIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)) {
+//
+//            }
         if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
+//                printf("    fcvt.s32.f32 r0,s0\n");
                 printf("    str r0,[sp,#%d]\n",x);
             } else{
                 int x=node->regr;
+//                printf("    fcvt.s32.f32 r%d,s0\n",x);
                 printf("    mov r%d,r0\n",x);
             }
-        } else{
+        }
+        else{
             offset *node= HashMapGet(hashMap,value0);
             if(node->memory){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
+                printf("    fcvt.f32.s32 s0,r0\n");
                 printf("    vstr s0,[sp,#%d]\n",x);
             }else{
                 int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("    fcvt.f32.s32 s%d,r0\n",x);
             }
         }
+//        }
+
     }
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;

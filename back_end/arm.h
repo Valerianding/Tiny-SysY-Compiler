@@ -114,6 +114,5 @@ InstNode *arm_trans_MEMSET(InstNode *ins);
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack);
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
-
 void usage_of_global_variables();
 #endif //C22V1_ARM_H
