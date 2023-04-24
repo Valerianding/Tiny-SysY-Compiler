@@ -3,7 +3,6 @@
 //
 
 #include "DeadCodeElimination.h"
-
 void Mark(Function *currentFunction){
     //
     HashSet *workList = HashSetInit();   //放的是instruction *类型
@@ -36,6 +35,8 @@ void Mark(Function *currentFunction){
         printf("current at %d\n",instNode->i);
         HashSetRemove(workList,instNode);
 
+
+
         Value *insValue = ins_get_dest(instNode);
 
         Value *lhs = NULL;
@@ -44,6 +45,7 @@ void Mark(Function *currentFunction){
             lhs = ins_get_lhs(instNode);
         }
         if(insValue->NumUserOperands == (unsigned int)2){
+
             lhs = ins_get_lhs(instNode);
             rhs = ins_get_rhs(instNode);
         }
@@ -55,6 +57,10 @@ void Mark(Function *currentFunction){
 
         if(instNode->Opcode == Call){
             lhs = NULL;
+            rhs = NULL;
+        }
+
+        if(instNode->Opcode == GIVE_PARAM){
             rhs = NULL;
         }
 
@@ -72,26 +78,27 @@ void Mark(Function *currentFunction){
             HashSetAdd(workList,defRhs);
         }
 
-        //计算每条
-        BasicBlock *block = instNode->Parent;
 
-        printf("block : %d\n",block->id);
-        HashSetFirst(block->rdf);
-        for(BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)){
+        //除了br之外的每一条语句我们都需要去找reverseBlock
+        if(instNode->Opcode != br){
+            //计算每条
+            BasicBlock *block = instNode->Parent;
 
-            InstNode *rdfTail = rdf->tail_node;
+            printf("block : %d\n",block->id);
+            HashSetFirst(block->rdf);
+            for(BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)){
 
-            assert(rdfTail->inst->Opcode == br_i1);
+                InstNode *rdfTail = rdf->tail_node;
 
-            if(rdfTail->inst->isCritical == false){
-                rdfTail->inst->isCritical = true;
-                HashSetAdd(workList,rdfTail->inst);
+                assert(rdfTail->inst->Opcode == br_i1);
+
+                if(rdfTail->inst->isCritical == false){
+                    rdfTail->inst->isCritical = true;
+                    HashSetAdd(workList,rdfTail->inst);
+                }
             }
         }
     }
-
-
-    //
 }
 
 void Sweep(Function *currentFunction) {
@@ -102,7 +109,7 @@ void Sweep(Function *currentFunction) {
     while (currNode != tail->tail_node) {
         if (currNode->inst->isCritical == false) {
             if (currNode->inst->Opcode == br_i1) {
-
+                //rewrite i with a jump to i's nearest marked postdominator
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
             } else {

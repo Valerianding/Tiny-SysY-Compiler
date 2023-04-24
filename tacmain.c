@@ -73,7 +73,7 @@ int main(int argc, char* argv[]){
     travel_finish_type(instruction_list);
     printf_llvm_ir(instruction_list,argv[1]);
 //  fix_array(instruction_list);
-//  print_array(instruction_list);`
+//  print_array(instruction_list);
 //  showAst(TRoot,0);
 
     bblock_divide(instruction_list);
@@ -110,16 +110,16 @@ int main(int argc, char* argv[]){
         printf("------after a function------\n");
     }
 
-    // 建立phi 之后的
+     //建立phi 之后的
     printf_llvm_ir(instruction_list,argv[1]);
 
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){;
-//        Mark(currentFunction);
-//    }
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){;
+        Mark(currentFunction);
+    }
 
-//
-//    // phi上的优化
-//    printf_llvm_ir(instruction_list,argv[1]);
+
+    // phi上的优化
+    printf_llvm_ir(instruction_list,argv[1]);
 
 //    InstNode *temp2 = instruction_list;
 //    /* 测试所有instruction list */

@@ -33,7 +33,7 @@ struct _BasicBlock{
     HashSet *pDom;  //
     HashSet *rdf;  // reverse dominance frontier
     BasicBlock *iDom;
-    BasicBlock *iPDom; // post immediate dominance
+    BasicBlock *ipDom; // post immediate dominance
     DomTreeNode *domTreeNode;
     PostDomNode *postDomNode;
     HashSet *in; // 对应live-in

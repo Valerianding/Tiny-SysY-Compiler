@@ -24,6 +24,7 @@ struct _PostDomNode{
     int flag;
 };
 
+PostDomNode *createPostDomNode(BasicBlock *block, BasicBlock *ipDom);
 void calculate_dominance(Function *currentFunction);
 void calculate_dominance_frontier(Function *currentFunction);
 void calculate_iDominator(Function *currentFunction);

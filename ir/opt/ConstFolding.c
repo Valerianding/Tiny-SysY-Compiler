@@ -185,5 +185,3 @@ bool BranchOptimizing(Function *currentFunction) {
         branchNode = get_next_inst(branchNode);
     }
 }
-
-// 需要找到删除了哪些BasicBlocks
