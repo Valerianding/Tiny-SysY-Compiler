@@ -812,7 +812,11 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     //这里+1后可能溢出
                     value_init_int(v_offset,carry[v_array->pdata->symtab_array_pdata.dimention_figure-1]++);
 
-                    Instruction *gmp_last = ins_new_binary_operator(GEP, record[v_array->pdata->symtab_array_pdata.dimention_figure - 2], v_offset);
+                    Instruction *gmp_last=NULL;
+                    if(v_array->pdata->symtab_array_pdata.dimention_figure>1)
+                        gmp_last=ins_new_binary_operator(GEP, record[v_array->pdata->symtab_array_pdata.dimention_figure - 2], v_offset);
+                    else
+                        gmp_last= ins_new_binary_operator(GEP,begin_offset_value,v_offset);
                     //是最后一层吧
                     Value *v_gmp= ins_get_value_with_name(gmp_last);
                     //v_gmp->VTy->ID=AddressTyID;
@@ -845,7 +849,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
 
                     }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
-                        num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                        num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
                         num= create_call_func(p);
                     create_store_stmt(num,v_gmp);
@@ -1133,51 +1137,48 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
 
                 //一维数组,拷贝式赋初值,memcpy
                 //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
-                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
+//                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
+//                {
+//                    //以全局，memcpy的方式处理
+//                    if(vars->right->left==NULL)
+//                        handle_global_array(v_array,is_global,vars,0);
+//                    else
+//                        handle_global_array(v_array,is_global,vars,1);
+//
+//                    Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
+//                    //将这个instruction加入总list
+//                    InstNode *node = new_inst_node(instruction);
+//                    ins_node_add(instruction_list,node);
+//                }
+
+                int mem= get_array_total_occupy(v_array,0);
+                Value *v_mem=(Value*) malloc(sizeof (Value));
+                value_init_int(v_mem,mem);
+                Instruction *mem_set= ins_new_binary_operator(MEMSET,v1,v_mem);
+                //将这个instruction加入总list
+                InstNode *node_mem_set = new_inst_node(mem_set);
+                ins_node_add(instruction_list,node_mem_set);
+
+                if(vars->right->left!=NULL)
                 {
-                    //以全局，memcpy的方式处理
-                    if(vars->right->left==NULL)
-                        handle_global_array(v_array,is_global,vars,0);
-                    else
-                        handle_global_array(v_array,is_global,vars,1);
-
-                    Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
+                    //再来一条bitcast
+                    //!!!后续第一条一直用v2
+                    Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
+                    Value *v2= ins_get_value_with_name(ins_bitcast2);
+                    v2->alias=v1->alias;
                     //将这个instruction加入总list
-                    InstNode *node = new_inst_node(instruction);
-                    ins_node_add(instruction_list,node);
+                    InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
+                    ins_node_add(instruction_list,node_bitcast2);
+
+                    //存储num_int用的进位
+                    int carry[v_array->pdata->symtab_array_pdata.dimention_figure];
+                    for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
+                        carry[i]=0;
+
+                    //多维数组,挨个赋值型
+                    handle_one_dimention(init_val_list->left,v_array,v2,0,0,carry);
                 }
-                    //
-                else
-                {
-                    //TODO memset是否还需要我处理?
-                    int mem= get_array_total_occupy(v_array,0);
-                    Value *v_mem=(Value*) malloc(sizeof (Value));
-                    value_init_int(v_mem,mem);
-                    Instruction *mem_set= ins_new_binary_operator(MEMSET,v1,v_mem);
-                    //将这个instruction加入总list
-                    InstNode *node_mem_set = new_inst_node(mem_set);
-                    ins_node_add(instruction_list,node_mem_set);
 
-                    if(vars->right->left!=NULL)
-                    {
-                        //再来一条bitcast
-                        //!!!后续第一条一直用v2
-                        Instruction *ins_bitcast2= ins_new_unary_operator(bitcast,v1);
-                        Value *v2= ins_get_value_with_name(ins_bitcast2);
-                        v2->alias=v1->alias;
-                        //将这个instruction加入总list
-                        InstNode *node_bitcast2 = new_inst_node(ins_bitcast2);
-                        ins_node_add(instruction_list,node_bitcast2);
-
-                        //存储num_int用的进位
-                        int carry[v_array->pdata->symtab_array_pdata.dimention_figure];
-                        for(int i=0;i<v_array->pdata->symtab_array_pdata.dimention_figure;i++)
-                            carry[i]=0;
-
-                        //多维数组,挨个赋值型
-                        handle_one_dimention(init_val_list->left,v_array,v2,0,0,carry);
-                    }
-                }
             }
                 //TODO 是全局有初始化数组
             else
@@ -1256,7 +1257,7 @@ InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
 //root是&&或||,flag为是不是root为||，root->left是&&
 //结果为0是恒为假，为1是恒为真；为-1则表示没有经过短路判断
 //TODO 如果是b==1 && 0 && a==1这种常数在中间的情况，目前没有做短路，有llvm方式一样
-int handle_and_or(past root,bool flag)
+int handle_and_or(past root,bool flag,bool last_or)
 {
     //子层是否遇到||后&&的情况的本层记录，不影响本层的flag
     bool flag_notice=false;
@@ -1270,10 +1271,12 @@ int handle_and_or(past root,bool flag)
         if(strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0)
         {
             flag_notice=true;
-            result=handle_and_or(root->left,true);
+            result=handle_and_or(root->left,true,true);
         }
+        else if(strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0 && strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0)
+            result= handle_and_or(root->left,false,false);
         else
-            result=handle_and_or(root->left,false);
+            result=handle_and_or(root->left,false,true);
 
         //短路
         if(result==1 && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
@@ -1441,7 +1444,7 @@ int handle_and_or(past root,bool flag)
         //右边
         Value *v2=NULL;
         if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->right->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->right->sVal, '\0'), "||") == 0))
-            handle_and_or(root->right,false);
+            handle_and_or(root->right,false,true);
         else
         {
             if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0)
@@ -1529,7 +1532,11 @@ int handle_and_or(past root,bool flag)
                 //  ||
             else if(v2!=NULL)
             {
-                InstNode *ins1= true_location_handler(br_i1, v2, t_index++);
+                InstNode *ins1=NULL;
+                if(last_or==true)
+                    ins1= true_location_handler(br_i1, v2, t_index++);
+                else
+                    ins1= false_location_handler(br_i1,v2,t_index++);
                 insnode_push(&S_or,ins1);
             }
 
@@ -1677,7 +1684,7 @@ void create_if_stmt(past root,Value* v_return) {
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
-        result=handle_and_or(root->left,false);
+        result=handle_and_or(root->left,false,true);
         //一定为假，不用走了
         if(result==0)
         {
@@ -1845,7 +1852,7 @@ void create_if_else_stmt(past root,Value* v_return) {
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
-        result=handle_and_or(root->left,false);
+        result=handle_and_or(root->left,false,true);
     }
 
     InstNode *node1=NULL;
@@ -2055,7 +2062,7 @@ void create_while_stmt(past root,Value* v_return)
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
-        result=handle_and_or(root->left,false);
+        result=handle_and_or(root->left,false,true);
 
         if(result==0)
         {
@@ -2593,7 +2600,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 }
                 else if(x1->VTy->ID==Int || x1->VTy->ID==Float)
                     v1=x1;
-                else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==GlobalVarInt || x1->VTy->ID==Param_INT || x1->VTy->ID==Var_FLOAT || x1->VTy->ID==Param_FLOAT))
+                else if(!begin_tmp(x1->name) && (x1->VTy->ID==Var_INT || x1->VTy->ID==GlobalVarInt || x1->VTy->ID==GlobalVarFloat || x1->VTy->ID==Param_INT || x1->VTy->ID==Var_FLOAT || x1->VTy->ID==Param_FLOAT))
                 {
                     if(!begin_global(x1->name))
                         v1= create_load_stmt(x1->name);
@@ -2640,7 +2647,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 }
                 else if(x2->VTy->ID==Int || x2->VTy->ID==Float)
                     v2=x2;
-                else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==GlobalVarInt || x2->VTy->ID==Param_INT || x2->VTy->ID==Var_FLOAT || x2->VTy->ID==Param_FLOAT))
+                else if(!begin_tmp(x2->name) && (x2->VTy->ID==Var_INT || x2->VTy->ID==GlobalVarInt || x2->VTy->ID==GlobalVarFloat || x2->VTy->ID==Param_INT || x2->VTy->ID==Var_FLOAT || x2->VTy->ID==Param_FLOAT))
                 {
                     if(!begin_global(x2->name))
                         v2= create_load_stmt(x2->name);
@@ -2735,7 +2742,14 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                     //临时变量左值,v_tmp的pdata是没有实际内容的
                     Value *v_tmp= ins_get_value_with_name(instruction);
                     if(type!=Unknown)
-                        v_tmp->VTy->ID=type;
+                    {
+                        if(type==GlobalVarInt)
+                            v_tmp->VTy->ID=Var_INT;
+                        else if(type==GlobalVarFloat)
+                            v_tmp->VTy->ID=Var_FLOAT;
+                        else
+                            v_tmp->VTy->ID=type;
+                    }
                     else
                     {
                         if(v1->VTy->ID==Float || v1->VTy->ID==Var_FLOAT || v1->VTy->ID==GlobalVarFloat ||
@@ -4329,8 +4343,15 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case GLOBAL_VAR:
                 if(instruction->user.use_list->Val->VTy->ID!=ArrayTy_INT && instruction->user.use_list->Val->VTy->ID!=ArrayTy_FLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayInt && instruction->user.use_list->Val->VTy->ID!=GlobalArrayFloat && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstINT && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstINT)
                 {
-                    printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                    fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    if(instruction->user.use_list->Val->VTy->ID==GlobalVarInt)
+                    {
+                        printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    } else
+                    {
+                        printf("%s=dso_local global i32 %f,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr,"%s=dso_local global i32 %f,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
                 }
                 else
                 {
@@ -4448,6 +4469,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             printf("value2:%s,\t",type_str[vr->VTy->ID]);
         printf("\n\n");
 
+        if(instruction->isCritical){
+            printf("isCritical\n\n");
+        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
@@ -4567,6 +4591,10 @@ void travel_finish_type(struct _InstNode *instruction_node)
                     instruction->user.use_list->Val->VTy->ID=Var_FLOAT;
                     instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
                 }
+                else if(instruction->user.use_list->Val->VTy->ID==GlobalVarInt)
+                    instruction->user.value.VTy->ID=Var_INT;
+                else if(instruction->user.use_list->Val->VTy->ID==GlobalVarFloat)
+                    instruction->user.value.VTy->ID=Var_FLOAT;
                 else
                     instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
                 break;

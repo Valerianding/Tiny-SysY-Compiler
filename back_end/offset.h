@@ -23,6 +23,17 @@ typedef struct _offset{
 
 
 /**
+ * @details 全局变量使用一个单独的HashMap来进行存放
+ * @details 从value* 到 .LCPT%d_%d的映射
+ * @details 第一个%d是用来区分函数的，第二个%d是用来区分函数内的标号的
+ */
+
+//LCPILabel
+typedef struct _LCPILabel{
+    char LCPI[100];
+}LCPTLabel;
+
+/**
  * @details 初始化一个offset节点
  * @return offset指针
  */

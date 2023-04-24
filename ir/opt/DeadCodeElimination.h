@@ -7,11 +7,8 @@
 #include "function.h"
 #include "utility.h"
 bool DeadCodeElimination(Function *currentFunction);
-
+void Mark(Function *currentFunction);
+void Sweep(Function *currentFunction);
 void Clean(Function *currentFunction);
-
-void OnePass(Function *currentFunction);
-
-//phi生成后跑一次 phi函数消除之后
-bool DeleteUselessBasicBlocks(Function *currentFunction);
+bool OnePass(Queue *postQueue);
 #endif //C22V1_DEADCODEELIMINATION_H

@@ -156,6 +156,7 @@ void renameVariabels(Function *currentFunction) {
                         insName[j] = newName[i];
                         j++;
                     }
+                    insName[j] = '\0';
                     countVariable++;
                 }
             }

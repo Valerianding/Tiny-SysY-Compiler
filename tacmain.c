@@ -108,45 +108,51 @@ int main(int argc, char* argv[]){
         printf("after non locals\n");
         mem2reg(currentFunction);
         printf("------after a function------\n");
-        //loop(currentFunction);
-        //RunPasses(currentFunction);
     }
 
     // 建立phi 之后的
     printf_llvm_ir(instruction_list,argv[1]);
 
-    InstNode *temp2 = instruction_list;
-    /* 测试所有instruction list */
-    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
-        print_one_ins_info(temp2);
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){;
+//        Mark(currentFunction);
+//    }
 
-    block =  get_next_inst(instruction_list)->inst->Parent;
-    clear_visited_flag(block);
-    print_block_info(block);
+//
+//    // phi上的优化
+//    printf_llvm_ir(instruction_list,argv[1]);
 
-    //找到第一个function的
-    while(temp->inst->Parent->Parent == NULL){
-        temp = get_next_inst(temp);
-    }
-
-    block = temp->inst->Parent;
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        SSADeconstruction(currentFunction);
-        clear_visited_flag(currentFunction->entry);
-        printf("after out of SSA!\n");
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction->entry);
-   }
-
-    // 消除phi函数之后
-    //printf_llvm_ir(instruction_list,argv[1]);
-
-    //ljw_begin
-    // reg_control();
+//    InstNode *temp2 = instruction_list;
+//    /* 测试所有instruction list */
+//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
+//        print_one_ins_info(temp2);
+//    }
+//
+//    block =  get_next_inst(instruction_list)->inst->Parent;
+//    clear_visited_flag(block);
+//    print_block_info(block);
+//
+//    //找到第一个function的
+//    while(temp->inst->Parent->Parent == NULL){
+//        temp = get_next_inst(temp);
+//    }
+//
+//    block = temp->inst->Parent;
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        SSADeconstruction(currentFunction);
+//        clear_visited_flag(currentFunction->entry);
+//        printf("after out of SSA!\n");
+//        calculateLiveness(currentFunction);
+//        printLiveness(currentFunction->entry);
+//   }
+//
+//    // 消除phi函数之后
+//    printf_llvm_ir(instruction_list,argv[1]);
+//
+//    //ljw_begin
+//    reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
     //    ljf
-    //arm_translate_ins(instruction_list);
+    // arm_translate_ins(instruction_list);
     return 0;
 }

@@ -3,6 +3,9 @@
 //
 
 #include "offset.h"
+HashMap *global_hashmap;
+int func_num=0;
+int in_func_num=0;
 void offset_free(HashMap*hashMap){
     HashMapDeinit(hashMap);
     return;
@@ -12,9 +15,38 @@ offset *offset_node(){
     memset(node,0, sizeof(offset));
     return node;
 }
+void globalint_mapping(Value*value0,Value*value1){
+
+}
+
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num){
-    if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
+//    全局变量放在全局变量的global_hashmap里面
+    if(isGlobalVarFloatType(key->VTy)){
+
+        if(!HashMapContain(global_hashmap,key)){
+            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+            HashMapPut(global_hashmap,key,lcptLabel);
+        }
+
+    }else if(isGlobalVarIntType(key->VTy)){
+
+        if(!HashMapContain(global_hashmap,key)){
+            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+            HashMapPut(global_hashmap,key,lcptLabel);
+        }
+
+    }else if(isGlobalArrayIntType(key->VTy)){
+        ;
+    } else if(isGlobalArrayIntType(key->VTy)){
+        ;
+    }
+
+//    局部变量就是直接放在hashmap里面
+//    else
+    else if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
         if(!HashMapContain(hashMap,key)){
 //            printf("name:%s  keyname:%s\n",name,key->name);
             if(strcmp(key->name,name)<0 &&  strlen(key->name) <= strlen(name)){
@@ -55,20 +87,23 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
             }
         }
     }
-    else{
-//        %i为立即数
-        if(!HashMapContain(hashMap,key)){
-//            printf("haha\n");
-            offset *node=offset_node();
-            node->offset_sp=(*add_sp);
-            (*add_sp)+=4;
-            node->memory=true;
-            node->regs=-1;
-            node->regr=-1;
-//            printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
-            HashMapPut(hashMap,key,node);
-        }
-    }
+
+//    else{
+////        %i为立即数
+//        if(!HashMapContain(hashMap,key)){
+////            printf("haha\n");
+//            offset *node=offset_node();
+//            node->offset_sp=(*add_sp);
+//            (*add_sp)+=4;
+//            node->memory=true;
+//            node->regs=-1;
+//            node->regr=-1;
+////            printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
+//            HashMapPut(hashMap,key,node);
+//        }
+//    }
+
+
     return;
 }
 void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp){
@@ -104,6 +139,7 @@ void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value){
     return;
 }
 HashMap *offset_init(InstNode*ins,int *local_var_num){
+//    printf("local var num=%d\n",*local_var_num);
     HashMap *hashMap=HashMapInit();
     int sub_sp=0;
     int add_sp=0;
@@ -119,6 +155,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
         switch (ins->inst->Opcode) {
 //            case Alloca:
 //                用来处理数组何全局变量,数组可以不通过这个来获取处理相关的值
+
 
 //                这个需要补充
 //                Value * value0_alias=&ins->inst->user.value.alias;
@@ -179,6 +216,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 if(value0->VTy!=Unknown){
+//                    ==unknow说明回值为void
                     hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
                 }
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
@@ -194,6 +232,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num);
                 hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
+
                 break;
             case GIVE_PARAM:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -306,10 +345,13 @@ HashMap *offset_init(InstNode*ins,int *local_var_num){
                 break;
         }
     }
+
     if(ins->inst->Opcode==Return){
         Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
         hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num);
     }
+    func_num++;
+    in_func_num=0;
     return hashMap;
 //    if(param_num==0){
 ////        表示不存在参数传递
