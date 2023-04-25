@@ -3,6 +3,19 @@
 //
 
 #include "DeadCodeElimination.h"
+BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
+    bool marked = false;
+    BasicBlock *parent = postDomNode->parent;
+    InstNode *currNode = parent->head_node;
+    while(currNode != parent->tail_node){
+        if(currNode->inst->isCritical == true){
+            return parent;
+        }
+        currNode = get_next_inst(currNode);
+    }
+    return findNearestMarkedPostDominator(parent->postDomNode);
+}
+
 void Mark(Function *currentFunction){
     //
     HashSet *workList = HashSetInit();   //放的是instruction *类型
@@ -34,8 +47,6 @@ void Mark(Function *currentFunction){
 
         printf("current at %d\n",instNode->i);
         HashSetRemove(workList,instNode);
-
-
 
         Value *insValue = ins_get_dest(instNode);
 
@@ -69,15 +80,40 @@ void Mark(Function *currentFunction){
             printf("lhs : %s\n ",lhs->name);
             Instruction *defLhs = (Instruction*)lhs;
             assert(defLhs != NULL);
-            HashSetAdd(workList,defLhs);
+            if(defLhs->isCritical == false){
+                defLhs->isCritical = true;
+                HashSetAdd(workList,defLhs);
+            }
         }
+
         if(rhs != NULL && !isImm(rhs)){
             printf("rhs : %s\n ",rhs->name);
             Instruction *defRhs = (Instruction*)rhs;
             assert(defRhs != NULL);
-            HashSetAdd(workList,defRhs);
+            if(defRhs->isCritical == false){
+                defRhs->isCritical = true;
+                HashSetAdd(workList,defRhs);
+            }
         }
 
+        // 如果是phi函数的话还需要special care about this
+        if(instNode->Opcode == Phi){
+            //如果是phi的话还需要特殊处理
+            HashSetFirst(insValue->pdata->pairSet);
+            for(pair *phiInfo = HashSetNext(insValue->pdata->pairSet); phiInfo != NULL; phiInfo = HashSetNext(insValue->pdata->pairSet)){
+                Value* src = phiInfo->define;
+                // 有
+                if(!isImm(src)) {
+                    //不是
+                    Instruction *ins = (Instruction*)src;
+                    if(ins->isCritical == false){
+                        ins->isCritical = true;
+                        //添加进workList
+                        HashSetAdd(workList,ins);
+                    }
+                }
+            }
+        }
 
         //除了br之外的每一条语句我们都需要去找reverseBlock
         if(instNode->Opcode != br){
@@ -109,7 +145,25 @@ void Sweep(Function *currentFunction) {
     while (currNode != tail->tail_node) {
         if (currNode->inst->isCritical == false) {
             if (currNode->inst->Opcode == br_i1) {
-                //rewrite i with a jump to i's nearest marked postdominator
+                //rewrite i with a jump to i's nearest marked postDominator
+                BasicBlock *block = currNode->inst->Parent;
+
+                // 找到它的post Dominator
+                PostDomNode *postDomNode = block->postDomNode;
+
+                BasicBlock *markedPostDominator = findNearestMarkedPostDominator(postDomNode);
+
+                //修改它的后继节点
+                block->true_block = markedPostDominator;
+                //
+
+                // TODO 修改marked postDominator的前驱节点  暂时不修改后面需要的时候重新计算
+
+
+                // rewrite this branch with a jump instruction
+                InstNode *branchNode = block->tail_node;
+
+                //山区
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
             } else {

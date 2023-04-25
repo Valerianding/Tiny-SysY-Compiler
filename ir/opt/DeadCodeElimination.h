@@ -6,6 +6,7 @@
 #define C22V1_DEADCODEELIMINATION_H
 #include "function.h"
 #include "utility.h"
+#include "dominance.h"
 bool DeadCodeElimination(Function *currentFunction);
 void Mark(Function *currentFunction);
 void Sweep(Function *currentFunction);

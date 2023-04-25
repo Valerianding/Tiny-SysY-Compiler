@@ -91,14 +91,44 @@
 //    c=sub(a,b);
 //    return 0;
 //}
+
 int test(){
     int a = 1;
+    int c = 2;
     a = getint() + 1;
     if(a > 1){
+        c = c + 1;
         a = a + 1;
     }else{
         a = a - 1;
     }
-    int c = 2;
     return c;
 }
+
+//int main(){
+//    int a = getint();
+//    int b = getint();
+//    int c = 1;
+//    while(c < 1){
+//        int temp = a;
+//        a = b;
+//        b = temp;
+//        c = c + 1;
+//    }
+//    return 1;
+//}
+
+
+//phi的计算
+//int main(){
+//    int a = 5;
+//    int b = 10;
+//    int c = 15;
+//    while(c > 5){
+//        int temp = a;
+//        a = b;
+//        b = temp;
+//        c = c - 1;
+//    }
+//    return a;
+//}
