@@ -43,6 +43,7 @@ then
     do
         out_value=1
         filename=${file%.*}
+        FILE_IN=$filename$file_in
         echo ${filename}
         cd ../
         # ./compiler >a.log

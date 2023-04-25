@@ -1196,6 +1196,10 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                    printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                else
+                    printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                 break;
             case FunEnd:
                 printf("}\n\n");
@@ -2565,6 +2569,14 @@ void travel_ir(InstNode *instruction_node)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
+                if(instruction->user.use_list->Val->VTy->ID==Int) ;
+                    // printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                else
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].dest_use=1;
+                    // printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                }
                 break;
             case FunEnd:
                 // printf("}\n\n");
