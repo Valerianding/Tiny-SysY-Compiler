@@ -771,6 +771,7 @@ void insert_func_params(past params)
             {
                 v->VTy->ID=AddressTyID;
                 v->pdata->symtab_array_pdata.dimention_figure=1;
+                v->pdata->symtab_array_pdata.dimentions[0]=-1;
             }
             //多维数组
             else{
@@ -782,6 +783,7 @@ void insert_func_params(past params)
                     v->pdata->symtab_array_pdata.dimentions[v->pdata->symtab_array_pdata.dimention_figure]=get_dimension->iVal;
                     v->pdata->symtab_array_pdata.dimention_figure++;
                     get_dimension=get_dimension->next;
+                   // v->pdata->symtab_array_pdata.dimention_figure++;
                 }
             }
             if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)
