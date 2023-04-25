@@ -18,4 +18,5 @@ void HashSetClean(HashSet *set);
 BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block);
 bool hasNoDestOperator(InstNode *insNode);
 InstNode *findNode(BasicBlock *block,Instruction *inst);
+bool isCriticalOperator(InstNode *insNode);
 #endif //C22V1_UTILITY_H

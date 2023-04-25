@@ -43,12 +43,13 @@ then
     do
         out_value=1
         filename=${file%.*}
+        FILE_IN=$filename$file_in
         echo ${filename}
         cd ../
         # ./compiler >a.log
         ./cmake-build-debug/compiler test_cases/$filename$file_c
         ret=$?
-        if [ $ret -ne $stm ]
+        if [ $ret -ne $stm ]2
         then
         let le_count+=1
         echo "$FILE_LL not exist"

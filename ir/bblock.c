@@ -200,7 +200,6 @@ void delete_inst(InstNode *this){
 void print_block_info(BasicBlock *this){
     InstNode *currNode = this->head_node;
     while(currNode != NULL) {
-        printf("currNode id is %d\n",currNode->inst->i);
         BasicBlock *block = currNode->inst->Parent;
         if(block->visited == false){
             block->visited = true;
