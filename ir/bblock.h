@@ -94,7 +94,11 @@ void ins_insert_after(InstNode *this,InstNode *pos);
 void ins_insert_before(InstNode *this, InstNode *pos);
 
 /// 删除某个inst
-void delete_inst(InstNode *this);
+void removeIns(InstNode *this);
+
+void deleteIns(InstNode *this);
+
+void Inst(InstNode *this);
 
 InstNode *ins_get_funcHead(InstNode *this);
 #endif

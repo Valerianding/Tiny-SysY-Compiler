@@ -180,7 +180,7 @@ InstNode *ins_get_funcHead(InstNode *this){
     return nullptr;
 }
 
-void delete_inst(InstNode *this){
+void removeIns(InstNode *this){
     InstNode *prev = get_prev_inst(this);
     InstNode *next = get_next_inst(this);
     if(prev == NULL && next != NULL){
@@ -194,7 +194,41 @@ void delete_inst(InstNode *this){
         next->list.prev = &(prev->list);
         prev->list.next = &(next->list);
     }
-    //free(this);
+}
+
+
+void deleteIns(InstNode *this){
+    //首先我们需要释放内存
+    //判断一下当前有多少个use呢
+    Value *insValue = ins_get_dest(this->inst);
+    unsigned int count = insValue->NumUserOperands;
+
+    //释放use
+    for(unsigned int i = 0; i < count; i++){
+       Use *pUse = user_get_operand_use(&this->inst->user,i);
+       use_remove_from_list(pUse);
+    }
+
+    //还有什么是需要释放
+
+    if(this->inst->Opcode == Phi){
+        HashSetDeinit(insValue->pdata->pairSet);
+    }
+
+
+    InstNode *prev = get_prev_inst(this);
+    InstNode *next = get_next_inst(this);
+    if(prev == NULL && next != NULL){
+        next->list.prev = NULL;
+    }
+    else if(prev != NULL && next == NULL){
+        prev->list.next = NULL;
+    }
+        // 要么就都不为空
+    else{
+        next->list.prev = &(prev->list);
+        prev->list.next = &(next->list);
+    }
 }
 
 void print_block_info(BasicBlock *this){

@@ -64,7 +64,7 @@ bool ConstFolding(Function *currentFunction){
                     //我们直接改了dest所以就不用value replace
                     effective = true;
                     InstNode *nextNode = get_next_inst(currNode);
-                    delete_inst(currNode);
+                    deleteIns(currNode);
                     currNode = nextNode;
                 }else{
                     currNode = get_next_inst(currNode);
