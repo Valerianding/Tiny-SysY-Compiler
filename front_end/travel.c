@@ -422,7 +422,7 @@ void create_return_stmt(past root,Value* v_return) {
             if(v!=NULL)
                 instruction = ins_new_unary_operator(Return, v);
             else
-                instruction = ins_new_unary_operator(Return, NULL);
+                instruction = ins_new_zero_operator(Return);
 
             //将这个instruction加入总list
             InstNode *node = new_inst_node(instruction);
@@ -442,7 +442,7 @@ void create_return_stmt(past root,Value* v_return) {
         }
         else
         {
-            instruction = ins_new_unary_operator(Return, NULL);
+            instruction = ins_new_zero_operator(Return);
             //将这个instruction加入总list
             InstNode *node = new_inst_node(instruction);
             ins_node_add(instruction_list,node);
@@ -1218,15 +1218,15 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
 {
     Instruction *instruction;
     if(type == br)
-        instruction= ins_new_unary_operator(br, NULL);
+        instruction= ins_new_zero_operator(br);
     else if(type == br_i1)
-        instruction= ins_new_unary_operator(br_i1, v_real);
+        instruction= ins_new_zero_operator(br_i1);
     else if(type==br_i1_true)
-        instruction= ins_new_unary_operator(br_i1_true,NULL);
+        instruction= ins_new_zero_operator(br_i1_true);
     else if(type==br_i1_false)
-        instruction= ins_new_unary_operator(br_i1_false,NULL);
+        instruction= ins_new_zero_operator(br_i1_false);
     else
-        instruction= ins_new_unary_operator(Label,NULL);
+        instruction= ins_new_zero_operator(Label);
     Value *T1= ins_get_dest(instruction);
     if(true_goto_location>0)
         T1->pdata->instruction_pdata.true_goto_location=true_goto_location;
@@ -1964,7 +1964,7 @@ void create_while_stmt(past root,Value* v_return)
     int convert=0;
 
     //加进stack，continue用
-    Instruction *ins_tmp= ins_new_unary_operator(tmp,NULL);
+    Instruction *ins_tmp= ins_new_zero_operator(tmp);
     Value *t_in= ins_get_dest(ins_tmp);
     t_in->pdata->instruction_pdata.true_goto_location=t_index;
     insnode_push(&S_continue, new_inst_node(ins_tmp));
@@ -2133,7 +2133,7 @@ void create_while_stmt(past root,Value* v_return)
     if(ins_false!=NULL)
         ins_false->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index-1;
 
-    Instruction *ins_1_tmp= ins_new_unary_operator(tmp,NULL);
+    Instruction *ins_1_tmp= ins_new_zero_operator(tmp);
     Value *t_1= ins_get_dest(ins_1_tmp);
     t_1->pdata->instruction_pdata.true_goto_location=-1;
 
@@ -2175,7 +2175,7 @@ void create_func_def(past root) {
     {
         if(v->pdata->symtab_func_pdata.return_type.ID != VoidTyID)
         {
-            Instruction *instruction= ins_new_unary_operator(Alloca, NULL);
+            Instruction *instruction= ins_new_zero_operator(Alloca);
             v_return= ins_get_value_with_name(instruction);            //只有v_return没有alias
             //将这个instruction加入总list
             InstNode *node = new_inst_node(instruction);
@@ -2279,7 +2279,7 @@ void create_func_def(past root) {
     //如果没有return，即void返回
     if(return_stmt_num[return_index]==0)
     {
-        Instruction *ins_ret_void= ins_new_unary_operator(Return,NULL);
+        Instruction *ins_ret_void= ins_new_zero_operator(Return);
         //将这个instruction加入总list
         InstNode *node_void = new_inst_node(ins_ret_void);
         ins_node_add(instruction_list,node_void);
