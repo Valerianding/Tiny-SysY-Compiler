@@ -3975,6 +3975,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                                     printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
                                     printf("* ");
                                     fprintf(fptr,"* ");
+                                    printf("%s",one_param[i]->inst->user.use_list->Val->name);
+                                    fprintf(fptr,"%s",one_param[i]->inst->user.use_list->Val->name);
                                 }
                             }
                             else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
@@ -4503,22 +4505,22 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             default:
                 break;
         }
-
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
-
-        if(instruction->isCritical){
-            printf("isCritical\n\n");
-        }
+//
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
+//
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
