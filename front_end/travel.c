@@ -1628,7 +1628,7 @@ void create_if_stmt(past root,Value* v_return) {
             if(get_last_inst(instruction_list)->inst->Opcode==zext)
             {
                 //zext前面一定是xor
-                delete_inst(get_last_inst(instruction_list));
+                deleteIns(get_last_inst(instruction_list));
             }
             else
             {
@@ -1662,7 +1662,7 @@ void create_if_stmt(past root,Value* v_return) {
             if(get_last_inst(instruction_list)->inst->Opcode==zext)
             {
                 //zext前面一定是xor
-                delete_inst(get_last_inst(instruction_list));
+                deleteIns(get_last_inst(instruction_list));
             }
             else
             {
@@ -1796,7 +1796,7 @@ void create_if_else_stmt(past root,Value* v_return) {
             if(get_last_inst(instruction_list)->inst->Opcode==zext)
             {
                 //zext前面一定是xor
-                delete_inst(get_last_inst(instruction_list));
+                deleteIns(get_last_inst(instruction_list));
             }
             else
             {
@@ -1830,7 +1830,7 @@ void create_if_else_stmt(past root,Value* v_return) {
             if(get_last_inst(instruction_list)->inst->Opcode==zext)
             {
                 //zext前面一定是xor
-                delete_inst(get_last_inst(instruction_list));
+                deleteIns(get_last_inst(instruction_list));
             }
             else
             {
@@ -2006,7 +2006,7 @@ void create_while_stmt(past root,Value* v_return)
             if(get_last_inst(instruction_list)->inst->Opcode==zext)
             {
                 //zext前面一定是xor
-                delete_inst(get_last_inst(instruction_list));
+                deleteIns(get_last_inst(instruction_list));
             }
             else
             {
@@ -2040,7 +2040,7 @@ void create_while_stmt(past root,Value* v_return)
             if(get_last_inst(instruction_list)->inst->Opcode==zext)
             {
                 //zext前面一定是xor
-                delete_inst(get_last_inst(instruction_list));
+                deleteIns(get_last_inst(instruction_list));
             }
             else
             {
@@ -2339,7 +2339,7 @@ void create_func_def(past root) {
 
     if(get_last_inst(instruction_list)->inst->Opcode==Label)
     {
-        delete_inst(get_last_inst(instruction_list));
+        deleteIns(get_last_inst(instruction_list));
     }
 
     //FuncEnd
