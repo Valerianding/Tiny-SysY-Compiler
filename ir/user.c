@@ -25,7 +25,14 @@ User* user_construct(void* place, int use_num){
     Use *Start = (Use *)(place);
     Use *End = Start + use_num;
     User *Obj = (User *)(End);
-    Obj->use_list = Start;
+    if(use_num == 0){
+        Obj->use_list = NULL;
+        Obj->value.NumUserOperands = 0;
+        Obj->value.HasHungOffUses = false;
+        return Obj;
+    }else{
+        Obj->use_list = Start;
+    }
     Obj->value.NumUserOperands = use_num;
     Obj->value.HasHungOffUses = false;
 

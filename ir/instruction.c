@@ -20,8 +20,6 @@ Instruction* ins_new(int op_num){
     ins->Parent = NULL;
     ins->isCritical = false;
     value_init((Value*)ins);
-    User *user = (User*)ins;
-    user->use_list = NULL;
     /* 在这里已经设置了指令的操作数个数 */
     user_construct(storage, op_num);
     return (Instruction*)(storage+use_size);
@@ -45,6 +43,7 @@ Instruction *ins_new_zero_operator(int Op){
     Instruction* inst = ins_new(0);
     inst->Opcode = Op;
     inst->i = instruction_uid;
+    inst->isCritical = true;
     instruction_uid++;
     return inst;
 }
@@ -54,7 +53,6 @@ Instruction *ins_new_unary_operator(int Op,Value *S1){
     Use* pUse = user_get_operand_use(&inst->user,0);
     assert(pUse != NULL);
     use_set_value(pUse,S1);
-
     inst->Opcode = Op;
     inst->i = instruction_uid;
     instruction_uid++;
