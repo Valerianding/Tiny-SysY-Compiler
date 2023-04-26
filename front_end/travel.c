@@ -616,7 +616,7 @@ void handle_global_array(Value* v_array,bool is_global,past vars,int flag)
         }
     }
 
-    Instruction *instruction= ins_new_binary_operator(GLOBAL_VAR,v_array,NULL);
+    Instruction *instruction= ins_new_unary_operator(GLOBAL_VAR,v_array);
 
     //替换一下value
     Value *v_replace= ins_get_global_value(instruction,v_array->name);
@@ -1220,7 +1220,7 @@ InstNode *true_location_handler(int type,Value *v_real,int true_goto_location)
     if(type == br)
         instruction= ins_new_zero_operator(br);
     else if(type == br_i1)
-        instruction= ins_new_zero_operator(br_i1);
+        instruction= ins_new_unary_operator(br_i1,v_real);
     else if(type==br_i1_true)
         instruction= ins_new_zero_operator(br_i1_true);
     else if(type==br_i1_false)
@@ -2308,7 +2308,11 @@ void create_func_def(past root) {
         }
 
         //3.最后生成ret
-        Instruction *ins_final= ins_new_unary_operator(Return,final_ret);
+        Instruction *ins_final= NULL;
+        if(final_ret==NULL)
+            ins_final=ins_new_zero_operator(Return);
+        else
+            ins_final=ins_new_unary_operator(Return,final_ret);
         //将这个instruction加入总list
         InstNode *node = new_inst_node(ins_final);
         ins_node_add(instruction_list,node);
@@ -3424,7 +3428,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
-                if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
+                if(instruction->user.use_list!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
                 {
                     printf(" %s = alloca ",instruction->user.value.name);
                     fprintf(fptr," %s = alloca ",instruction->user.value.name);
@@ -3432,7 +3436,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     printf(",align 16\n");
                     fprintf(fptr,",align 16\n");
                 }
-                else if(instruction->user.use_list->Val!=NULL && instruction->user.use_list->Val->VTy->ID==AddressTyID)
+                else if(instruction->user.use_list!=NULL && instruction->user.use_list->Val->VTy->ID==AddressTyID)
                 {
                     if(instruction->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
                     {
@@ -3723,7 +3727,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     {
                         if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
                         {
-                            while(node2->inst->user.use_list->Val==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+                            while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
                                 node2=get_next_inst(node2);      //node2能指向真实value
                             if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
                             {
@@ -3747,7 +3751,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     {
                         if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
                         {
-                            while(node2->inst->user.use_list->Val==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+                            while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
                                 node2=get_next_inst(node2);      //node2能指向真实value
                             if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
                             {
@@ -3776,7 +3780,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 fprintf(fptr,") #0{\n");
                 break;
             case Return:
-                if(instruction->user.use_list->Val==NULL)
+                if(instruction->user.use_list==NULL)
                 {
                     printf(" ret void\n");
                     fprintf(fptr," ret void\n");
@@ -4594,7 +4598,7 @@ void travel_finish_type(struct _InstNode *instruction_node)
         {
             case Alloca:
                 //如果是存返回值的
-                if(instruction->user.use_list->Val==NULL)
+                if(instruction->user.use_list==NULL)
                     instruction->user.value.VTy->ID= get_prev_inst(instruction_node)->inst->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID;
                 else
                 {
