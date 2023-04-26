@@ -2678,6 +2678,7 @@ void addtolive(char * name,int tacid)
             return ;
         }
     live[var_num].name=name;
+    live[var_num].last=tacid;
     live[var_num++].first=tacid;
     return ;
 }
@@ -2723,8 +2724,8 @@ void bian_init()
             create_bian(i,j);
         }
     }
-    for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%s\t%s\n",i,echo_tac[i].dest_name,echo_tac[i].left_name,echo_tac[i].right_name);
-    for(int i=0;i<var_num;i++)  printf("%d:%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%s\t%s\n",i,echo_tac[i].dest_name,echo_tac[i].left_name,echo_tac[i].right_name);
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
 }
 
 
