@@ -206,7 +206,8 @@ void deleteIns(InstNode *this){
     //释放use
     for(unsigned int i = 0; i < count; i++){
        Use *pUse = user_get_operand_use(&this->inst->user,i);
-       use_remove_from_list(pUse);
+       if(pUse->Val != NULL)
+           use_remove_from_list(pUse);
     }
 
     //还有什么是需要释放

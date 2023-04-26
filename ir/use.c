@@ -13,7 +13,8 @@ void use_add_to_list(Use *this, Use **List) {
 }
 
 void use_remove_from_list(Use *this) {
-    *(this->Prev) = this->Next;
+    if(this->Prev)
+        *(this->Prev) = this->Next;
     if (this->Next)
         this->Next->Prev = this->Prev;
 }

@@ -175,14 +175,15 @@ void Sweep(Function *currentFunction) {
                 insValue->pdata->instruction_pdata.true_goto_location = markedPostDominator->id;
                 block->tail_node = jumpNode;
 
-//                InstNode
-//                //上下连接
-//                ins_insert_after(jumpNode,)
+                InstNode *jumpPrev = get_prev_inst(jumpNode);
+                ins_insert_after(jumpNode,jumpPrev);
+
+
+                // TODO 解决掉后面可能会引起的phi函数的冲突问题
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
             } else {
                 // 除了br不变的话其他的
-
                 // TODO 解决delete_inst相关的问题
                 InstNode *nextNode = get_next_inst(currNode);
                 deleteIns(currNode);
@@ -191,6 +192,13 @@ void Sweep(Function *currentFunction) {
         } else {
             currNode = get_next_inst(currNode);
         }
+    }
+}
+
+//
+void postOrderTraversal(Queue *postQueue, BasicBlock *block){
+    if(block->true_block && block->true_block->tail_node){
+
     }
 }
 
@@ -214,5 +222,4 @@ bool OnePass(Queue* postQueue){
     BasicBlock *block = NULL;
     QueueFront(postQueue,(void *)&block);
     assert(block != NULL);
-
 }
