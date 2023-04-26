@@ -128,13 +128,13 @@ void mem2reg(Function *currentFunction){
             //不存在loadSet之中不存在这个value
             //删除这个instruction
             InstNode *next = get_next_inst(curNode);
-            delete_inst(curNode);
+            deleteIns(curNode);
             curNode = next;
         }else if(curNode->inst->Opcode == Store) {
             Value *storeValue = ins_get_rhs(curNode->inst);
             if(isLocalVar(storeValue) && !HashMapContain(currentFunction->loadSet, storeValue)){
                 InstNode *next = get_next_inst(curNode);
-                delete_inst(curNode);
+                deleteIns(curNode);
                 curNode = next;
             }else{
                 curNode = get_next_inst(curNode);
@@ -507,7 +507,7 @@ void deleteLoadStore(Function *currentFunction){
                 Value *insValue = ins_get_dest(curr->inst);
                 if(isLocalVar(insValue)){
                     InstNode *next = get_next_inst(curr);
-                    delete_inst(curr);
+                    deleteIns(curr);
                     curr = next;
                 }else{
                     curr = get_next_inst(curr);
@@ -518,7 +518,7 @@ void deleteLoadStore(Function *currentFunction){
                 Value *loadValue = ins_get_lhs(curr->inst);
                 if(isLocalVar(loadValue)){
                     InstNode *next = get_next_inst(curr);
-                    delete_inst(curr);
+                    deleteIns(curr);
                     curr = next;
                 }else{
                     curr = get_next_inst(curr);
@@ -529,7 +529,7 @@ void deleteLoadStore(Function *currentFunction){
                 Value *storeValue = ins_get_rhs(curr->inst);
                 if(isLocalVar(storeValue)){
                     InstNode *next = get_next_inst(curr);
-                    delete_inst(curr);
+                    deleteIns(curr);
                     curr = next;
                 }else{
                     curr = get_next_inst(curr);
@@ -637,12 +637,12 @@ void correctPhiNode(Function *currentFunction){
                 }
 
                 InstNode *nextNode = get_next_inst(currNode);
-                delete_inst(currNode);
+                deleteIns(currNode);
                 currNode = nextNode;
             }else if(HashSetSize(phiSet) == 0){
                 changed = true;
                 InstNode *nextNode = get_next_inst(currNode);
-                delete_inst(currNode);
+                deleteIns(currNode);
                 currNode = nextNode;
             }else{
               currNode = get_next_inst(currNode);
@@ -775,7 +775,7 @@ void SSADeconstruction(Function *currentFunction){
                     }
                 }
                 InstNode *nextNode = get_next_inst(phiNode);
-                delete_inst(phiNode);
+                deleteIns(phiNode);
                 phiNode = nextNode;
             }
         }
@@ -860,7 +860,7 @@ void prunePhi(Function *currentFunction){
             if(phiValue->IsPhi == true && phiValue->Useless == true){
                 InstNode *nextNode = get_next_inst(currNode);
                 printf("delete a phiNode! -------\n");
-                delete_inst(currNode);
+                deleteIns(currNode);
                 currNode = nextNode;
             }else{
                 currNode = get_next_inst(currNode);
@@ -902,7 +902,7 @@ void sequentialCopy(Function *currentFunction){
                     use_remove_from_list(copyIns->inst->user.use_list);
                     // 删除parallelCopy语句 再seq的时候我们再进行插入
                     InstNode *nextIns = get_next_inst(copyIns);
-                    delete_inst(copyIns);
+                    deleteIns(copyIns);
                     copyIns = nextIns;
                 }else{
                     copyIns = get_next_inst(copyIns);

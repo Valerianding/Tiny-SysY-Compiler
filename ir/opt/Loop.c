@@ -279,7 +279,7 @@ void loopVariant(HashSet *loop, BasicBlock *head){
             InstNode *Node = findNode(defineBlock,instNode);
 
             // remove from
-            delete_inst(Node);
+            removeIns(Node);
             // 放到前驱基本块的前面
             InstNode *loopPrevTail = loopPrev->tail_node;
             ins_insert_before(Node,loopPrevTail);
@@ -396,7 +396,7 @@ void loopVariant(HashSet *loop, BasicBlock *head){
 
         if(moveAble){
             // remove from
-            delete_inst(instNode);
+            removeIns(instNode);
             // 放到前驱基本块的前面
             InstNode *loopPrevTail = loopPrev->tail_node;
             ins_insert_before(instNode,loopPrevTail);

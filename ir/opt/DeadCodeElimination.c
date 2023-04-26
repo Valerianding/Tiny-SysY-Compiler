@@ -159,11 +159,25 @@ void Sweep(Function *currentFunction) {
 
                 // TODO 修改marked postDominator的前驱节点  暂时不修改后面需要的时候重新计算
 
-
                 // rewrite this branch with a jump instruction
                 InstNode *branchNode = block->tail_node;
 
-                //山区
+                //先delete吧，这样也释放了内存
+                deleteIns(branchNode);
+
+                Instruction *jumpIns = ins_new_zero_operator(br);
+                InstNode *jumpNode = new_inst_node(jumpIns);
+                jumpIns->Parent = block;
+
+                Value *insValue = ins_get_dest(jumpIns);
+
+                //跳转到这个位置
+                insValue->pdata->instruction_pdata.true_goto_location = markedPostDominator->id;
+                block->tail_node = jumpNode;
+
+//                InstNode
+//                //上下连接
+//                ins_insert_after(jumpNode,)
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
             } else {
@@ -171,7 +185,7 @@ void Sweep(Function *currentFunction) {
 
                 // TODO 解决delete_inst相关的问题
                 InstNode *nextNode = get_next_inst(currNode);
-                delete_inst(currNode);
+                deleteIns(currNode);
                 currNode = nextNode;
             }
         } else {

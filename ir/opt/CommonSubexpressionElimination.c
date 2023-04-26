@@ -104,12 +104,10 @@ bool commonSubexpression(BasicBlock *block){
                     assert(replace != NULL);
                     value_replaceAll(dest,replace);
                     //TODO phi 里面的还是没有更新的
-
                     //删除当前InstNode;
                     InstNode *next = get_next_inst(currNode);
-
                     //TODO 删除之后内存并没有修改
-                    delete_inst(currNode);
+                    deleteIns(currNode);
                     currNode = next;
                 }else{
                     Subexpression *newSubExpression = createSubExpression(lhs,rhs,currNode->inst->Opcode);
