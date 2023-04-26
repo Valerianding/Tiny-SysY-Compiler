@@ -19,9 +19,9 @@ Instruction* ins_new(int op_num){
     Instruction* ins = (Instruction*)(storage+use_size);
     ins->Parent = NULL;
     ins->isCritical = false;
+    value_init((Value*)ins);
     User *user = (User*)ins;
     user->use_list = NULL;
-    value_init((Value*)ins);
     /* 在这里已经设置了指令的操作数个数 */
     user_construct(storage, op_num);
     return (Instruction*)(storage+use_size);
