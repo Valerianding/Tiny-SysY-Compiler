@@ -1274,28 +1274,16 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
         }
 
         Value *v,*vl,*vr;
-        // v= ins_get_dest(instruction_node->inst);
-        // vl= ins_get_lhs(instruction_node->inst);
-        // vr= ins_get_rhs(instruction_node->inst);
-        // if(v!=NULL)
-        //     printf("left:%s,\t",_type_str[v->VTy->ID]);
-        // if(vl!=NULL)
-        //     printf("value1:%s,\t",_type_str[vl->VTy->ID]);
-        // if(vr!=NULL)
-        //     printf("value2:%s,\t",_type_str[vr->VTy->ID]);
-        // printf("\n");
-
-        
-        // if(use_type(instruction_node))
-        // {
-        //     if(v!=NULL&&is_Immediate(v->VTy->ID)==0)
-        //     printf("%d\t",instruction->_reg_[0]);
-        //     if(vl!=NULL&&is_Immediate(vl->VTy->ID)==0)
-        //         printf("%d\t",instruction->_reg_[1]);
-        //     if(vr!=NULL&&is_Immediate(vr->VTy->ID)==0)
-        //         printf("%d\t",instruction->_reg_[2]);   
-        //     printf("\n");
-        // }
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",_type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",_type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",_type_str[vr->VTy->ID]);
+        printf("\n");
         for(int i=0;i<3;i++)
         {
             if(instruction->_reg_[i]!=0)    printf("reg%d:%d",i,instruction->_reg_[i]);
