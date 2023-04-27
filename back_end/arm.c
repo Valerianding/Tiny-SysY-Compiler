@@ -5397,9 +5397,15 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 // 数组初始化
 // 获取栈帧首地址使用的是%i，不需要进到alias中
     Value *array= user_get_operand_use(&ins->inst->user,0)->Val;
-
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
     for(;get_next_inst(ins)->inst->Opcode == GEP;){
         ins= get_next_inst(ins);
+        Value *value0=&ins->inst->user.value;
+        Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+        Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+        printf("GEP test\n");
     }
 //    这里得到最后一条GMP指令
     int off_sp= get_value_offset_sp(hashMap,array)+ins->inst->user.value.pdata->var_pdata.iVal*4;
