@@ -1274,16 +1274,18 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
         }
 
         Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",_type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",_type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",_type_str[vr->VTy->ID]);
-        printf("\n");
+        // v= ins_get_dest(instruction_node->inst);
+        // vl= ins_get_lhs(instruction_node->inst);
+        // vr= ins_get_rhs(instruction_node->inst);
+        // if(v!=NULL)
+        //     printf("left:%s,\t",_type_str[v->VTy->ID]);
+        // if(vl!=NULL)
+        //     printf("value1:%s,\t",_type_str[vl->VTy->ID]);
+        // if(vr!=NULL)
+        //     printf("value2:%s,\t",_type_str[vr->VTy->ID]);
+        // printf("\n");
+
+        
         // if(use_type(instruction_node))
         // {
         //     if(v!=NULL&&is_Immediate(v->VTy->ID)==0)
@@ -2650,7 +2652,7 @@ void travel_ir(InstNode *instruction_node)
                     echo_tac[tac_cnt].dest_use=0;
                     // printf(" %s(%s) = %d\n",dest->name,dest->alias->name,src->pdata->var_pdata.iVal);
                 }else{
-                    echo_tac[tac_cnt].dest_name=dest->alias->name;
+                    echo_tac[tac_cnt].dest_name=dest->name;
                     echo_tac[tac_cnt].dest_use=0;
                     echo_tac[tac_cnt].left_name=src->name;
                     echo_tac[tac_cnt].left_use=1;

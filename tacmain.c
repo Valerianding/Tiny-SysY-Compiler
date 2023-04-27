@@ -149,7 +149,7 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[1]);
 //
 //    //ljw_begin
-//    reg_control(instruction_list,temp);
+   reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
     //    ljf
