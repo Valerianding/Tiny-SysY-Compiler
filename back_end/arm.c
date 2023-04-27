@@ -245,20 +245,33 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
 //    默认左值的type默认和value1的type是一样的,需要考虑value0和value1是否在寄存器或者说是内存里面，这个可以后面在完善的，现在先把样例过了
     Value *value0=ins->inst->user.value.alias;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    int left_reg=ins->inst->_reg_[1];
     int x0= get_value_offset_sp(hashMap,value0);
     int x1= get_value_offset_sp(hashMap,value1);
     if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
         int x=value1->pdata->var_pdata.iVal;
-        printf("    mov r0,#%d\n",x);
-        printf("    str r0,[sp,#%d]\n",x0);
+        printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
+            ;
+        }
         return ins;
     }
     if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
         int x=value1->pdata->var_pdata.iVal;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",x);
-        printf("    ldr r0,=%s\n",arr1);
-        printf("    str r0,[sp,#%d]\n",x0);
+        printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
+            ;
+        }
         return ins;
 
     }
@@ -267,31 +280,84 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
         int x=*(int*)&y;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",x);
-        printf("    ldr r0,=%s\n",arr1);
-        printf("    str r0,[sp,#%d]\n",x0);
+        printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
+            ;
+        }
         return ins;
         ;
     }
     if(isLocalVarIntType(value1->VTy)){
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
-            printf("    ldr r0,[sp,#%d]\n",x1);
-            printf("    str r0,[sp,#%d]\n",x0);
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            if(dest_reg_abs!=(left_reg-100)){
+                printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg-100);
+            }
+
         } else{
+            if(dest_reg_abs!=left_reg){
+                printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg);
+            }
+        }
+
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
             ;
         }
         return ins;
     }
     if(isLocalVarFloatType(value1->VTy)){
-        printf("    vldr s0,[sp,#%d]\n",x1);
-        printf("    vstr s0,[sp,#%d]\n",x0);
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            if(dest_reg_abs!=(left_reg-100)){
+                printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg-100);
+            }
+
+        } else{
+            if(dest_reg_abs!=left_reg){
+                printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg);
+            }
+        }
+
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
+            ;
+        }
         return ins;
     }
-//    两个unknown的情况,好像这样翻译应该是有点问题的吧
-    offset *node= HashMapGet(hashMap,value1);
-    if(node->memory){
-        printf("    ldr r0,[sp,#%d]\n",x1);
-        printf("    str r0,[sp,#%d]\n",x0);
+//    两个吧unknown的情况,好像这样翻译应该是有点问题的
+//    offset *node= HashMapGet(hashMap,value1);
+//    if(node->memory){
+//        printf("    ldr r0,[sp,#%d]\n",x1);
+//        printf("    str r0,[sp,#%d]\n",x0);
+//    }
+    if(left_reg>100){
+        int x= get_value_offset_sp(hashMap,value1);
+        printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+        if(dest_reg_abs!=(left_reg-100)){
+            printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg-100);
+        }
+
+    } else{
+        if(dest_reg_abs!=left_reg){
+            printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg);
+        }
+    }
+
+    if(dest_reg<0){
+        int x= get_value_offset_sp(hashMap,value0);
+        printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+    }else{
+        ;
     }
 
 //    printf("CopyOperation\n");
@@ -306,126 +372,133 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    int left_reg=ins->inst->_reg_[1];
+    int right_reg=ins->inst->_reg_[2];
+//    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
+//    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
-        int result=ins->inst->_reg_[0];
-        int result_regri= abs(result);
+
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("    mov r1,#%d\n",x1);
-            printf("    add r0,r1,#%d\n",x2);
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
 //            printf("    add r%d,#%d,#%d\n",result_regri,x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    add r0,r1,#%d\n",x2);
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
 //            printf("    add r%d,r1,#%d\n",result_regri,x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    add r0,r2,#%d\n",x1);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
 //            printf("    add r%d,r2,#%d\n",result_regri,x1);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    add r0,r1,r2\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    add r%d,r1,r2\n",result_regri);
         }
-//        if(result>0){
-////            这样子表明是不需要存回内存的，也就是说结果存放在对应的寄存器之后就不需要操作了
-//            ;
-//        } else {
-//            需要将该值存回内存
-//            if(isLocalVarIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)){
-//                offset *node= HashMapGet(hashMap,value0);
-//
-////            if(node->memory){
-////                int x= get_value_offset_sp(hashMap,value0);
-////                printf("    str r0,[sp,#%d]\n",x);
-////            } else{
-////                int x=node->regr;
-////                printf("    mov r%d,r0\n",x);
-////            }
-//            } else if(isLocalArrayIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)) {
-//
-//            }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-//                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-//                printf("    fcvt.s32.f32 r%d,s0\n",x);
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.f32.s32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.f32.s32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+               if(dest_reg>0){
+                    ;
+               } else{
+                    int x= get_value_offset_sp(hashMap,value0);
+                   printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+               }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
-//        }
 
     }
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-            printf("    fadd s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tfcvt.f32.s32\ts1,rs\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-
-            printf("    fadd s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -435,46 +508,59 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
 
-            printf("    fadd s0,s1,s2\n");
         }else{
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,rs\n");
 
-            printf("    fadd s0,s1,s2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+//        判断结果（左值类型）
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -483,136 +569,168 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
 
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
 
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    add r0,#%d,r2\n",x1);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,x1);
             }else{
-                int x=node->regr;
-                printf("    add r0,#%d,r%d\n",x1,x);
+                ;
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,x1);
             }
+
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    add r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tadd\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    add r0,r1,r%d\n",x);
+                printf("\tadd\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
             }
+
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
 
     }
     if(isImmIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fadd s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fadd s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fadd s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fadd s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
@@ -620,38 +738,49 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s2.r2\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }else{
-            int x=node->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
@@ -659,86 +788,105 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s2,s%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if((imm_is_valid(x2))){
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    add r0,r1,#%d\n",x2);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x2);
             }else{
-                int x=node->regr;
-                printf("    add r0,r%d,#%d\n",x,x2);
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x2);
             }
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tldr\tr2,=%s\n",arr2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    add r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
             }else{
-                int x=node->regr;
-                printf("    add r0,r%d,r2\n",x);
+                printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -746,86 +894,109 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+        }else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
         }
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x2)){
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
+            }else{
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
-            printf("    fadd s0,s1,s2\n");
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
-            }
-            printf("    fadd s0,s1,s2\n");
-        }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
             }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
+        }
+        printf("\tvadd.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
+            } else{
+//                存回内存
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -833,230 +1004,273 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s1,s%d\n",x);
+            printf("\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg-100,right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    mov r2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg-100,right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            int x1=node1->regr;
-            printf("    mov r1,r%d\n",x1);
-        }else{
-            int x1=node1->regr;
-            int x2=node2->regr;
-            printf("    mov r1,r%d",x1);
-            printf("    mov r2,r%d\n",x2);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg,right_reg-100);
+        } else{
+            printf("\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg,right_reg);
         }
-        printf("    add r0,r1,r2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
         }
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fadd s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     return  ins;
@@ -1067,96 +1281,133 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    int left_reg=ins->inst->_reg_[1];
+    int right_reg=ins->inst->_reg_[2];
+//    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
+//    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
+
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("    sub r0,#%d,#%d\n",x1,x2);
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
+//            printf("    sub r%d,#%d,#%d\n",result_regri,x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    sub r0,r1,#%d\n",x2);
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
+//            printf("    sub r%d,r1,#%d\n",result_regri,x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    sub r0,#%d,r2\n",x1);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tsub\tr%d,r2,#%d\n",dest_reg_abs,x1);
+//            printf("    sub r%d,r2,#%d\n",result_regri,x1);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    sub r0,r1,r2\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
+//            printf("    sub r%d,r1,r2\n",result_regri);
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
+
     }
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-            printf("    fsub s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tfcvt.f32.s32\ts1,rs\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-
-            printf("    fsub s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -1166,46 +1417,59 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
 
-            printf("    fsub s0,s1,s2\n");
         }else{
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,rs\n");
 
-            printf("    fsub s0,s1,s2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+//        判断结果（左值类型）
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -1214,136 +1478,168 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
 
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
 
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    sub r0,#%d,r2\n",x1);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tsub\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,x1);
             }else{
-                int x=node->regr;
-                printf("    sub r0,#%d,r%d\n",x1,x);
+                ;
+                printf("\tsub\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,x1);
             }
+
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    sub r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    sub r0,r1,r%d\n",x);
+                printf("\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
             }
+
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
 
     }
     if(isImmIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fsub s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fsub s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fsub s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fsub s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
@@ -1351,38 +1647,49 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s2.r2\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }else{
-            int x=node->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
@@ -1390,86 +1697,105 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s2,s%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if((imm_is_valid(x2))){
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    sub r0,r1,#%d\n",x2);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tsub\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x2);
             }else{
-                int x=node->regr;
-                printf("    sub r0,r%d,#%d\n",x,x2);
+                printf("\tsub\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x2);
             }
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tldr\tr2,=%s\n",arr2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    sub r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tsub\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
             }else{
-                int x=node->regr;
-                printf("    sub r0,r%d,r2\n",x);
+                printf("\tsub\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -1477,86 +1803,109 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+        }else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
         }
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x2)){
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
+            }else{
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
-            printf("    fsub s0,s1,s2\n");
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
-            }
-            printf("    fsub s0,s1,s2\n");
-        }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
             }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
+        }
+        printf("\tvsub.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
+            } else{
+//                存回内存
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -1564,230 +1913,273 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s1,s%d\n",x);
+            printf("\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tsub\tr%d,r%d,r%d\n",dest_reg_abs,left_reg-100,right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    mov r2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tsub\tr%d,r%d,r%d\n",dest_reg_abs,left_reg-100,right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            int x1=node1->regr;
-            printf("    mov r1,r%d\n",x1);
-        }else{
-            int x1=node1->regr;
-            int x2=node2->regr;
-            printf("    mov r1,r%d",x1);
-            printf("    mov r2,r%d\n",x2);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tsub\tr%d,r%d,r%d\n",dest_reg_abs,left_reg,right_reg-100);
+        } else{
+            printf("\tsub\tr%d,r%d,r%d\n",dest_reg_abs,left_reg,right_reg);
         }
-        printf("    sub r0,r1,r2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
         }
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fsub s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvsub.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     return  ins;
@@ -1798,97 +2190,136 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    int left_reg=ins->inst->_reg_[1];
+    int right_reg=ins->inst->_reg_[2];
+//    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
+//    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
+
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("    mov r1,#%d\n",x1);
-            printf("    mov r2,#%d\n",x2);
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            printf("    mul r%d,#%d,#%d\n",result_regri,x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    mov r2,#%d\n",x2);
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            printf("    mul r%d,r1,#%d\n",result_regri,x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            printf("    mov r1,#%d\n",x1);
+            printf("\tmov\tr1,#%d\n",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            printf("    mul r%d,r2,#%d\n",result_regri,x1);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    ldr r2,=%s\n",arr2);
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            printf("    mul r%d,r1,r2\n",result_regri);
         }
-        printf("    mul r0,r1,r2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
+
     }
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-            printf("    fmul s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tfcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-
-            printf("    fmul s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -1898,46 +2329,59 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
 
-            printf("    fmul s0,s1,s2\n");
         }else{
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
 
-            printf("    fmul s0,s1,s2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+//        判断结果（左值类型）
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -1946,139 +2390,169 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
 
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
 
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    mov r1,#%d\n",x1);
-                printf("    mul r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r1,#%d\n",x1);
-                printf("    mov r2,r%d\n",x);
-                printf("    mul r0,r1,r2\n",x1);
+                ;
+                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
             }
+
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    mul r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mul r0,r1,r%d\n",x);
+                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
             }
+
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
 
     }
     if(isImmIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fmul s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fmul s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fmul s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fmul s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
@@ -2086,38 +2560,49 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s2.r2\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }else{
-            int x=node->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
@@ -2125,88 +2610,106 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s2,s%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if((imm_is_valid(x2))){
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tmov\tr2,#%d\n",x2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    mov r2,#%d\n",x2);
-                printf("    mul r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r2,#%d\n",x2);
-                printf("    mul r0,r%d,r2\n",x);
+                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
             }
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tldr\tr2,=%s\n",arr2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    mul r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mul r0,r%d,r2\n",x);
+                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -2214,86 +2717,109 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+        }else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
         }
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x2)){
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
+            }else{
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
-            printf("    fmul s0,s1,s2\n");
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
-            }
-            printf("    fmul s0,s1,s2\n");
-        }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
             }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
+        }
+        printf("\tvmul.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
+            } else{
+//                存回内存
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -2301,230 +2827,273 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s1,s%d\n",x);
+            printf("\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tmul\tr%d,r%d,r%d\n",dest_reg_abs,left_reg-100,right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    mov r2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tmul\tr%d,r%d,r%d\n",dest_reg_abs,left_reg-100,right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            int x1=node1->regr;
-            printf("    mov r1,r%d\n",x1);
-        }else{
-            int x1=node1->regr;
-            int x2=node2->regr;
-            printf("    mov r1,r%d",x1);
-            printf("    mov r2,r%d\n",x2);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tmul\tr%d,r%d,r%d\n",dest_reg_abs,left_reg,right_reg-100);
+        } else{
+            printf("\tmul\tr%d,r%d,r%d\n",dest_reg_abs,left_reg,right_reg);
         }
-        printf("    mul r0,r1,r2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
         }
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fmul s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvmul.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     return  ins;
@@ -2534,97 +3103,135 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    int left_reg=ins->inst->_reg_[1];
+    int right_reg=ins->inst->_reg_[2];
+//    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
+//    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
+
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("    mov r1,#%d\n",x1);
-            printf("    mov r2,#%d\n",x2);
+            printf("\tmov\tr0,#%d\n",x1);
+            printf("\tmov\tr1,#%d\n",x2);
+            printf("\tbl __aeabi_idiv\n");
+            printf("\tmov\tr%d,r0\n",dest_reg_abs);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    mov r2,#%d\n",x2);
+            printf("\tldr\tr0,=%s\n",arr1);
+            printf("\tbl __aeabi_idiv\n");
+            printf("\tmov\tr%d,r0\n",dest_reg_abs);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            printf("    mov r1,#%d\n",x1);
+            printf("\tmov\tr0,#%d\n",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
+            printf("\tldr\tr1,=%s\n",arr2);
+            printf("\tbl __aeabi_idiv\n");
+            printf("\tmov\tr%d,r0\n",dest_reg_abs);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    ldr r2,=%s\n",arr2);
+            printf("\tldr\tr0,=%s\n",arr1);
+            printf("\tldr\tr1,=%s\n",arr2);
+            printf("\tbl __aeabi_idiv\n");
+            printf("\tmov\tr%d,r0\n",dest_reg_abs);
         }
-        printf("    sdiv r0,r1,r2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
+
     }
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-            printf("    fdiv s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tfcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-
-            printf("    fdiv s0,s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -2634,46 +3241,59 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
 
-            printf("    fdiv s0,s1,s2\n");
         }else{
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
 
-            printf("    fdiv s0,s1,s2\n");
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+//        判断结果（左值类型）
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -2682,139 +3302,173 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
 
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
 
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr0,#%d\n",x1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    mov r1,#%d\n",x1);
-                printf("    sdiv r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tmov\tr1,r%d\n",right_reg-100);
+                printf("\tbl\t__aeabi_idiv\n");
             }else{
-                int x=node->regr;
-                printf("    mov r1,#%d\n",x1);
-                printf("    mov r2,r%d\n",x);
-                printf("    sdiv r0,r1,r2\n",x1);
+                ;
+                printf("\tmov\tr1,r%d\n",right_reg);
+                printf("\tbl\t__aeabi_idiv\n");
             }
+
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr0,=%s\n",arr1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
-                printf("    sdiv r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tmov\tr1,r%d\n",right_reg-100);
+                printf("\tbl\t__aeabi_idiv\n");
             }else{
-                int x=node->regr;
-                printf("    sdiv r0,r1,r%d\n",x);
+                printf("\tmov\tr1,r%d\n",right_reg);
+                printf("\tbl\t__aeabi_idiv\n");
             }
+
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tmov\tr%d,r0\n",dest_reg_abs);
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
 
     }
     if(isImmIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fdiv s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fdiv s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
-                printf("    fdiv s0,s1,s2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x= node->regs;
-                printf("    fdiv s0,s1,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
@@ -2822,38 +3476,49 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s2.r2\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }else{
-            int x=node->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
@@ -2861,88 +3526,110 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s2,s%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if((imm_is_valid(x2))){
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    mov r2,#%d\n",x2);
-                printf("    sdiv r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tmov\tr0,r%d\n",left_reg-100);
+                printf("\tbl\t__aeabi_idiv\n");
             }else{
-                int x=node->regr;
-                printf("    mov r2,#%d\n",x2);
-                printf("    sdiv r0,r%d,r2\n",x);
+                printf("\tmov\tr0,r%d\n",left_reg);
+                printf("\tbl\t__aeabi_idiv\n");
             }
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tldr\tr0,=%s\n",arr2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    sdiv r0,r1,r2\n");
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tmov\tr0,r%d\n",left_reg-100);
+                printf("\tbl\t__aeabi_idiv\n");
             }else{
-                int x=node->regr;
-                printf("    sdiv r0,r%d,r2\n",x);
+                printf("\tmov\tr0,r%d\n",left_reg);
+                printf("\tbl\t__aeabi_idiv\n");
             }
         }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+
+        printf("\tmov\tr%d,r0\n",dest_reg_abs);
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -2950,86 +3637,109 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+        }else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
         }
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x2)){
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
+            }else{
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
-            printf("    fdiv s0,s1,s2\n");
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory) {
-                int x = get_value_offset_sp(hashMap, value1);
-                printf("    vldr s1,[sp,#%d]\n", x);
-            } else{
-                int x=node->regs;
-                printf("    fmov s1,s%d\n",x);
-            }
-            printf("    fdiv s0,s1,s2\n");
-        }
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
             }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tvmov\ts1,r%d\n",left_reg);
             }
+        }
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
+            } else{
+//                存回内存
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -3037,234 +3747,285 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s1,s%d\n",x);
+            printf("\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvadd.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tmov\tr0,r%d\n",left_reg-100);
+            printf("\tmov\tr1,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    mov r2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tmov\tr0,r%d\n",left_reg-100);
+            printf("\tmov\tr1,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            int x1=node1->regr;
-            printf("    mov r1,r%d\n",x1);
-        }else{
-            int x1=node1->regr;
-            int x2=node2->regr;
-            printf("    mov r1,r%d",x1);
-            printf("    mov r2,r%d\n",x2);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tmov\tr1,r%d\n",right_reg-100);
+            printf("\tmov\tr0,r%d\n",left_reg);
+        } else{
+            printf("\tmov\tr0,r%d\n",left_reg);
+            printf("\tmov\tr1,r%d\n",right_reg);
         }
-        printf("    sdiv r0,r1,r2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tbl\t__aeabi_idiv\n");
+        printf("\tmov\tr%d,r0\n",dest_reg_abs);
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    mov r%d,r0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r0\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1");
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2");
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2");
         }
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fdiv s0,s1,s2\n");
-        if(isLocalVarIntType(value0->VTy)||isLocalArrayIntType(value0->VTy)||isGlobalVarIntType(value0->VTy)||isGlobalArrayIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 r0,s0\n");
-                printf("    str r0,[sp,#%d]\n",x);
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+
+        if(isLocalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+//               说明不用存回内存，所以这里不需要处理
+                ;
             } else{
-                int x=node->regr;
-                printf("    fcvt.s32.f32 r%d,s0\n",x);
-            }
-        }
-        else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+//                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    vstr s0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regs;
-                printf("    fmov s%d,s0\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+            printf("\tvcvt.s32.f32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     return  ins;
 }
+
+
+//现在的话，那个加减乘除法的基本已经接上和改完了
 
 InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //    这个比较简单，只会存在两种情况，就是int=int1 % int2和float=int1 % int2,右边出现非int都是错误的
@@ -3273,193 +4034,241 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    int left_reg=ins->inst->_reg_[1];
+    int right_reg=ins->inst->_reg_[2];
     if(isImmIntType(value1->VTy)&& isImmIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("    mov r0,#%d\n",x1);
-            printf("    mov r1,#%d\n",x2);
+            printf("\tmov\tr0,#%d\n",x1);
+            printf("\tmov\tr1,#%d\n",x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r0,=%s\n",arr1);
-            printf("    mov r1,#%d\n",x2);
+            printf("\tldr\tr0,=%s\n",arr1);
+            printf("\tmov\tr1,#%d\n",x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            printf("    mov r0,#%d\n",x1);
+            printf("\tmov\tr0,#%d\n",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r1,=%s\n",arr2);
+            printf("\tldr\tr1,=%s\n",arr2);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r0,=%s\n",arr1);
-            printf("    ldr r1,=%s\n",arr2);
+            printf("\tldr\tr0,=%s\n",arr1);
+            printf("\tldr\tr1,=%s\n",arr2);
         }
-        printf("    bl __aeabi_idivmod(PLT)\n");
-        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+        printf("\tbl\t__aeabi_idivmod\n");
+        printf("\tmov\tr%d,r0\n",dest_reg_abs);
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r1,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    mov r%d,r1\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r1\n",x);
+                ;
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+//            ;这些都是需要补充完整的，不对，
+//            全局变量会有相应的load和store指令，结果不应该在这里处理
+//            这里只需要转换为相应的格式就可以了
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
 
     }
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr0,#%d\n",x1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r1,[sp,#%d]\n",x);
-                printf("    mov r0,#%d\n",x1);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tmov\tr1,r%d\n",right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r0,#%d\n",x1);
-                printf("    mov r1,r%d\n",x);
+                printf("\tmov\tr1,r%d\n",right_reg);
             }
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r0,=%s\n",arr1);
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr0,=%s\n",arr1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r1,[sp,#%d]\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tmov\tr1,r%d\n",right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r1,r%d\n",x);
+                printf("\tmov\tr1,r%d\n",right_reg);
             }
         }
-        printf("    bl __aeabi_idivmod(PLT)\n");
-        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+        printf("\tbl\t__aeabi_idivmod\n");
+        printf("\tmov\tr%d,r0\n",dest_reg_abs);
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r1,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    mov r%d,r1\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r1\n",x);
+                ;
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+//            ;这些都是需要补充完整的，不对，
+//            全局变量会有相应的load和store指令，结果不应该在这里处理
+//            这里只需要转换为相应的格式就可以了
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if((imm_is_valid(x2))){
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r0,[sp,#%d]\n",x);
-                printf("    mov r1,#%d\n",x2);
-            }else{
-                int x=node->regr;
-                printf("    mov r0,r%d\n",x);
-                printf("    mov r1,#%d\n",x2);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tmov\tr1,r%d\n",left_reg-100);
+            } else{
+                printf("\tmov\tr1,r%d\n",left_reg);
             }
         }else{
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r1,=%s\n",arr2);
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r0,[sp,#%d]\n",x);
-            }else{
-                int x=node->regr;
-                printf("    mov r0,r%d\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tmov\tr1,r%d\n",left_reg-100);
+            } else{
+                printf("\tmov\tr1,r%d\n",left_reg);
             }
         }
-        printf("    bl __aeabi_idivmod(PLT)\n");
-        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+        printf("\tbl\t__aeabi_idivmod\n");
+        printf("\tmov\tr%d,r0\n",dest_reg_abs);
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r1,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    mov r%d,r1\n",x);
-            }
-        } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r1\n",x);
+                ;
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+//            ;这些都是需要补充完整的，不对，
+//            全局变量会有相应的load和store指令，结果不应该在这里处理
+//            这里只需要转换为相应的格式就可以了
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r0,[sp,#%d]\n",x1);
-            printf("    ldr r1,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tmov\tr0,r%d\n",left_reg-100);
+            printf("\tmov\tr1,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r0,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    mov r1,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tmov\tr0,r%d\n",left_reg-100);
+            printf("\tmov\tr1,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x2);
-            int x1=node1->regr;
-            printf("    mov r0,r%d\n",x1);
-        }else{
-            int x1=node1->regr;
-            int x2=node2->regr;
-            printf("    mov r0,r%d",x1);
-            printf("    mov r1,r%d\n",x2);
-        }
-        printf("    bl __aeabi_idivmod(PLT)\n");
-        if(isLocalVarIntType(value0->VTy)|| isGlobalVarIntType(value0->VTy)){
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("    str r1,[sp,#%d]\n",x);
-            } else{
-                int x=node->regr;
-                printf("    mov r%d,r1\n",x);
-            }
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tmov\tr1,r%d\n",right_reg-100);
+            printf("\tmov\tr0,r%d\n",left_reg);
         } else{
-            offset *node= HashMapGet(hashMap,value0);
-            if(node->memory){
+            printf("\tmov\tr0,r%d\n",left_reg);
+            printf("\tmov\tr1,r%d\n",right_reg);
+        }
+        printf("\tbl\t__aeabi_idivmod\n");
+        printf("\tmov\tr%d,r0\n",dest_reg_abs);
+        if(isLocalVarIntType(value0->VTy)){
+            if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
-                printf("    fcvt.s32.f32 s0,r1\n");
-                printf("    vstr s0,[sp,#%d]\n",x);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
             }else{
-                int x=node->regs;
-                printf("    fcvt.s32.f32 s%d,r1\n",x);
+                ;
             }
+        } else if(isLocalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+            if(dest_reg>0){
+                ;
+            } else{
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+            }
+        }else if(isLocalArrayIntType(value0->VTy)){
+            ;
+        }else if(isGlobalVarIntType(value0->VTy)){
+//            ;这些都是需要补充完整的，不对，
+//            全局变量会有相应的load和store指令，结果不应该在这里处理
+//            这里只需要转换为相应的格式就可以了
+        }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+            printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts0,s0\n");
+            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        }else if(isGlobalArrayIntType(value0->VTy)){
+            ;
         }
     }
 
@@ -3485,29 +4294,47 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     arm_trans_GIVE_PARAM(hashMap,param_num_);
 
 //    printf("CALL\n");
-    printf("    bl %s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+    printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     //    还要将r0转移到左值
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    printf("\tmov\tr%d,r0\n",dest_reg_abs);
+    // 这个也是默认放回值类型和左值类型是一致的
+    // 如果用一个float型去接受int型的结果，后面应该会有Copy指令的
     if(isLocalVarIntType(value0->VTy)){
-        offset *node= HashMapGet(hashMap,value0);
-        if(node->memory){
+
+        if(dest_reg<0){
             int x= get_value_offset_sp(hashMap,value0);
-            printf("    str r0,[sp,#%d]\n",x);
-        } else {
-            int x=node->regr;
-            printf("    mov r0,r%d\n",x);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
+            ;
         }
     } else if(isLocalVarFloatType(value0->VTy)){
-        offset *node= HashMapGet(hashMap,value0);
-        if(node->memory){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+//        printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+//        printf("\tvcvt.f32.s32\ts0,s0\n");
+//        printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        if(dest_reg>0){
+            ;
+        } else{
             int x= get_value_offset_sp(hashMap,value0);
-            printf("    vcvt.f32.s32 s0,r0\n");
-            printf("    vstr s0,[sp,#%d]\n",x);
-        } else {
-            int x=node->regs;
-            printf("    vcvt.f32.s32 s0,r0\n");
-            printf("    vmov s%d,s0\n",x);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
         }
+    }else if(isLocalArrayIntType(value0->VTy)){
+        ;
+    }else if(isGlobalVarIntType(value0->VTy)){
+//            ;这些都是需要补充完整的，不对，
+//            全局变量会有相应的load和store指令，结果不应该在这里处理
+//            这里只需要转换为相应的格式就可以了
+    }else if(isGlobalVarFloatType(value0->VTy)){
+//                需要将相加的结果转化为IEEE754格式存放在r0中
+//        printf("\tvmov\ts0,r%d\n",dest_reg_abs);
+//        printf("\tvcvt.f32.s32\ts0,s0\n");
+//        printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+    }else if(isGlobalArrayIntType(value0->VTy)){
+        ;
     }
+
     return ins;
 }
 
@@ -3528,7 +4355,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         }
     }
     if(func_call_func>0){
-        printf("    stmfd sp!,{r11,lr}\n");
+        printf("\tstmfd\tsp!,{r11,lr}\n");
     }
 
     HashMap *hashMap=HashMapInit();
@@ -3536,7 +4363,6 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    HashMapSetCompare(hashMap,CompareKey);
 //    HashMapSetCleanKey(hashMap,CleanKey);
 //    HashMapSetCleanValue(hashMap,CleanValue);
-
 
     int local_stack=0;
 //    int x= get_siezof_sp(hashMap);
@@ -3736,12 +4562,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    int x= HashMapSize(hashMap)*4;
 //    printf("FuncBeginhashmapsize=%d\n",x+param_num*4);
     *stakc_size=local_stack+param_num*4;
-    printf("    sub sp,sp,#%d\n",*stakc_size);
+    printf("\tsub\tsp,sp,#%d\n",*stakc_size);
     if(param_num>0){
 //        存在参数的传递
 //        int local_stack=mystack;
         for(int j=0;j<param_num && j<4;j++){
-            printf("    str r%d,[sp,#%d]\n",j,local_stack+j*4);
+            printf("\tstr\tr%d,[sp,#%d]\n",j,local_stack+j*4);
         }
     } else{
         ;
@@ -3773,40 +4599,47 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 //        return ins;
 //    }
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    int left_reg= ins->inst->_reg_[1];
     if(isImmIntType(value1->VTy)){
         if(imm_is_valid(value1->pdata->var_pdata.iVal)){
-            printf("    mov r0,#%d\n",value1->pdata->var_pdata.iVal);
+            printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
         } else{
             int x=value1->pdata->var_pdata.iVal;
             char arr[12]="0x";
             sprintf(arr+2,"%0x",x);
-            printf("    ldr r0,=%s\n",arr);
+            printf("\tldr\tr0,=%s\n",arr);
         }
     } else if(isImmFloatType(value1->VTy)){
-        ;
+        float  x=value1->pdata->var_pdata.fVal;
+        int xx=*(int*)&x;
+        char arr[12]="0x";
+        sprintf(arr+2,"%0x",x);
+        printf("\tldr\tr0,=%s\n",arr);
     } else if(isLocalVarIntType(value1->VTy)){
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
-            int off= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r0,[sp,#%d]\n",off);
-        } else if(node->regr!=-1){
-//            in ri
-            int regx=node->regr;
-            printf("    mov r0,r%d\n",regx);
-        } else if(node->regs!=-1){
-            ;
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tmov\tr0,r%d\n",left_reg-100);
+        }else{
+            printf("\tmov\tr0,r%d\n",left_reg);
         }
     } else if(isLocalVarFloatType(value1->VTy)){
         ;
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tmov\tr0,r%d\n",left_reg-100);
+        }else{
+            printf("\tmov\tr0,r%d\n",left_reg);
+        }
     }
-
 
     int x1= stack_size;
-    printf("    add sp,sp,#%d\n",x1);
+    printf("\tadd\tsp,sp,#%d\n",x1);
     if(func_call_func>0){
-        printf("    ldmfd sp!,{r11,lr}\n");
+        printf("\tldmfd\tsp!,{r11,lr}\n");
     }
-    printf("    bx lr\n");
+    printf("\tbx\tlr\n");
     return ins;
 }
 
@@ -3818,11 +4651,11 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
     if(isLocalArrayIntType(value0->VTy)|| isLocalArrayFloatType(value0->VTy)|| isGlobalArrayIntType(value0->VTy)||isGlobalArrayFloatType(value0->VTy)){
 //        printf("%s\n",value0->alias->name);
         int x=get_value_offset_sp(hashMap,value0);
-        printf("    add r0,sp,#%d\n",x);
-        printf("    mov r1,#0\n");
+        printf("\tadd\tr0,sp,#%d\n",x);
+        printf("\tmov\tr1,#0\n");
         x= get_array_total_occupy(value0->alias,0);
-        printf("    mov r2,#%d\n",x);
-        printf("    bl memset\n");
+        printf("\tmov\tr2,#%d\n",x);
+        printf("\tbl\tmemset\n");
     }
     return ins;
 }
@@ -3999,56 +4832,60 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    int left_reg=ins->inst->_reg_[1];
+    int right_reg=ins->inst->_reg_[2];
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("    cmp #%d,#%d\n",x1,x2);
+            printf("\tcmp\t#%d,#%d\n",x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr[12]="0x";
             sprintf(arr+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr);
-            printf("    cmp r1,#%d\n",x2);
+            printf("\tldr\tr1,=%s\n",arr);
+            printf("\tcmp\tr1,#%d\n",x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             char arr[12]="0x";
             sprintf(arr+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr);
-            printf("    cmp #%d,r2\n",x1);
+            printf("\tldr\tr2,=%s\n",arr);
+            printf("\tcmp\t#%d,r2\n",x1);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    cmp r1,r2\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tcmp\tr1,r2\n");
         }
     }
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1");
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
-            printf("    fcmp s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcmp.f32\ts1,s2\n");
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fcvt.s32.f32 s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fmov s2,r2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
 
-            printf("    fcmp s1,s2\n");
+            printf("\tvcmp.f32\ts1,s2\n");
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -4058,26 +4895,26 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-
-            printf("    fcmp s0,s1,s2\n");
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,r2\n");
+            printf("\tvcmp.f32\ts1,s2\n");
         }else{
             int *xx1=(int*)&x1;
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",*xx1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fmov s1,r1\n");
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
 
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-
-            printf("    fcmp s1,s2\n");
+            printf("\tldr\tr2,=%s\n",arr2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tfcvt.f32.s32\ts2,r2\n");
+            printf("\tvcmp.f32\ts1,s2\n");
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -4086,137 +4923,130 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fmov s1,r1\n");
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
 
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-
-        printf("    fcmp s1,s2\n");
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
+
 
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tcmp\tr1,r%d\n",right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r2,r%d\n",x);
+                printf("\tcmp\tr1,r%d\n",right_reg);
             }
-            printf("    cmp #%d,r2\n",x1);
+
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    ldr r2,[sp,#%d]\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tcmp\tr1,r%d\n",right_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r2,r%d\n",x);
+                printf("\tcmp\tr1,r%d\n",right_reg);
             }
-            printf("    cmp r1,r2\n");
         }
 
     }
     if(isImmIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
-            printf("    mov r1,#%d\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32 s1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x=node->regs;
-                printf("    fmov s2,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
-            printf("    fcmp s1,s2\n");
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
-            printf("    ldr r1,=%s\n",arr1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            offset *node= HashMapGet(hashMap,value2);
-            if(node->memory){
+            printf("\tldr\tr1,=%s\n",arr1);
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32 s1,s1\n");
+            if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
-                printf("    vldr s2,[sp,#%d]\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+                printf("\tvmov\ts2,r%d\n",right_reg-100);
             }else{
-                int x=node->regs;
-                printf("    fmov s2,s%d\n",x);
+                printf("\tvmov\ts2,r%d\n",right_reg);
             }
-            printf("    fcmp s1,s2\n");
         }
+        printf("\tvcmp.f32\ts1,s2\n");
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fcvt.s32.f32 s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
         }else{
-            int x=node->regr;
-            printf("    mov r2,r%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fcvt.s32.f32 s2,r2\n");
-        printf("    fcmp s1,s2\n");
+        printf("\tfcvt.f32.s32\ts2,rs\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
         char arr1[12]="0x";
         sprintf(arr1+2,"%0x",*xx1);
-        printf("    ldr r1,=%s\n",arr1);
-        printf("    fcvt.s32.f32 s1,r1\n");
-        offset *node= HashMapGet(hashMap,value2);
-        if(node->memory){
+        printf("\tldr\tr1,=%s\n",arr1);
+        printf("\tvmov\ts1,r1\n");
+        if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s2,s%d\n",x);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fcmp s1,s0\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
-        if((imm_is_valid(x2))){
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+        if(imm_is_valid(x2)){
+            printf("\tmov\tr2,#%d\n",x2);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tcmp\tr%d,r2\n",left_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r1,r%d\n",x);
+                printf("\tcmp\tr%d,r2\n",left_reg);
             }
-            printf("    cmp r1,#%d\n",x2);
+
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            offset *node= HashMapGet(hashMap,value1);
-            if(node->memory){
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",x2);
+            printf("\tldr\tr2,=%s\n",arr1);
+            if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
-                printf("    ldr r1,[sp,#%d]\n",x);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tcmp\tr%d,r2\n",left_reg-100);
             }else{
-                int x=node->regr;
-                printf("    mov r1,r%d\n",x);
+                printf("\tcmp\tr%d,r2\n",left_reg);
             }
-            printf("    cmp r1,r2\n");
         }
     }
     if(isLocalVarIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -4224,165 +5054,162 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fcvt.s32.f32 s2,r2\n");
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
         }else{
-            int x=node->regr;
-            printf("    mov r1,r%d\n",x);
+            printf("\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("    fcvt.s32.f32 s1,r1\n");
-        printf("    fcmp s1,s2\n");
+        printf("\tvcvt.f32.s32\ts1,s1\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
-            int x= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x);
-        }else{
-            int x=node->regs;
-            printf("    fmov s1,s%d\n",x);
-        }
         if(imm_is_valid(x2)){
-            printf("    mov r2,#%d\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            printf("\tmov\tr2,#%d\n",x2);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
+            }else{
+                printf("\tvmov\ts1,r%d\n",left_reg);
+            }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("    ldr r2,=%s\n",arr2);
-            printf("    fcvt.s32.f32 s2,r2\n");
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",x2);
+            printf("\tldr\tr2,=%s\n",arr1);
+            printf("\tvmov\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tvmov\ts1,r%d\n",left_reg-100);
+            }else{
+                printf("\tvmov\ts1,r%d\n",left_reg);
+            }
         }
-        printf("    fcmp s1,s2\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
-        offset *node= HashMapGet(hashMap,value1);
-        if(node->memory){
+        if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
         }else{
-            int x=node->regs;
-            printf("    fmov s1,s%d\n",x);
+            printf("\tvmov\ts1,r%d\n",left_reg);
         }
         float x2=value2->pdata->var_pdata.fVal;
         int *xx2=(int*)&x2;
         char arr2[12]="0x";
         sprintf(arr2+2,"%0x",*xx2);
-        printf("    ldr r2,=%s\n",arr2);
-        printf("    fmov s2,r2\n");
-        printf("    fcmp s1,s2\n");
+        printf("\tldr\tr2,=%s\n",arr2);
+        printf("\tvmov\ts2,r2\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tcmp\tr%d,r%d\n",left_reg-100,right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    mov r2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tcmp\tr%d,r%d\n",left_reg-100,right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            int x1=node1->regr;
-            printf("    mov r1,r%d\n",x1);
-        }else{
-            int x1=node1->regr;
-            int x2=node2->regr;
-            printf("    mov r1,r%d",x1);
-            printf("    mov r2,r%d\n",x2);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tcmp\tr%d,r%d\n",left_reg,right_reg-100);
+        } else{
+            printf("\tcmp\tr%d,r%d\n",left_reg,right_reg);
         }
-        printf("    cmp r1,r2\n");
     }
     if(isLocalVarIntType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    ldr r1,[sp,#%d]\n",x1);
-            printf("    fcvt.s32.f32 s1,r1\n");
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regr;
-            printf("    fcvt.s32.f32 s1,r%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fcmp s1,s2\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    ldr r2,[sp,#%d]\n",x2);
-            printf("    fcvt.s32.f32 s2,r2\n");
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regr;
-            printf("    fcvt.s32.f32 s2,r%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+            printf("\tvcvt.f32.s32\ts2,s2\n");
         }
-        printf("    fcmp s1,s2\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
-        offset *node1= HashMapGet(hashMap,value1);
-        offset *node2= HashMapGet(hashMap,value2);
-        if(node1->memory&&node2->memory){
+        if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else if(node1->memory&&(!node2->memory)){
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else if(left_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
-            printf("    vldr s1,[sp,#%d]\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
-        }else if((!node1->memory)&&node2->memory){
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
+            printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x1);
+            printf("\tvmov\ts1,r%d\n",left_reg-100);
+            printf("\tvmov\ts2,r%d\n",right_reg);
+        }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
-            printf("    vldr s2,[sp,#%d]\n",x2);
-        }else{
-            int x1=node1->regs;
-            printf("    fmov s1,s%d\n",x1);
-            int x2=node2->regs;
-            printf("    fmov s2,s%d\n",x2);
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tldr\tr%d,[sp,#%d]\n",right_reg-100,x2);
+            printf("\tvmov\ts2,r%d\n",right_reg-100);
+        } else{
+            printf("\tvmov\ts1,r%d\n",left_reg);
+            printf("\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("    fcmp s1,s2\n");
+        printf("\tvcmp.f32\ts1,s2\n");
     }
 
     if(ins->inst->Opcode==LESS){
@@ -4390,54 +5217,54 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    bge LABEL%d\n",x);
+            printf("\tbge\tLABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b LABEL%d\n",x);
+            printf("\tb\tLABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==GREAT){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    ble LABEL%d\n",x);
+            printf("\tble\tLABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b LABEL%d\n",x);
+            printf("\tb\tLABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==LESSEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    bgt LABEL%d\n",x);
+            printf("\tbgt\tLABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b LABEL%d\n",x);
+            printf("\tb\tLABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==GREATEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    blt LABEL%d\n",x);
+            printf("\tblt\tLABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b LABEL%d\n",x);
+            printf("\tb\tLABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==EQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    bne LABEL%d\n",x);
+            printf("\tbne\tLABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b LABEL%d\n",x);
+            printf("\tb\tLABEL%d\n",x);
         }
     } else if(ins->inst->Opcode==NOTEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("    beq LABEL%d\n",x);
+            printf("\tbeq\tLABEL%d\n",x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("    b LABEL%d\n",x);
+            printf("\tb\tLABEL%d\n",x);
         }
     }
     return ins;
@@ -4448,16 +5275,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 InstNode * arm_trans_br_i1(InstNode *ins){
 //    int i=ins->inst->i;
     int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-    printf("    bne LABEL%d\n",x);
+    printf("\tbne\tLABEL%d\n",x);
     x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-    printf("    b LABEL%d\n",x);
+    printf("\tb\tLABEL%d\n",x);
     return  ins;
 }
 
 InstNode * arm_trans_br(InstNode *ins){
 
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-    printf("    b LABEL%d\n",x);
+    printf("\tb\tLABEL%d\n",x);
     return ins;
 }
 
@@ -4622,58 +5449,96 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    value2是要保存到的地方
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    int left_reg=ins->inst->_reg_[1];
+    int left_int_float=-1;
     if(isGlobalVarIntType(value1->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
         if(lcptLabel==NULL){
             printf("HashMapGet(global_hashmap,value1); error\n");
         }
-        printf("    ldr r1,%s\n",lcptLabel->LCPI);
-        printf("    ldr r1,[r1]\n");
+        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+        printf("\tldr\tr1,[r1]\n");
+        left_int_float=0;
     } else if(isGlobalVarFloatType(value1->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
         if(lcptLabel==NULL){
             printf("HashMapGet(global_hashmap,value1); error\n");
         }
-        printf("    ldr r1,%s\n",lcptLabel->LCPI);
-        printf("    vldr s1,[r1]\n");
+        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+        printf("\tldr\tr1,[r1]\n");
+        left_int_float=1;
     } else if(isGlobalArrayIntType(value1->VTy)){
         ;
     } else if(isGlobalArrayFloatType(value1->VTy)){
         ;
     } else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-        printf("    mov r1,#%d\n",value1->pdata->var_pdata.iVal);
+        printf("\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
+        left_int_float=0;
     }else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
         char arr[12]="0x";
         int xx=value1->pdata->var_pdata.iVal;
         sprintf(arr+2,"%0x",xx);
-        printf("    ldr r1,=%s\n",arr);
+        printf("\tldr\tr1,=%s\n",arr);
+        left_int_float=0;
     }else if(isImmFloatType(value1->VTy)){
         char arr[12]="0x";
         float x=value1->pdata->var_pdata.fVal;
         int xx=*(int*)&x;
         sprintf(arr+2,"%0x",xx);
-        printf("    ldr r1,=%s\n",arr);
+        printf("\tldr\tr1,=%s\n",arr);
+        left_int_float=1;
     }else if(isLocalVarIntType(value1->VTy)){
-        int x= get_value_offset_sp(hashMap,value1);
-        printf("    ldr r1,[sp,%d]\n",x);
+        left_int_float=0;
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[sp,%d]\n",left_reg-100,x);
+            printf("\tmov\tr1,r%d\n",left_reg-100);
+        }else{
+            printf("\tmov\tr1,r%d\n",left_reg);
+        }
+
     }else if(isLocalVarFloatType(value1->VTy)){
-        int x= get_value_offset_sp(hashMap,value1);
-        printf("    ldr r1,[sp,%d]\n",x);
+        left_int_float=1;
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[sp,%d]\n",left_reg-100,x);
+            printf("\tmov\tr1,r%d\n",left_reg-100);
+        }else{
+            printf("\tmov\tr1,r%d\n",left_reg);
+        }
     }
+
+//    value2
     if(isGlobalVarIntType(value2->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
         if(lcptLabel==NULL){
             printf("HashMapGet(global_hashmap,value1); error\n");
         }
-        printf("    ldr r2,%s\n",lcptLabel->LCPI);
-        printf("    str r1,[r2]\n");
+        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
+        if(left_int_float==0){
+            printf("\tstr\tr1,[r2]\n");
+        }else{
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.s32.f32\ts1,s1\n");
+            printf("\tvmov\tr1,s1\n");
+            printf("\tstr\tr1,[r2]\n");
+        }
+
     } else if(isGlobalVarFloatType(value2->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
         if(lcptLabel==NULL){
             printf("HashMapGet(global_hashmap,value1); error\n");
         }
-        printf("    ldr r2,%s\n",lcptLabel->LCPI);
-        printf("    str r1,[r2]\n");
+        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
+        if(left_int_float==1){
+            printf("\tstr\tr1,[r2]\n");
+        }else{
+            printf("\tvmov\ts1,r1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            printf("\tvmov\tr1,s1\n");
+            printf("\tstr\tr1,[r2]\n");
+        }
+
     } else if(isGlobalArrayIntType(value1->VTy)){
         ;
     } else if(isGlobalArrayFloatType(value1->VTy)){
@@ -4684,24 +5549,39 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs=abs(dest_reg);
     if(isGlobalVarIntType(value1->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
         if(lcptLabel==NULL){
             printf("HashMapGet(global_hashmap,value1); error\n");
         }
-        printf("    ldr r1,%s\n",lcptLabel->LCPI);
-        printf("    ldr r1,[r1]\n");
-        int x= get_value_offset_sp(hashMap,value0);
-        printf("    str r1,[sp,%d]\n",x);
+        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+        if(dest_reg<0){
+            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
+            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
+        }
+
+
     } else if(isGlobalVarFloatType(value1->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
         if(lcptLabel==NULL){
             printf("HashMapGet(global_hashmap,value1); error\n");
         }
-        printf("    ldr r1,%s\n",lcptLabel->LCPI);
-        printf("    vldr s1,[r1]\n");
-        int x= get_value_offset_sp(hashMap,value0);
-        printf("    vstr s1,[sp,%d]\n",x);
+        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        printf("\tvldr\ts1,[r1]\n");
+//        int x= get_value_offset_sp(hashMap,value0);
+//        printf("\tvstr\ts1,[sp,%d]\n",x);
+        if(dest_reg<0){
+            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[sp,#%d]\n",dest_reg_abs,x);
+        }else{
+            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
+        }
     } else if(isGlobalArrayIntType(value1->VTy)){
         ;
     } else if(isGlobalArrayFloatType(value1->VTy)){
