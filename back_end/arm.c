@@ -16,6 +16,7 @@ int globalvar_num;
 char globalvar_message[10000];
 
 
+
 bool imm_is_valid(unsigned int imm){
     int i;
     for (i = 0; i <= 30; i += 2) {
@@ -4348,11 +4349,39 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //        printf("    push {r11,lr}\n");
 ////        printf("    mov r1,sp\n");
 //    }
+
+
+//只要存在bl指令，就需要保存lr
     for(;tmp!=NULL && tmp->inst->Opcode!= Return;tmp= get_next_inst(tmp)){
+//        数组初始化的时候会bl
+        if(tmp->inst->Opcode==Alloca){
+            Value *value0=&tmp->inst->user.value;
+            if(isLocalArrayIntType(value0->VTy)|| isLocalArrayFloatType(value0->VTy)|| isGlobalArrayIntType(value0->VTy)||isGlobalArrayFloatType(value0->VTy)){
+                func_call_func=1;
+            }
+        }
+//        bl __aeabi_idiv
+        if(tmp->inst->Opcode==Div){
+            Value *value0 = &tmp->inst->user.value;
+            Value *value1 = user_get_operand_use(&tmp->inst->user, 0)->Val;
+            Value *value2 = user_get_operand_use(&tmp->inst->user, 1)->Val;
+            if(isLocalVarIntType(value1->VTy)|| isGlobalVarIntType(value1->VTy)|| isImmIntType(value1->VTy) ||
+                    isLocalArrayIntType(value1->VTy) || isGlobalArrayIntType(value1->VTy)){
+                if(isLocalVarIntType(value2->VTy)|| isGlobalVarIntType(value2->VTy)|| isImmIntType(value2->VTy) ||
+                   isLocalArrayIntType(value2->VTy) || isGlobalArrayIntType(value2->VTy)){
+                    func_call_func=1;
+                }
+            }
+        }
+//        bl__aeabi_divimod
+        if(tmp->inst->Opcode==Mod){
+            func_call_func=1;
+        }
         if(tmp->inst->Opcode==Call){
             func_call_func+=1;
             break;
         }
+
     }
     if(func_call_func>0){
         printf("\tstmfd\tsp!,{r11,lr}\n");
@@ -4562,7 +4591,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    int x= HashMapSize(hashMap)*4;
 //    printf("FuncBeginhashmapsize=%d\n",x+param_num*4);
     *stakc_size=local_stack+param_num*4;
-    printf("\tsub\tsp,sp,#%d\n",*stakc_size);
+    if((*stakc_size)!=0){
+        printf("\tsub\tsp,sp,#%d\n",*stakc_size);
+    }
+
     if(param_num>0){
 //        存在参数的传递
 //        int local_stack=mystack;
@@ -4635,7 +4667,10 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
     }
 
     int x1= stack_size;
-    printf("\tadd\tsp,sp,#%d\n",x1);
+    if(x1!=0){
+        printf("\tadd\tsp,sp,#%d\n",x1);
+    }
+
     if(func_call_func>0){
         printf("\tldmfd\tsp!,{r11,lr}\n");
     }
@@ -4680,26 +4715,35 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
     if(num<=4){
         for(int i=0;i<num;i++){
             tmp=one_param[i];
+            int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+            //                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    printf("    mov r%d,#%d\n",i,value1->pdata->var_pdata.iVal);
+                    printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("    ldr r%d,=%s\n",i,arr);
+                    printf("\tldr\tr%d,=%s\n",i,arr);
                 } else if(isImmFloatType(value1->VTy)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("    ldr r%d,=%s\n",i,arr);
+                    printf("\tldr\tr%d,=%s\n",i,arr);
                 }
             }else{
-                int x= get_value_offset_sp(hashMap,value1);
-                if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
-                    printf("    add r%d,sp,#%d\n",i,x);
-                } else{
-                    printf("    ldr r%d,[sp,#%d]\n",i,x);
+//              变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
+                if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",i,left_reg);
+                    }
+                }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+//                    这个需要另外处理
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("\tadd\tr%d,sp,#%d\n",i,x);
                 }
             }
 //            直接在这个地方判断类型，然后加上add ri,sp,#%d好像就可以了
@@ -4709,65 +4753,75 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         int i;
         for(i=1;i<4;++i){
             tmp=one_param[i];
+            int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    printf("    mov r%d,#%d\n",i,value1->pdata->var_pdata.iVal);
+                    printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("    ldr r%d,=%s\n",i,arr);
+                    printf("\tldr\tr%d,=%s\n",i,arr);
                 } else if(isImmFloatType(value1->VTy)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("    ldr r%d,=%s\n",i,arr);
+                    printf("\tldr\tr%d,=%s\n",i,arr);
                 }
             }else{
-                int x= get_value_offset_sp(hashMap,value1);
-                if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
-                    printf("    add r%d,sp,#%d\n",i,x);
-                } else{
-                    printf("    ldr r%d,[sp,#%d]\n",i,x);
+//                变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
+                if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",i,left_reg);
+                    }
+                }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+//                    这个需要另外处理
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("\tadd\tr%d,sp,#%d\n",i,x);
                 }
             }
         }
         for (int j = num-4; j > 0; j--) {
             tmp=one_param[i++];
+            int left_reg=tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    printf("    mov r0,#%d\n",value1->pdata->var_pdata.iVal);
+                    printf("\t mov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("    ldr r0,=%s\n",arr);
+                    printf("\tldr\tr0,=%s\n",arr);
                 } else if(isImmFloatType(value1->VTy)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("    ldr r0,=%s\n",arr);
+                    printf("\tldr\tr0,=%s\n",arr);
                 }
-            }else{
+            }
+            else if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                }else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                }
+            }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+//                    这个需要另外处理
                 int x= get_value_offset_sp(hashMap,value1);
-                if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
-                    printf("    add r0,sp,#%d\n",x);
-                } else{
-                    printf("    ldr r0,[sp,#%d]\n",x);
+                printf("\tadd\tr0,sp,#%d\n",x);
+            }
 //                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
 //                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
 //                所以说这个后面翻译的时候是需要改的。
-                }
-            }
+            printf("\tstr\tr0,[sp,#-%d]\n",j*4);
 
-
-            printf("    str r0,[sp,#-%d]\n",j*4);
 ////                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
 ////                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
 ////                所以说这个后面翻译的时候是需要改的。
-
-
-
 //            if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
 ////                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
 //                printf("    add r0,sp,#%d\n",i,x);
@@ -4782,31 +4836,39 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //            printf("    ldr r0,[sp,#%d]\n",x);
 //            printf("    str r0,[sp,#-%d]\n",i*4);
         }
+
+
 //        填充r0
         tmp=one_param[0];
+        int left_reg=tmp->inst->_reg_[1];
         Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
 //        int x= get_value_offset_sp(hashMap,value1);
 //        printf("    ldr r0,[sp,#%d]\n",x);
         if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
             if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-                printf("    mov r0,#%d\n",value1->pdata->var_pdata.iVal);
+                printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
             } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
                 char arr[12]="0x";
                 sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                printf("    ldr r0,=%s\n",arr);
+                printf("\tldr\tr0,=%s\n",arr);
             } else if(isImmFloatType(value1->VTy)){
                 char arr[12]="0x";
                 sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                printf("    ldr r0,=%s\n",arr);
+                printf("\tldr\tr0,=%s\n",arr);
             }
-        }else{
+        }
+        else if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[sp,#%d]\n",left_reg-100,x);
+                printf("\tmov\tr0,r%d\n",left_reg-100);
+            }else{
+                printf("\tmov\tr0,r%d\n",left_reg);
+            }
+        }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+//                    这个需要另外处理
             int x= get_value_offset_sp(hashMap,value1);
-            if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
-                printf("    add r0,sp,#%d\n",x);
-            } else{
-                printf("    ldr r0,[sp,#%d]\n",x);
-            }
+            printf("\tadd\tr0,sp,#%d\n",x);
         }
     }
 
@@ -4838,7 +4900,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("\tcmp\t#%d,#%d\n",x1,x2);
+            printf("\tmov\tr1,#%d\n",x1);
+            printf("\tcmp\tr1,#%d\n",x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
             char arr[12]="0x";
             sprintf(arr+2,"%0x",x1);
@@ -4848,7 +4911,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             char arr[12]="0x";
             sprintf(arr+2,"%0x",x2);
             printf("\tldr\tr2,=%s\n",arr);
-            printf("\tcmp\t#%d,r2\n",x1);
+            printf("\tcmp\tr2,#%d\n",x1);
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);

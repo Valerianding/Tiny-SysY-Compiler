@@ -6,19 +6,7 @@
 HashMap *global_hashmap;
 int func_num=0;
 int in_func_num=0;
-void offset_free(HashMap*hashMap){
-    HashMapFirst(hashMap);
-    Pair *ptr_pair;
-    while ((ptr_pair= HashMapNext(hashMap))!=NULL){
-        offset *node=(offset*)ptr_pair->value;
-        if(node!=NULL){
-            free(node);
-        }
-        node=NULL;
-    }
-    HashMapDeinit(hashMap);
-    return;
-}
+
 offset *offset_node(){
     offset *node=(offset*) malloc(sizeof(offset));
     memset(node,0, sizeof(offset));
@@ -27,7 +15,20 @@ offset *offset_node(){
 //void globalint_mapping(Value*value0,Value*value1){
 //
 //}
-
+void offset_free(HashMap*hashMap){
+//这个会出现double free的问题，具体在哪里出现的还需要找一下
+//    HashMapFirst(hashMap);
+//    Pair *ptr_pair;
+//    while ((ptr_pair= HashMapNext(hashMap))!=NULL){
+//        offset *node=(offset*)ptr_pair->value;
+//        if(node!=NULL){
+//            free(node);
+//        }
+//        node=NULL;
+//    }
+    HashMapDeinit(hashMap);
+    return;
+}
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num){
 //    全局变量放在全局变量的global_hashmap里面
