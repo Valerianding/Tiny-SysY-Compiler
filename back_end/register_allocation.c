@@ -2563,8 +2563,8 @@ void travel_ir(InstNode *instruction_node)
                     // printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 else
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].dest_use=1;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
                     // printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                 }
                 break;
