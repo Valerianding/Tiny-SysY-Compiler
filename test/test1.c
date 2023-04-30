@@ -115,7 +115,7 @@ int main(){
         b = temp;
         c = c + 1;
     }
-    return 1;
+    return c;
 }
 
 

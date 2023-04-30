@@ -7,9 +7,10 @@
 #include "function.h"
 #include "utility.h"
 #include "dominance.h"
+bool isEssentialOperator(InstNode *inst);
 bool DeadCodeElimination(Function *currentFunction);
 void Mark(Function *currentFunction);
 void Sweep(Function *currentFunction);
 void Clean(Function *currentFunction);
-bool OnePass(Queue *postQueue);
+bool OnePass(Vector *vector);
 #endif //C22V1_DEADCODEELIMINATION_H
