@@ -1,5 +1,5 @@
 .idea/
-test_cases/
+test_cases/:
 cmake-build-debug/
 libs/.DS_Store
 .DS_Store
