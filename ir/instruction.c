@@ -43,7 +43,6 @@ Instruction *ins_new_zero_operator(int Op){
     Instruction* inst = ins_new(0);
     inst->Opcode = Op;
     inst->i = instruction_uid;
-    inst->isCritical = true;
     instruction_uid++;
     return inst;
 }

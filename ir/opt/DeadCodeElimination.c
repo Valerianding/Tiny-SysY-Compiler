@@ -3,7 +3,7 @@
 //
 
 #include "DeadCodeElimination.h"
-const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd};
+const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label};
 BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
     bool marked = false;
     BasicBlock *parent = postDomNode->parent;
@@ -28,12 +28,29 @@ bool isEssentialOperator(InstNode *inst){
     return false;
 }
 
+bool isParam(Value *val, int paramNum){
+    char *name = val->name;
+    assert(name[0] == '%');
+    name++;
+    int num = atoi(name);
+    printf("num is %d paramNum is %d \n",num,paramNum);
+    if(num <= paramNum - 1){
+        return true;
+    }
+    return false;
+}
+
 void Mark(Function *currentFunction){
     //
     HashSet *workList = HashSetInit();   //放的是instruction *类型
 
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;
+
+    InstNode *headNode = entry->head_node;
+    assert(headNode->inst->Opcode == FunBegin);
+
+    int paramNum = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
 
     //
     InstNode *currNode = entry->head_node;
@@ -50,13 +67,16 @@ void Mark(Function *currentFunction){
         currNode = get_next_inst(currNode);
     }
 
-    printf("after frist!\n");
 
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         //remove i from worklist
         Instruction *instNode = HashSetNext(workList);
 
+
+        if(instNode->i == 0){
+            printf("oops!\n");
+        }
         printf("current at %d\n",instNode->i);
         HashSetRemove(workList,instNode);
 
@@ -74,10 +94,7 @@ void Mark(Function *currentFunction){
         }
 
 
-        //TODO 找到def 不能是store的全局 并且不能是GiveParam的第二个value、
-        //并且putint
-
-
+        //TODO 找到def 不能是store的全局 并且不能是GiveParam的第二个value
         if(instNode->Opcode == Call || instNode->Opcode == Alloca){
             lhs = NULL;
             rhs = NULL;
@@ -88,7 +105,7 @@ void Mark(Function *currentFunction){
         }
 
         //  // 找到对应的instruction TODO 修改部分
-        if(lhs != NULL && !isImm(lhs) && !isGlobalVar(lhs) && !isGlobalArray(lhs)){
+        if(lhs != NULL && !isImm(lhs) && !isGlobalVar(lhs) && !isGlobalArray(lhs) && !isParam(lhs,paramNum)){
             printf("lhs : %s\n ",lhs->name);
             Instruction *defLhs = (Instruction*)lhs;
             assert(defLhs != NULL);
@@ -98,7 +115,7 @@ void Mark(Function *currentFunction){
             }
         }
 
-        if(rhs != NULL && !isImm(rhs) && !isGlobalVar(rhs) && !isGlobalArray(rhs)){
+        if(rhs != NULL && !isImm(rhs) && !isGlobalVar(rhs) && !isGlobalArray(rhs) && !isParam(rhs,paramNum)){
             printf("rhs : %s\n ",rhs->name);
             Instruction *defRhs = (Instruction*)rhs;
             assert(defRhs != NULL);
@@ -114,8 +131,12 @@ void Mark(Function *currentFunction){
             HashSetFirst(insValue->pdata->pairSet);
             for(pair *phiInfo = HashSetNext(insValue->pdata->pairSet); phiInfo != NULL; phiInfo = HashSetNext(insValue->pdata->pairSet)){
                 Value* src = phiInfo->define;
-                // 有
-                if(!isImm(src)) {
+//                BasicBlock *from = phiInfo->from;
+//                // 解决空block导致phi不能正常function 将phi的前驱的tail node设置为
+//                from->tail_node->inst->isCritical = true;
+//                HashSetAdd(workList,from->tail_node->inst);
+//                // 有
+                if(src != NULL && !isImm(src) && !isParam(src,paramNum)) {
                     //不是
                     Instruction *ins = (Instruction*)src;
                     if(ins->isCritical == false){
@@ -124,28 +145,28 @@ void Mark(Function *currentFunction){
                         HashSetAdd(workList,ins);
                     }
                 }
+
             }
         }
 
-        //除了br之外的每一条语句我们都需要去找reverseBlock
-        if(instNode->Opcode != br){
-            //计算每条
-            BasicBlock *block = instNode->Parent;
+        //计算每条
+        BasicBlock *block = instNode->Parent;
 
-            printf("block : %d\n",block->id);
-            HashSetFirst(block->rdf);
-            for(BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)){
+        printf("block : %d ",block->id);
+        printf("rdfs:");
+        HashSetFirst(block->rdf);
+        for(BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)){
+            printf("b%d",rdf->id);
+            InstNode *rdfTail = rdf->tail_node;
 
-                InstNode *rdfTail = rdf->tail_node;
+            assert(rdfTail->inst->Opcode == br_i1);
 
-                assert(rdfTail->inst->Opcode == br_i1);
-
-                if(rdfTail->inst->isCritical == false){
-                    rdfTail->inst->isCritical = true;
-                    HashSetAdd(workList,rdfTail->inst);
-                }
+            if(rdfTail->inst->isCritical == false){
+                rdfTail->inst->isCritical = true;
+                HashSetAdd(workList,rdfTail->inst);
             }
         }
+        printf("\n");
     }
 }
 
@@ -157,6 +178,9 @@ void Sweep(Function *currentFunction) {
     while (currNode != tail->tail_node) {
         if (currNode->inst->isCritical == false && !isEssentialOperator(currNode)) {
             if (currNode->inst->Opcode == br_i1) {
+
+                InstNode *nextNode = get_next_inst(currNode);
+
                 //rewrite i with a jump to i's nearest marked postDominator
                 BasicBlock *block = currNode->inst->Parent;
 
@@ -174,9 +198,6 @@ void Sweep(Function *currentFunction) {
                 // rewrite this branch with a jump instruction
                 InstNode *branchNode = block->tail_node;
 
-                //先delete吧，这样也释放了内存
-                deleteIns(branchNode);
-
                 Instruction *jumpIns = ins_new_zero_operator(br);
                 InstNode *jumpNode = new_inst_node(jumpIns);
                 jumpIns->Parent = block;
@@ -185,11 +206,16 @@ void Sweep(Function *currentFunction) {
 
                 //跳转到这个位置
                 insValue->pdata->instruction_pdata.true_goto_location = markedPostDominator->id;
-                block->tail_node = jumpNode;
-
-                InstNode *jumpPrev = get_prev_inst(jumpNode);
+                InstNode *jumpPrev = get_prev_inst(branchNode);
                 ins_insert_after(jumpNode,jumpPrev);
 
+                block->tail_node = jumpNode;
+
+                //先delete吧，这样也释放了内存
+                deleteIns(branchNode);
+
+
+                currNode = nextNode;
 
                 // TODO 解决掉后面可能会引起的phi函数的冲突问题
             } else if (currNode->inst->Opcode == br) {

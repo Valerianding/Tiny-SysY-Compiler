@@ -55,8 +55,8 @@ bool hasNoDestOperator(InstNode *insNode){
     return false;
 }
 
-void clear_visited_flag(BasicBlock *block){
-    InstNode *currNode = block->head_node;
+void clear_visited_flag(BasicBlock *startBlock){
+    InstNode *currNode = startBlock->head_node;
 
     while(currNode != NULL){
         BasicBlock *currNodeParent = currNode->inst->Parent;

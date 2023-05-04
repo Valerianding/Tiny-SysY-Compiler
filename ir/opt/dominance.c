@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/1/18.
 //
 #include "dominance.h"
-HashMap *mapping; // 不想再改数据结构了 就这样将就用吧
+#include "travel.h"
 
 //只针对BasicBlock类型
 void HashSetCopy(HashSet *dest,HashSet *src){
@@ -43,40 +43,34 @@ void calculate_dominance(Function *currentFunction) {
     entry->dom = HashSetInit();
     HashSetAdd(entry->dom,entry);
 
+
+    clear_visited_flag(entry);
     HashSet *allNode = HashSetInit();
-    //拿到第一条InstNode
-    BasicBlock *prev = nullptr;
-    InstNode *cur = entry->head_node;
-    InstNode *end = currentFunction->tail->tail_node;
-    while(cur != end){
-        BasicBlock *parent = cur->inst->Parent;
-        if(prev != parent){
-            HashSetAdd(allNode,parent);
+    HashSet *workList = HashSetInit();
+    HashSetAdd(workList,entry);
+    while(HashSetSize(workList) != 0){
+        //
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetAdd(allNode,block);
+        block->visited = true;
+        HashSetRemove(workList,block);
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
         }
-        cur = get_next_inst(cur);
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
+        }
     }
-    BasicBlock *endBlock = end->inst->Parent;
-    if(!HashSetFind(allNode,endBlock)){
-        HashSetAdd(allNode,endBlock);
-    }
+
+    HashSet *tempSet = HashSetInit();
+    HashSetCopy(tempSet,allNode);
     HashSetFirst(allNode);
-    cur = entry->head_node;
-    while(cur != end){
-        BasicBlock *block = cur->inst->Parent;
-        if(block != entry && block->dom == NULL){
-            block->dom = HashSetInit();
+    for(BasicBlock *tempBlock = HashSetNext(allNode); tempBlock != NULL; tempBlock = HashSetNext(allNode)){
+        if(tempBlock != entry){
+            tempBlock->dom = HashSetInit();
+            HashSetCopy(tempBlock->dom,tempSet);
         }
-        if(!block->visited && block != entry){
-            HashSetFirst(allNode);
-            printf("addBlock :");
-            for(BasicBlock *addBlock = HashSetNext(allNode); addBlock != NULL; addBlock = HashSetNext(allNode)){
-                printf(" b%d",addBlock->id);
-                HashSetAdd(block->dom,addBlock);
-            }
-            printf("\n");
-            block->visited = true;
-        }
-        cur = get_next_inst(cur);
     }
 
     printf("right before all\n");
@@ -86,8 +80,8 @@ void calculate_dominance(Function *currentFunction) {
     while(changed){
         changed = false;
         //对于除了entry外的每一个block
-        cur = currentFunction->entry->head_node;
-
+        InstNode *cur = currentFunction->entry->head_node;
+        InstNode *end = currentFunction->tail->tail_node;
 
         printf("iterate begin!\n");
 
@@ -191,11 +185,15 @@ void calculate_dominance_frontier(Function *currentFunction){
         X->df = HashSetInit();
         HashSetFirst(tempSet);
         for(BasicBlock *Y = HashSetNext(tempSet); Y != NULL; Y = HashSetNext(tempSet)){
-            if(HashSetFind(Y->dom,X) && Y->true_block != NULL && !HashSetFind(Y->true_block->dom,X)){
-                HashSetAdd(X->df,Y->true_block);
+            if(HashSetFind(Y->dom,X) && Y->true_block != NULL){
+                if(!HashSetFind(Y->true_block->dom,X) || Y->true_block == X){
+                    HashSetAdd(X->df,Y->true_block);
+                }
             }
-            if(HashSetFind(Y->dom,X) && Y->false_block != NULL && !HashSetFind(Y->false_block->dom,X)){
-                HashSetAdd(X->df,Y->false_block);
+            if(HashSetFind(Y->dom,X) && Y->false_block != NULL){
+                if(!HashSetFind(Y->false_block->dom,X) || Y->false_block == X){
+                    HashSetAdd(X->df,Y->false_block);
+                }
             }
         }
     }
@@ -270,7 +268,7 @@ void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child){
 void calculate_DomTree(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
-
+    printf("in DomTree!\n");
     printf("entryBlock : %d",entry->id);
     printf(" endBlock : %d",end->id);
     printf("\n");
@@ -336,6 +334,7 @@ void calculate_DomTree(Function *currentFunction){
                 printf("idom : b%d ",parent->iDom->id);
             HashSet *childSet = domTreeNode->children;
             HashSetFirst(childSet);
+            printf("child: ");
             for(DomTreeNode *childNode = HashSetNext(childSet); childNode != NULL; childNode = HashSetNext(childSet)){
                 printf("b%d ",childNode->block->id);
             }
@@ -488,10 +487,9 @@ void calculatePostDominance(Function *currentFunction) {
                 // Y 的preds里面的Z又没有X的就是X的reverse dominance froniter
                 HashSetFirst(Y->preBlocks);
                 for (BasicBlock *Z = HashSetNext(Y->preBlocks); Z != NULL; Z = HashSetNext(Y->preBlocks)) {
-                    if (!HashSetFind(Z->pDom, X)) {
+                    if (!HashSetFind(Z->pDom, X) || Z == X) {
                         // 那么就代表了 X的RDF里面
                         HashSetAdd(X->rdf, Z);
-
                     }
                 }
             }
@@ -561,4 +559,93 @@ void calculatePostDominance(Function *currentFunction) {
         }
     }
     HashSetDeinit(tempSet);
+}
+
+void removeUnreachable(Function *currentFunction){
+    HashSet* workList = HashSetInit();
+
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *tail = currentFunction->tail;
+
+    clear_visited_flag(entry);
+    HashSetAdd(workList, entry);
+
+
+    // 先识别无用的Block
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *next = (BasicBlock *)HashSetNext(workList);
+        HashSetRemove(workList,next);
+        printf("next block is  b%d\n",next->id);
+        assert(next->visited == false);
+        next->visited = true;
+
+        //clean all prev
+        HashSetClean(next->preBlocks);
+
+        if(next->true_block && next->true_block->visited == false){
+            HashSetAdd(workList,next->true_block);
+        }
+
+        if(next->false_block && next->false_block->visited == false){
+            HashSetAdd(workList, next->false_block);
+        }
+    }
+
+    //然后remove Block里面的所有信息
+    InstNode *headNode = entry->head_node;
+    InstNode *tailNode = tail->tail_node;
+    //然后reconstruct CFG 主要是前后信息需要更新
+
+    InstNode *currNode = headNode;
+    while(currNode != get_next_inst(tailNode)){
+        BasicBlock *parent = currNode->inst->Parent;
+        if(parent->visited == false){
+            //
+
+            printf("block %d is unreachable!\n",parent->id);
+            assert(parent->head_node == currNode);
+            InstNode *deleteNode = currNode;
+            while(deleteNode != get_next_inst(parent->tail_node)){
+                InstNode *tempNode = deleteNode;
+                deleteNode = get_next_inst(deleteNode);
+                deleteIns(tempNode);
+            }
+            currNode = deleteNode;
+            assert(currNode->inst->Opcode == Label);
+
+        }else{
+            currNode = get_next_inst(currNode);
+        }
+    }
+
+    clear_visited_flag(entry);
+    HashSetClean(workList);
+    //now reconstruct prev
+    HashSetAdd(workList, entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+
+        block->visited = true;
+        if(block->true_block){
+            HashSetAdd(block->true_block->preBlocks,block);
+            if(block->true_block->visited == false){
+                HashSetAdd(workList,block->true_block);
+            }
+        }
+        if(block->false_block){
+            HashSetAdd(block->false_block->preBlocks,block);
+            if(block->false_block->visited == false){
+                HashSetAdd(workList,block->false_block);
+            }
+        }
+    }
+
+    clear_visited_flag(entry);
+    renameVariabels(currentFunction);
+    clear_visited_flag(entry);
+
+    print_block_info(entry);
 }

@@ -98,6 +98,7 @@ int main(int argc, char* argv[]){
         correctType(currentFunction);
         print_function_info(currentFunction);
         clear_visited_flag(block);
+        removeUnreachable(currentFunction);
         calculate_dominance(currentFunction);
         calculatePostDominance(currentFunction);
         clear_visited_flag(block);

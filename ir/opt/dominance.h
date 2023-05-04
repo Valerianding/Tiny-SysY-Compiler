@@ -35,4 +35,5 @@ void HashSetCopy(HashSet *dest,HashSet *src);
 bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
 void constructReverseCfg(Function *currentFunction);
 void calculatePostDominance(Function *currentFunction);
+void removeUnreachable(Function *currentFunction);
 #endif //C22V1_DOMINANCE_H

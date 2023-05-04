@@ -390,7 +390,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             if(pairValue != NULL){
                 pair *phiInfo = createPhiInfo(block,pairValue);
                 insertPhiInfo(nextBlockCurr,phiInfo);
-                printf("insert a phi info\n");
             }else{
                 // 如果是NULL的话就是Undefine
                 pair *phiInfo = createPhiInfo(block,pairValue);
