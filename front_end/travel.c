@@ -85,7 +85,10 @@ void create_continue_stmt(past root,Value* v_return)
     //遇到continue,push就完事
     InstNode *node_continue = true_location_handler(br, NULL, 0);
 
-    insnode_push(&S_continue,node_continue);
+    //读一下最新层的while值
+    InstNode *ins_location=NULL;
+    insnode_top(&S_continue,&ins_location);
+    node_continue->inst->user.value.pdata->instruction_pdata.true_goto_location=ins_location->inst->user.value.pdata->instruction_pdata.true_goto_location;
 
     if (root->next != NULL)
         create_instruction_list(root->next,v_return);
@@ -104,61 +107,6 @@ void create_break_stmt(past root,Value* v_return)
 
     if (root->next != NULL)
         create_instruction_list(root->next,v_return);
-}
-
-void reduce_continue()
-{
-    InstNode * gap[10];
-    int gap_index=0;
-
-    do{
-        InstNode * zero;
-        insnode_pop(&S_continue,&zero);
-
-        //1.zero如果是-1
-        if(zero->inst->user.value.pdata->instruction_pdata.true_goto_location==-1)
-        {
-            //存上所有continue
-            InstNode * store_continue[10];
-            int store_num=0;
-            InstNode *continue_point;
-            insnode_top(&S_continue,&continue_point);
-            while(continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location==0)
-            {
-                store_continue[store_num++]=continue_point;
-                insnode_pop(&S_continue,&continue_point);
-                insnode_top(&S_continue,&continue_point);
-            }
-            //离开while的时候
-            // 1.continue_point是while起点了,已经拿出来了
-            if(continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location!=-1)
-            {
-                for(int i=0;i<store_num;i++)
-                {
-                    store_continue[i]->inst->user.value.pdata->instruction_pdata.true_goto_location=continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location;
-                }
-                insnode_pop(&S_continue,&continue_point);
-            }
-            else
-            {
-                //2.是-1
-                //并将store_continue数组中的东西复制到gap数组中
-                for(int i=0;i<store_num;i++)
-                    gap[gap_index+i]=store_continue[i];
-                gap_index+=store_num;
-            }
-        }
-            //2.如果zero是while起点
-        else
-        {
-
-            for(int i=0;i<gap_index;i++)
-                gap[i]->inst->user.value.pdata->instruction_pdata.true_goto_location=zero->inst->user.value.pdata->instruction_pdata.true_goto_location;
-            //将gap数组清0
-            gap_index=0;
-        }
-
-    } while (!insnode_is_empty(S_continue));
 }
 
 void reduce_return()
@@ -2146,11 +2094,9 @@ void create_while_stmt(past root,Value* v_return)
     if(ins_false!=NULL)
         ins_false->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index-1;
 
-    Instruction *ins_1_tmp= ins_new_zero_operator(tmp);
-    Value *t_1= ins_get_dest(ins_1_tmp);
-    t_1->pdata->instruction_pdata.true_goto_location=-1;
-
-    insnode_push(&S_continue, new_inst_node(ins_1_tmp));
+    //while完了，弹出while的起始位置
+    InstNode *out_continue= NULL;
+    insnode_pop(&S_continue, &out_continue);
 
     //在while结束时就开始reduce,如果scope_level相等就约束，不等的就不加入
     //栈中只会有br语句的ins_node,没有tmp
@@ -2341,11 +2287,11 @@ void create_func_def(past root) {
 //        reduce_break();
 //        c_b_flag[1]=false;
 //    }
-    if(c_b_flag[0]==true)
-    {
-        reduce_continue();
-        c_b_flag[0]=false;
-    }
+//    if(c_b_flag[0]==true)
+//    {
+//        reduce_continue();
+//        c_b_flag[0]=false;
+//    }
 
     if(return_stmt_num[return_index]>1 || (return_stmt_num[return_index]==1 && v->pdata->symtab_func_pdata.return_type.ID==VoidTyID))
         reduce_return();
