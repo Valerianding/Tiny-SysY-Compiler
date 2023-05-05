@@ -166,7 +166,7 @@ bool BranchOptimizing(Function *currentFunction) {
                     // 记得修改DomTreeNode 上的内存这样的话 我们可以在mem2reg之前跑一次
 
                     BasicBlock *falseBlock = parent->false_block;
-                    
+
                     // 剔除
                     parent->false_block = NULL;
                     // 删除对应的基本块内的use

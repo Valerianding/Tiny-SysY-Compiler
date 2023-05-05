@@ -6,10 +6,10 @@
 // 出现在IR里面的我们都要进行分析了 除了alloca
 // 对于alloca后端是自行建立了一个表去查找位置
 const Opcode invalidOpcodes[] = {FunBegin, Label, ALLBEGIN, Alloca, tmp, zext, MEMCPY, zeroinitializer, GLOBAL_VAR, FunEnd};
-const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod};
 const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
-const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label};
+const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label,GIVE_PARAM};
 const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET};
+const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div};
 bool isValidOperator(InstNode *insNode){
     for (int i = 0; i < sizeof(invalidOpcodes) / sizeof(Opcode); i++) {
         if (insNode->inst->Opcode == invalidOpcodes[i]) {
@@ -19,14 +19,6 @@ bool isValidOperator(InstNode *insNode){
     return true;
 }
 
-bool isCalculationOperator(InstNode *instNode){
-    for (int i = 0; i < sizeof(simpleOpcodes) / sizeof(Opcode); i++){
-        if (instNode->inst->Opcode == simpleOpcodes[i]){
-            return true;
-        }
-    }
-    return false;
-}
 
 bool isCompareOperator(InstNode *insNode){
     for(int i = 0; i < sizeof(compareOpcodes) / sizeof(Opcode); i++){
@@ -45,6 +37,7 @@ bool isCriticalOperator(InstNode *insNode){
     }
     return false;
 }
+
 
 bool hasNoDestOperator(InstNode *insNode){
     for(int i = 0; i < sizeof(hasNoDestOpcodes) / sizeof(Opcode); i++){
@@ -266,4 +259,13 @@ InstNode *findNode(BasicBlock *block,Instruction *inst){
         currNode = get_next_inst(currNode);
     }
     return NULL;
+}
+
+bool isCalculationOperator(InstNode *instNode){
+    for(int i = 0; i < sizeof(CalculationOpcodes) / sizeof(Opcode); i++){
+        if(instNode->inst->Opcode == CalculationOpcodes[i]){
+            return true;
+        }
+    }
+    return false;
 }

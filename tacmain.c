@@ -107,18 +107,22 @@ int main(int argc, char* argv[]){
         calculate_DomTree(currentFunction);
         calculateNonLocals(currentFunction);
         printf("after non locals\n");
-        mem2reg(currentFunction);
-        printf("------after a function------\n");
     }
 
      //建立phi 之后的
     printf_llvm_ir(instruction_list,argv[1]);
 
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){;
-        Mark(currentFunction);
-        Sweep(currentFunction);
-        renameVariabels(currentFunction);
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        mem2reg(currentFunction);
+        calculateLiveness(currentFunction);
+        printf("after one mem2reg Function!\n");
     }
+
+    printf_llvm_ir(instruction_list,argv[1]);
+
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        loop(currentFunction);
+//    }
 
     // phi上的优化
     printf_llvm_ir(instruction_list,argv[1]);

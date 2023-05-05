@@ -3,8 +3,6 @@
 //
 
 #include "mem2reg.h"
-HashSet *nonLocals = NULL;
-HashSet *killed = NULL;
 InstNode* new_phi(Value *val){
     Instruction *phiIns = ins_new(0);
     phiIns->Opcode = Phi;
@@ -113,8 +111,13 @@ void mem2reg(Function *currentFunction){
     HashMapFirst(currentFunction->loadSet);
     for(Pair *pair = HashMapNext(currentFunction->loadSet); pair != NULL; pair = HashMapNext(currentFunction->loadSet)){
         Value *val = pair->key;
-        BasicBlock *block = pair->value;
-        printf("value %s : load in block : b%d\n", val->name,block->id);
+        HashSet *loadSet = pair->value;
+        HashSetFirst(loadSet);
+        printf("value %s load in ",val->name);
+        for(BasicBlock *loadBlock = HashSetNext(loadSet); loadBlock != NULL; loadBlock = HashSetNext(loadSet)){
+            printf("b%d ",loadBlock->id);
+        }
+        printf("\n");
     }
     curNode = head;
     //做一些基本的优化
@@ -146,6 +149,7 @@ void mem2reg(Function *currentFunction){
 
     //TODO 做一些剪枝来保证phi函数插入更加简介
 
+    HashSet *nonLocals = currentFunction->nonLocals;
     //mem2reg的主要过程
     //Function里面去找
     HashMapFirst(currentFunction->storeSet);
@@ -154,11 +158,10 @@ void mem2reg(Function *currentFunction){
         //先看一下我们的这个是否是正确的
         Value *val = pair->key;
         HashSet *storeSet = pair->value;  //这个value对应的所有defBlocks
-
+        printf("value : %s store(defBlocks) : ", val->name);
         // 只有non-Locals 我们才需要放置phi函数
         if(HashSetFind(nonLocals, val)){
             HashSetFirst(storeSet);
-            printf("value : %s store(defBlocks) : ", val->name);
             for(BasicBlock *key = HashSetNext(storeSet); key != NULL; key = HashSetNext(storeSet)){
                 printf("b%d ",key->id);
             }
@@ -176,6 +179,7 @@ void mem2reg(Function *currentFunction){
                 for(BasicBlock *key = HashSetNext(df); key != nullptr; key = HashSetNext(df)) {
                     if (!HashSetFind(phiBlocks, key)) {
                         //在key上面放置phi函数
+                        printf("insert a phi at %d\n",key->id);
                         insert_phi(key, val);
                         HashSetAdd(phiBlocks, key);
                         if (!HashSetFind(storeSet, key)) {
@@ -563,8 +567,9 @@ void calculateNonLocals(Function *currentFunction){
 
     clear_visited_flag(entry);
 
-    nonLocals = HashSetInit();
-    killed = HashSetInit();
+    currentFunction->nonLocals = HashSetInit();
+    HashSet *nonLocals = currentFunction->nonLocals;
+    HashSet *killed = HashSetInit();
     while(currNode != get_next_inst(tailNode)){
         BasicBlock *block = currNode->inst->Parent;
         if(block->visited == false){

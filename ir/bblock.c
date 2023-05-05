@@ -185,8 +185,7 @@ void removeIns(InstNode *this){
     InstNode *next = get_next_inst(this);
     if(prev == NULL && next != NULL){
         next->list.prev = NULL;
-    }
-    else if(prev != NULL && next == NULL){
+    }else if(prev != NULL && next == NULL){
         prev->list.next = NULL;
     }
     // 要么就都不为空

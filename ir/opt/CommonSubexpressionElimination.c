@@ -3,7 +3,7 @@
 //
 
 #include "CommonSubexpressionElimination.h"
-
+const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
 //TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
 Subexpression *createSubExpression(Value *lhs, Value *rhs, Opcode op){
     Subexpression *subexpression = (Subexpression*)malloc(sizeof(Subexpression));
@@ -18,9 +18,7 @@ bool commonSubexpressionElimination(Function *currentFunction){
     bool effective = false;
     //runs for each BasicBlock
     BasicBlock *entry = currentFunction->entry;
-
     clear_visited_flag(entry);
-
 
     HashSet *workList = HashSetInit();
     HashSetAdd(workList,entry);
@@ -42,17 +40,17 @@ bool commonSubexpressionElimination(Function *currentFunction){
 
 bool commonSubexpression(BasicBlock *block){
     bool effective = false;
-    HashMap* commonSubExpression = HashMapInit();
     InstNode *currNode = block->head_node;
-
+    HashMap *commonSubExpression = HashMapInit();
     //反正block的结尾
     while(currNode != block->tail_node){
-        if(isCalculationOperator(currNode)){
-            //只对加减乘除法进行替换
+        printf("before Simple Operator!\n");
+        if(isSimpleOperator(currNode)){
+            printf("before here!\n");
             Value *lhs = ins_get_lhs(currNode->inst);
             Value *rhs = ins_get_rhs(currNode->inst);
             Value *dest = ins_get_dest(currNode->inst);
-            if((isImm(lhs) || isLocalVar(lhs)) && (isImm(rhs) || isLocalVar(rhs))){
+            if((isImm(lhs) || isLocalVar(lhs) || isLocalArray(lhs) || isGlobalArray(lhs) || isGlobalVar(lhs)) && (isImm(rhs) || isLocalVar(rhs))){
                 //看看现在的HashMap里面包不包含
                 printf("here!\n");
                 HashMapFirst(commonSubExpression);
@@ -60,39 +58,58 @@ bool commonSubexpression(BasicBlock *block){
                 Value *replace = NULL;
                 for(Pair *subExpr = HashMapNext(commonSubExpression); subExpr != NULL; subExpr = HashMapNext(commonSubExpression)){
                     Subexpression *subexpression = subExpr->value;
+                    // TODO 没有考虑IMM！！
                     switch (subexpression->op) {
-                        case Add:
+                        case Add: {
                             if((subexpression->lhs == lhs && subexpression->rhs == rhs) || (subexpression->rhs == lhs && subexpression->lhs == rhs)){
                                 //满足条件
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
-                        case Sub:
+                        }
+                        case Sub:{
                             if(subexpression->lhs == lhs && subexpression->rhs == rhs){
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
-                        case Mul:
+                        }
+                        case Mul:{
                             if((subexpression->lhs == lhs && subexpression->rhs == rhs) || (subexpression->rhs == lhs && subexpression->lhs == rhs)){
                                 //满足条件
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
-                        case Div:
+                        }
+                        case Div:{
                             if(subexpression->lhs == lhs && subexpression->rhs == rhs){
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
-                        case Mod:
+                        }
+                        case Mod:{
                             if(subexpression->lhs == lhs && subexpression->rhs == rhs){
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
+                        }
+                        case GEP:{
+                            printf("case GEP!");
+                            if(subexpression->lhs == lhs){
+                                if(isImmInt(subexpression->rhs) && isImmInt(rhs) && (subexpression->rhs->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal)){
+                                    replace = subExpr->key;
+                                    flag = true;
+                                }else if(subexpression->rhs == rhs){
+                                    replace = subExpr->key;
+                                    flag = true;
+                                }
+                            }
+                            break;
+                        }
                         default:
                             assert(false);
                     }
@@ -106,7 +123,6 @@ bool commonSubexpression(BasicBlock *block){
                     //TODO phi 里面的还是没有更新的
                     //删除当前InstNode;
                     InstNode *next = get_next_inst(currNode);
-                    //TODO 删除之后内存并没有修改
                     deleteIns(currNode);
                     currNode = next;
                 }else{
@@ -121,6 +137,14 @@ bool commonSubexpression(BasicBlock *block){
             currNode = get_next_inst(currNode);
         }
     }
-    HashMapDeinit(commonSubExpression);
     return effective;
+}
+
+bool isSimpleOperator(InstNode *instNode){
+    for (int i = 0; i < sizeof(simpleOpcodes) / sizeof(Opcode); i++){
+        if (instNode->inst->Opcode == simpleOpcodes[i]){
+            return true;
+        }
+    }
+    return false;
 }
