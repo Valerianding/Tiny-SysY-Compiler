@@ -556,6 +556,15 @@ void assign_global_array(past p,Value* v_array,int i,int level)
         {
             v_array->pdata->symtab_array_pdata.f_array[i++]=p->fVal;
         }
+        else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
+        {
+            //TODO 处理不精细
+            Value *v_num= cal_expr(p,Unknown,0);
+            if(v_num->VTy->ID==Int)
+                v_array->pdata->symtab_array_pdata.array[i++]=v_num->pdata->var_pdata.iVal;
+            else
+                v_array->pdata->symtab_array_pdata.f_array[i++]=v_num->pdata->var_pdata.fVal;
+        }
             //是InitValList
         else
         {
@@ -587,7 +596,8 @@ void handle_global_array(Value* v_array,bool is_global,past vars,int flag)
         {
             past p=vars->right->left;
 
-            assign_global_array(p,v_array,0,0);
+           // if(p!=NULL)
+                assign_global_array(p,v_array,0,0);
         }
 
             //不是全局的
@@ -1187,7 +1197,10 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 v_array->pdata->define_flag=1;
 
                 if(vars->right->left==NULL)
+                {
                     handle_global_array(v_array,true,vars,0);
+                    v_array->pdata->symtab_array_pdata.is_init=0;
+                }
                 else
                     handle_global_array(v_array,true,vars,1);
             }
@@ -4506,21 +4519,21 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
         }
 
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
-
-        if(instruction->isCritical){
-            printf("isCritical\n\n");
-        }
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
+//
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
