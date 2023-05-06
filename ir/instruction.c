@@ -1,9 +1,9 @@
 #include "instruction.h"
 #include "stdio.h"
 
-extern char t_num[5];
+extern char t_num[7];
 extern int t_index ;
-extern char t[6];
+extern char t[8];
 extern Symtab *this;
 
 //全局记录instruction的编号

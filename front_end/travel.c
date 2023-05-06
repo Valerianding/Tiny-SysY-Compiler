@@ -6,7 +6,7 @@ extern struct _InstNode *instruction_list;
 //记录临时变量组,形如%1,%2,%3...
 //t_index转字符串用的sprintf
 //目前设置的能容纳3位数的临时变量
-extern char t[6];
+extern char t[8];
 extern int t_index;
 extern int return_stmt_num[20];
 extern int return_index;
@@ -16,16 +16,15 @@ extern insnode_stack S_return;
 extern insnode_stack S_and;
 extern insnode_stack S_or;
 //记录有没有需要continue和break的语句
-extern bool c_b_flag[2];
 
-extern char t_num[5];
+extern char t_num[7];
 int param_map=0;
 Value *v_cur_func;
 extern int flag_blocklist;        //默认都是非正常
 char type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"main_float"},{"int"},{"float"},{"const_int"},{"const_float"},{"function"},{"void"},{"address"},{"var_int"},{"var_float"},{"globalint"},{"globalfloat"},{"array_const_int"},{"array_const_float"},{"global_array_const_int"},{"global_array_const_float"},{"array_int"},{"array_float"},{"global_arrayint"},{"global_arrayfloat"}};
 
-InstNode * one_param[50];   //存放单次正确位置的参数
-InstNode* params[50];      //存放所有参数
+InstNode * one_param[1000];   //存放单次正确位置的参数
+InstNode* params[1000];      //存放所有参数
 
 int while_scope=0;
 
@@ -80,8 +79,6 @@ void create_instruction_list(past root,Value* v_return)
 
 void create_continue_stmt(past root,Value* v_return)
 {
-    c_b_flag[0]=true;
-
     //遇到continue,push就完事
     InstNode *node_continue = true_location_handler(br, NULL, 0);
 
@@ -96,8 +93,6 @@ void create_continue_stmt(past root,Value* v_return)
 
 void create_break_stmt(past root,Value* v_return)
 {
-    c_b_flag[1]=true;
-
     //遇到break,push就完事
     InstNode *node_break = true_location_handler(br, NULL, 0);
     node_break->inst->user.value.pdata->map_list= getCurMapList(this);
@@ -399,22 +394,23 @@ void create_return_stmt(past root,Value* v_return) {
 }
 
 //只考虑了num_int
+//返回NULL代表不是全0
 past array_all_zeros(past init_val_list)
 {
     past p=init_val_list;
-    while(p!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") != 0 && strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") != 0)
+    while(p!=NULL && (strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "num_float") == 0))
     {
         //不是全0就照常处理
-        if(p->iVal!=0)
+        if((strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0 && p->iVal!=0) || (strcmp(bstr2cstr(p->nodeType, '\0'), "num_float") == 0 && p->fVal!=0))
             return NULL;
-            //其他维度全0,随便返回了一个不是NULL的
+        else if(strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") == 0)
+            return array_all_zeros(p->left);
+        //是0,且后面没东西了
         else if(p->next==NULL)
             return init_val_list;
-            //是全0,且是一维全0
-        else if(strcmp(bstr2cstr(p->next->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->next->nodeType, '\0'), "ConstExpList") == 0)
-            return array_all_zeros(p->next->left);
         p=p->next;
     }
+    return NULL;
 }
 
 //做倒数第i位的进位
@@ -927,6 +923,8 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
             else
                 v_num= handle_assign_array(root->right->left,array_exp,1,-1,0);
         }
+        else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
+            v_num= create_call_func(root);
 
 
         if(i==0)
@@ -1092,22 +1090,6 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 InstNode *node_bitcast = new_inst_node(ins_bitcast);
                 ins_node_add(instruction_list,node_bitcast);
 
-                //一维数组,拷贝式赋初值,memcpy
-                //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
-//                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
-//                {
-//                    //以全局，memcpy的方式处理
-//                    if(vars->right->left==NULL)
-//                        handle_global_array(v_array,is_global,vars,0);
-//                    else
-//                        handle_global_array(v_array,is_global,vars,1);
-//
-//                    Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
-//                    //将这个instruction加入总list
-//                    InstNode *node = new_inst_node(instruction);
-//                    ins_node_add(instruction_list,node);
-//                }
-
                 int mem= get_array_total_occupy(v_array,0);
                 Value *v_mem=(Value*) malloc(sizeof (Value));
                 value_init_int(v_mem,mem);
@@ -1116,7 +1098,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 InstNode *node_mem_set = new_inst_node(mem_set);
                 ins_node_add(instruction_list,node_mem_set);
 
-                if(vars->right->left!=NULL)
+                if(vars->right->left!=NULL && array_all_zeros(vars->right->left)==NULL)
                 {
                     //再来一条bitcast
                     //!!!后续第一条一直用v2
@@ -1144,13 +1126,13 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(ident_array->left->sVal,'\0'));
                 v_array->pdata->define_flag=1;
 
-                if(vars->right->left==NULL)
+                if(vars->right->left!=NULL && array_all_zeros(vars->right->left)==NULL)
+                    handle_global_array(v_array,true,vars,1);
+                else
                 {
                     handle_global_array(v_array,true,vars,0);
                     v_array->pdata->symtab_array_pdata.is_init=0;
                 }
-                else
-                    handle_global_array(v_array,true,vars,1);
             }
         }
             //无初值数组
