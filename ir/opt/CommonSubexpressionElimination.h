@@ -15,4 +15,5 @@ typedef struct Subexpression{
 Subexpression *createSubExpression(Value *lhs, Value *rhs, Opcode op);
 bool commonSubexpressionElimination(Function *currentFunction);
 bool commonSubexpression(BasicBlock *block);
+bool isSimpleOperator(InstNode *instNode);
 #endif //C22V1_COMMONSUBEXPRESSIONELIMINATION_H

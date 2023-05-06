@@ -1,7 +1,7 @@
 //
 // Created by Valerian on 2023/4/18.
 //
-
+//
 #include "Loop.h"
 void HashSetCopyBlock(HashSet *dest, HashSet *src){
     HashSetFirst(src);
@@ -36,9 +36,10 @@ void loop(Function *currentFunction){
                 //回边
                 BasicBlock *head = block->true_block;
                 // 必然是回边 不是回边我吃屎
-                assert(HashSetFind(dom,head));
-                // 寻找这个循环的结构体
-                findbody(block->true_block, block);
+                if(HashSetFind(dom,head)){
+                    // 寻找这个循环的结构体
+                    findbody(block->true_block, block);
+                }
             }else{
                 HashSetAdd(workList,block->true_block);
             }
@@ -46,8 +47,9 @@ void loop(Function *currentFunction){
         if(block->false_block){
             if(block->false_block->visited){
                 BasicBlock *head = block->false_block;
-                assert(HashSetFind(dom,head));
-                findbody(block->false_block, block);
+                if(HashSetFind(dom,head)){
+                    findbody(block->false_block, block);
+                }
             }else{
                 HashSetAdd(workList,block->false_block);
             }
@@ -108,6 +110,7 @@ void loopVariant(HashSet *loop, BasicBlock *head){
         while(currNode != block->tail_node){
             if(!hasNoDestOperator(currNode)){
                 Value *insValue = ins_get_dest(currNode->inst);
+                printf("def %s",insValue->name);
                 HashSetAdd(def,insValue);
             }
             currNode = get_next_inst(currNode);
@@ -165,8 +168,17 @@ void loopVariant(HashSet *loop, BasicBlock *head){
         }
     }
 
-    //
-    BasicBlock *loopPrev = newBlock(newBlockPrev,head);
+    BasicBlock *newPrevBlock = NULL;
+    //需要判断是否需要新的基本块
+    //如果除开循环前驱大于1或者没有前驱
+    if(HashSetSize(newBlockPrev) > 1 || HashSetSize(newBlockPrev) == 0){
+       newPrevBlock = newBlock(newBlockPrev,head);
+    }else{
+        //找到唯一不属于循环的前驱节点
+        assert(HashSetSize(newBlockPrev) == 1);
+        HashSetFirst(newBlockPrev);
+        newPrevBlock = HashSetNext(newBlockPrev);
+    }
 
     printf("here !\n");
     HashSet *exit = HashSetInit();
@@ -277,11 +289,11 @@ void loopVariant(HashSet *loop, BasicBlock *head){
 
             //找到InstNode
             InstNode *Node = findNode(defineBlock,instNode);
-
+            Node->inst->Parent = newPrevBlock;
             // remove from
             removeIns(Node);
             // 放到前驱基本块的前面
-            InstNode *loopPrevTail = loopPrev->tail_node;
+            InstNode *loopPrevTail = newPrevBlock->tail_node;
             ins_insert_before(Node,loopPrevTail);
         }else{
             printf("cant move!\n");
@@ -291,7 +303,6 @@ void loopVariant(HashSet *loop, BasicBlock *head){
     }
 
 
-    printf("before extra !\n");
 
 
     HashSet *extraVariable = HashSetInit();
@@ -306,7 +317,7 @@ void loopVariant(HashSet *loop, BasicBlock *head){
             InstNode *currNode = block->head_node;
             while(currNode != block->tail_node){
                 // TODO 解决所有Operator的情况 请仔细思考
-                if(isCalculationOperator(currNode)){
+                if((currNode)){
                     Value *lhs = ins_get_lhs(currNode->inst);
                     Value *rhs = ins_get_rhs(currNode->inst);
                     Value *dest = ins_get_dest(currNode->inst);
@@ -324,13 +335,12 @@ void loopVariant(HashSet *loop, BasicBlock *head){
         }
     }
 
-
     // 不能用while 我们for循环只循环一次就行
     //对extraVariable再跑一次
     HashSetFirst(extraVariable);
     for(Value *defValue = HashSetNext(extraVariable); defValue != NULL; defValue = HashSetNext(extraVariable)){
-        InstNode *instNode = (InstNode*)defValue;
-        BasicBlock *defineBlock = instNode->inst->Parent;
+        Instruction *instNode = (Instruction*)defValue;
+        BasicBlock *defineBlock = instNode->Parent;
         bool moveAble = true;
         //def dominates all uses
         // 统计use
@@ -369,14 +379,13 @@ void loopVariant(HashSet *loop, BasicBlock *head){
                         moveAble = false;
                     }
 
-                    // TODO 因为自己dom自己所以不用另外判断
                     if(rhs != NULL && rhs == defValue && !HashSetFind(useBlock->dom,defineBlock)){
                         moveAble = false;
                     }
                 }
+                currNode = get_next_inst(currNode);
             }
         }
-
 
         bool choose1 = true;
         bool choose2 = true;
@@ -395,11 +404,15 @@ void loopVariant(HashSet *loop, BasicBlock *head){
         moveAble &= (choose2 | choose1);
 
         if(moveAble){
+
             // remove from
-            removeIns(instNode);
+            printf("extra move %s to block %d\n",defValue->name, newPrevBlock->id);
+            InstNode *find = findNode(defineBlock,instNode);
+            removeIns(find);
             // 放到前驱基本块的前面
-            InstNode *loopPrevTail = loopPrev->tail_node;
-            ins_insert_before(instNode,loopPrevTail);
+            InstNode *loopPrevTail = newPrevBlock->tail_node;
+            instNode->Parent = newPrevBlock;
+            ins_insert_before(find,loopPrevTail);
         }
     }
     //

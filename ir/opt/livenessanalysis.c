@@ -156,7 +156,6 @@ void calculateLiveness(Function *currentFunction){
         HashSetFirst(workList);
         BasicBlock *removeBlock = HashSetNext(workList);
         HashSetRemove(workList, removeBlock);
-
         // 检查是否会更新的
         bool changed = false;
         // 去找它的true的后继
@@ -223,12 +222,14 @@ void calculateLiveness(Function *currentFunction){
 
                 if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
                     if(!HashSetFind(tempSet,lhs)){
+                        printf("add %s\n",lhs->name);
                         HashSetAdd(tempSet,lhs);
                     }
                 }
 
                 if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
                     if(!HashSetFind(tempSet,rhs)){
+                        printf("add %s\n",rhs->name);
                         HashSetAdd(tempSet,rhs);
                     }
                 }

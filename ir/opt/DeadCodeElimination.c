@@ -9,7 +9,7 @@ BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
     BasicBlock *parent = postDomNode->parent;
     InstNode *currNode = parent->head_node;
     while(currNode != parent->tail_node){
-        if(currNode->inst->isCritical == true){
+        if(currNode->inst->isCritical == true && currNode->inst->Opcode != br){
             return parent;
         }
         currNode = get_next_inst(currNode);
@@ -95,7 +95,7 @@ void Mark(Function *currentFunction){
 
 
         //TODO 找到def 不能是store的全局 并且不能是GiveParam的第二个value
-        if(instNode->Opcode == Call || instNode->Opcode == Alloca){
+        if(instNode->Opcode == Call || instNode->Opcode == Alloca || instNode->Opcode == FunEnd){
             lhs = NULL;
             rhs = NULL;
         }
@@ -131,10 +131,10 @@ void Mark(Function *currentFunction){
             HashSetFirst(insValue->pdata->pairSet);
             for(pair *phiInfo = HashSetNext(insValue->pdata->pairSet); phiInfo != NULL; phiInfo = HashSetNext(insValue->pdata->pairSet)){
                 Value* src = phiInfo->define;
-//                BasicBlock *from = phiInfo->from;
-//                // 解决空block导致phi不能正常function 将phi的前驱的tail node设置为
-//                from->tail_node->inst->isCritical = true;
-//                HashSetAdd(workList,from->tail_node->inst);
+                BasicBlock *from = phiInfo->from;
+                // 解决空block导致phi不能正常function 将phi的前驱的tail node设置为
+                from->tail_node->inst->isCritical = true;
+                HashSetAdd(workList,from->tail_node->inst);
 //                // 有
                 if(src != NULL && !isImm(src) && !isParam(src,paramNum)) {
                     //不是
@@ -149,24 +149,27 @@ void Mark(Function *currentFunction){
             }
         }
 
-        //计算每条
-        BasicBlock *block = instNode->Parent;
+        // 我还是觉得br不能算
+        if(instNode->Opcode != br_i1){
+            //计算每条
+            BasicBlock *block = instNode->Parent;
 
-        printf("block : %d ",block->id);
-        printf("rdfs:");
-        HashSetFirst(block->rdf);
-        for(BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)){
-            printf("b%d",rdf->id);
-            InstNode *rdfTail = rdf->tail_node;
+            printf("block : %d ",block->id);
+            printf("rdfs:");
+            HashSetFirst(block->rdf);
+            for(BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)){
+                printf("b%d",rdf->id);
+                InstNode *rdfTail = rdf->tail_node;
 
-            assert(rdfTail->inst->Opcode == br_i1);
+                assert(rdfTail->inst->Opcode == br_i1);
 
-            if(rdfTail->inst->isCritical == false){
-                rdfTail->inst->isCritical = true;
-                HashSetAdd(workList,rdfTail->inst);
+                if(rdfTail->inst->isCritical == false){
+                    rdfTail->inst->isCritical = true;
+                    HashSetAdd(workList,rdfTail->inst);
+                }
             }
+            printf("\n");
         }
-        printf("\n");
     }
 }
 
@@ -191,17 +194,15 @@ void Sweep(Function *currentFunction) {
 
                 //修改它的后继节点
                 block->true_block = markedPostDominator;
-                //
+                block->false_block = NULL;
 
                 // TODO 修改marked postDominator的前驱节点  暂时不修改后面需要的时候重新计算
-
                 // rewrite this branch with a jump instruction
                 InstNode *branchNode = block->tail_node;
 
                 Instruction *jumpIns = ins_new_zero_operator(br);
                 InstNode *jumpNode = new_inst_node(jumpIns);
                 jumpIns->Parent = block;
-
                 Value *insValue = ins_get_dest(jumpIns);
 
                 //跳转到这个位置
@@ -213,13 +214,11 @@ void Sweep(Function *currentFunction) {
 
                 //先delete吧，这样也释放了内存
                 deleteIns(branchNode);
-
-
                 currNode = nextNode;
-
                 // TODO 解决掉后面可能会引起的phi函数的冲突问题
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
+                assert(false);
             } else {
                 // 除了br不变的话其他的
                 // TODO 解决delete_inst相关的问题
@@ -499,6 +498,5 @@ void reconstructCFG(Function *currentFunction){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
         block->visited = true;
-
     }
 }

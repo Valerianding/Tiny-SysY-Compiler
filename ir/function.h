@@ -9,7 +9,7 @@ struct _Function{
     BasicBlock *entry;
     BasicBlock *tail;
 
-    HashMap *dominance;  // value: block key: Dom(block)->hashset(block)
+    HashSet *nonLocals;
     struct _DomNode *root;
 
     HashMap *loadSet;
