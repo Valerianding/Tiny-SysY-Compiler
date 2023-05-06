@@ -22,16 +22,15 @@ Symtab *this;
 extern FILE *yyin;
 int return_index=0;
 int return_stmt_num[20]={0};
-char t[6];
+char t[8];
 int t_index = 0;
 insnode_stack S_continue;
 insnode_stack S_break;
 insnode_stack S_return;
 insnode_stack S_and;
 insnode_stack S_or;
-bool c_b_flag[2];
 
-char t_num[5] = {0};
+char t_num[7] = {0};
 int flag_blocklist;
 
 struct _InstNode *instruction_list;
@@ -67,7 +66,6 @@ int main(int argc, char* argv[]){
     TRoot=TRoot->left;
     stack_new(this);
     declare_global_alloca(this->value_maps->next);
-    c_b_flag[0]=false;c_b_flag[1]=false;
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
