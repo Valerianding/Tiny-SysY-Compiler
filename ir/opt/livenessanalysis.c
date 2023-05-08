@@ -130,12 +130,14 @@ void calculateLiveness(Function *currentFunction){
 
             if(lhs != NULL && !isImm(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs) && !isLocalArray(lhs)){
                 if(!HashSetFind(exitLiveIn,lhs)){
+                    printf("lhs add %s\n",lhs->name);
                     HashSetAdd(exitLiveIn,lhs);
                 }
             }
 
             if(rhs != NULL && !isImm(rhs) && !isGlobalVar(rhs) && !isGlobalArray(rhs) && !isLocalArray(lhs)){
                 if(!HashSetFind(exitLiveIn,rhs)){
+                    printf("rhs add %s\n",rhs->name);
                     HashSetAdd(exitLiveIn,rhs);
                 }
             }
@@ -160,6 +162,7 @@ void calculateLiveness(Function *currentFunction){
         bool changed = false;
         // 去找它的true的后继
 
+        printf("at block %d!\n");
         if(removeBlock->true_block != NULL){
             HashSet *trueBlockLiveIn = removeBlock->true_block->in;
             changed |= HashSetCopyValue(removeBlock->out,trueBlockLiveIn);
@@ -177,7 +180,7 @@ void calculateLiveness(Function *currentFunction){
         while(currNode != removeBlock->head_node){
 
             if(isValidOperator(currNode)){
-                //printf("current Opcode is %d\n",currNode->inst->Opcode);
+                printf("current  is %d\n",currNode->inst->i);
 
                 Value *def = NULL;
                 Value *lhs = NULL;
@@ -222,14 +225,14 @@ void calculateLiveness(Function *currentFunction){
 
                 if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
                     if(!HashSetFind(tempSet,lhs)){
-                        printf("add %s\n",lhs->name);
+                        printf("lhs add %s\n",lhs->name);
                         HashSetAdd(tempSet,lhs);
                     }
                 }
 
                 if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
                     if(!HashSetFind(tempSet,rhs)){
-                        printf("add %s\n",rhs->name);
+                        printf("rhs add %s\n",rhs->name);
                         HashSetAdd(tempSet,rhs);
                     }
                 }
