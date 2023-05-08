@@ -1,5 +1,5 @@
 #include"register_allocation.h"
-struct queue *head;
+struct reg_queue *head;
 int *non_available_colors;
 extern Symtab *this;
 char _type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"main_float"},{"int"},{"float"},{"const_int"},{"const_float"},{"function"},{"void"},{"address"},{"var_int"},{"var_float"},{"globalint"},{"globalfloat"},{"array_const_int"},{"array_const_float"},{"global_array_const_int"},{"global_array_const_float"},{"array_int"},{"array_float"},{"global_arrayint"},{"global_arrayfloat"}};
@@ -10,9 +10,8 @@ int num_of_nodes;
 int edge_num;
 int var_num=0;
 char *func_name_reg;
-int k=7;
+#define KK 7
 int rig_num;
-int var_num;
 struct var_fist_last * var_f_l;
 // struct reg_now *reg_now_tac;
 //char varnum[1000][40];
@@ -46,18 +45,6 @@ void live_init()
     rig_num=0;
     edge_num=0;
     _numnum=tac_cnt;
-    //var_num=0;
-    // for(int i=0;i<1000;i++)
-    // {
-    //     live[i].num=i;
-    //     var_f_l[i].name=NULL;
-    //     var_f_l[i].first=0;
-    //     var_f_l[i].last=0;
-    // // }
-    // free(var_f_l);
-    // free(live);
-    // free(_bian);
-    //var_f_l=(struct var_fist_last *)malloc(sizeof(struct var_fist_last)*(_numnum+1));
     live=(struct name_num *)malloc(sizeof(struct name_num)*(_numnum+1));
     for(int i=0;i<_numnum+1;i++)    live[i].ifparam=0;
     _bian=(struct edge *)malloc(sizeof(struct edge)*_numnum*(_numnum+1)/2);
@@ -67,25 +54,16 @@ void live_init_block()
 {
     rig_num=0;
     edge_num=0;
-    //var_num=0;
-    // for(int i=0;i<1000;i++)
-    // {
-    //     live[i].num=i;
-    //     var_f_l[i].name=NULL;
-    //     var_f_l[i].first=0;
-    //     var_f_l[i].last=0;
-    // // }
-    // free(var_f_l);
-    // free(live);
-    // free(_bian);
-    //var_f_l=(struct var_fist_last *)malloc(sizeof(struct var_fist_last)*(_numnum+1));
-    live=(struct name_num *)malloc(sizeof(struct name_num)*(2000));
-    for(int i=0;i<block_num+1;i++)
+    live=(struct name_num *)malloc(sizeof(struct name_num)*(tac_cnt*3));
+    for(int i=0;i<tac_cnt*3;i++)
     {
         live[i].num=i;
         live[i].name=NULL;
+        live[i].first=-1;
+        live[i].last=-1;
     }
-    _bian=(struct edge *)malloc(sizeof(struct edge)*2000*1000);
+    _bian=(struct edge *)malloc(sizeof(struct edge)*(tac_cnt*tac_cnt*9/2));
+    return ;
 }
 
 int in_live(char * str)
@@ -102,7 +80,7 @@ void minimize_RIG()
 {
    for(int i = 0; i <rig_num; i++)
    {
-       if(list_of_variables[i].neighbor_count < k)
+       if(list_of_variables[i].neighbor_count < KK)
        {
             list_of_variables[i].color = REMOVED;
        }
@@ -123,16 +101,16 @@ void test_minimize_RIG()
 
 void init_non_available_colors()
 {
-    int temp = k / 32;
-    temp += (k % 32) != 0;
+    int temp = KK / 32;
+    temp += (KK % 32) != 0;
     non_available_colors = (int *)malloc(temp * sizeof(int));
 }
 
 void reset_non_available_colors()
 {
     int i;
-    int temp = k / 32;
-    temp += (k % 32) != 0;
+    int temp = KK / 32;
+    temp += (KK % 32) != 0;
     for(i = 0; i < temp; i++)
     {
         non_available_colors[i] = 0;
@@ -141,20 +119,20 @@ void reset_non_available_colors()
 
 int first_fit_coloring()
 {
-    // printf("???");
+    printf("???");
     head = NULL;
 
     for(int i = 0; i < rig_num; i++)
     {
         if(list_of_variables[i].color == NO_COLOR)
         {
-            __push(i);
+            reg__push(i);
             break;
         }
     }
     while(head != NULL)
     {
-        int index = __pop();
+        int index = reg__pop();
         if(visit(index))    return 1;
     }
     return 0;
@@ -175,20 +153,18 @@ int visit(int index)
             if(list_of_variables[i].color > -1)
             {
                 SET(list_of_variables[i].color);
-                // non_available_colors[list_of_variables[i].color /32] |= (1 << (i % 32) );
             }
             if(list_of_variables[i].color == NO_COLOR && !is_removed)
             {
-                __push(i);
+                reg__push(i);
             }
         }
     }
 
     int color = -1; 
-    for(int i = 0; i < k; i++)
+    for(int i = 0; i < KK; i++)
     {
         if(!CHECK(i))
-        //if(!(non_available_colors[i/32] & (1 << (i % 32) )))
         {
             color = i;
             break;
@@ -207,17 +183,6 @@ int visit(int index)
     }
     return 0;
 } 
-
-void reg_init()
-{
-    for(int i=0;i<10000;i++)
-    {
-        _var[i].def=-1;
-        _var[i].use=-1;
-        _var[i].name=NULL;
-    }
-    return ;
-}
 
 void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
 {
@@ -783,10 +748,10 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                         }
                     }
                     j=0;
-                    for(int k=0;k<give_count;k++)
+                    for(int jk=0;jk<give_count;jk++)
                     {
-                        if(params[k]!=NULL)
-                            params[j++]=params[k];
+                        if(params[jk]!=NULL)
+                            params[j++]=params[jk];
                     }
                     give_count-=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
                 }
@@ -1997,10 +1962,10 @@ void travel_ir(InstNode *instruction_node)
                         }
                     }
                     j=0;
-                    for(int k=0;k<give_count;k++)
+                    for(int jk=0;jk<give_count;jk++)
                     {
-                        if(params[k]!=NULL)
-                            params[j++]=params[k];
+                        if(params[jk]!=NULL)
+                            params[j++]=params[jk];
                     }
                     give_count-=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
                 }
@@ -2723,11 +2688,12 @@ void bian_init()
     {
         for(int j=i+1;j<var_num;j++)
         {
-            create_bian(i,j);
+            // if(!(live[i].last<live[j].first||live[i].first>live[j].last))
+                create_bian(i,j);
         }
     }
     // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%s\t%s\n",i,echo_tac[i].dest_name,echo_tac[i].left_name,echo_tac[i].right_name);
-    // for(int i=0;i<var_num;i++)  printf("var_id:%d:%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
 }
 
 
@@ -2789,7 +2755,7 @@ void reg_control_block(BasicBlock *cur)
     create_RIG();
     check_edge();
     //print_info();
-    // minimize_RIG();
+    minimize_RIG();
     init_non_available_colors();
 
     while(first_fit_coloring())
@@ -2798,8 +2764,9 @@ void reg_control_block(BasicBlock *cur)
         reset_queue();
         spill_variable();
     }
+    print_colors();
+    // color_removed(); 
     add_to_ir();
-    color_removed(); 
     clean_reg();
     return ;
     #endif
@@ -2818,7 +2785,7 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
             else
             {
-                reg_uid+=5;
+                reg_uid+=6;
                 if(echo_tac[i].dest_use==0)
                 {
                     if(i==live[var_uid].last) 
@@ -2844,7 +2811,7 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
             else
             {
-                reg_uid+=5;
+                reg_uid+=6;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last) 
@@ -2869,7 +2836,7 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
             else
             {
-                reg_uid+=5;
+                reg_uid+=6;
                 if(echo_tac[i].right_use==0)
                 {
                     if(i==live[var_uid].last) 
@@ -2892,6 +2859,20 @@ void add_to_ir()
 
 void clean_reg()
 {
+    if(live) free(live);
+    if(_tac_var) free(_tac_var);
+    if(_bian) free(_bian);
+    if(list_of_variables) free(list_of_variables);
+    if(RIG) free(RIG);
+    if(head) free(head);
+    if(non_available_colors) free(non_available_colors);
+
+    live=NULL;
+    _bian=NULL;
+    list_of_variables=NULL;
+    RIG=NULL;
+    head=NULL;
+    non_available_colors=NULL;
     return ;
 }
 
@@ -2961,9 +2942,9 @@ int is_Immediate(int type_id)
     return 0;
 }
 
-void __push(int variable_index)
+void reg__push(int variable_index)
 {
-    struct queue *element = (struct queue *)malloc(sizeof(struct queue));
+    struct reg_queue *element = (struct reg_queue *)malloc(sizeof(struct reg_queue));
     element->variable_index = variable_index;
     element->next = NULL;
 
@@ -2973,18 +2954,19 @@ void __push(int variable_index)
     }
     else
     {
-        struct queue *temp = head;
+        struct reg_queue *temp = head;
         while(temp->next != NULL)
         {
             temp  = temp->next;
         }
         temp->next = element;
     }
+    return ;
 }
 
-int __pop()
+int reg__pop()
 {
-    struct queue *temp = head;
+    struct reg_queue *temp = head;
     head = head->next;
 
     int variable_index = temp->variable_index;
@@ -3012,7 +2994,7 @@ int supercmp(char *a ,char *b)
 
 void reset_queue()
 {
-    struct queue *temp = head;
+    struct reg_queue *temp = head;
     while(head != NULL)
     {
         head = temp->next;
@@ -3030,7 +3012,7 @@ void color_removed()
         {
             if(visit(i))
             {
-                //printf("color removed failed");
+                printf("color removed failed");
                 //需修改
             } 
         }
@@ -3039,7 +3021,7 @@ void color_removed()
 
 void print_non_available_colors()
 {
-   for(int i = 0; i < k; i++)
+   for(int i = 0; i < KK; i++)
    {
        printf("%d ", CHECK(i));
    }
@@ -3089,6 +3071,7 @@ void print_colors()
 
 void init_RIG()
 {
+    rig_num=var_num;
     list_of_variables=NULL;
     num_of_nodes=rig_num;
     RIG=NULL;
@@ -3097,8 +3080,7 @@ void init_RIG()
 
 void create_RIG()
 {
-    rig_num=var_num;
-    int size = var_num;
+    int size = rig_num;
     int temp = 0;
     size = size * size;
     temp = size % 32 != 0;
@@ -3106,15 +3088,14 @@ void create_RIG()
     size += temp;
     RIG = (int *)malloc(sizeof(int)*size);
     for(int i=0;i<size;i++) RIG[i]=0;
-    //print_RIG();
+    // print_RIG();
 
     create_variable_list();
     for(int i=0;i<edge_num;i++)
     {
         create_edge(_bian[i].a, _bian[i].b);
-        //printf("%d-%d\n",_bian[i].a, _bian[i].b);
+        printf("%s\t----\t%s\n",live[_bian[i].a].name, live[_bian[i].b].name);
     }
-    // printf("\n\nedgenum:\n\n");
     // for(int i=0;i<rig_num;i++)  printf("%d  %s\t %d\n",i,live[i].name,list_of_variables[i].neighbor_count);
 }
 
@@ -3125,11 +3106,9 @@ void create_edge(int first_node, int second_node)
     int j=second_node;
     SETBIT(i,j);
     SETBIT(j,i);
-    // RIG[(((i*rig_num)+j)/32)] |= (1 << ((i*rig_num+j)%32));
-    // RIG[(((j*rig_num)+i)/32)] |= (1 << ((j*rig_num+i)%32));
     list_of_variables[i].neighbor_count++;
     list_of_variables[j].neighbor_count++;
-    //printf("%s:%d\t%s:%d\n",live[i].name,list_of_variables[i].neighbor_count,live[j].name,list_of_variables[j].neighbor_count);
+    // printf("%s:%d\t%s:%d\n",live[i].name,list_of_variables[i].neighbor_count,live[j].name,list_of_variables[j].neighbor_count);
 }
 
 int find_var(char * str)
@@ -3153,35 +3132,23 @@ void create_variable_list()
     int i;
     for(i = 0; i < rig_num; i++)
     {
-        len=1;
-        int j=i;
-        while(j)
-        {
-            j/=10;
-            len++;
-        }
-        name = (char *)malloc(len * sizeof(char));
-        sprintf(name, "%d", i);
-        list_of_variables[i].name = name;
+        // len=1;
+        // int j=i;
+        // while(j)
+        // {
+        //     j/=10;
+        //     len++;
+        // }
+        // name = (char *)malloc(len * sizeof(char));
+        // sprintf(name, "%d", i);
+        // list_of_variables[i].name = name;
+
+        list_of_variables[i].name = live[i].name;
         // printf("%s\n",list_of_variables[i].name);
         list_of_variables[i].color = NO_COLOR;
         list_of_variables[i].neighbor_count = 0;
     }
-    // int index = 0;
-    // list_of_variables = (struct variable *)malloc(rig_num * sizeof(struct variable));
-    // char *name;
-    // struct variable *temp;
-    // int i;
-    // for(i = 0; i < rig_num; i++)
-    // { 
-    //     name = (char *)malloc(MAXSTRINGSIZE * sizeof(char));
-    //     sprintf(name, "%d", i);
-    //     list_of_variables[i].name = name;
-    //     list_of_variables[i].color = NO_COLOR;
-    //     list_of_variables[i].neighbor_count = 0;
-    // }
-    // for(int i=0;i<rig_num;i++)
-    //     printf("%d %s %d %d\n",i,list_of_variables[i].name,list_of_variables[i].color,list_of_variables[i].neighbor_count);
+    return ;
 }
 
 
