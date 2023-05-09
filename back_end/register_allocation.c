@@ -6,11 +6,10 @@ char _type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{
 int *RIG;
 struct variable *list_of_variables;
 struct tac_var * _tac_var;
-int num_of_nodes;
 int edge_num;
 int var_num=0;
 char *func_name_reg;
-#define KK 7
+int  KK = 7;
 int rig_num;
 struct var_fist_last * var_f_l;
 // struct reg_now *reg_now_tac;
@@ -119,7 +118,7 @@ void reset_non_available_colors()
 
 int first_fit_coloring()
 {
-    printf("???");
+    // printf("???");
     head = NULL;
 
     for(int i = 0; i < rig_num; i++)
@@ -2688,7 +2687,7 @@ void bian_init()
     {
         for(int j=i+1;j<var_num;j++)
         {
-            // if(!(live[i].last<live[j].first||live[i].first>live[j].last))
+            if(!(live[i].last<live[j].first||live[i].first>live[j].last))
                 create_bian(i,j);
         }
     }
@@ -2764,8 +2763,9 @@ void reg_control_block(BasicBlock *cur)
         reset_queue();
         spill_variable();
     }
-    print_colors();
-    // color_removed(); 
+    // test_ans();
+    // print_colors();
+    color_removed(); 
     add_to_ir();
     clean_reg();
     return ;
@@ -3073,7 +3073,6 @@ void init_RIG()
 {
     rig_num=var_num;
     list_of_variables=NULL;
-    num_of_nodes=rig_num;
     RIG=NULL;
 }
 
@@ -3091,10 +3090,11 @@ void create_RIG()
     // print_RIG();
 
     create_variable_list();
+    // printf("edge num:%d\n",edge_num);
     for(int i=0;i<edge_num;i++)
     {
         create_edge(_bian[i].a, _bian[i].b);
-        printf("%s\t----\t%s\n",live[_bian[i].a].name, live[_bian[i].b].name);
+        // printf("%d-%d\n",_bian[i].a,_bian[i].b);
     }
     // for(int i=0;i<rig_num;i++)  printf("%d  %s\t %d\n",i,live[i].name,list_of_variables[i].neighbor_count);
 }
@@ -3130,23 +3130,17 @@ void create_variable_list()
     int len;
     struct variable *temp;
     int i;
+    // printf("rig num:%d\n",rig_num);
     for(i = 0; i < rig_num; i++)
     {
-        // len=1;
-        // int j=i;
-        // while(j)
-        // {
-        //     j/=10;
-        //     len++;
-        // }
-        // name = (char *)malloc(len * sizeof(char));
+        // name = (char *)malloc(MAXSTRINGSIZE * sizeof(char));
         // sprintf(name, "%d", i);
         // list_of_variables[i].name = name;
 
         list_of_variables[i].name = live[i].name;
-        // printf("%s\n",list_of_variables[i].name);
         list_of_variables[i].color = NO_COLOR;
         list_of_variables[i].neighbor_count = 0;
+        // printf("%d - %s\n",i,live[i].name);
     }
     return ;
 }
@@ -3196,3 +3190,31 @@ void spill_variable()
         }
     }
 }    
+
+void test_ans()
+{
+    int i, j;
+    int i_color, j_color;
+    for(i = 0; i < rig_num; i++)
+    {
+        i_color = list_of_variables[i].color;
+        for(j = 0; j < rig_num; j++)
+        {
+            if(CHECKBIT(i,j))
+            {
+                j_color = list_of_variables[j].color;
+                if(i_color == NO_COLOR || i_color == REMOVED)
+                {
+                    printf("分配有毛病\n");
+                    return;
+                }
+                else if(i_color != SPILLED && i_color == j_color)
+                {
+                    printf("分配有毛病\n");
+                    return;
+                }
+            }
+        }
+    }
+    printf("ok的\n");
+}

@@ -43,12 +43,6 @@ struct var_def_use
     int use;
 }_var[10000];
 
-typedef struct numnum *pn;
-typedef struct numnum
-{
-    char * name;
-    pn next;
-}numnum;
 
 
 struct  reg_now
@@ -103,6 +97,7 @@ void reg_inmem_one_ins(int id); // 放到内存中
 int use_type(struct _InstNode *temp);
 int is_Immediate(int type_id);
 void end_reg();//未实现
+void test_ans();
 void travel_ir(InstNode *instruction_node);//部分ir浮点数未考虑
 void addtolive(char * name,int tacid);
 void create_bian(int i,int j);
