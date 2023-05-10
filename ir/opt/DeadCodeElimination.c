@@ -256,7 +256,6 @@ void Clean(Function *currentFunction){
 
         clear_visited_flag(entry);
 
-
         // DepthFirst的逆
         depthFirstTraversal(vector,entry);
 
@@ -321,92 +320,6 @@ void combine(BasicBlock *i, BasicBlock *j){
     i->tail_node = j->tail_node;
 }
 
-void dealWithPhi(BasicBlock *i,BasicBlock *j){
-    // 如果i中有phi函数那么 j中的phi函数必须要换一种形式
-    InstNode *currNode = i->head_node;
-    while(currNode != i->tail_node){
-        if(currNode->inst->Opcode == Phi){
-            bool jHasPhi = false;
-            Value *alloc = currNode->inst->user.value.alias;
-            assert(alloc != NULL);
-            //找到j里面对应的Alloca
-            InstNode *nextNode = j->head_node;
-            while(nextNode != j->tail_node){
-                if(nextNode->inst->Opcode == Phi){
-                    Value *jAlloc = nextNode->inst->user.value.alias;
-                    HashSet *jSet = nextNode->inst->user.value.pdata->pairSet;
-
-                    //如果后面能够找到一样的话
-                    if(jAlloc == alloc){
-                        jHasPhi = true;
-                        //移除关于i的phi信息添加i里的phi信息
-                        HashSetFirst(jSet);
-                        for(pair *phiInfo = HashSetNext(jSet); phiInfo != NULL; phiInfo = HashSetNext(jSet)){
-                            if(phiInfo->from == i){
-                                HashSetRemove(jSet,phiInfo);
-                            }
-                        }
-
-                        HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
-                        HashSetFirst(phiSet);
-                        for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                            HashSetAdd(jSet,phiInfo);
-                        }
-                    }
-                }
-                nextNode = get_next_inst(nextNode);
-            }
-            if(jHasPhi == false){
-                //找完了还没有发现有的phi的话，这个phi就必须移动到后面去了 如果还没有只能说明后面这个基本块一定只能有一个前驱
-                assert(HashSetSize(j->preBlocks) == 1);
-                removeIns(currNode);
-                //insert at beginning
-                ins_insert_after(currNode,j->head_node);
-            }
-        }
-        currNode = get_next_inst(currNode);
-    }
-}
-
-void correctWithPhi(BasicBlock *i, BasicBlock *j){
-    //
-    InstNode *currNode = j->head_node;
-    while(currNode != j->tail_node){
-        //
-        if(currNode->inst->Opcode == Phi){
-            // remove i 的info
-            HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
-            HashSetFirst(phiSet);
-            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                if(phiInfo->from == i){
-                    //remove this one
-                    HashSetRemove(phiSet,phiInfo);
-                }
-
-                //添加到j的后继节点上面去
-                if(j->true_block){
-                    //insert phi
-                    InstNode *trueBlockNode = j->true_block->head_node;
-
-                    //if contain this value's phi we just add
-//                    while(){
-//
-//                    }
-
-                    //if not we add phi instruction
-                }
-
-                if(j->false_block){
-                    //insert phi
-                }
-            }
-        }
-        currNode = get_next_inst(currNode);
-    }
-
-    //TODO 可能存在的phi函数的出现在一个block中间的情况？ 确实后面处理
-}
-
 void removeBlock(BasicBlock *block){
     InstNode *currNode = block->head_node;
     InstNode *prevNode = NULL;
@@ -464,6 +377,7 @@ bool OnePass(Vector* vector) {
                 HashSetFirst(block->preBlocks);
                 int iPreSize = HashSetSize(block->preBlocks);
                 if(iPreSize == 1){
+                    bool removeAble = true;
                     printf("iPresize == 1\n");
                     HashSetFirst(block->preBlocks);
                     BasicBlock *preBlock = HashSetNext(block->preBlocks);
@@ -488,33 +402,47 @@ bool OnePass(Vector* vector) {
                                 jHasPhi = true;
                                 HashSet *jPhiSet = jNode->inst->user.value.pdata->pairSet;
                                 HashSetFirst(jPhiSet);
+
+                                //并且不能有i的前驱基本块
                                 for(pair *phiInfo = HashSetNext(jPhiSet); phiInfo != NULL; phiInfo = HashSetNext(jPhiSet)){
-                                    if(phiInfo->from == block){
-                                        phiInfo->from = preBlock;
+                                    if(phiInfo->from == preBlock){
+                                       removeAble = false;
+                                    }
+                                }
+
+                                //如果没有就可以remove
+                                if(removeAble){
+                                    for(pair *phiInfo = HashSetNext(jPhiSet); phiInfo != NULL; phiInfo = HashSetNext(jPhiSet)){
+                                        if(phiInfo->from == block){
+                                            phiInfo->from = preBlock;
+                                        }
                                     }
                                 }
                             }
                             jNode = get_next_inst(jNode);
                         }
                     }
-                    changed = true;
+                    if(removeAble){
+                        changed = true;
 
-                    //上面仅仅是处理了phi函数并没有remove
-                    removeBlock(block);
-                    preBlock->true_block = j;
-                    InstNode *prevTailNode = preBlock->tail_node;
-                    prevTailNode->inst->user.value.pdata->instruction_pdata.true_goto_location = j->id;
+                        //上面仅仅是处理了phi函数并没有remove
+                        removeBlock(block);
+                        preBlock->true_block = j;
+                        InstNode *prevTailNode = preBlock->tail_node;
+                        prevTailNode->inst->user.value.pdata->instruction_pdata.true_goto_location = j->id;
 
-                    //
-                    HashSetRemove(j->preBlocks,block);
-                    HashSetAdd(j->preBlocks,preBlock);
+                        //
+                        HashSetRemove(j->preBlocks,block);
+                        HashSetAdd(j->preBlocks,preBlock);
+                    }
                 }else if(iPreSize > 1){
                     printf("iPresize > 1\n");
-                    bool removeAble = true;
                     InstNode *jNode = j->head_node;
+                    bool removeAble = true;
                     while(jNode != j->tail_node){
                         if(jNode->inst->Opcode == Phi){
-                            //j如果有phi函数的
+                            //j如果有phi函数
+                            assert(HashSetSize(j->preBlocks) > 1);
                             Value *jAlloc = ins_get_dest(jNode->inst)->alias;
                             bool iHasMatchPhi = false;
 
@@ -561,7 +489,7 @@ bool OnePass(Vector* vector) {
                             }
                             //
                             if(!iHasMatchPhi){
-                                //j有phi函数但是i没有对应的phi函数 代表有可能是因为critical删除了，所以这个block也不能remove
+                                //
                                 removeAble = false;
                             }
                         }
@@ -569,17 +497,19 @@ bool OnePass(Vector* vector) {
                     }
 
                     InstNode *iNode = block->head_node;
-                    bool iHasPhi = false;
                     //此时如果i里面还有phiInstruction就代表了i有phi而j没有
                     while(iNode != block->tail_node){
                         if(iNode->inst->Opcode == Phi){
-                            //
-                            iHasPhi = true;
                             int size = HashSetSize(j->preBlocks);
                             if(size == 1){
                                 //
+                                changed = true;
                                 InstNode *tempNode = get_next_inst(iNode);
                                 removeIns(iNode);
+
+                                ins_insert_after(j->head_node,iNode);
+                                iNode->inst->Parent = j;
+
                                 iNode = tempNode;
                             }else if(size > 1){
                                 iNode = get_next_inst(iNode);
@@ -616,7 +546,6 @@ bool OnePass(Vector* vector) {
 
                         removeBlock(block);
                     }else{
-                        //do nothing
 
                     }
                 }else{
@@ -669,4 +598,124 @@ void reconstructCFG(Function *currentFunction){
         BasicBlock *block = HashSetNext(workList);
         block->visited = true;
     }
+}
+
+
+// 重新写一版
+bool OnePass1(Vector* vector) {
+    bool changed = false;
+    //for each block i in postorder
+    BasicBlock *block = NULL;
+    int size = (int)VectorSize(vector);
+    for (int i = size - 1; i >= 0; i--) {
+        VectorGet(vector, i, (void *) &block);
+        assert(block != NULL);
+        printf("block %d\n",block->id);
+        // if i ends in a conditional branch
+        if (block->tail_node->inst->Opcode == br_i1) {
+            Value *insValue = ins_get_dest(block->tail_node->inst);
+            int trueLocation = insValue->pdata->instruction_pdata.true_goto_location;
+            int falseLocation = insValue->pdata->instruction_pdata.false_goto_location;
+            if (trueLocation == falseLocation) {
+                printf("same branch!\n");
+
+                changed = true;
+                // replace it with a jump
+                Instruction *jumpIns = ins_new_zero_operator(br);
+
+                //后面再Mark和Sweep一次
+                //jumpIns->isCritical = true;
+                jumpIns->Parent = block;
+                InstNode *jumpNode = new_inst_node(jumpIns);
+                jumpIns->user.value.pdata->instruction_pdata.true_goto_location = trueLocation;
+                ins_insert_before(jumpNode, block->tail_node);
+
+
+                //删除这个inst
+                deleteIns(block->tail_node);
+                block->tail_node = jumpNode;
+            }
+        }
+
+        //if i ends in a jump to j then
+        if (block->tail_node->inst->Opcode == br) {
+            //if i is empty then
+            if (isEmpty(block)) {
+                printf("remove empty!\n");
+                //replace transfers to i with transfers to j
+                BasicBlock *j = block->true_block;
+
+
+                //首先去判断是否符合条件
+
+                //跳过Label
+                bool removeAble = true;
+                InstNode *jNode = get_next_inst(j->head_node);
+                while(jNode != j->tail_node){
+                    if(jNode->inst->Opcode == Phi){
+                        HashSet *jSet = jNode->inst->user.value.pdata;
+                        HashSetFirst(jSet);
+                        for(pair *phiInfo = HashSetNext(jSet); phiInfo != NULL; phiInfo = HashSetNext(jSet)){
+                            if(HashSetFind(block->preBlocks,phiInfo->from)){
+                                removeAble = false;
+                            }
+                        }
+                    }else{
+                        break;
+                    }
+                }
+
+                //
+                if(!removeAble){
+                    //do nothing
+                    //符合先决条件
+
+                    //如果block里面有phi函数
+                    InstNode *iNode = block->head_node;
+                    while(iNode != block->tail_node){
+                        if(iNode->inst->Opcode == Phi){
+                            //如果block里面有phi函数
+
+                            //看看j是否用到了这个phi函数 理论上来说
+
+
+
+                        }
+                    }
+                }else{
+                    //removeAble
+                     changed = true;
+
+                }
+            }
+
+            //if j has only one predecessor
+            BasicBlock *j = block->true_block;
+            if (HashSetSize(j->preBlocks) == 1) {
+                printf("combine blocks!\n");
+                changed = true;
+                //combine i and j
+                combine(block, j);
+            }
+
+            //if j is empty and ends in a conditional branch then
+//            if (isEmpty(j) && j->tail_node->inst->Opcode == br_i1) {
+//                changed = true;
+//
+//                Instruction *branchIns = ins_new_zero_operator(br_i1);
+//                InstNode *branchNode = new_inst_node(branchIns);
+//                branchIns->user.value.pdata->instruction_pdata.true_goto_location = j->true_block->id;
+//                branchIns->user.value.pdata->instruction_pdata.false_goto_location = j->false_block->id;
+//
+//                ins_insert_before(branchNode,block->tail_node);
+//
+//                deleteIns(block->tail_node);
+//                block->tail_node = branchNode;
+//
+//                //删除后继的phiInfo
+//                correctWithPhi(block,j);
+//            }
+        }
+    }
+    return changed;
 }

@@ -119,12 +119,12 @@ int main(int argc, char* argv[]){
     // 优化之前
     printf_llvm_ir(instruction_list,argv[1]);
 
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        Mark(currentFunction);
-        Sweep(currentFunction);
-        Clean(currentFunction);
-        renameVariabels(currentFunction);
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        Mark(currentFunction);
+//        Sweep(currentFunction);
+//        Clean(currentFunction);
+//        renameVariabels(currentFunction);
+//    }
 
     // phi上的优化
     printf_llvm_ir(instruction_list,argv[1]);
