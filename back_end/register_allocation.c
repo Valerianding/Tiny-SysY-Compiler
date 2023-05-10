@@ -1298,14 +1298,15 @@ void travel_ir(InstNode *instruction_node)
         echo_tac[i].irnode=NULL;
     }
     int p=0;
+    int if_br_ir=0;
     InstNode* params[50];
     InstNode * one_param[50];
     int give_count=0;
     for(int i=0;i<50;i++)
         params[i]=NULL;
 
-    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br_i1 
-    && instruction_node->inst->Opcode!=br && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
+    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br
+     && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
     && instruction_node->inst->Opcode!=FunEnd)
     {
         // printf("%d\t%d\n", __LINE__,instruction_node->inst->i); 
@@ -1377,12 +1378,12 @@ void travel_ir(InstNode *instruction_node)
                 }
                 break;
             case br:
-               
                 break;
             case br_i1:
                 {
                     echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
                     echo_tac[tac_cnt].dest_use=1;
+                    if_br_ir = 1;
                     break;
                 }
             case br_i1_false:
@@ -2630,6 +2631,7 @@ void travel_ir(InstNode *instruction_node)
                 break;
         }
         tac_cnt++;
+        if(if_br_ir)    break;
         instruction_node= get_next_inst(instruction_node);
     }
     return ;
