@@ -6,6 +6,8 @@ char _type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{
 int *RIG;
 struct variable *list_of_variables;
 struct tac_var * _tac_var;
+struct SString * live_in_name;
+struct SString * live_out_name;
 int edge_num;
 int var_num=0;
 char *func_name_reg;
@@ -16,6 +18,7 @@ struct var_fist_last * var_f_l;
 //char varnum[1000][40];
 int func_start;
 int func_end;
+int block_in_num,block_out_num;
 int _b_start;
 int _b_end;
 int _numnum;
@@ -29,8 +32,12 @@ struct name_num
     int num;
     char *name;
     int ifparam;
+    int first_use;
     int first;
     int last;
+    int last_def;
+    int isin;
+    int isout;
 }*live;
 
 struct  edge
@@ -58,10 +65,16 @@ void live_init_block()
     {
         live[i].num=i;
         live[i].name=NULL;
+        live[i].first_use=-1;
+        live[i].last_def=-1;
+        live[i].last=1;
         live[i].first=-1;
-        live[i].last=-1;
+        live[i].isin=0;
+        live[i].isout=0;
     }
     _bian=(struct edge *)malloc(sizeof(struct edge)*(tac_cnt*tac_cnt*9/2));
+    live_in_name=NULL;
+    live_out_name=NULL;
     return ;
 }
 
@@ -2637,18 +2650,47 @@ void travel_ir(InstNode *instruction_node)
     return ;
 }
 
-void addtolive(char * name,int tacid)
+void addtolive(char * name,int tacid,int ifuse)
 {
-    for(int i=0;i<var_num;i++)
-        if(strcmp(name,live[i].name)==0)
-        {
-            live[i].last=tacid;
-            return ;
-        }
-    live[var_num].name=name;
-    live[var_num].last=tacid;
-    live[var_num++].first=tacid;
-    return ;
+    // for(int i=0;i<var_num;i++)
+    //     if(strcmp(name,live[i].name)==0)
+    //     {
+    //         live[i].last=tacid;
+    //         return ;
+    //     }
+    // live[var_num].name=name;
+    // live[var_num].last=tacid;
+    // live[var_num++].first=tacid;
+    // return ;
+    if(ifuse)
+    {
+        for(int i=0;i<var_num;i++)
+            if(strcmp(name,live[i].name)==0)
+            {
+                live[i].last=tacid;
+                return ;
+            }
+        live[var_num].name=name;
+        live[var_num].last=tacid;
+        live[var_num].first=tacid;    
+        live[var_num++].first_use=tacid;
+        return ;
+    }
+    else
+    {
+        for(int i=0;i<var_num;i++)
+            if(strcmp(name,live[i].name)==0)
+            {
+                live[i].last_def=tacid;
+                live[i].last=tacid;
+                return ;
+            }
+        live[var_num].name=name;
+        live[var_num].last=tacid;
+        live[var_num].first=tacid;  
+        live[var_num++].last_def=tacid;
+        return ;
+    }
 }
 
 void create_bian(int i,int j)
@@ -2666,23 +2708,80 @@ void create_bian(int i,int j)
     return ;
 }
 
-void bian_init()
+void addtoin(BasicBlock *this_block)
+{
+    block_in_num=0;
+    live_in_name=(struct SString *)malloc(sizeof(struct SString)*var_num);
+    HashSetFirst(this_block->in);
+    for(Value *liveInVariable = HashSetNext(this_block->in); liveInVariable != NULL; liveInVariable = HashSetNext(this_block->in)){
+        assert(liveInVariable->name != NULL);
+        if(liveInVariable->name != NULL){
+            live_in_name[block_in_num].name =(char *)malloc(sizeof(liveInVariable->name)+1);
+            strcpy(live_in_name[block_in_num++].name,liveInVariable->name);
+        }
+    }
+    // printf("in:\n");
+    // for(int i=0;i<block_in_num;i++)
+    //     printf("%s\n",live_in_name[i]);
+    return ;
+}
+
+void addtoout(BasicBlock *this_block)
+{
+    block_out_num=0;
+    live_out_name=(struct SString *)malloc(sizeof(struct SString)*var_num);
+    HashSetFirst(this_block->out);
+    for(Value *liveOutVariable = HashSetNext(this_block->out); liveOutVariable != NULL; liveOutVariable = HashSetNext(this_block->out)){
+        assert(liveOutVariable->name != NULL);
+        if(liveOutVariable->name != NULL){
+            live_out_name[block_out_num].name =(char *)malloc(sizeof(liveOutVariable->name)+1);
+            strcpy(live_out_name[block_out_num++].name,liveOutVariable->name);
+        }
+    }
+    return ;
+}
+
+void bian_init(BasicBlock * this_block)
 {
     var_num=0;
     edge_num=0;
+    block_in_num=0;
+    block_out_num=0;
     for(int i=0;i<tac_cnt;i++)
     {
         if(echo_tac[i].dest_use>=0)
         {
-            addtolive(echo_tac[i].dest_name,i);
+            addtolive(echo_tac[i].dest_name,i,echo_tac[i].dest_use);
         }
         if(echo_tac[i].left_use>=0)
         {
-            addtolive(echo_tac[i].left_name,i);
+            addtolive(echo_tac[i].left_name,i,echo_tac[i].dest_use);
         }
         if(echo_tac[i].right_use>=0)
         {
-            addtolive(echo_tac[i].right_name,i);
+            addtolive(echo_tac[i].right_name,i,echo_tac[i].dest_use);
+        }
+    }
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    addtoin(this_block);
+    addtoout(this_block);
+    for(int i=0;i<var_num;i++)
+    {
+        for(int j=0;j<block_in_num;j++)
+        {
+            if(strcmp(live_in_name[j].name,live[i].name)==0)
+            {
+                live[i].isin=1;
+                break;
+            }
+        }
+        for(int j=0;j<block_out_num;j++)
+        {
+            if(strcmp(live_out_name[j].name,live[i].name)==0)
+            {
+                live[i].isout=1;
+                break;
+            }
         }
     }
     for(int i=0;i<var_num;i++)
@@ -2751,7 +2850,7 @@ void reg_control_block(BasicBlock *cur)
     #else
     travel_ir(cur->head_node);
     live_init_block();
-    bian_init();
+    bian_init(cur);
     init_RIG();
     create_RIG();
     check_edge();
@@ -2788,16 +2887,30 @@ void add_to_ir()
             else
             {
                 reg_uid+=6;
+                // if(echo_tac[i].dest_use==0)
+                // {
+                //     if(i==live[var_uid].last) 
+                //         echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
+                //     else
+                //         echo_tac[i].irnode->_reg_[0]=reg_uid;
+                // }
+                // if(echo_tac[i].dest_use==1)
+                // {
+                //     if(i==live[var_uid].first) 
+                //         echo_tac[i].irnode->_reg_[0]=reg_uid+100;
+                //     else
+                //         echo_tac[i].irnode->_reg_[0]=reg_uid;
+                // }
                 if(echo_tac[i].dest_use==0)
                 {
-                    if(i==live[var_uid].last) 
+                    if(i==live[var_uid].last_def&&live[var_uid].isout)
                         echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
                     else
                         echo_tac[i].irnode->_reg_[0]=reg_uid;
                 }
-                if(echo_tac[i].dest_use==1)
+                else
                 {
-                    if(i==live[var_uid].first) 
+                    if(i==live[var_uid].first_use&&live[var_uid].isin)
                         echo_tac[i].irnode->_reg_[0]=reg_uid+100;
                     else
                         echo_tac[i].irnode->_reg_[0]=reg_uid;
@@ -2816,14 +2929,14 @@ void add_to_ir()
                 reg_uid+=6;
                 if(echo_tac[i].left_use==0)
                 {
-                    if(i==live[var_uid].last) 
-                        echo_tac[i].irnode->_reg_[1]=reg_uid-1;
+                    if(i==live[var_uid].last_def&&live[var_uid].isout)
+                        echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
                     else
                         echo_tac[i].irnode->_reg_[1]=reg_uid;
                 }
-                if(echo_tac[i].left_use==1)
+                else
                 {
-                    if(i==live[var_uid].first) 
+                    if(i==live[var_uid].first_use&&live[var_uid].isin)
                         echo_tac[i].irnode->_reg_[1]=reg_uid+100;
                     else
                         echo_tac[i].irnode->_reg_[1]=reg_uid;
@@ -2839,16 +2952,16 @@ void add_to_ir()
             else
             {
                 reg_uid+=6;
-                if(echo_tac[i].right_use==0)
+                if(echo_tac[i].left_use==0)
                 {
-                    if(i==live[var_uid].last) 
-                        echo_tac[i].irnode->_reg_[2]=reg_uid-1;
+                    if(i==live[var_uid].last_def&&live[var_uid].isout)
+                        echo_tac[i].irnode->_reg_[2]=reg_uid*-1;
                     else
                         echo_tac[i].irnode->_reg_[2]=reg_uid;
                 }
-                if(echo_tac[i].right_use==1)
+                else
                 {
-                    if(i==live[var_uid].first) 
+                    if(i==live[var_uid].first_use&&live[var_uid].isin)
                         echo_tac[i].irnode->_reg_[2]=reg_uid+100;
                     else
                         echo_tac[i].irnode->_reg_[2]=reg_uid;
@@ -2859,6 +2972,92 @@ void add_to_ir()
     return ;
 }
 
+
+// void add_to_ir()
+// {
+//     int var_uid;
+//     int reg_uid;
+//     for(int i=0;i<tac_cnt;i++)
+//     {
+//         var_uid=find_var(echo_tac[i].dest_name);
+//         if(var_uid>=0)  
+//         {
+//             reg_uid=list_of_variables[var_uid].color;
+//             if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
+//             else
+//             {
+//                 reg_uid+=6;
+//                 if(echo_tac[i].dest_use==0)
+//                 {
+//                     if(i==live[var_uid].last) 
+//                         echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
+//                     else
+//                         echo_tac[i].irnode->_reg_[0]=reg_uid;
+//                 }
+//                 if(echo_tac[i].dest_use==1)
+//                 {
+//                     if(i==live[var_uid].first) 
+//                         echo_tac[i].irnode->_reg_[0]=reg_uid+100;
+//                     else
+//                         echo_tac[i].irnode->_reg_[0]=reg_uid;
+//                 }
+//             }
+//         }
+        
+
+//         var_uid=find_var(echo_tac[i].left_name);
+//         if(var_uid>=0)  
+//         {
+//             reg_uid=list_of_variables[var_uid].color;
+//             if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
+//             else
+//             {
+//                 reg_uid+=6;
+//                 if(echo_tac[i].left_use==0)
+//                 {
+//                     if(i==live[var_uid].last) 
+//                         echo_tac[i].irnode->_reg_[1]=reg_uid-1;
+//                     else
+//                         echo_tac[i].irnode->_reg_[1]=reg_uid;
+//                 }
+//                 if(echo_tac[i].left_use==1)
+//                 {
+//                     if(i==live[var_uid].first) 
+//                         echo_tac[i].irnode->_reg_[1]=reg_uid+100;
+//                     else
+//                         echo_tac[i].irnode->_reg_[1]=reg_uid;
+//                 }
+//             }
+//         }
+
+//         var_uid=find_var(echo_tac[i].right_name);
+//         if(var_uid>=0)  
+//         {
+//             reg_uid=list_of_variables[var_uid].color;
+//             if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
+//             else
+//             {
+//                 reg_uid+=6;
+//                 if(echo_tac[i].right_use==0)
+//                 {
+//                     if(i==live[var_uid].last) 
+//                         echo_tac[i].irnode->_reg_[2]=reg_uid-1;
+//                     else
+//                         echo_tac[i].irnode->_reg_[2]=reg_uid;
+//                 }
+//                 if(echo_tac[i].right_use==1)
+//                 {
+//                     if(i==live[var_uid].first) 
+//                         echo_tac[i].irnode->_reg_[2]=reg_uid+100;
+//                     else
+//                         echo_tac[i].irnode->_reg_[2]=reg_uid;
+//                 }
+//             }
+//         }
+//     }
+//     return ;
+// }
+
 void clean_reg()
 {
     if(live) free(live);
@@ -2868,7 +3067,10 @@ void clean_reg()
     if(RIG) free(RIG);
     if(head) free(head);
     if(non_available_colors) free(non_available_colors);
-
+    free(live_in_name);
+    free(live_out_name);
+    live_in_name=NULL;
+    live_out_name=NULL;
     live=NULL;
     _bian=NULL;
     list_of_variables=NULL;
