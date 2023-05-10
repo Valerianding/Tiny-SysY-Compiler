@@ -23,10 +23,14 @@
 
 
 #define all_in_memory 0
-struct queue
+struct reg_queue
 {
     int variable_index;
-    struct queue *next;
+    struct reg_queue *next;
+};
+
+struct SString {
+	char * name;
 };
 
 struct variable {
@@ -43,24 +47,7 @@ struct var_def_use
     int use;
 }_var[10000];
 
-typedef struct numnum *pn;
-typedef struct numnum
-{
-    char * name;
-    pn next;
-}numnum;
 
-// struct  reg_now
-// {
-//     int call;
-//     int exist;
-//     int op;
-//     char * name[13];
-//     char * dest;
-//     char * left;
-//     char * right;
-//     char * param;
-// };
 
 struct  reg_now
 {
@@ -88,8 +75,8 @@ void init_non_available_colors();
 void reset_non_available_colors();
 int first_fit_coloring();
 int visit(int index);
-void __push(int variable_index);
-int __pop();
+void reg__push(int variable_index);
+int reg__pop();
 void reset_colors();
 void reset_queue();
 void color_removed();//需要修改
@@ -110,13 +97,15 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node);
 void reg_control(struct _InstNode *instruction_node,InstNode *temp);
 void reg_control_func(Function *currentFunction);
 void reg_control_block(BasicBlock *cur);
-void reg_inmem_one_ins(int id);
+void reg_inmem_one_ins(int id); // 放到内存中
 int use_type(struct _InstNode *temp);
 int is_Immediate(int type_id);
-void reg_init();
 void end_reg();//未实现
-void travel_ir(InstNode *instruction_node);//部分ir浮点数未考虑，数组偏移量未考虑
-void addtolive(char * name,int tacid);
+void test_ans();
+void travel_ir(InstNode *instruction_node);//部分ir浮点数未考虑
+void addtolive(char * name,int tacid,int ifuse);
+void addtoin(BasicBlock *this_block);
+void addtoout(BasicBlock *this_block);
 void create_bian(int i,int j);
 void add_to_ir();
-void clean_reg();//完成后释放内存，未做
+void clean_reg();//完成后释放内存
