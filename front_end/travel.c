@@ -6,7 +6,7 @@ extern struct _InstNode *instruction_list;
 //记录临时变量组,形如%1,%2,%3...
 //t_index转字符串用的sprintf
 //目前设置的能容纳3位数的临时变量
-extern char t[6];
+extern char t[8];
 extern int t_index;
 extern int return_stmt_num[20];
 extern int return_index;
@@ -16,16 +16,15 @@ extern insnode_stack S_return;
 extern insnode_stack S_and;
 extern insnode_stack S_or;
 //记录有没有需要continue和break的语句
-extern bool c_b_flag[2];
 
-extern char t_num[5];
+extern char t_num[7];
 int param_map=0;
 Value *v_cur_func;
 extern int flag_blocklist;        //默认都是非正常
 char type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"main_float"},{"int"},{"float"},{"const_int"},{"const_float"},{"function"},{"void"},{"address"},{"var_int"},{"var_float"},{"globalint"},{"globalfloat"},{"array_const_int"},{"array_const_float"},{"global_array_const_int"},{"global_array_const_float"},{"array_int"},{"array_float"},{"global_arrayint"},{"global_arrayfloat"}};
 
-InstNode * one_param[50];   //存放单次正确位置的参数
-InstNode* params[50];      //存放所有参数
+InstNode * one_param[1000];   //存放单次正确位置的参数
+InstNode* params[1000];      //存放所有参数
 
 int while_scope=0;
 
@@ -80,12 +79,13 @@ void create_instruction_list(past root,Value* v_return)
 
 void create_continue_stmt(past root,Value* v_return)
 {
-    c_b_flag[0]=true;
-
     //遇到continue,push就完事
     InstNode *node_continue = true_location_handler(br, NULL, 0);
 
-    insnode_push(&S_continue,node_continue);
+    //读一下最新层的while值
+    InstNode *ins_location=NULL;
+    insnode_top(&S_continue,&ins_location);
+    node_continue->inst->user.value.pdata->instruction_pdata.true_goto_location=ins_location->inst->user.value.pdata->instruction_pdata.true_goto_location;
 
     if (root->next != NULL)
         create_instruction_list(root->next,v_return);
@@ -93,8 +93,6 @@ void create_continue_stmt(past root,Value* v_return)
 
 void create_break_stmt(past root,Value* v_return)
 {
-    c_b_flag[1]=true;
-
     //遇到break,push就完事
     InstNode *node_break = true_location_handler(br, NULL, 0);
     node_break->inst->user.value.pdata->map_list= getCurMapList(this);
@@ -104,61 +102,6 @@ void create_break_stmt(past root,Value* v_return)
 
     if (root->next != NULL)
         create_instruction_list(root->next,v_return);
-}
-
-void reduce_continue()
-{
-    InstNode * gap[10];
-    int gap_index=0;
-
-    do{
-        InstNode * zero;
-        insnode_pop(&S_continue,&zero);
-
-        //1.zero如果是-1
-        if(zero->inst->user.value.pdata->instruction_pdata.true_goto_location==-1)
-        {
-            //存上所有continue
-            InstNode * store_continue[10];
-            int store_num=0;
-            InstNode *continue_point;
-            insnode_top(&S_continue,&continue_point);
-            while(continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location==0)
-            {
-                store_continue[store_num++]=continue_point;
-                insnode_pop(&S_continue,&continue_point);
-                insnode_top(&S_continue,&continue_point);
-            }
-            //离开while的时候
-            // 1.continue_point是while起点了,已经拿出来了
-            if(continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location!=-1)
-            {
-                for(int i=0;i<store_num;i++)
-                {
-                    store_continue[i]->inst->user.value.pdata->instruction_pdata.true_goto_location=continue_point->inst->user.value.pdata->instruction_pdata.true_goto_location;
-                }
-                insnode_pop(&S_continue,&continue_point);
-            }
-            else
-            {
-                //2.是-1
-                //并将store_continue数组中的东西复制到gap数组中
-                for(int i=0;i<store_num;i++)
-                    gap[gap_index+i]=store_continue[i];
-                gap_index+=store_num;
-            }
-        }
-            //2.如果zero是while起点
-        else
-        {
-
-            for(int i=0;i<gap_index;i++)
-                gap[i]->inst->user.value.pdata->instruction_pdata.true_goto_location=zero->inst->user.value.pdata->instruction_pdata.true_goto_location;
-            //将gap数组清0
-            gap_index=0;
-        }
-
-    } while (!insnode_is_empty(S_continue));
 }
 
 void reduce_return()
@@ -451,22 +394,23 @@ void create_return_stmt(past root,Value* v_return) {
 }
 
 //只考虑了num_int
+//返回NULL代表不是全0
 past array_all_zeros(past init_val_list)
 {
     past p=init_val_list;
-    while(p!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") != 0 && strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") != 0)
+    while(p!=NULL && (strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "num_float") == 0))
     {
         //不是全0就照常处理
-        if(p->iVal!=0)
+        if((strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0 && p->iVal!=0) || (strcmp(bstr2cstr(p->nodeType, '\0'), "num_float") == 0 && p->fVal!=0))
             return NULL;
-            //其他维度全0,随便返回了一个不是NULL的
+        else if(strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") == 0)
+            return array_all_zeros(p->left);
+        //是0,且后面没东西了
         else if(p->next==NULL)
             return init_val_list;
-            //是全0,且是一维全0
-        else if(strcmp(bstr2cstr(p->next->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->next->nodeType, '\0'), "ConstExpList") == 0)
-            return array_all_zeros(p->next->left);
         p=p->next;
     }
+    return NULL;
 }
 
 //做倒数第i位的进位
@@ -556,6 +500,15 @@ void assign_global_array(past p,Value* v_array,int i,int level)
         {
             v_array->pdata->symtab_array_pdata.f_array[i++]=p->fVal;
         }
+        else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
+        {
+            //TODO 处理不精细
+            Value *v_num= cal_expr(p,Unknown,0);
+            if(v_num->VTy->ID==Int)
+                v_array->pdata->symtab_array_pdata.array[i++]=v_num->pdata->var_pdata.iVal;
+            else
+                v_array->pdata->symtab_array_pdata.f_array[i++]=v_num->pdata->var_pdata.fVal;
+        }
             //是InitValList
         else
         {
@@ -587,7 +540,8 @@ void handle_global_array(Value* v_array,bool is_global,past vars,int flag)
         {
             past p=vars->right->left;
 
-            assign_global_array(p,v_array,0,0);
+           // if(p!=NULL)
+                assign_global_array(p,v_array,0,0);
         }
 
             //不是全局的
@@ -969,6 +923,8 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
             else
                 v_num= handle_assign_array(root->right->left,array_exp,1,-1,0);
         }
+        else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
+            v_num= create_call_func(root);
 
 
         if(i==0)
@@ -1134,22 +1090,6 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 InstNode *node_bitcast = new_inst_node(ins_bitcast);
                 ins_node_add(instruction_list,node_bitcast);
 
-                //一维数组,拷贝式赋初值,memcpy
-                //call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %5, i8* align 16 bitcast ([5 x i32]* @__const.if_if_Else.c to i8*), i64 20, i1 false)
-//                if(v_array->pdata->symtab_array_pdata.dimention_figure==1 && vars->right->left!=NULL)
-//                {
-//                    //以全局，memcpy的方式处理
-//                    if(vars->right->left==NULL)
-//                        handle_global_array(v_array,is_global,vars,0);
-//                    else
-//                        handle_global_array(v_array,is_global,vars,1);
-//
-//                    Instruction *instruction= ins_new_binary_operator(MEMCPY,v1,v_array);
-//                    //将这个instruction加入总list
-//                    InstNode *node = new_inst_node(instruction);
-//                    ins_node_add(instruction_list,node);
-//                }
-
                 int mem= get_array_total_occupy(v_array,0);
                 Value *v_mem=(Value*) malloc(sizeof (Value));
                 value_init_int(v_mem,mem);
@@ -1158,7 +1098,7 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 InstNode *node_mem_set = new_inst_node(mem_set);
                 ins_node_add(instruction_list,node_mem_set);
 
-                if(vars->right->left!=NULL)
+                if(vars->right->left!=NULL && array_all_zeros(vars->right->left)==NULL)
                 {
                     //再来一条bitcast
                     //!!!后续第一条一直用v2
@@ -1186,10 +1126,13 @@ void create_var_decl(past root,Value* v_return,bool is_global) {
                 Value *v_array = symtab_dynamic_lookup_first(this,bstr2cstr(ident_array->left->sVal,'\0'));
                 v_array->pdata->define_flag=1;
 
-                if(vars->right->left==NULL)
-                    handle_global_array(v_array,true,vars,0);
-                else
+                if(vars->right->left!=NULL && array_all_zeros(vars->right->left)==NULL)
                     handle_global_array(v_array,true,vars,1);
+                else
+                {
+                    handle_global_array(v_array,true,vars,0);
+                    v_array->pdata->symtab_array_pdata.is_init=0;
+                }
             }
         }
             //无初值数组
@@ -2133,11 +2076,9 @@ void create_while_stmt(past root,Value* v_return)
     if(ins_false!=NULL)
         ins_false->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index-1;
 
-    Instruction *ins_1_tmp= ins_new_zero_operator(tmp);
-    Value *t_1= ins_get_dest(ins_1_tmp);
-    t_1->pdata->instruction_pdata.true_goto_location=-1;
-
-    insnode_push(&S_continue, new_inst_node(ins_1_tmp));
+    //while完了，弹出while的起始位置
+    InstNode *out_continue= NULL;
+    insnode_pop(&S_continue, &out_continue);
 
     //在while结束时就开始reduce,如果scope_level相等就约束，不等的就不加入
     //栈中只会有br语句的ins_node,没有tmp
@@ -2328,11 +2269,11 @@ void create_func_def(past root) {
 //        reduce_break();
 //        c_b_flag[1]=false;
 //    }
-    if(c_b_flag[0]==true)
-    {
-        reduce_continue();
-        c_b_flag[0]=false;
-    }
+//    if(c_b_flag[0]==true)
+//    {
+//        reduce_continue();
+//        c_b_flag[0]=false;
+//    }
 
     if(return_stmt_num[return_index]>1 || (return_stmt_num[return_index]==1 && v->pdata->symtab_func_pdata.return_type.ID==VoidTyID))
         reduce_return();
@@ -4506,21 +4447,21 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
         }
 
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
-
-        if(instruction->isCritical){
-            printf("isCritical\n\n");
-        }
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
+//
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)

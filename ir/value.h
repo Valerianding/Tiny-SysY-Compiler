@@ -36,7 +36,7 @@ struct _PData{
 
     struct {
         Type return_type;            //返回类型
-        Type param_type_lists[50];   //参数类型数组
+        Type param_type_lists[1000];   //参数类型数组
         int param_num;              //TODO 可能要，也可能不要
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
 

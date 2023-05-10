@@ -780,10 +780,15 @@ void insert_func_params(past params)
                 past get_dimension=params->right->left;        //到达num_int
                 while(get_dimension!=NULL)
                 {
-                    v->pdata->symtab_array_pdata.dimentions[v->pdata->symtab_array_pdata.dimention_figure]=get_dimension->iVal;
+                    if(strcmp(bstr2cstr(get_dimension->nodeType,'\0'),"ID")==0)
+                    {
+                        Value *v_tmp= symtab_dynamic_lookup_first(this,bstr2cstr(get_dimension->sVal,0));
+                        v->pdata->symtab_array_pdata.dimentions[v->pdata->symtab_array_pdata.dimention_figure]=v_tmp->pdata->var_pdata.iVal;
+                    }
+                    else
+                        v->pdata->symtab_array_pdata.dimentions[v->pdata->symtab_array_pdata.dimention_figure]=get_dimension->iVal;
                     v->pdata->symtab_array_pdata.dimention_figure++;
                     get_dimension=get_dimension->next;
-                   // v->pdata->symtab_array_pdata.dimention_figure++;
                 }
             }
             if(strcmp(bstr2cstr(params->left->sVal,'\0'),"float")==0)

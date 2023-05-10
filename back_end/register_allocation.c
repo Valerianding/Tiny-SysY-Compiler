@@ -10,7 +10,7 @@ int num_of_nodes;
 int edge_num;
 int var_num=0;
 char *func_name_reg;
-int k=6;
+int k=7;
 int rig_num;
 int var_num;
 struct var_fist_last * var_f_l;
@@ -2444,11 +2444,17 @@ void travel_ir(InstNode *instruction_node)
                         //fpintf(fptr,"* ");
                         if(instruction->user.use_list[1].Val->VTy->ID==Int)
                         {
+                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            echo_tac[tac_cnt].left_use=1;
                             // printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                             //fpintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         }
                         else
                         {
+                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            echo_tac[tac_cnt].left_use=1;
+                            echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                            echo_tac[tac_cnt].right_use=1;
                             // printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                             //fpintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                         }
@@ -2463,11 +2469,17 @@ void travel_ir(InstNode *instruction_node)
                         //fpintf(fptr,"* ");
                         if(instruction->user.use_list[1].Val->VTy->ID==Int)
                         {
+                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            echo_tac[tac_cnt].left_use=1;
                             // printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                             //fpintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         }
                         else
                         {
+                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            echo_tac[tac_cnt].left_use=1;
+                            echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                            echo_tac[tac_cnt].right_use=1;
                             // printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                             //fpintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                         }
@@ -2806,7 +2818,7 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
             else
             {
-                reg_uid+=6;
+                reg_uid+=5;
                 if(echo_tac[i].dest_use==0)
                 {
                     if(i==live[var_uid].last) 
@@ -2832,7 +2844,7 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
             else
             {
-                reg_uid+=6;
+                reg_uid+=5;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last) 
@@ -2854,10 +2866,10 @@ void add_to_ir()
         if(var_uid>=0)  
         {
             reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=106;
+            if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
             else
             {
-                reg_uid+=6;
+                reg_uid+=5;
                 if(echo_tac[i].right_use==0)
                 {
                     if(i==live[var_uid].last) 
