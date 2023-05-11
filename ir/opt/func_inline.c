@@ -138,7 +138,10 @@ void func_inline(struct _InstNode* instruction_node)
                     Value *v_call=&instruction->user.value;
                     Value *v_return=begin_func->inst->user.use_list->Val;
 
-                    value_replaceAll(v_call,v_return->alias);
+                    if(v_return->VTy->ID!=Int)
+                        value_replaceAll(v_call,v_return->alias);
+                    else
+                        value_replaceAll(v_call,v_return);
                 }
                 //删掉当前这句call
                 InstNode *pre=get_prev_inst(instruction_node);
@@ -157,15 +160,15 @@ void func_inline(struct _InstNode* instruction_node)
     //将被内联的ir函数删除
     //修改这句call ir
     //TODO kk现在写死了,等待判断哪些函数要内联
-    begin_func=find_func_begin(start,"kk");
-    while(begin_func->inst->Opcode!=FunEnd)
-    {
-        InstNode *next=get_next_inst(begin_func);
-        deleteIns(begin_func);
-        begin_func=next;
-    }
-    //然后再把这句FunEnd删了
-    deleteIns(begin_func);
+//    begin_func=find_func_begin(start,"kk");
+//    while(begin_func->inst->Opcode!=FunEnd)
+//    {
+//        InstNode *next=get_next_inst(begin_func);
+//        deleteIns(begin_func);
+//        begin_func=next;
+//    }
+//    //然后再把这句FunEnd删了
+//    deleteIns(begin_func);
 
     InstNode *temp = get_next_inst(start);
     //找到第一个function的
