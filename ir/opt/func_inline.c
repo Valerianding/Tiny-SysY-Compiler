@@ -39,15 +39,15 @@ void func_inline(struct _InstNode* instruction_node)
         if(instruction->Opcode==Call)
         {
             int num=0;
-            Value *v_func=begin_func->inst->user.use_list->Val;
             //遍历ir找到对应的函数ir,进行一波复制
             if((begin_func=find_func_begin(start,instruction->user.use_list->Val->name))!=NULL)
             {
+                Value *v_func=begin_func->inst->user.use_list->Val;
                 //判断被内联的函数有无参数
                 //有参
                 if(begin_func->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
                 {
-                    //记一下第一个alloca的数值，比它小的都是参数，要区别处理
+                    //记一下第一个alloca的数值，比它小的都是参数，要区别处理(原value的alias为NULL)
                     num= get_name_index(&get_next_inst(begin_func)->inst->user.value);
 
                     //在one_param里填满参数
@@ -64,7 +64,6 @@ void func_inline(struct _InstNode* instruction_node)
                     InstNode *node_copy=NULL;
 
                     //copy这条ir，把它加进来
-
                     Value *v,*vl,*vr;
                     v= ins_get_dest(begin_func->inst);
                     vl= ins_get_lhs(begin_func->inst);
@@ -91,7 +90,6 @@ void func_inline(struct _InstNode* instruction_node)
                             }
                             else
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val->alias,begin_func->inst->user.use_list[1].Val->alias);
-
                         }
 
                         else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float)
@@ -105,6 +103,11 @@ void func_inline(struct _InstNode* instruction_node)
                     {
                         Value *v_left_now=ins_get_value_with_name_and_index(ins_copy,index);
                         index++;
+                        //左值的pdata可能需要copy
+                        //v_left_now->pdata->var_pdata.iVal=begin_func->inst->user.value.pdata->var_pdata.iVal;
+                        v_left_now->pdata=begin_func->inst->user.value.pdata;
+                        v_left_now->alias=begin_func->inst->user.value.alias;     //数组的话，需要alias--->v_array才能打印
+
                         //说明有左值
                         //建立原%1与现%1的alias关系
                         begin_func->inst->user.value.alias=v_left_now;
@@ -134,21 +137,8 @@ void func_inline(struct _InstNode* instruction_node)
                 {
                     Value *v_call=&instruction->user.value;
                     Value *v_return=begin_func->inst->user.use_list->Val;
-//                    Instruction *ins_connect= NULL;
-//                    if(v_return->VTy->ID==Int)
-//                        ins_connect=ins_new_binary_operator(Store,v_return,v_call);
-//                    else
-//                        ins_connect=ins_new_binary_operator(Store,v_return->alias,v_call);
-//                    InstNode *node_connect= new_inst_node(ins_connect);
-//                    ins_insert_before(node_connect,instruction_node);
 
-                   Use *use=v_call->use_list;
-                   while(use!=NULL)
-                   {
-                       //将这些use都换成返回值
-
-                       use=use->Next;
-                   }
+                    value_replaceAll(v_call,v_return->alias);
                 }
                 //删掉当前这句call
                 InstNode *pre=get_prev_inst(instruction_node);
@@ -177,14 +167,25 @@ void func_inline(struct _InstNode* instruction_node)
     //然后再把这句FunEnd删了
     deleteIns(begin_func);
 
-    //重命名
-    renameV(get_next_inst(start));
+    InstNode *temp = get_next_inst(start);
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    BasicBlock *block = temp->inst->Parent;
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        renameV(currentFunction);
+    }
 }
 
-void renameV(InstNode* instNode_list) {
+//无br跳转的重命名
+void renameV(Function *currentFunction) {
     bool haveParam = false;
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *end = currentFunction->tail;
 
-    InstNode *currNode = instNode_list;
+    InstNode *currNode = entry->head_node;
 
     //currNode的第一条是FunBegin,判断一下是否有参
     Value *funcValue = currNode->inst->user.use_list->Val;
@@ -201,65 +202,32 @@ void renameV(InstNode* instNode_list) {
     countVariable++;
 
     currNode = get_next_inst(currNode);
-    while (currNode->inst->Opcode != FunEnd) {
+    while (currNode != get_next_inst(end->tail_node)) {
         if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1) {
+            // 普通的instruction语句
+            char *insName = currNode->inst->user.value.name;
 
-            if (currNode->inst->Opcode == Label) {
-                //更新一下BasicBlock的ID 顺便就更新了phi
-                BasicBlock *block = currNode->inst->Parent;
-                block->id = countVariable;
-                currNode->inst->user.value.pdata->instruction_pdata.true_goto_location = countVariable;
-                countVariable++;
-            } else {
-                // 普通的instruction语句
-                char *insName = currNode->inst->user.value.name;
-
-                //如果不为空那我们可以进行重命名
-                if (insName != NULL && insName[0] == '%') {
-                    char newName[10];
-                    clear_tmp(insName);
-                    newName[0] = '%';
-                    int index = 1;
-                    int rep_count = countVariable;
-                    while (rep_count) {
-                        newName[index] = (rep_count % 10) + '0';
-                        rep_count /= 10;
-                        index++;
-                    }
-                    int j = 1;
-                    for (int i = index - 1; i >= 1; i--) {
-                        insName[j] = newName[i];
-                        j++;
-                    }
-                    insName[j] = '\0';
-                    countVariable++;
+            //如果不为空那我们可以进行重命名
+            if (insName != NULL && insName[0] == '%') {
+                char newName[10];
+                clear_tmp(insName);
+                newName[0] = '%';
+                int index = 1;
+                int rep_count = countVariable;
+                while (rep_count) {
+                    newName[index] = (rep_count % 10) + '0';
+                    rep_count /= 10;
+                    index++;
                 }
+                int j = 1;
+                for (int i = index - 1; i >= 1; i--) {
+                    insName[j] = newName[i];
+                    j++;
+                }
+                insName[j] = '\0';
+                countVariable++;
             }
         }
         currNode = get_next_inst(currNode);
     }
-
-   // clear_visited_flag(entry);
-    //通过true false block的方式设置
-    // 跳过funcBegin
-    //BasicBlock *tail = currentFunction->tail;
-//    currNode = instNode_list;
-//    while(currNode->inst->Opcode != FunEnd){
-//        BasicBlock *block = currNode->inst->Parent;
-//        if(block->visited == false){
-//            block->visited = true;
-//            InstNode *blockTail = block->tail_node;
-//            if(block == tail){
-//                blockTail = get_prev_inst(blockTail);
-//            }
-//            Value *blockTailInsValue = ins_get_dest(blockTail->inst);
-//            if(block->true_block){
-//                blockTailInsValue->pdata->instruction_pdata.true_goto_location = block->true_block->id;
-//            }
-//            if(block->false_block){
-//                blockTailInsValue->pdata->instruction_pdata.false_goto_location = block->false_block->id;
-//            }
-//        }
-//        currNode = get_next_inst(currNode);
-//    }
 }
