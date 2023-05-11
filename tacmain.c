@@ -11,7 +11,6 @@
 #include "mem2reg.h"
 #include "travel.h"
 #include "register_allocation.h"
-#include "func_inline.h"
 #include "livenessanalysis.h"
 #include "PassManager.h"
 //FIXME: test purpose only!
@@ -70,66 +69,66 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-    //fix_array(instruction_list);
-    //fix_array2(instruction_list);
     printf_llvm_ir(instruction_list,argv[1]);
-    func_inline(instruction_list);
-    printf("================\n");
-    printf_llvm_ir(instruction_list,argv[1]);
+//  fix_array(instruction_list);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
-//    bblock_divide(instruction_list);
-//
-//
-//    showInstructionInfo(instruction_list);
-//
-//
-//    showBlockInfo(instruction_list);
-//
-//
-//    InstNode *temp = get_next_inst(instruction_list);
-//    //找到第一个function的
-//    while(temp->inst->Parent->Parent == NULL){
-//        temp = get_next_inst(temp);
+    bblock_divide(instruction_list);
+
+
+    showInstructionInfo(instruction_list);
+
+
+    showBlockInfo(instruction_list);
+
+
+    InstNode *temp = get_next_inst(instruction_list);
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    BasicBlock *block = temp->inst->Parent;
+
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        printf("-------function  start---------\n");
+        correctType(currentFunction);
+        print_function_info(currentFunction);
+        clear_visited_flag(block);
+        removeUnreachable(currentFunction);
+        calculate_dominance(currentFunction);
+        calculatePostDominance(currentFunction);
+        clear_visited_flag(block);
+        calculate_dominance_frontier(currentFunction);
+        calculate_iDominator(currentFunction);
+        calculate_DomTree(currentFunction);
+        calculateNonLocals(currentFunction);
+        printf("after non locals\n");
+    }
+
+     //建立phi 之后的
+    printf_llvm_ir(instruction_list,argv[1]);
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        mem2reg(currentFunction);
+        //calculateLiveness(currentFunction);
+        printf("after one mem2reg Function!\n");
+    }
+
+    // 优化之前
+    printf_llvm_ir(instruction_list,argv[1]);
+
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        Mark(currentFunction);
+//        Sweep(currentFunction);
+//        Clean(currentFunction);
+//        renameVariabels(currentFunction);
 //    }
-//    BasicBlock *block = temp->inst->Parent;
-//
-//
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        printf("-------function  start---------\n");
-//        correctType(currentFunction);
-//        print_function_info(currentFunction);
-//        clear_visited_flag(block);
-//        removeUnreachable(currentFunction);
-//        calculate_dominance(currentFunction);
-//        calculatePostDominance(currentFunction);
-//        clear_visited_flag(block);
-//        calculate_dominance_frontier(currentFunction);
-//        calculate_iDominator(currentFunction);
-//        calculate_DomTree(currentFunction);
-//        calculateNonLocals(currentFunction);
-//        printf("after non locals\n");
-//    }
-//
-//     //建立phi 之后的
-//    printf_llvm_ir(instruction_list,argv[1]);
-//
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        mem2reg(currentFunction);
-//        calculateLiveness(currentFunction);
-//        printf("after one mem2reg Function!\n");
-//    }
-//
-//    printf_llvm_ir(instruction_list,argv[1]);
-//
-////    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-////        loop(currentFunction);
-////    }
-//
-//    // phi上的优化
-//    printf_llvm_ir(instruction_list,argv[1]);
-//
+
+    // phi上的优化
+    printf_llvm_ir(instruction_list,argv[1]);
+
 //    InstNode *temp2 = instruction_list;
 //    /* 测试所有instruction list */
 //    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
@@ -148,11 +147,17 @@ int main(int argc, char* argv[]){
 //    block = temp->inst->Parent;
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
 //        SSADeconstruction(currentFunction);
+//    }
+//
+//    printf_llvm_ir(instruction_list,argv[1]);
+//
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
 //        clear_visited_flag(currentFunction->entry);
 //        printf("after out of SSA!\n");
 //        calculateLiveness(currentFunction);
 //        printLiveness(currentFunction->entry);
-//   }
+//    }
+
 
     // 消除phi函数之后
     // printf_llvm_ir(instruction_list,argv[1]);

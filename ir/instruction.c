@@ -134,6 +134,19 @@ Value *ins_get_rhs(Instruction *ins){
     return rhs;
 }
 
+void replace_lhs_operand(Instruction *ins,Value *newValue){
+
+    assert(ins->user.value.NumUserOperands >= 1);
+    Use *use = user_get_operand_use(&ins->user,0);
+    use_set_value(use,newValue);
+}
+
+void replace_rhs_operand(Instruction *ins,Value *newValue){
+    assert(ins->user.value.NumUserOperands >= 2);
+    Use *use = user_get_operand_use(&ins->user,1);
+    use_set_value(use,newValue);
+}
+
 void ins_set_parent(Instruction *ins,struct _BasicBlock *parent){
     ins->Parent = parent;
 }

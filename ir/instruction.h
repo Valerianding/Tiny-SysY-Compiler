@@ -73,4 +73,6 @@ Value *ins_get_global_value(Instruction *ins,char* name);
 Value *ins_get_lhs(Instruction *ins);
 // a = b + c 获取c
 Value *ins_get_rhs(Instruction *ins);
+void replace_lhs_operand(Instruction *ins,Value *newValue);
+void replace_rhs_operand(Instruction *ins,Value *newValue);
 #endif
