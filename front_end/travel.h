@@ -46,6 +46,7 @@ void reduce_or(int true_index,int false_index);
 void handle_global_array(Value* v_array,bool is_global,past vars,int flag);    //flag:0未初始化，1初始化
 void assign_global_array(past p,Value* v_array,int i,int level);
 void fix_array(struct _InstNode *instruction_node);
+void fix_array2(struct _InstNode *instruction_node);
 
 void printf_array(Value *v_array, int begin_index,FILE* fptr);
 void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_value,int start_layer,int cur_layer,int carry[]);
