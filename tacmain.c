@@ -119,12 +119,12 @@ int main(int argc, char* argv[]){
     // 优化之前
     printf_llvm_ir(instruction_list,argv[1]);
 
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        Mark(currentFunction);
-//        Sweep(currentFunction);
-//        Clean(currentFunction);
-//        renameVariabels(currentFunction);
-//    }
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        Mark(currentFunction);
+        Sweep(currentFunction);
+        Clean(currentFunction);
+        renameVariabels(currentFunction);
+    }
 
     // phi上的优化
     printf_llvm_ir(instruction_list,argv[1]);
@@ -144,19 +144,19 @@ int main(int argc, char* argv[]){
 //        temp = get_next_inst(temp);
 //    }
 //
-//    block = temp->inst->Parent;
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        SSADeconstruction(currentFunction);
-//    }
-//
-//    printf_llvm_ir(instruction_list,argv[1]);
-//
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        clear_visited_flag(currentFunction->entry);
-//        printf("after out of SSA!\n");
-//        calculateLiveness(currentFunction);
-//        printLiveness(currentFunction->entry);
-//    }
+    block = temp->inst->Parent;
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        SSADeconstruction(currentFunction);
+    }
+
+    printf_llvm_ir(instruction_list,argv[1]);
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        clear_visited_flag(currentFunction->entry);
+        printf("after out of SSA!\n");
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction->entry);
+    }
 
 
     // 消除phi函数之后
