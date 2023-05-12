@@ -3357,8 +3357,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
