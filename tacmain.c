@@ -13,6 +13,7 @@
 #include "register_allocation.h"
 #include "livenessanalysis.h"
 #include "PassManager.h"
+#include "func_inline.h"
 //FIXME: test purpose only!
 Symtab* test_symtab;
 
@@ -70,9 +71,9 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
     printf_llvm_ir(instruction_list,argv[1]);
-//  fix_array(instruction_list);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
+//
 
     bblock_divide(instruction_list);
 
@@ -88,6 +89,12 @@ int main(int argc, char* argv[]){
     while(temp->inst->Parent->Parent == NULL){
         temp = get_next_inst(temp);
     }
+
+    //TODO 目前函数内联放在这里了，暂时的
+//    printf("=======func inline=========\n");
+//    func_inline(instruction_list);
+//    printf_llvm_ir(instruction_list,argv[1]);
+
     BasicBlock *block = temp->inst->Parent;
 
 
@@ -107,7 +114,7 @@ int main(int argc, char* argv[]){
         printf("after non locals\n");
     }
 
-     //建立phi 之后的
+    // 建立phi 之后的
     printf_llvm_ir(instruction_list,argv[1]);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -144,6 +151,7 @@ int main(int argc, char* argv[]){
 //        temp = get_next_inst(temp);
 //    }
 //
+
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
@@ -160,13 +168,14 @@ int main(int argc, char* argv[]){
 
 
     // 消除phi函数之后
-    // printf_llvm_ir(instruction_list,argv[1]);
+     printf_llvm_ir(instruction_list,argv[1]);
 //
 //    //ljw_begin
 //   reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
     //    ljf
+    fix_array(instruction_list);
     // arm_translate_ins(instruction_list);
     return 0;
 }

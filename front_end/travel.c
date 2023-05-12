@@ -2263,18 +2263,6 @@ void create_func_def(past root) {
     //清空index
     t_index=0;
 
-    //解决填充continue和break
-//    if(c_b_flag[1]==true)
-//    {
-//        reduce_break();
-//        c_b_flag[1]=false;
-//    }
-//    if(c_b_flag[0]==true)
-//    {
-//        reduce_continue();
-//        c_b_flag[0]=false;
-//    }
-
     if(return_stmt_num[return_index]>1 || (return_stmt_num[return_index]==1 && v->pdata->symtab_func_pdata.return_type.ID==VoidTyID))
         reduce_return();
     insnode_stack_new(&S_break);
@@ -3366,6 +3354,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
+        //printf("%d  ,",instruction->i);
+        //printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+        //printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4220,93 +4211,95 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
                 printf(" %s=getelementptr inbounds ",instruction->user.value.name);
                 fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
-                if(instruction->user.use_list->Val->VTy->ID!=AddressTyID )
+                if(instruction->user.value.pdata->var_pdata.iVal<0)
                 {
-                    //是对数组参数的最后一个自造的gmp
-                    if(instruction->user.value.VTy->ID==AddressTyID)
-                    {
-                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
-                        printf(",");
-                        fprintf(fptr,",");
-                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
-                        printf("* ");
-                        fprintf(fptr,"* ");
-                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
-                        {
-                            printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                            fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                        }
-                        else
-                        {
-                            printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                            fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                        }
-                    }
-                        //正常的
-                    else{
-                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                        printf(",");
-                        fprintf(fptr,",");
-                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                        printf("* ");
-                        fprintf(fptr,"* ");
-                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
-                        {
-                            printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                            fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                        }
-                        else
-                        {
-                            printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                            fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                        }
-                    }
-
+                    printf_array(v_cur_array,0,fptr);
+                    printf(",");
+                    fprintf(fptr,",");
+                    printf_array(v_cur_array,0,fptr);
+                    printf("* %s,i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    fprintf(fptr,"* %s,i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                 }
-                else {
-                    Value *array=instruction->user.value.alias;
-                    if(array->pdata->symtab_array_pdata.dimentions[0]==0)
+                else
+                {
+                    if(instruction->user.use_list->Val->VTy->ID!=AddressTyID )
                     {
-                        printf_array(array,1,fptr);
-                        printf(",");
-                        fprintf(fptr,",");
-                        printf_array(array,1,fptr);
-                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                        //是对数组参数的最后一个自造的gmp
+                        if(instruction->user.value.VTy->ID==AddressTyID)
                         {
-                            printf("* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                            fprintf(fptr,"* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
+                            printf(",");
+                            fprintf(fptr,",");
+                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
+                            printf("* ");
+                            fprintf(fptr,"* ");
+                            if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                            {
+                                printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                                fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            }
+                            else
+                            {
+                                printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                                fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            }
                         }
-                        else
-                        {
-                            printf("* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                            fprintf(fptr,"* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            //正常的
+                        else{
+                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                            printf(",");
+                            fprintf(fptr,",");
+                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+                            printf("* ");
+                            fprintf(fptr,"* ");
+                            if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                            {
+                                printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                                fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            }
+                            else
+                            {
+                                printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                                fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            }
                         }
+
                     }
-                    else
-                    {
-                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    else {
+                        Value *array=instruction->user.value.alias;
+                        if(array->pdata->symtab_array_pdata.dimentions[0]==0)
                         {
-                            printf("i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                            fprintf(fptr,"i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            printf_array(array,1,fptr);
+                            printf(",");
+                            fprintf(fptr,",");
+                            printf_array(array,1,fptr);
+                            if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                            {
+                                printf("* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                                fprintf(fptr,"* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            }
+                            else
+                            {
+                                printf("* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                                fprintf(fptr,"* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            }
                         }
                         else
                         {
-                            printf("i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                            fprintf(fptr,"i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                            {
+                                printf("i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                                fprintf(fptr,"i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            }
+                            else
+                            {
+                                printf("i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                                fprintf(fptr,"i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                            }
                         }
                     }
                 }
 
-//                if(instruction->user.value.VTy->ID==AddressTyID && (instruction->user.value.pdata->var_pdata.iVal+1<instruction->user.use_list->Val->pdata->symtab_array_pdata.dimention_figure))
-//                {
-//                    for(int i= instruction->user.value.pdata->var_pdata.iVal+1;i<v_cur_array->pdata->symtab_array_pdata.dimention_figure;i++)
-//                    {
-//                        printf(",i32 0\n");
-//                        fprintf(fptr,",i32 0\n");
-//                    }
-//                }
-//                else
-//                {
                 printf("\n");
                 fprintf(fptr,"\n");
                 //}
@@ -4482,19 +4475,21 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     fprintf(fptr,"declare dso_local i32 @putfloat(...) #1\n");
     fprintf(fptr,"declare dso_local i32 @putfarray(...) #1\n");
     fprintf(fptr,"declare dso_local i32 @putf(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @starttime(...) #1\n");
+    fprintf(fptr,"declare dso_local i32 @stoptime(...) #1\n");
     fclose(fptr);
 }
 
-
 void fix_array(struct _InstNode *instruction_node)
 {
+    InstNode *start=instruction_node;
     instruction_node= get_next_inst(instruction_node);
     int offset=0;
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
         int dimension;
         Value *v_array=NULL;
-        //
+
         switch (instruction_node->inst->Opcode)
         {
             case GEP:
@@ -4502,30 +4497,105 @@ void fix_array(struct _InstNode *instruction_node)
                 * 2. 算出左值的累积量，替换左值的iVal*/
                 v_array=instruction->user.value.alias;
                 dimension=instruction->user.value.pdata->var_pdata.iVal;
-                if(dimension+1!=v_array->pdata->symtab_array_pdata.dimention_figure && dimension==0)
+                if(instruction->user.use_list[1].Val->VTy->ID!=Int)
+                    //直接走到能读到的最后一条gep
                 {
-                    offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4);
+                    while(get_next_inst(instruction_node)->inst->Opcode==GEP)
+                    {
+                        instruction_node= get_next_inst(instruction_node);
+                    }
                 }
-                else if(dimension+1==v_array->pdata->symtab_array_pdata.dimention_figure)
-                    offset+=instruction->user.use_list[1].Val->pdata->var_pdata.iVal;
                 else
                 {
-                    offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4)+instruction->user.use_list->Val->pdata->var_pdata.iVal;
+                    //第一下是一维，一定是一个全新开始
+                    if(dimension+1!=v_array->pdata->symtab_array_pdata.dimention_figure && dimension==0)
+                    {
+                        offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4);
+                    }
+                    else if(dimension+1==v_array->pdata->symtab_array_pdata.dimention_figure)
+                        offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal+instruction->user.use_list->Val->pdata->var_pdata.iVal;
+                    else
+                    {
+                        offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4)+instruction->user.use_list->Val->pdata->var_pdata.iVal;
+                    }
+                    //将左值的iVal替换为本层增加的偏移量
+                    // instruction->i=offset;
+                    instruction->user.value.pdata->var_pdata.iVal=offset;
+                    instruction->user.value.pdata->var_pdata.is_offset=1;
                 }
-                //将左值的iVal替换为本层增加的偏移量
-                instruction->user.value.pdata->var_pdata.iVal=offset;
+                break;
         }
         instruction_node= get_next_inst(instruction_node);
     }
+
+    fix_array2(start);
 }
 
-
-void print_array(struct _InstNode *instruction_node)
+void fix_array2(struct _InstNode *instruction_node)
 {
     instruction_node= get_next_inst(instruction_node);
-    int offset=0;
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
-        printf("%d\n",instruction_node->inst->user.value.pdata->var_pdata.iVal);
+        Instruction *instruction = instruction_node->inst;
+
+        //这两条可以合并了
+        if(instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1)
+        {
+            //对第一条的左值进行处理
+            if(instruction->user.use_list!=NULL)
+            {
+                Use* use=instruction->user.value.use_list;
+                bool cut=true;
+                while(use!=NULL)
+                {
+                    Value left_user=use->Parent->value;
+                    //看用到的use有没有正的偏移值，如果没有就不能噶掉这条，如果有就噶
+                    //没有
+                    if(left_user.pdata->var_pdata.is_offset==0)
+                    {
+                        cut=false;
+                        break;
+                    }
+                    use=use->Next;
+                }
+                if(cut)
+                {
+                    use=instruction->user.value.use_list;
+                    while(use!=NULL)
+                    {
+                        Value left_user=use->Parent->value;
+                        //有
+                        //计算这个instruction为最终偏移
+                        Value *v_array=left_user.alias;
+
+                        Value *v_offset=(Value*) malloc(sizeof (Value));
+                        value_init_int(v_offset,left_user.pdata->var_pdata.iVal);
+
+                        Use* use_store=use;
+                        use=use->Next;
+
+                        use_set_value(use_store,v_array->alias);
+                        //ir里的第二个use
+                        use_set_value(&use_store->Parent->use_list[1],v_offset);
+                        //user
+                        use_store->Parent->value.pdata->var_pdata.iVal=-1;
+                    }
+
+                    //删掉当前这条,且此时下一条的偏移已经算出
+                    InstNode *now=instruction_node;
+                    instruction_node= get_prev_inst(instruction_node);
+                    //直接噶了
+                    deleteIns(now);
+                }
+            }
+            else
+            {
+                InstNode *now=instruction_node;
+                instruction_node= get_prev_inst(instruction_node);
+                //直接噶了
+                deleteIns(now);
+            }
+
+        }
         instruction_node= get_next_inst(instruction_node);
     }
 }

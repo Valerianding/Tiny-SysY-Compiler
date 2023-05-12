@@ -520,7 +520,7 @@ void Clean(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     bool changed = true;
     while(changed){
-        changed = false;
+         changed = false;
         // compute postorder
 
         Vector *vector = VectorInit(10);

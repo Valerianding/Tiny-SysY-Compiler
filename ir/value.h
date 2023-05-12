@@ -32,6 +32,7 @@ struct _PData{
             int iVal;
             float fVal;
         };
+        unsigned int is_offset:1;
     }var_pdata;
 
     struct {

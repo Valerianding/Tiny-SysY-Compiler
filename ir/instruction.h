@@ -65,6 +65,7 @@ Value *ins_get_dest(Instruction *ins);
 void print_ins_opcode(Instruction *this);
 void clear_tmp(char* tmp);
 Value *ins_get_value_with_name(Instruction *ins);
+Value *ins_get_value_with_name_and_index(Instruction* ins,int index);
 //获取全局value并赋个name
 Value *ins_get_global_value(Instruction *ins,char* name);
 // a = b + c 获取b

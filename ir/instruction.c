@@ -78,6 +78,18 @@ Value *ins_get_dest(Instruction *ins){
     return &ins->user.value;
 }
 
+Value *ins_get_value_with_name_and_index(Instruction* ins,int index)
+{
+    Value *v_tmp = &ins->user.value;
+    sprintf(t_num, "%d", index);
+    strcat(t,t_num);
+    v_tmp->pdata->map_list = getCurMapList(this);
+    v_tmp->name = (char*) malloc(strlen (t));
+    strcpy(v_tmp->name,t);
+    clear_tmp(t);
+    return v_tmp;
+}
+
 //获取instruction.user.value并赋个名字
 Value *ins_get_value_with_name(Instruction *ins){
     Value *v_tmp = &ins->user.value;
