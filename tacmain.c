@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-    printf_llvm_ir(instruction_list,argv[1]);
+ //   printf_llvm_ir(instruction_list,argv[1]);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 //
@@ -89,11 +89,6 @@ int main(int argc, char* argv[]){
     while(temp->inst->Parent->Parent == NULL){
         temp = get_next_inst(temp);
     }
-
-    //TODO 目前函数内联放在这里了，暂时的
-//    printf("=======func inline=========\n");
-//    func_inline(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[1]);
 
     BasicBlock *block = temp->inst->Parent;
 
@@ -133,7 +128,7 @@ int main(int argc, char* argv[]){
         renameVariabels(currentFunction);
     }
 
-    // phi上的优化
+     //phi上的优化
     printf_llvm_ir(instruction_list,argv[1]);
 
 //    InstNode *temp2 = instruction_list;
@@ -166,16 +161,27 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction->entry);
     }
 
-
     // 消除phi函数之后
      printf_llvm_ir(instruction_list,argv[1]);
+//
+    //TODO 目前函数内联放在这里了，暂时的
+//    printf("=======func inline=========\n");
+//    func_inline(instruction_list);
+//    printf_llvm_ir(instruction_list,argv[1]);
+//    printf("=======func inline end=======\n");
+
 //
 //    //ljw_begin
 //   reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
-    //    ljf
+
+    //lsy_begin
     fix_array(instruction_list);
+    printf_llvm_ir(instruction_list,argv[1]);
+    //lsy_end
+
+    //    ljf
     // arm_translate_ins(instruction_list);
     return 0;
 }

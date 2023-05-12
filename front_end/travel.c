@@ -3306,6 +3306,9 @@ char* c2ll(char* file_name)
 
 bool begin_tmp(const char* name)
 {
+    if(name==NULL)
+        return false;
+
     char *prefix="%";
     if(name[0]==prefix[0])
         return true;
