@@ -127,9 +127,10 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[1]);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        Mark(currentFunction);
-        Sweep(currentFunction);
-        Clean(currentFunction);
+//        Mark(currentFunction);
+//        Sweep(currentFunction);
+//        Clean(currentFunction);
+        commonSubexpressionElimination(currentFunction);
         renameVariabels(currentFunction);
     }
 
@@ -152,30 +153,30 @@ int main(int argc, char* argv[]){
 //    }
 //
 
-    block = temp->inst->Parent;
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        SSADeconstruction(currentFunction);
-    }
-
-    printf_llvm_ir(instruction_list,argv[1]);
-
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        clear_visited_flag(currentFunction->entry);
-        printf("after out of SSA!\n");
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction->entry);
-    }
-
+//    block = temp->inst->Parent;
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        SSADeconstruction(currentFunction);
+//    }
+//
+////    printf_llvm_ir(instruction_list,argv[1]);
+//
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        clear_visited_flag(currentFunction->entry);
+//        printf("after out of SSA!\n");
+//        calculateLiveness(currentFunction);
+//        printLiveness(currentFunction->entry);
+//    }
+//
 
     // 消除phi函数之后
-     printf_llvm_ir(instruction_list,argv[1]);
+//     printf_llvm_ir(instruction_list,argv[1]);
 //
 //    //ljw_begin
 //   reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
     //    ljf
-    fix_array(instruction_list);
+//    fix_array(instruction_list);
     // arm_translate_ins(instruction_list);
     return 0;
 }

@@ -1,14 +1,7 @@
-int test()
-{
-    int a=1,b=2;
-    if(a<b)
-        return 1;
-    else
-        return 2;
-}
+int test(){
+    int c = 10;
 
-int main()
-{
-    int b=test();
-    return b;
+    int a = c + 3;
+    int b = c + 3;
+    return a;
 }

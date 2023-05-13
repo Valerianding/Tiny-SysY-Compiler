@@ -61,7 +61,8 @@ bool commonSubexpression(BasicBlock *block){
                     // TODO 没有考虑IMM！！
                     switch (subexpression->op) {
                         case Add: {
-                            if((subexpression->lhs == lhs && subexpression->rhs == rhs) || (subexpression->rhs == lhs && subexpression->lhs == rhs)){
+
+                            if((subexpression->lhs == lhs && subexpression->rhs == rhs) || (subexpression->rhs == lhs && subexpression->lhs == rhs)) {
                                 //满足条件
                                 replace = subExpr->key;
                                 flag = true;
