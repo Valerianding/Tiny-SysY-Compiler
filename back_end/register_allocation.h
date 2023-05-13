@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "../ir/instruction.h"
 #include "../ir/bblock.h"
+#include "../ir/opt/utility.h"
 #include "value.h"
 #include "type.h"
 #include "user.h"
@@ -39,16 +40,30 @@ struct variable {
     int neighbor_count;
 };
 
-
-struct var_def_use
+struct name_num
 {
-    char * name;
-    int def;
-    int use;
-}_var[10000];
+    int num;
+    char *name;
+    int ifparam;
+    int first_use;
+    int first;
+    int last;
+    int last_def;
+    int isin;
+    int isout;
+};
+
+struct BLOCK_list
+{
+    BasicBlock * reg_block;
+};
 
 
-
+struct  reg_edge
+{
+    int a;
+    int b;
+};
 struct  reg_now
 {
     int node_id;
@@ -86,6 +101,7 @@ void test_minimize_RIG();
 void print_colors();
 void init_RIG();
 int supercmp(char *a ,char *b);
+int find_var(char * str);
 //void create_RIG(FILE * re_in);
 void create_RIG();
 int check_edge();//检查rig
@@ -108,4 +124,5 @@ void addtoin(BasicBlock *this_block);
 void addtoout(BasicBlock *this_block);
 void create_bian(int i,int j);
 void add_to_ir();
+void ir_reg_init(InstNode *instruction_node);
 void clean_reg();//完成后释放内存
