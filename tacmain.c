@@ -130,7 +130,7 @@ int main(int argc, char* argv[]){
 //        Mark(currentFunction);
 //        Sweep(currentFunction);
 //        Clean(currentFunction);
-        commonSubexpressionElimination(currentFunction);
+        RunPasses(currentFunction);
         renameVariabels(currentFunction);
     }
 
@@ -153,23 +153,23 @@ int main(int argc, char* argv[]){
 //    }
 //
 
-//    block = temp->inst->Parent;
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        SSADeconstruction(currentFunction);
-//    }
-//
-////    printf_llvm_ir(instruction_list,argv[1]);
-//
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        clear_visited_flag(currentFunction->entry);
-//        printf("after out of SSA!\n");
-//        calculateLiveness(currentFunction);
-//        printLiveness(currentFunction->entry);
-//    }
-//
+    block = temp->inst->Parent;
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        SSADeconstruction(currentFunction);
+    }
 
-    // 消除phi函数之后
-//     printf_llvm_ir(instruction_list,argv[1]);
+//    printf_llvm_ir(instruction_list,argv[1]);
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        clear_visited_flag(currentFunction->entry);
+        printf("after out of SSA!\n");
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction->entry);
+    }
+
+
+    // 消除phi函数之后 请注释掉我跑llvm
+//    printf_llvm_ir(instruction_list,argv[1]);
 //
 //    //ljw_begin
 //   reg_control(instruction_list,temp);

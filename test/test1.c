@@ -1,7 +1,6 @@
 int test(){
-    int c = 10;
-
-    int a = c + 3;
-    int b = c + 3;
-    return a;
+    int c = 1;
+    int b = c + 1;
+    int d = c + 1;
+    return d;
 }

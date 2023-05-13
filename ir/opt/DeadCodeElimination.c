@@ -584,25 +584,77 @@ bool OnePass(Vector* vector) {
                     jNode = get_next_inst(jNode);
                 }
 
+                bool removeAble = true;
+                //并且j的后续基本块中应该不能包含phi函数
+                if(j->true_block){
+                    InstNode *jTrueNode = j->true_block->head_node;
+                    InstNode *jTrueTail = j->true_block->tail_node;
+                    while(jTrueNode != jTrueTail){
+                        if(jTrueNode->inst->Opcode == Phi){
+                            removeAble = false;
+                        }
+                        jTrueNode = get_next_inst(jTrueNode);
+                    }
+                }
 
-                if(countPhi <= 1){
+                if(j->false_block){
+                    InstNode *jFalseNode = j->false_block->head_node;
+                    InstNode *jFalseTail = j->true_block->tail_node;
+                    while(jFalseNode != jFalseTail){
+                        if(jFalseNode->inst->Opcode == Phi){
+                            removeAble = false;
+                        }
+                        jFalseNode = get_next_inst(jFalseNode);
+                    }
+                }
+
+                // TODO 解决如果包含phi函数的问题
+
+                // TODO为什么
+                if(countPhi <= 1 && removeAble){
                     changed = true;
                     processed = true;
+                    assert(false);
+                    printf("hoist a branch!\n");
 
                     InstNode *jNode = j->head_node;
                     InstNode *jTailNode = j->tail_node;
 
                     while(jNode != jTailNode){
                         if(jNode->inst->Opcode == Phi){
+                            assert(countPhi == 1);
                             //将phi函数还原
                             HashSet *jSet = jNode->inst->user.value.pdata->pairSet;
                             HashSetFirst(jSet);
                             for(pair *phiInfo = HashSetNext(jSet); phiInfo != NULL; phiInfo = HashSetNext(jSet)){
+                                Value *define = phiInfo->define;
+                                BasicBlock *from = phiInfo->from;
 
+                                Instruction *branch = ins_new_unary_operator(br_i1, define);
+                                branch->user.value.pdata->instruction_pdata.true_goto_location = j->true_block->id;
+                                branch->user.value.pdata->instruction_pdata.false_goto_location = j->false_block->id;
+                                InstNode *branchNode = new_inst_node(branch);
+
+                                //
+                                InstNode *fromTail = from->tail_node;
+                                ins_insert_after(branchNode,fromTail);
+
+                                //
+                                from->true_block = j->true_block;
+                                from->false_block = j->false_block;
+
+                                //
+                                HashSetRemove(j->true_block->preBlocks,j);
+                                HashSetAdd(j->true_block->preBlocks,from);
+
+                                //
+                                HashSetRemove(j->false_block->preBlocks,j);
+                                HashSetAdd(j->false_block->preBlocks,from);
                             }
                         }
                         jNode = get_next_inst(jNode);
                     }
+                    removeBlock(j);
                 }else{
                     assert(false);
                 }

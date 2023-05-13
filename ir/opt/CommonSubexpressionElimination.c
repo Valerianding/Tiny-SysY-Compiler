@@ -38,6 +38,17 @@ bool commonSubexpressionElimination(Function *currentFunction){
     return effective;
 }
 
+bool isSame(Value *left, Value *right){
+    if(isImmInt(left) && isImmInt(right) && (left->pdata->var_pdata.iVal == right->pdata->var_pdata.iVal)){
+        return true;
+    }else if(isImmFloat(left) && isImmFloat(right) && (left->pdata->var_pdata.fVal == right->pdata->var_pdata.fVal)){
+        return true;
+    }else if(left == right){
+        return true;
+    }
+    return false;
+}
+
 bool commonSubexpression(BasicBlock *block){
     bool effective = false;
     InstNode *currNode = block->head_node;
@@ -61,8 +72,7 @@ bool commonSubexpression(BasicBlock *block){
                     // TODO 没有考虑IMM！！
                     switch (subexpression->op) {
                         case Add: {
-
-                            if((subexpression->lhs == lhs && subexpression->rhs == rhs) || (subexpression->rhs == lhs && subexpression->lhs == rhs)) {
+                            if((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))){
                                 //满足条件
                                 replace = subExpr->key;
                                 flag = true;
@@ -70,14 +80,14 @@ bool commonSubexpression(BasicBlock *block){
                             break;
                         }
                         case Sub:{
-                            if(subexpression->lhs == lhs && subexpression->rhs == rhs){
+                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)){
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
                         }
                         case Mul:{
-                            if((subexpression->lhs == lhs && subexpression->rhs == rhs) || (subexpression->rhs == lhs && subexpression->lhs == rhs)){
+                            if((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))){
                                 //满足条件
                                 replace = subExpr->key;
                                 flag = true;
@@ -85,14 +95,14 @@ bool commonSubexpression(BasicBlock *block){
                             break;
                         }
                         case Div:{
-                            if(subexpression->lhs == lhs && subexpression->rhs == rhs){
+                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)){
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
                         }
                         case Mod:{
-                            if(subexpression->lhs == lhs && subexpression->rhs == rhs){
+                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)){
                                 replace = subExpr->key;
                                 flag = true;
                             }

@@ -89,7 +89,6 @@ void calculateLiveness(Function *currentFunction){
 
     //因为是最后一个基本块所以我们直接
     while(exitCurr != exitHead){
-        // TODO 解决bitcast 和 偏移量的活跃问题
         if(isValidOperator(exitCurr)){
             Value *def = NULL;
             Value *lhs = NULL;
@@ -117,6 +116,11 @@ void calculateLiveness(Function *currentFunction){
 
             if(exitCurr->inst->Opcode == Call){
                 lhs = NULL;
+                rhs = NULL;
+            }
+
+            // give param的时候传递的function参数我们可以直接忽略
+            if(exitCurr->inst->Opcode == GIVE_PARAM){
                 rhs = NULL;
             }
 

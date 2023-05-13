@@ -120,8 +120,7 @@ void renameVariabels(Function *currentFunction) {
 
     currNode = get_next_inst(currNode);
     while (currNode != get_next_inst(end->tail_node)) {
-        if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1) {
-
+        if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1 && currNode->inst->Opcode != CopyOperation) {
             if (currNode->inst->Opcode == Label) {
                 //更新一下BasicBlock的ID 顺便就更新了phi
                 BasicBlock *block = currNode->inst->Parent;
