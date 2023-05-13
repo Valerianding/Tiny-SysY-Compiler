@@ -5,63 +5,28 @@ extern Symtab *this;
 char _type_str[30][30]={{"unknown"},{"param_int"},{"param_float"},{"main_int"},{"main_float"},{"int"},{"float"},{"const_int"},{"const_float"},{"function"},{"void"},{"address"},{"var_int"},{"var_float"},{"globalint"},{"globalfloat"},{"array_const_int"},{"array_const_float"},{"global_array_const_int"},{"global_array_const_float"},{"array_int"},{"array_float"},{"global_arrayint"},{"global_arrayfloat"}};
 int *RIG;
 struct variable *list_of_variables;
-struct tac_var * _tac_var;
 struct SString * live_in_name;
 struct SString * live_out_name;
 int edge_num;
 int var_num=0;
-char *func_name_reg;
-int  KK = 7;
+int KK = 7;
 int rig_num;
-struct var_fist_last * var_f_l;
-// struct reg_now *reg_now_tac;
-//char varnum[1000][40];
-int func_start;
-int func_end;
 int block_in_num,block_out_num;
-int _b_start;
-int _b_end;
-int _numnum;
-int if_neicun=0;
-struct  reg_now echo_tac[10000];
-BasicBlock * block_list[1000];
+struct  reg_now * echo_tac;
+// BasicBlock * block_list[1000];
+struct BLOCK_list * block_list;
 int block_num;
 int tac_cnt;
-struct name_num
-{
-    int num;
-    char *name;
-    int ifparam;
-    int first_use;
-    int first;
-    int last;
-    int last_def;
-    int isin;
-    int isout;
-}*live;
+struct name_num *live;
 
-struct  edge
-{
-    int a;
-    int b;
-}*_bian;
-
-void live_init()
-{
-    rig_num=0;
-    edge_num=0;
-    _numnum=tac_cnt;
-    live=(struct name_num *)malloc(sizeof(struct name_num)*(_numnum+1));
-    for(int i=0;i<_numnum+1;i++)    live[i].ifparam=0;
-    _bian=(struct edge *)malloc(sizeof(struct edge)*_numnum*(_numnum+1)/2);
-}
+struct  reg_edge *_bian;
 
 void live_init_block()
 {
     rig_num=0;
     edge_num=0;
-    live=(struct name_num *)malloc(sizeof(struct name_num)*(tac_cnt*3));
-    for(int i=0;i<tac_cnt*3;i++)
+    live=(struct name_num *)malloc(sizeof(struct name_num)*((tac_cnt+30)*3));
+    for(int i=0;i<(tac_cnt+30)*3;i++)
     {
         live[i].num=i;
         live[i].name=NULL;
@@ -72,7 +37,7 @@ void live_init_block()
         live[i].isin=0;
         live[i].isout=0;
     }
-    _bian=(struct edge *)malloc(sizeof(struct edge)*(tac_cnt*tac_cnt*9/2));
+    _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((tac_cnt+31)*(tac_cnt+30)*9/2));
     live_in_name=NULL;
     live_out_name=NULL;
     return ;
@@ -131,9 +96,7 @@ void reset_non_available_colors()
 
 int first_fit_coloring()
 {
-    // printf("???");
     head = NULL;
-
     for(int i = 0; i < rig_num; i++)
     {
         if(list_of_variables[i].color == NO_COLOR)
@@ -195,6 +158,20 @@ int visit(int index)
     }
     return 0;
 } 
+
+void ir_reg_init(InstNode *instruction_node)
+{
+    instruction_node= get_next_inst(instruction_node);
+    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
+    {
+        Instruction *instruction=instruction_node->inst;
+        instruction->_reg_[0]=0;
+        instruction->_reg_[1]=0;
+        instruction->_reg_[2]=0;
+        instruction_node= get_next_inst(instruction_node);
+    }
+    return ;
+}
 
 void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
 {
@@ -279,19 +256,19 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 }
                 break;
             case br:
-                printf(" br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                printf(" br label %%%d\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 //fpintf(fptr," br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 break;
             case br_i1:
-                printf(" br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                printf(" br i1 %s,label %%%d,label %%%d\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 //fpintf(fptr," br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 break;
             case br_i1_false:
-                printf(" br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                printf(" br i1 false,label %%%d,label %%%d\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 //fpintf(fptr," br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 break;
             case br_i1_true:
-                printf(" br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                printf(" br i1 true,label %%%d,label %%%d\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 //fpintf(fptr," br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 break;
             case EQ:
@@ -509,7 +486,7 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 //fpintf(fptr,") #0{\n");
                 break;
             case Return:
-                if(instruction->user.use_list->Val==NULL)
+                if(instruction->user.use_list==NULL)
                 {
                     printf(" ret void\n");
                     //fpintf(fptr," ret void\n");
@@ -1293,14 +1270,22 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
 void travel_ir(InstNode *instruction_node)
 {
     bool flag_func=false;
+    int temp_cnt=0;
     tac_cnt=0;
+    InstNode * temp_instruction_node= get_next_inst(instruction_node);
+    while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=ALLBEGIN && temp_instruction_node->inst->Opcode!=br
+    && temp_instruction_node->inst->Opcode!=br_i1
+     && temp_instruction_node->inst->Opcode!=br_i1_false && temp_instruction_node->inst->Opcode!=br_i1_true
+    && temp_instruction_node->inst->Opcode!=FunEnd && temp_instruction_node->inst->Opcode!=Return)
+    {
+        Instruction *instruction=temp_instruction_node->inst;
+        temp_cnt++;
+        temp_instruction_node= get_next_inst(temp_instruction_node);
+    }
+    echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
     instruction_node= get_next_inst(instruction_node);
-    // const char* ll_file= c2ll(file_name);
-
-    // FILE *fptr= fopen(ll_file,"w");
-
     Value *v_cur_array=NULL;
-    for(int i=0;i<10000;i++)
+    for(int i=0;i<temp_cnt+30;i++)
     {
         echo_tac[i].dest_name=NULL;
         echo_tac[i].left_name=NULL;
@@ -1312,18 +1297,17 @@ void travel_ir(InstNode *instruction_node)
     }
     int p=0;
     int if_br_ir=0;
-    InstNode* params[50];
-    InstNode * one_param[50];
+    InstNode* params[100];
+    InstNode * one_param[100];
     int give_count=0;
-    for(int i=0;i<50;i++)
+    for(int i=0;i<100;i++)
         params[i]=NULL;
 
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br
      && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
     && instruction_node->inst->Opcode!=FunEnd)
     {
-        // printf("%d\t%d\n", __LINE__,instruction_node->inst->i); 
-
+        // printf("opcode:%d\t%d\t%d\n", instruction_node->inst->Opcode,__LINE__,instruction_node->inst->i); 
         Instruction *instruction=instruction_node->inst;
         echo_tac[tac_cnt].node_id=instruction->i;
         echo_tac[tac_cnt].irnode=instruction;
@@ -1716,7 +1700,7 @@ void travel_ir(InstNode *instruction_node)
                 //fpintf(fptr,") #0{\n");
                 break;
             case Return:
-                if(instruction->user.use_list->Val==NULL)
+                if(instruction->user.use_list==NULL)
                 {
                     // printf(" ret void\n");
                     //fpintf(fptr," ret void\n");
@@ -1735,6 +1719,7 @@ void travel_ir(InstNode *instruction_node)
                 {
                     echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                     echo_tac[tac_cnt].left_use=1;
+                    if_br_ir=1;
                     // printf(" ret i32 %s\n",instruction->user.use_list->Val->name);
                     //fpintf(fptr," ret i32 %s\n",instruction->user.use_list->Val->name);
                 }
@@ -2646,7 +2631,9 @@ void travel_ir(InstNode *instruction_node)
         tac_cnt++;
         if(if_br_ir)    break;
         instruction_node= get_next_inst(instruction_node);
+
     }
+
     return ;
 }
 
@@ -2762,6 +2749,7 @@ void bian_init(BasicBlock * this_block)
             addtolive(echo_tac[i].right_name,i,echo_tac[i].dest_use);
         }
     }
+    // printf("tacid:%d\n",this_block->id);
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
     addtoin(this_block);
     addtoout(this_block);
@@ -2803,6 +2791,7 @@ void reg_control(struct _InstNode *instruction_node,InstNode *temp)
     // while(temp->inst->Parent->Parent == NULL)   temp = get_next_inst(temp);]
 
     BasicBlock *block = temp->inst->Parent;
+    ir_reg_init(instruction_node);
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next)
     {
         reg_control_func(currentFunction);
@@ -2823,18 +2812,24 @@ void reg_control_func(Function *currentFunction)
     block_num=0;
     InstNode *currNode = entry->head_node;
     BasicBlock *currNodeParent = currNode->inst->Parent;
-    block_list[block_num++]=currNode->inst->Parent;
-    block_list[0]->visited=1;
+    block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*1000);
+    block_list[block_num++].reg_block=currNode->inst->Parent;
+    block_list[0].reg_block->visited=1;
     while(currNode != get_next_inst(end->tail_node)){
         currNodeParent = currNode->inst->Parent;
         if(currNodeParent->visited == false){
-            block_list[block_num++]=currNode->inst->Parent;
+            currNodeParent->visited = true;
+            block_list[block_num++].reg_block=currNode->inst->Parent;
         }
         currNode = get_next_inst(currNode);
     }
+    // printf("func block_num:%d\n\n",block_num);
+    // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
     clear_visited_flag(entry);
     for(int i=0;i<block_num;i++)
-        reg_control_block(block_list[i]);
+        reg_control_block(block_list[i].reg_block);
+    free(block_list);
+    block_list=NULL;
     return ;
 }
 
@@ -2848,6 +2843,7 @@ void reg_control_block(BasicBlock *cur)
     return ;
 
     #else
+    printf("thie blcok start at %d\n",cur->head_node->inst->i);
     travel_ir(cur->head_node);
     live_init_block();
     bian_init(cur);
@@ -2880,7 +2876,7 @@ void add_to_ir()
     for(int i=0;i<tac_cnt;i++)
     {
         var_uid=find_var(echo_tac[i].dest_name);
-        if(var_uid>=0)  
+        if(var_uid>=0 && echo_tac[i].dest_use>=0)  
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
@@ -2917,10 +2913,12 @@ void add_to_ir()
                 }
             }
         }
+        else
+            echo_tac[i].irnode->_reg_[0]=0;
         
 
         var_uid=find_var(echo_tac[i].left_name);
-        if(var_uid>=0)  
+        if(var_uid>=0 && echo_tac[i].left_use>=0)  
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
@@ -2943,9 +2941,11 @@ void add_to_ir()
                 }
             }
         }
+        else
+            echo_tac[i].irnode->_reg_[1]=0;
 
         var_uid=find_var(echo_tac[i].right_name);
-        if(var_uid>=0)  
+        if(var_uid>=0 && echo_tac[i].right_use>=0)  
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
@@ -2968,6 +2968,8 @@ void add_to_ir()
                 }
             }
         }
+        else
+            echo_tac[i].irnode->_reg_[2]=0;
     }
     return ;
 }
@@ -3061,14 +3063,14 @@ void add_to_ir()
 void clean_reg()
 {
     if(live) free(live);
-    if(_tac_var) free(_tac_var);
     if(_bian) free(_bian);
     if(list_of_variables) free(list_of_variables);
     if(RIG) free(RIG);
     if(head) free(head);
+    if(echo_tac) free(echo_tac);
     if(non_available_colors) free(non_available_colors);
-    free(live_in_name);
-    free(live_out_name);
+    if(live_in_name) free(live_in_name);
+    if(live_out_name) free(live_out_name);
     live_in_name=NULL;
     live_out_name=NULL;
     live=NULL;
@@ -3077,6 +3079,7 @@ void clean_reg()
     RIG=NULL;
     head=NULL;
     non_available_colors=NULL;
+    echo_tac=NULL;
     return ;
 }
 
@@ -3097,12 +3100,6 @@ int check_edge()
 
 void reg_inmem_one_ins(int id)
 {
-    // if(use_type(temp))
-    // {
-    //     temp->inst->_reg_[0]=104;
-    //     temp->inst->_reg_[1]=-4;
-    //     temp->inst->_reg_[2]=-5;
-    // }
     if(echo_tac[id].dest_use==0)
     {
         echo_tac[id].irnode->_reg_[0]=104;

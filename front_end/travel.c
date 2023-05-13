@@ -3306,6 +3306,9 @@ char* c2ll(char* file_name)
 
 bool begin_tmp(const char* name)
 {
+    if(name==NULL)
+        return false;
+
     char *prefix="%";
     if(name[0]==prefix[0])
         return true;
@@ -3354,9 +3357,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-        //printf("%d  ,",instruction->i);
-        //printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-        //printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4493,6 +4495,8 @@ void fix_array(struct _InstNode *instruction_node)
     InstNode *start=instruction_node;
     instruction_node= get_next_inst(instruction_node);
     int offset=0;
+
+    bool after_ = false;
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
         int dimension;
@@ -4506,12 +4510,9 @@ void fix_array(struct _InstNode *instruction_node)
                 v_array=instruction->user.value.alias;
                 dimension=instruction->user.value.pdata->var_pdata.iVal;
                 if(instruction->user.use_list[1].Val->VTy->ID!=Int)
-                    //直接走到能读到的最后一条gep
                 {
-                    while(get_next_inst(instruction_node)->inst->Opcode==GEP)
-                    {
-                        instruction_node= get_next_inst(instruction_node);
-                    }
+                    //标记这组gep已经不能完全算出了
+                      after_=true;
                 }
                 else
                 {
@@ -4527,10 +4528,22 @@ void fix_array(struct _InstNode *instruction_node)
                         offset=instruction->user.use_list[1].Val->pdata->var_pdata.iVal*(get_array_total_occupy(v_array,dimension+1)/4)+instruction->user.use_list->Val->pdata->var_pdata.iVal;
                     }
                     //将左值的iVal替换为本层增加的偏移量
-                    // instruction->i=offset;
                     instruction->user.value.pdata->var_pdata.iVal=offset;
-                    instruction->user.value.pdata->var_pdata.is_offset=1;
+                    if(after_==false)
+                        instruction->user.value.pdata->var_pdata.is_offset=1;
+                    else
+                    {
+                        instruction->user.use_list[1].Val->pdata->var_pdata.is_offset=1;     //第二个偏移量必然是var_int,这里设个offset标记一下
+                        //再打个alias标记为起始的
+                        if(get_prev_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
+                            instruction->user.use_list[1].Val->alias=get_prev_inst(instruction_node)->inst->user.use_list[1].Val->alias;
+                        else
+                            instruction->user.use_list[1].Val->alias=instruction->user.use_list->Val;
+                    }
                 }
+                break;
+            default:
+                after_=false;
                 break;
         }
         instruction_node= get_next_inst(instruction_node);
@@ -4546,10 +4559,10 @@ void fix_array2(struct _InstNode *instruction_node)
         Instruction *instruction = instruction_node->inst;
 
         //这两条可以合并了
-        if(instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1)
+        if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1))
         {
             //对第一条的左值进行处理
-            if(instruction->user.use_list!=NULL)
+            if(instruction->user.value.use_list!=NULL)
             {
                 Use* use=instruction->user.value.use_list;
                 bool cut=true;
@@ -4602,7 +4615,26 @@ void fix_array2(struct _InstNode *instruction_node)
                 //直接噶了
                 deleteIns(now);
             }
+        }
+            //定义不会出现这种情况，只可能在赋值时出现，赋值一次都是多条，不存在复用
+        else if((instruction->Opcode==GEP && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1))
+        {
+            //直接找到gep的最后一条,其他的全噶了
+            while(get_next_inst(instruction_node)->inst->Opcode==GEP)
+            {
+                InstNode *now=instruction_node;
+                instruction_node= get_prev_inst(instruction_node);
+                //直接噶了
+                deleteIns(now);
+                instruction_node= get_next_inst(instruction_node);
+            }
+            //到最后一条了
+            Value *v_offset=(Value*) malloc(sizeof (Value));
+            value_init_int(v_offset,instruction_node->inst->user.value.pdata->var_pdata.iVal);
 
+            replace_lhs_operand(instruction_node->inst,instruction_node->inst->user.use_list[1].Val->alias);
+            replace_rhs_operand(instruction_node->inst,v_offset);
+            instruction_node->inst->user.value.pdata->var_pdata.iVal=-2;
         }
         instruction_node= get_next_inst(instruction_node);
     }

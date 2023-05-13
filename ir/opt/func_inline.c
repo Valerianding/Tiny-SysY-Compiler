@@ -2,6 +2,7 @@
 
 extern InstNode * one_param[];   //存放单次正确位置的参数
 extern InstNode* params[];      //存放所有参数
+extern Symtab *this;
 
 //根据名字拿到它的index
 int get_name_index(Value* v)
@@ -25,14 +26,79 @@ InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name)
     return NULL;
 }
 
+//TODO 目前内联条件(可能会再修改)
+//1. 无跳转(单个基本块)
+//2. 不call非库函数
+//3. 变量数最大为6(私心多给了1个)
+void label_func_inline(struct _InstNode* instNode_list)
+{
+    InstNode *temp = get_next_inst(instNode_list);
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    BasicBlock *block = temp->inst->Parent;
+
+    //遍历函数
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        //1.数变量数量
+        //2.判断有无br或call
+        BasicBlock *entry = currentFunction->entry;
+        BasicBlock *end = currentFunction->tail;
+
+        InstNode *currNode = entry->head_node;
+
+        Value *funcValue = currNode->inst->user.use_list->Val;
+        //先默认都可内联
+        funcValue->pdata->symtab_func_pdata.flag_inline=1;
+        //跳过第一条FunBegin
+        currNode = get_next_inst(currNode);
+        int max_num=0;       //不管有参没参，变量数都等于max_num数
+        while (currNode != get_next_inst(end->tail_node)) {
+            //最后的一定出现在左边
+            if(currNode->inst->user.value.name!=NULL)
+            {
+                max_num= get_name_index(&currNode->inst->user.value);
+                if(max_num>6)
+                {
+                    funcValue->pdata->symtab_func_pdata.flag_inline=0;
+                    break;
+                }
+            }
+
+            if(currNode->inst->Opcode==Call || currNode->inst->Opcode==br || currNode->inst->Opcode==br_i1 || currNode->inst->Opcode==br_i1_true)
+            {
+                if(currNode->inst->Opcode==Call)
+                {
+                    //非库函数
+                    if(symtab_lookup_withmap(this,currNode->inst->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
+                    {
+                        funcValue->pdata->symtab_func_pdata.flag_inline=0;
+                        break;
+                    }
+                }
+                else
+                {
+                    funcValue->pdata->symtab_func_pdata.flag_inline=0;
+                    break;
+                }
+            }
+
+            currNode = get_next_inst(currNode);
+        }
+    }
+}
+
 void func_inline(struct _InstNode* instruction_node)
 {
+    //先跑一遍，看是否符合内联条件
+    label_func_inline(instruction_node);
+
     InstNode *start=instruction_node;
     instruction_node= get_next_inst(instruction_node);
     InstNode *begin_func=NULL;
 
     int give_count = 0;
-    int one_param_count=0;
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
 
@@ -40,15 +106,15 @@ void func_inline(struct _InstNode* instruction_node)
         {
             int num=0;
             //遍历ir找到对应的函数ir,进行一波复制
-            if((begin_func=find_func_begin(start,instruction->user.use_list->Val->name))!=NULL)
+            if((begin_func=find_func_begin(start,instruction->user.use_list->Val->name))!=NULL && begin_func->inst->user.use_list->Val->pdata->symtab_func_pdata.flag_inline==1)
             {
                 Value *v_func=begin_func->inst->user.use_list->Val;
                 //判断被内联的函数有无参数
                 //有参
                 if(begin_func->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
                 {
-                    //记一下第一个alloca的数值，比它小的都是参数，要区别处理(原value的alias为NULL)
-                    num= get_name_index(&get_next_inst(begin_func)->inst->user.value);
+                    //记一下参数个数，比它小的都是参数，要区别处理(原value的alias为NULL)
+                    num= v_func->pdata->symtab_func_pdata.param_num;
 
                     //在one_param里填满参数
                     get_param_list(v_func,&give_count);
@@ -58,6 +124,7 @@ void func_inline(struct _InstNode* instruction_node)
                 //复制ir
                 begin_func=get_next_inst(begin_func);     //函数中的第一条ir
                 int index=1;
+                int param_index=0;
                 while (begin_func->inst->Opcode!=Return)
                 {
                     Instruction *ins_copy=NULL;
@@ -72,32 +139,52 @@ void func_inline(struct _InstNode* instruction_node)
                         ins_copy= ins_new_zero_operator(begin_func->inst->Opcode);
                     else if(vr==NULL)   //1操作数
                     {
-                        if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float)
+                        //是直接用的参数
+                        if(begin_tmp(begin_func->inst->user.use_list->Val->name) &&
+                                get_name_index(begin_func->inst->user.use_list->Val)<num)
+                        {
+                            param_index=get_name_index(begin_func->inst->user.use_list->Val);
+                            ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val);
+                        }
+                        //其他正常情况
+                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name))
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val->alias);
                         else
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val);
                     }
                     else   //2操作数
                     {
-                        if((begin_func->inst->user.use_list->Val->VTy->ID==Int || begin_func->inst->user.use_list->Val->VTy->ID==Float) && (begin_func->inst->user.use_list[1].Val->VTy->ID==Int || begin_func->inst->user.use_list[1].Val->VTy->ID==Float))
+                        //getint(),@a
+                        if(!(begin_tmp(begin_func->inst->user.use_list->Val->name)) && !(begin_tmp(begin_func->inst->user.use_list[1].Val->name)) )
                             ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val);
-                        else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_func->inst->user.use_list[1].Val->VTy->ID!=Int && begin_func->inst->user.use_list[1].Val->VTy->ID!=Float)
+                        //%1,%2
+                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name) && begin_tmp(begin_func->inst->user.use_list[1].Val->name))
                         {
-                            //其中对参数的store要特别处理
-                            if(begin_func->inst->Opcode==Store && v_func->pdata->symtab_func_pdata.param_num!=0 && get_name_index(begin_func->inst->user.use_list->Val)<num)
-                            {
-                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[one_param_count++]->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val->alias);
-                            }
+                            if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num && get_name_index(begin_func->inst->user.use_list[1].Val)<num)
+                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,one_param[get_name_index(begin_func->inst->user.use_list[1].Val)]->inst->user.use_list->Val);
+                            else if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num)
+                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val->alias);
+                            else if((param_index=get_name_index(begin_func->inst->user.use_list[1].Val))<num)
+                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val->alias,one_param[param_index]->inst->user.use_list->Val);
                             else
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val->alias,begin_func->inst->user.use_list[1].Val->alias);
                         }
-
-                        else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float)
-                            ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val->alias,begin_func->inst->user.use_list[1].Val);
+                        //%1,1
+                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name))
+                        {
+                            if((param_index= get_name_index(begin_func->inst->user.use_list->Val))<num)
+                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val);
+                            else
+                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val->alias,begin_func->inst->user.use_list[1].Val);
+                        }
                         else
-                            ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val->alias);
+                        {
+                            if((param_index= get_name_index(begin_func->inst->user.use_list[1].Val))<num)
+                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,one_param[param_index]->inst->user.use_list->Val);
+                            else
+                                ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val->alias);
+                        }
                     }
-
 
                     if(v->name!=NULL)  //左值有名字
                     {
@@ -128,7 +215,6 @@ void func_inline(struct _InstNode* instruction_node)
 
                     begin_func=get_next_inst(begin_func);
                 }
-                one_param_count=0;
 
                 //处理最后的一句ret和call
                 //将ret的值替换call的左值
@@ -140,9 +226,18 @@ void func_inline(struct _InstNode* instruction_node)
 
                     if(v_return->VTy->ID!=Int)
                         value_replaceAll(v_call,v_return->alias);
+                    else if((begin_tmp(v_return->name) && (param_index=get_name_index(v_return)))<num)
+                        value_replaceAll(v_return,one_param[param_index]->inst->user.use_list->Val);
                     else
                         value_replaceAll(v_call,v_return);
                 }
+
+                //one_param里面的ir(give_param)也可以从链中删掉了
+                for(int i=0;i<v_func->pdata->symtab_func_pdata.param_num;i++)
+                {
+                    deleteIns(one_param[i]);
+                }
+
                 //删掉当前这句call
                 InstNode *pre=get_prev_inst(instruction_node);
                 deleteIns(instruction_node);
@@ -159,17 +254,33 @@ void func_inline(struct _InstNode* instruction_node)
 
     //将被内联的ir函数删除
     //修改这句call ir
-    //TODO kk现在写死了,等待判断哪些函数要内联
-//    begin_func=find_func_begin(start,"kk");
-//    while(begin_func->inst->Opcode!=FunEnd)
-//    {
-//        InstNode *next=get_next_inst(begin_func);
-//        deleteIns(begin_func);
-//        begin_func=next;
-//    }
-//    //然后再把这句FunEnd删了
-//    deleteIns(begin_func);
+    InstNode *tmp= get_next_inst(start);
+    //找到第一个function的
+    while(tmp->inst->Parent->Parent == NULL){
+        tmp = get_next_inst(tmp);
+    }
 
+    BasicBlock *block_ = tmp->inst->Parent;
+
+    for(Function *currentFunction = block_->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        BasicBlock *entry = currentFunction->entry;
+        BasicBlock *end = currentFunction->tail;
+
+        InstNode *currNode = entry->head_node;
+
+        Value *funcValue = currNode->inst->user.use_list->Val;
+
+        if(funcValue->pdata->symtab_func_pdata.flag_inline==1)
+        {
+            while (currNode != get_next_inst(end->tail_node)) {
+                InstNode *next=get_next_inst(currNode);
+                deleteIns(currNode);
+                currNode=next;
+            }
+        }
+    }
+
+    //进行彻底的变量重命名
     InstNode *temp = get_next_inst(start);
     //找到第一个function的
     while(temp->inst->Parent->Parent == NULL){
