@@ -20,8 +20,8 @@
  */
 bool imm_is_valid(unsigned value);
 
-FILE *open_file(char argv[]);
-
+void arm_open_file(char argv[]);
+void arm_close_file();
 /**
  * @details 获取哈希表的大小
  * @param hashMap
@@ -115,4 +115,6 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack);
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
 void usage_of_global_variables();
+int array_suffix(Value*array,int which_dimension);
+void multiply_and_add_instructions_for_translated_arrays(InstNode*instNode,HashMap*hashMap);
 #endif //C22V1_ARM_H
