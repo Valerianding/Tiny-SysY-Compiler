@@ -1,5 +1,5 @@
 //
-// Created by tom on 23-2-25.
+// Created by ljf on 23-2-25.
 //
 
 #include "offset.h"
@@ -236,6 +236,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
     for(;ins!=NULL&&ins->inst->Opcode!=Return;ins= get_next_inst(ins)){
         Value *value0,*value1,*value2;
         Value *value0_alias;
+        int operandNum;
         switch (ins->inst->Opcode) {
 //            case Alloca:
 //                用来处理数组何全局变量,数组可以不通过这个来获取处理相关的值
@@ -297,13 +298,19 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
                 hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
                 break;
             case Call:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                if(value0->VTy!=Unknown){
+                operandNum=ins->inst->user.value.NumUserOperands;
+                if(operandNum==2){
+                    value0=&ins->inst->user.value;
+                    value1=user_get_operand_use(&ins->inst->user,0)->Val;
+                    if(value0->VTy!=Unknown){
 //                    ==unknow说明回值为void
-                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
+                        hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
+                    }
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
+                }else if(operandNum==1){
+                    value1=user_get_operand_use(&ins->inst->user,0)->Val;
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
                 }
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
                 break;
             case Store:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -431,8 +438,12 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
     }
 
     if(ins->inst->Opcode==Return){
-        Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-        hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
+        int operandNum=ins->inst->user.value.NumUserOperands;
+        if(operandNum!=0){
+            Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
+            hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num);
+        }
+
     }
     func_num++;
     in_func_num=0;
