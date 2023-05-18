@@ -2428,10 +2428,10 @@ void travel_ir(InstNode *instruction_node)
                         //正常的
                     else{
                         //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                        printf(",");
+                        // printf(",");
                         //fpintf(fptr,",");
                         //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                        printf("* ");
+                        // printf("* ");
                         //fpintf(fptr,"* ");
                         if(instruction->user.use_list[1].Val->VTy->ID==Int)
                         {
@@ -2614,7 +2614,7 @@ void travel_ir(InstNode *instruction_node)
                 Value *dest = instruction->user.value.alias;
                 Value *src = ins_get_lhs(instruction);
                 if(isImm(src)){
-                    echo_tac[tac_cnt].dest_name=dest->alias->name;
+                    echo_tac[tac_cnt].dest_name=dest->name;
                     echo_tac[tac_cnt].dest_use=0;
                     // printf(" %s(%s) = %d\n",dest->name,dest->alias->name,src->pdata->var_pdata.iVal);
                 }else{
@@ -2728,6 +2728,9 @@ void addtoout(BasicBlock *this_block)
             strcpy(live_out_name[block_out_num++].name,liveOutVariable->name);
         }
     }
+        // printf("out:\n");
+        // for(int i=0;i<block_out_num;i++)
+        //     printf("%s\n",live_out_name[i]);
     return ;
 }
 
