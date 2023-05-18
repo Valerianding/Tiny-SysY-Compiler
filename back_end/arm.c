@@ -22,7 +22,8 @@ FILE *fp;
 int reg_save[16];
 //记录r0-r3在FuncBegin的时候str时候的偏移量
 int param_off[4];
-
+char fileName[256];
+char funcName[256];
 void printf_stmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
@@ -492,8 +493,21 @@ void usage_of_global_variables(){
 
     return;
 }
-void arm_translate_ins(InstNode *ins){
+void arm_translate_ins(InstNode *ins,char argv[]){
 //    global_hashmap=HashMapInit();
+    char new_ext[] = ".c";
+    char *dot_ptr = strrchr(argv, '.');
+    if(dot_ptr) {
+        int basename_len = dot_ptr - argv;  // 计算基本文件名的长度
+        char new_filename[basename_len + strlen(new_ext) + 1];  // 为新文件名分配足够的空间
+
+        strncpy(new_filename, argv, basename_len);  // 复制基本文件名
+        new_filename[basename_len] = '\0';  // 在基本文件名后添加空字符
+        strcat(new_filename, new_ext);  // 连接新的扩展名
+        strcpy(fileName,new_filename);
+    }
+
+
     InstNode *head;
     HashMap *hashMap;
     int stack_size=0;
@@ -5936,11 +5950,31 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
+    printf("\t.align\t2\n"
+           "\t.global\t%s\n"
+           "\t.arch armv7-a\n"
+           "\t.syntax unified\n"
+           "\t.arm\n"
+           "\t.fpu vfp\n"
+           "\t.type\t%s, %%function\n"
+           ,user_get_operand_use(&ins->inst->user,0)->Val->name
+           ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+    fprintf(fp,"\t.align\t2\n"
+            "\t.global\t%s\n"
+            "\t.arch armv7-a\n"
+            "\t.syntax unified\n"
+            "\t.arm\n"
+            "\t.fpu vfp\n"
+            "\t.type\t%s, %%function\n"
+        ,user_get_operand_use(&ins->inst->user,0)->Val->name
+        ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+
     memset(reg_save,0, sizeof(reg_save));
     memset(param_off,-1, sizeof(param_off));
-
+    memset(funcName,0, sizeof(funcName));
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+    strcpy(funcName,user_get_operand_use(&ins->inst->user,0)->Val->name);
     InstNode *tmp=ins;
 //        这里好像是如果main中调用了其他的函数，就需要将r11,sp压栈,所以说需要查找一下有没有call
 //        这个好像所有函数都是一样的，如果它调用了其他的函数的话，就需要保存r11(也称为fp)和sp，那这样的话
@@ -6448,6 +6482,9 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 //    }
     printf("\tbx\tlr\n");
     fprintf(fp,"\tbx\tlr\n");
+
+    printf("\t.size\t%s, .-%s\n\n",funcName,funcName);
+    fprintf(fp,"\t.size\t%s, .-%s\n\n",funcName,funcName);
     return ins;
 }
 
@@ -6696,7 +6733,33 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 
 InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //    int i=ins->inst->i;
-    printf("**********ALLBEGIN**************\n");
+//    printf("**********ALLBEGIN**************\n");
+    printf("\t.arch armv7-a\n"
+           "\t.eabi_attribute 28, 1\n"
+           "\t.eabi_attribute 20, 1\n"
+           "\t.eabi_attribute 21, 1\n"
+           "\t.eabi_attribute 23, 3\n"
+           "\t.eabi_attribute 24, 1\n"
+           "\t.eabi_attribute 25, 1\n"
+           "\t.eabi_attribute 26, 2\n"
+           "\t.eabi_attribute 30, 6\n"
+           "\t.eabi_attribute 34, 1\n"
+           "\t.eabi_attribute 18, 4\n"
+           "\t.file\t\"%s\"\n"
+           "\t.text\n",fileName);
+    fprintf(fp,"\t.arch armv7-a\n"
+            "\t.eabi_attribute 28, 1\n"
+            "\t.eabi_attribute 20, 1\n"
+            "\t.eabi_attribute 21, 1\n"
+            "\t.eabi_attribute 23, 3\n"
+            "\t.eabi_attribute 24, 1\n"
+            "\t.eabi_attribute 25, 1\n"
+            "\t.eabi_attribute 26, 2\n"
+            "\t.eabi_attribute 30, 6\n"
+            "\t.eabi_attribute 34, 1\n"
+            "\t.eabi_attribute 18, 4\n"
+           "\t.file\t\"%s\"\n"
+           "\t.text\n",fileName);
     return ins;
 }
 

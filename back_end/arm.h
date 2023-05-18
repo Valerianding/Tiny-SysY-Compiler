@@ -40,7 +40,7 @@ int get_value_offset_sp(HashMap *hashMap,Value*value);
  * @details 进行指令的翻译，总体翻译逻辑
  * @param ins
  */
-void arm_translate_ins(InstNode *ins);
+void arm_translate_ins(InstNode *ins,char argv[]);
 
 /**
  * @details 进行每条具体指令的翻译
