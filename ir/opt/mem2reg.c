@@ -786,7 +786,7 @@ void SSADeconstruction(Function *currentFunction){
         currNode = get_next_inst(currNode);
     }
 
-    renameVariabels(currentFunction);
+    //renameVariabels(currentFunction);
 
     sequentialCopy(currentFunction);
 }

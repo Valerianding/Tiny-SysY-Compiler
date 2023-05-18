@@ -20,6 +20,10 @@ void loop(Function *currentFunction){
     clear_visited_flag(entry);
 
     //bfs
+
+    //由于后续loop invariant的时候可能导致 visited flag 损失所以我们用一个HashSet来存
+    HashSet *visited = HashSetInit();
+
     HashSetAdd(workList,entry);
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
@@ -27,36 +31,34 @@ void loop(Function *currentFunction){
         //
         HashSetRemove(workList,block);
         //block 我们是一定没有visited
-        block->visited = true;
-        // 加入allBlocks
-        //
+        HashSetAdd(visited, block);
+
+        printf("current block is %d\n",block->id);
         HashSet *dom = block->dom;
         if(block->true_block){
-            if(block->true_block->visited){
-                //回边
+            if(HashSetFind(visited,block->true_block)){
                 BasicBlock *head = block->true_block;
-                // 必然是回边 不是回边我吃屎
                 if(HashSetFind(dom,head)){
-                    // 寻找这个循环的结构体
                     findbody(block->true_block, block);
                 }
             }else{
+                printf("true add block %d\n",block->true_block->id);
                 HashSetAdd(workList,block->true_block);
             }
         }
+
         if(block->false_block){
-            if(block->false_block->visited){
+            if(HashSetFind(visited,block->false_block)){
                 BasicBlock *head = block->false_block;
                 if(HashSetFind(dom,head)){
                     findbody(block->false_block, block);
                 }
             }else{
+                printf("false add block %d\n",block->false_block->id);
                 HashSetAdd(workList,block->false_block);
             }
         }
     }
-
-
     renameVariabels(currentFunction);
 }
 
@@ -156,31 +158,6 @@ void loopVariant(HashSet *loop, BasicBlock *head){
     printf("find body!\n");
 
 
-
-    // 所有从循环外到这个基本块的都引导到这个基本块上去
-    HashSet *newBlockPrev = HashSetInit();
-    HashSetFirst(head->preBlocks);
-    for(BasicBlock *preBlock = HashSetNext(head->preBlocks); preBlock != NULL; preBlock = HashSetNext(head->preBlocks)){
-        //看它是不是在我们的loop里面
-        if(!HashSetFind(loop,preBlock)){
-            //如果不在我们就要用一个新的block去装它了
-            HashSetAdd(newBlockPrev,preBlock);
-        }
-    }
-
-    BasicBlock *newPrevBlock = NULL;
-    //需要判断是否需要新的基本块
-    //如果除开循环前驱大于1或者没有前驱
-    if(HashSetSize(newBlockPrev) > 1 || HashSetSize(newBlockPrev) == 0){
-       newPrevBlock = newBlock(newBlockPrev,head);
-    }else{
-        //找到唯一不属于循环的前驱节点
-        assert(HashSetSize(newBlockPrev) == 1);
-        HashSetFirst(newBlockPrev);
-        newPrevBlock = HashSetNext(newBlockPrev);
-    }
-
-    printf("here !\n");
     HashSet *exit = HashSetInit();
     //找到循环的出口语句
     //遍历一遍loop就行了
@@ -211,7 +188,6 @@ void loopVariant(HashSet *loop, BasicBlock *head){
     for(Value *defValue = HashSetNext(loopInvariantVariable); defValue != NULL; defValue = HashSetNext(loopInvariantVariable)){
 
         printf("loopInvariant Variable %s\n",defValue->name);
-        //强制转换成InstNode类型
         Instruction *instNode = (Instruction*)defValue;
         BasicBlock *defineBlock = instNode->Parent;
         bool moveAble = true;
@@ -285,6 +261,30 @@ void loopVariant(HashSet *loop, BasicBlock *head){
         moveAble &= (choose1 | choose2);
 
         if(moveAble){
+            // 只有存在loop invariant 才需要 newBlock所有从循环外到这个基本块的都引导到这个基本块上去
+            HashSet *newBlockPrev = HashSetInit();
+            HashSetFirst(head->preBlocks);
+            for(BasicBlock *preBlock = HashSetNext(head->preBlocks); preBlock != NULL; preBlock = HashSetNext(head->preBlocks)){
+                //看它是不是在我们的loop里面
+                if(!HashSetFind(loop,preBlock)){
+                    //如果不在我们就要用一个新的block去装它了
+                    HashSetAdd(newBlockPrev,preBlock);
+                }
+            }
+
+            BasicBlock *newPrevBlock = NULL;
+            //需要判断是否需要新的基本块
+            //如果除开循环前驱大于1或者没有前驱
+            if(HashSetSize(newBlockPrev) > 1 || HashSetSize(newBlockPrev) == 0){
+                newPrevBlock = newBlock(newBlockPrev,head);
+            }else{
+                //找到唯一不属于循环的前驱节点
+                assert(HashSetSize(newBlockPrev) == 1);
+                HashSetFirst(newBlockPrev);
+                newPrevBlock = HashSetNext(newBlockPrev);
+            }
+
+
             printf("move %s",defValue->name);
 
             //找到InstNode
@@ -317,7 +317,7 @@ void loopVariant(HashSet *loop, BasicBlock *head){
             InstNode *currNode = block->head_node;
             while(currNode != block->tail_node){
                 // TODO 解决所有Operator的情况 请仔细思考
-                if((currNode)){
+                if(isCalculationOperator(currNode)){
                     Value *lhs = ins_get_lhs(currNode->inst);
                     Value *rhs = ins_get_rhs(currNode->inst);
                     Value *dest = ins_get_dest(currNode->inst);
@@ -404,6 +404,28 @@ void loopVariant(HashSet *loop, BasicBlock *head){
         moveAble &= (choose2 | choose1);
 
         if(moveAble){
+            // 只有存在loop invariant 才需要 newBlock所有从循环外到这个基本块的都引导到这个基本块上去
+            HashSet *newBlockPrev = HashSetInit();
+            HashSetFirst(head->preBlocks);
+            for(BasicBlock *preBlock = HashSetNext(head->preBlocks); preBlock != NULL; preBlock = HashSetNext(head->preBlocks)){
+                //看它是不是在我们的loop里面
+                if(!HashSetFind(loop,preBlock)){
+                    //如果不在我们就要用一个新的block去装它了
+                    HashSetAdd(newBlockPrev,preBlock);
+                }
+            }
+
+            BasicBlock *newPrevBlock = NULL;
+            //需要判断是否需要新的基本块
+            //如果除开循环前驱大于1或者没有前驱
+            if(HashSetSize(newBlockPrev) > 1 || HashSetSize(newBlockPrev) == 0){
+                newPrevBlock = newBlock(newBlockPrev,head);
+            }else{
+                //找到唯一不属于循环的前驱节点
+                assert(HashSetSize(newBlockPrev) == 1);
+                HashSetFirst(newBlockPrev);
+                newPrevBlock = HashSetNext(newBlockPrev);
+            }
 
             // remove from
             printf("extra move %s to block %d\n",defValue->name, newPrevBlock->id);

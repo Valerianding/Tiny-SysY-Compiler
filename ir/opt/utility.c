@@ -73,15 +73,15 @@ void correctType(Function *currentFunction){
           insValue->IsFromArray = 1;
         }
 
-        // TODO 还有很多function我们没有设置Type
-        if(headNode->inst->Opcode == Call){
-            Value *function = ins_get_lhs(headNode->inst);
-            if(strcmp(function->name,"getint") == 0){
-                insValue->VTy->ID = Var_INT;
-            }else if(strcmp(function->name,"getfloat") == 0){
-                insValue->VTy->ID = Var_FLOAT;
-            }
-        }
+//        // TODO 还有很多function我们没有设置Type
+//        if(headNode->inst->Opcode == Call){
+//            Value *function = ins_get_lhs(headNode->inst);
+//            if(strcmp(function->name,"getint") == 0){
+//                insValue->VTy->ID = Var_INT;
+//            }else if(strcmp(function->name,"getfloat") == 0){
+//                insValue->VTy->ID = Var_FLOAT;
+//            }
+//        }
         //我们还需要对到底是从数组还是局部变量定义的进行区分
         headNode = get_next_inst(headNode);
     }
@@ -265,6 +265,18 @@ bool isCalculationOperator(InstNode *instNode){
         if(instNode->inst->Opcode == CalculationOpcodes[i]){
             return true;
         }
+    }
+    return false;
+}
+
+bool HashSetDifferent(HashSet *lhs,HashSet *rhs){
+    //左边是小的 右边是大的
+    unsigned int leftSize = HashSetSize(lhs);
+    unsigned int rightSize = HashSetSize(rhs);
+    if(leftSize != rightSize) return true;
+    HashSetFirst(lhs);
+    for(void *key = HashSetNext(lhs); key != NULL; key = HashSetNext(lhs)){
+        if(!HashSetFind(rhs,key)) return true;
     }
     return false;
 }

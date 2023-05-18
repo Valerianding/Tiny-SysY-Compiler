@@ -6,6 +6,8 @@
 #define C22V1_LIVENESSANALYSIS_H
 #include "utility.h"
 void calculateLiveness(Function *currentFunction);
+void calculateLiveness1(Function *currentFunction);
 bool HashSetCopyValue(HashSet *dest, HashSet *src);
-void printLiveness(BasicBlock *block);
+void printLiveness(Function *currentFunction);
+void cleanLiveSet(Function *currentFunction);
 #endif //C22V1_LIVENESSANALYSIS_H

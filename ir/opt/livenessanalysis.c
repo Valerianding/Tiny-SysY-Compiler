@@ -16,35 +16,43 @@ bool HashSetCopyValue(HashSet *dest, HashSet *src){
     return changed;
 }
 
+void printLiveness(Function *currentFunction){
+    clear_visited_flag(currentFunction->entry);
+    HashSet *workList = HashSetInit();
+    HashSetAdd(workList,currentFunction->entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+        //
+        assert(block->visited == false);
+        block->visited = true;
+        printf("b%d live in: ",block->id);
+        HashSetFirst(block->in);
+        for(Value *liveIn = HashSetNext(block->in); liveIn != NULL; liveIn = HashSetNext(block->in)){
+            printf("%s ",liveIn->name);
+        }
+        printf("\n");
 
-void printLiveness(BasicBlock *block){
-    block->visited = true;
-    printf("b%d ", block->id);
-    HashSetFirst(block->in);
-    printf("live in: ");
-    for(Value *liveInVariable = HashSetNext(block->in); liveInVariable != NULL; liveInVariable = HashSetNext(block->in)){
-        assert(liveInVariable->name != NULL);
-        if(liveInVariable->name != NULL){
-            printf("%s ",liveInVariable->name);
+        printf("b%d live out: ",block->id);
+        HashSetFirst(block->out);
+        for(Value *liveOut = HashSetNext(block->out); liveOut != NULL; liveOut = HashSetNext(block->out)){
+            printf("%s ",liveOut->name);
+        }
+        printf("\n");
+        if(block->true_block && block->true_block->visited != true){
+            if(!HashSetFind(workList,block->true_block)){
+                HashSetAdd(workList,block->true_block);
+            }
+        }
+        if(block->false_block && block->false_block->visited != true){
+            if(!HashSetFind(workList,block->false_block)){
+                HashSetAdd(workList,block->false_block);
+            }
         }
     }
-    printf("\n");
-
-    printf("b%d ", block->id);
-    HashSetFirst(block->out);
-    printf("live out: ");
-    for(Value *liveOutVariable = HashSetNext(block->out); liveOutVariable != NULL; liveOutVariable = HashSetNext(block->out)){
-        assert(liveOutVariable->name != NULL);
-        if(liveOutVariable->name != NULL){
-            printf("%s",liveOutVariable->name);
-        }
-    }
-    printf("\n");
-
-    //递归调用printLiveness
-    if(block->true_block != NULL && block->true_block->visited == false) printLiveness(block->true_block);
-    if(block->false_block != NULL && block->false_block->visited == false) printLiveness(block->false_block);
 }
+
 
 void cleanLiveSet(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
@@ -71,7 +79,7 @@ void cleanLiveSet(Function *currentFunction){
     }
 }
 
-void calculateLiveness(Function *currentFunction){
+void calculateLiveness1(Function *currentFunction){
     // 从exit开始
     BasicBlock *exit = currentFunction->tail;
 
@@ -166,11 +174,11 @@ void calculateLiveness(Function *currentFunction){
         bool changed = false;
         // 去找它的true的后继
 
-        printf("at block %d!\n");
         if(removeBlock->true_block != NULL){
             HashSet *trueBlockLiveIn = removeBlock->true_block->in;
             changed |= HashSetCopyValue(removeBlock->out,trueBlockLiveIn);
         }
+
         if(removeBlock->false_block != NULL){
             HashSet *falseBlockLiveIn = removeBlock->false_block->in;
             changed |= HashSetCopyValue(removeBlock->out,falseBlockLiveIn);
@@ -260,6 +268,198 @@ void calculateLiveness(Function *currentFunction){
             HashSetFirst(removeBlock->preBlocks);
             for(BasicBlock *prevBlock = HashSetNext(removeBlock->preBlocks); prevBlock != NULL; prevBlock = HashSetNext(removeBlock->preBlocks)){
                 HashSetAdd(workList,prevBlock);
+            }
+        }
+    }
+}
+
+// 包含phi函数的 活跃变量分析
+//用作 loop invariant等地方
+void calculateLiveness(Function *currentFunction){
+    BasicBlock *tail = currentFunction->tail;
+    InstNode *tailNode = tail->tail_node;
+    while(tailNode->inst->Opcode != Return){
+        //向前查找
+        tailNode = get_prev_inst(tailNode);
+    }
+
+    assert(tailNode->inst->Opcode == Return);
+    //
+    BasicBlock *exit = tailNode->inst->Parent;
+
+    //开始迭代
+    HashSet *workList = HashSetInit();
+
+    HashSetAdd(workList,exit);
+
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+
+        bool changed = false;
+
+        HashSet *originalOutSet = HashSetInit();
+
+        HashSetCopyValue(originalOutSet,block->out);
+
+        //
+        if(block->true_block){
+            HashSet *trueBlockLiveIn = block->true_block->in;
+            HashSetCopyValue(block->out,trueBlockLiveIn);
+
+            //live in - phiDefs(s)
+            InstNode *trueCurrNode = block->true_block->head_node;
+            InstNode *trueTailNode = block->true_block->tail_node;
+            while(trueCurrNode != trueTailNode){
+                if(trueCurrNode->inst->Opcode == Phi){
+                    Value *phiDef = ins_get_dest(trueCurrNode->inst);
+                    assert(phiDef->name != NULL);
+                    HashSetRemove(block->out,phiDef);
+                }
+                trueCurrNode = get_next_inst(trueCurrNode);
+            }
+        }
+
+        if(block->false_block){
+            HashSet *falseBlockLiveIn = block->false_block->in;
+            HashSetCopyValue(block->out,falseBlockLiveIn);
+
+            InstNode *falseCurrNode = block->false_block->head_node;
+            InstNode *falseTailNode = block->false_block->tail_node;
+            while(falseCurrNode != falseTailNode){
+                if(falseCurrNode->inst->Opcode == Phi){
+                    Value *phiDef = ins_get_dest(falseCurrNode->inst);
+                    assert(phiDef->name != NULL);
+                    HashSetRemove(block->out,phiDef);
+                }
+                falseCurrNode = get_next_inst(falseCurrNode);
+            }
+        }
+
+        //并上后继的Phi uses
+        if(block->true_block){
+            InstNode *trueCurrNode = block->true_block->head_node;
+            InstNode *trueTailNode = block->true_block->tail_node;
+            while(trueCurrNode != trueTailNode){
+                if(trueCurrNode->inst->Opcode == Phi){
+                    HashSet *phiSet = trueCurrNode->inst->user.value.pdata->pairSet;
+                    HashSetFirst(phiSet);
+                    for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                        Value *define = phiInfo->define;
+                        //TODO 这里也是自行添加的
+                        if(define != NULL && !isImm(define) && phiInfo->from == block){
+                            HashSetAdd(block->out,define);
+                        }
+                    }
+                }
+                trueCurrNode = get_next_inst(trueCurrNode);
+            }
+        }
+
+        if(block->false_block){
+            InstNode *falseCurrNode = block->false_block->head_node;
+            InstNode *falseTailNode = block->false_block->tail_node;
+            while(falseCurrNode != falseTailNode){
+                if(falseCurrNode->inst->Opcode == Phi){
+                    HashSet *phiSet = falseCurrNode->inst->user.value.pdata->pairSet;
+                    HashSetFirst(phiSet);
+                    for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                        Value *define = phiInfo->define;
+                        //TODO 这里是自己添加的
+                        if(define != NULL && !isImm(define) && phiInfo->from == block){
+                            HashSetAdd(block->out,define);
+                        }
+                    }
+                }
+                falseCurrNode = get_next_inst(falseCurrNode);
+            }
+        }
+
+        if(HashSetDifferent(originalOutSet,block->out)){
+            changed = true;
+        }
+
+        HashSet *tempSet = HashSetInit();
+        HashSetCopyValue(tempSet,block->out);
+        InstNode *currNode = block->tail_node;
+        InstNode *headNode = block->head_node;
+
+        while(currNode != headNode){
+            if(isValidOperator(currNode)){
+                Value *def = NULL;
+                Value *rhs = NULL;
+                Value *lhs = NULL;
+
+                //处理def的计算
+                if(currNode->inst->Opcode == Return || currNode->inst->Opcode == br || currNode->inst->Opcode == br_i1){
+                    def = NULL;
+                }else if(currNode->inst->Opcode == CopyOperation){
+                    Value *insValue = ins_get_dest(currNode->inst);
+                    def = insValue->alias;
+                }else if(currNode->inst->Opcode == Phi){
+                    //单独列出来但是我们
+                }else{
+                    def = ins_get_dest(currNode->inst);
+                }
+
+                //
+                if(currNode->inst->user.value.NumUserOperands == (unsigned int)1){
+                    lhs = ins_get_lhs(currNode->inst);
+                }
+
+                if(currNode->inst->user.value.NumUserOperands == (unsigned int)2){
+                    lhs = ins_get_lhs(currNode->inst);
+                    rhs = ins_get_rhs(currNode->inst);
+                }
+
+                //处理特殊情况
+                if(currNode->inst->Opcode == Call) {
+                    lhs = NULL;
+                    rhs = NULL;
+                }else if(currNode->inst->Opcode == GIVE_PARAM){
+                    rhs = NULL;
+                }else if(currNode->inst->Opcode == Phi){
+                    lhs = NULL;
+                    rhs = NULL;
+                    def = NULL;
+                    // 特别注意 ！添加的是def 进live in
+                    Value *phiDef = ins_get_dest(currNode->inst);
+                    HashSetAdd(tempSet,phiDef);
+                }
+
+                // 不是立即数且不是数组的话我们可以加入分析
+                // 先减去def 再加上 lhs 和 rhs
+                if(def != NULL && !isImm(def)){
+                    if(HashSetFind(tempSet,def)){
+                        HashSetRemove(tempSet,def);
+                    }
+                }
+
+                if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
+                    if(!HashSetFind(tempSet,lhs)){
+                        printf("lhs add %s\n",lhs->name);
+                        HashSetAdd(tempSet,lhs);
+                    }
+                }
+
+                if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
+                    if(!HashSetFind(tempSet,rhs)){
+                        printf("rhs add %s\n",rhs->name);
+                        HashSetAdd(tempSet,rhs);
+                    }
+                }
+            }
+            currNode = get_prev_inst(currNode);
+        }
+
+        changed |= HashSetCopyValue(block->in, tempSet);
+
+
+        if(changed || (block == currentFunction->tail)){
+            HashSetFirst(block->preBlocks);
+            for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
+                HashSetAdd(workList,preBlock);
             }
         }
     }

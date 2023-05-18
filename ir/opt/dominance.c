@@ -1,8 +1,6 @@
 //
 // Created by Valerian on 2023/1/18.
-//
 #include "dominance.h"
-#include "travel.h"
 
 //只针对BasicBlock类型
 void HashSetCopy(HashSet *dest,HashSet *src){
@@ -14,17 +12,6 @@ void HashSetCopy(HashSet *dest,HashSet *src){
     }
 }
 
-bool HashSetDifferent(HashSet *lhs,HashSet *rhs){
-    //左边是小的 右边是大的
-    unsigned int leftSize = HashSetSize(lhs);
-    unsigned int rightSize = HashSetSize(rhs);
-    if(leftSize != rightSize) return true;
-    HashSetFirst(lhs);
-    for(BasicBlock *key = HashSetNext(lhs); key != NULL; key = HashSetNext(lhs)){
-        if(!HashSetFind(rhs,key)) return true;
-    }
-    return false;
-}
 
 DomTreeNode *createDomTreeNode(BasicBlock *block,BasicBlock *parent){
     DomTreeNode *domTreeNode = (DomTreeNode*)malloc(sizeof(DomTreeNode));
@@ -151,10 +138,6 @@ void calculate_dominance_frontier(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
-    if(entry == end){
-        entry->df = HashSetInit();
-        return;
-    }
     HashSet *allBlocks = HashSetInit();
     //
     clear_visited_flag(entry);

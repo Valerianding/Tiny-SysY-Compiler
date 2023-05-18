@@ -28,7 +28,7 @@ bool commonSubexpressionElimination(Function *currentFunction){
         assert(block != NULL);
         block->visited = true;
         HashSetRemove(workList,block);
-        effective |= commonSubexpression(block);
+        effective |= commonSubexpression(block,currentFunction);
         if(block->true_block && block->true_block->visited == false)
             HashSetAdd(workList,block->true_block);
         if(block->false_block && block->false_block->visited == false)
@@ -49,7 +49,7 @@ bool isSame(Value *left, Value *right){
     return false;
 }
 
-bool commonSubexpression(BasicBlock *block){
+bool commonSubexpression(BasicBlock *block, Function *currentFunction){
     bool effective = false;
     InstNode *currNode = block->head_node;
     HashMap *commonSubExpression = HashMapInit();
@@ -72,7 +72,7 @@ bool commonSubexpression(BasicBlock *block){
                     // TODO 没有考虑IMM！！
                     switch (subexpression->op) {
                         case Add: {
-                            if((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))){
+                            if(((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))) && subexpression->op == currNode->inst->Opcode){
                                 //满足条件
                                 replace = subExpr->key;
                                 flag = true;
@@ -80,14 +80,14 @@ bool commonSubexpression(BasicBlock *block){
                             break;
                         }
                         case Sub:{
-                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)){
+                            if((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) && subexpression->op == currNode->inst->Opcode){
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
                         }
                         case Mul:{
-                            if((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))){
+                            if(((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))) && subexpression->op == currNode->inst->Opcode){
                                 //满足条件
                                 replace = subExpr->key;
                                 flag = true;
@@ -95,14 +95,14 @@ bool commonSubexpression(BasicBlock *block){
                             break;
                         }
                         case Div:{
-                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)){
+                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs) && subexpression->op == currNode->inst->Opcode){
                                 replace = subExpr->key;
                                 flag = true;
                             }
                             break;
                         }
                         case Mod:{
-                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)){
+                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs) && subexpression->op == currNode->inst->Opcode){
                                 replace = subExpr->key;
                                 flag = true;
                             }
@@ -110,7 +110,7 @@ bool commonSubexpression(BasicBlock *block){
                         }
                         case GEP:{
                             printf("case GEP!");
-                            if(subexpression->lhs == lhs){
+                            if(subexpression->lhs == lhs && currNode->inst->Opcode == subexpression->op){
                                 if(isImmInt(subexpression->rhs) && isImmInt(rhs) && (subexpression->rhs->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal)){
                                     replace = subExpr->key;
                                     flag = true;
@@ -128,11 +128,27 @@ bool commonSubexpression(BasicBlock *block){
 
                 //
                 if(flag){
+                    printf("%s replaced by: %s\n",dest->name,replace->name);
                     effective = true;
                     assert(replace != NULL);
                     value_replaceAll(dest,replace);
                     //TODO phi 里面的还是没有更新的
-                    //删除当前InstNode;
+                    InstNode *funcHead = currentFunction->entry->head_node;
+                    InstNode *funcTail = currentFunction->tail->tail_node;
+                    while(funcHead != funcTail){
+                        if(funcHead->inst->Opcode == Phi){
+                            HashSet *phiSet = funcHead->inst->user.value.pdata->pairSet;
+                            HashSetFirst(phiSet);
+                            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                                if(phiInfo->define == dest){
+                                    phiInfo->define = replace;
+                                }
+                            }
+                        }
+                        funcHead = get_next_inst(funcHead);
+                    }
+
+
                     InstNode *next = get_next_inst(currNode);
                     deleteIns(currNode);
                     currNode = next;
