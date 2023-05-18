@@ -32,7 +32,7 @@ void live_init_block()
         live[i].name=NULL;
         live[i].first_use=-1;
         live[i].last_def=-1;
-        live[i].last=1;
+        live[i].last=-1;
         live[i].first=-1;
         live[i].isin=0;
         live[i].isout=0;
@@ -2745,11 +2745,11 @@ void bian_init(BasicBlock * this_block)
         }
         if(echo_tac[i].left_use>=0)
         {
-            addtolive(echo_tac[i].left_name,i,echo_tac[i].dest_use);
+            addtolive(echo_tac[i].left_name,i,echo_tac[i].left_use);
         }
         if(echo_tac[i].right_use>=0)
         {
-            addtolive(echo_tac[i].right_name,i,echo_tac[i].dest_use);
+            addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use);
         }
     }
     // printf("tacid:%d\n",this_block->id);
@@ -2783,8 +2783,8 @@ void bian_init(BasicBlock * this_block)
                 create_bian(i,j);
         }
     }
-    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%s\t%s\n",i,echo_tac[i].dest_name,echo_tac[i].left_name,echo_tac[i].right_name);
-    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
 }
 
 
@@ -2846,7 +2846,7 @@ void reg_control_block(BasicBlock *cur)
     return ;
 
     #else
-    printf("thie blcok start at %d\n",cur->head_node->inst->i);
+    // printf("this blcok start at %d\n",cur->head_node->inst->i);
     travel_ir(cur->head_node);
     live_init_block();
     bian_init(cur);
