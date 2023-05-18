@@ -1349,29 +1349,32 @@ void travel_ir(InstNode *instruction_node)
             case Store:
                 if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
                 {
-                   
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID==AddressTyID)
                 {
-                   
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else if(instruction->user.use_list->Val->VTy->ID==Float || instruction->user.use_list->Val->VTy->ID==Const_FLOAT)
                 {
-                   
+                   echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else if(instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].dest_use=0;
-                    echo_tac[tac_cnt].left_name=instruction->user.use_list[1].Val->name;
-                    echo_tac[tac_cnt].left_use=1;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=0;
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].dest_use=0;
-                    echo_tac[tac_cnt].left_name=instruction->user.use_list[1].Val->name;
-                    echo_tac[tac_cnt].left_use=1;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=0;
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 break;
             case br:
