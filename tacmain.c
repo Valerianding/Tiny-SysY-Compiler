@@ -109,12 +109,11 @@ int main(int argc, char* argv[]){
         printf("after non locals\n");
     }
 
-    // 建立phi 之后的
+    // 建立phi之前
     printf_llvm_ir(instruction_list,argv[1]);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         mem2reg(currentFunction);
-        //calculateLiveness(currentFunction);
         printf("after one mem2reg Function!\n");
     }
 
@@ -122,48 +121,42 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[1]);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        Mark(currentFunction);
-//        Sweep(currentFunction);
-//        Clean(currentFunction);
-        RunPasses(currentFunction);
+        Mark(currentFunction);
+        Sweep(currentFunction);
+        commonSubexpressionElimination(currentFunction);
+        //为了loop 作准备
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction);
+        loop(currentFunction);
+        Clean(currentFunction);
         renameVariabels(currentFunction);
     }
 
      //phi上的优化
     printf_llvm_ir(instruction_list,argv[1]);
 
-//    InstNode *temp2 = instruction_list;
-//    /* 测试所有instruction list */
-//    for(;temp2 != NULL;temp2 = get_next_inst(temp2)){
-//        print_one_ins_info(temp2);
-//    }
-//
-//    block =  get_next_inst(instruction_list)->inst->Parent;
-//    clear_visited_flag(block);
-//    print_block_info(block);
-//
-//    //找到第一个function的
-//    while(temp->inst->Parent->Parent == NULL){
-//        temp = get_next_inst(temp);
-//    }
-//
-
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
+        cleanLiveSet(currentFunction);
     }
 
-//    printf_llvm_ir(instruction_list,argv[1]);
+    //请注释掉我跑llvm脚本
+    //printf_llvm_ir(instruction_list,argv[1]);
+
+
+    //phi后优化
+
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         clear_visited_flag(currentFunction->entry);
         printf("after out of SSA!\n");
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction->entry);
+        calculateLiveness1(currentFunction);
+        printLiveness(currentFunction);
     }
 
-    // 消除phi函数之后 请注释掉我跑llvm
-//    printf_llvm_ir(instruction_list,argv[1]);
+    // Liveness 计算之后请注释掉我跑llvm
+    //printf_llvm_ir(instruction_list,argv[1]);
 
 
     //TODO 目前函数内联放在这里了，暂时的
@@ -178,9 +171,9 @@ int main(int argc, char* argv[]){
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
 
-    //lsy_begin
-    fix_array(instruction_list);
-    printf_llvm_ir(instruction_list,argv[1]);
+    //lsy_begin TODO core dump
+//    fix_array(instruction_list);
+//    printf_llvm_ir(instruction_list,argv[1]);
     //lsy_end
 
     //    ljf
