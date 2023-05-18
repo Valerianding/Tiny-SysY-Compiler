@@ -873,7 +873,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                             num=handle_assign_array(p->right->left,v_arr,1,-1,0);
                     }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
-                        num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                        num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
                         num= create_call_func(p);
                     create_store_stmt(num,record[v_array->pdata->symtab_array_pdata.dimention_figure-1]);
