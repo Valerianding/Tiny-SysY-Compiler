@@ -1316,18 +1316,18 @@ void travel_ir(InstNode *instruction_node)
             case Alloca:
                 if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+//                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+//                    echo_tac[tac_cnt].dest_use=0;
                 }
                 else if(instruction->user.use_list->Val!=NULL && instruction->user.use_list->Val->VTy->ID==AddressTyID)
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+//                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+//                    echo_tac[tac_cnt].dest_use=0;
                 }
                 else
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+//                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+//                    echo_tac[tac_cnt].dest_use=0;
                 }
                 break;
             case Load:
