@@ -327,7 +327,7 @@ int get_value_offset_sp(HashMap *hashMap,Value*value){
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack){
 // 这种存储方法好像是错的，因为后面用到的同一个value，这里给他分配了不同地址的mykey_node()，所以回得到不的key
 // hashmap不会释放value*对应的内存
-    char param_name[5]="%3";
+    char param_name[5]="%4";
 //    if(value->VTy->ID==ArrayTyID){
 ////        是数组，offset_sp需要加更多
 //    }
@@ -337,6 +337,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
     if(value->name!=NULL && strcmp(value->name,name)<0 && strlen(value->name)<= strlen(name)){
         if(strcmp(value->name,param_name)<0&& strlen(value->name)<= strlen(param_name)){
 //            为r0-r3对应的参数
+//这个HashMapContian好像是有问题的，但是所有的问题都应该是没有进行hashPut
             if(!HashMapContain(hashMap, value)){
                 int x= atoi((value->name)+1);
                 offset *node=offset_node();
@@ -346,6 +347,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
                 node->offset_sp=*local_stack;
                 param_off[x]=node->offset_sp;
                 (*local_stack)+=4;
+                HashMapPut(hashMap,value,node);
             }
 
         }
@@ -1657,8 +1659,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -1669,16 +1671,16 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -1686,8 +1688,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }
@@ -1755,8 +1757,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
@@ -1765,15 +1767,15 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg-100);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }
         printf("\tvadd.f32\ts0,s1,s2\n");
         fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
@@ -2853,8 +2855,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -2865,16 +2867,16 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -2882,8 +2884,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }
@@ -2951,8 +2953,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
@@ -2961,15 +2963,15 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg-100);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }
         printf("\tvsub.f32\ts0,s1,s2\n");
         fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
@@ -4059,8 +4061,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -4071,16 +4073,16 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -4088,8 +4090,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }
@@ -4157,8 +4159,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
@@ -4167,15 +4169,15 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg-100);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }
         printf("\tvmul.f32\ts0,s1,s2\n");
         fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
@@ -5295,8 +5297,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -5307,16 +5309,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
             printf("\tvmov\ts1,r%d\n",left_reg-100);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
@@ -5324,8 +5326,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }
@@ -5393,8 +5395,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }else if(right_reg>100){
             int x2= get_value_offset_sp(hashMap,value2);
             printf("\tvmov\ts1,r%d\n",left_reg);
@@ -5403,15 +5405,15 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
             printf("\tvmov\ts2,r%d\n",right_reg-100);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg-100);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         } else{
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
-            printf("\tvcvt.f32.s32\ts2,s2");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         }
         printf("\tvdiv.f32\ts0,s1,s2\n");
         fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
@@ -5583,8 +5585,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-        printf("\tmov\tr%d,r0\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+        printf("\tmov\tr%d,r1\n",dest_reg_abs);
+        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -5660,8 +5662,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-        printf("\tmov\tr%d,r0\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+        printf("\tmov\tr%d,r1\n",dest_reg_abs);
+        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -5736,8 +5738,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-        printf("\tmov\tr%d,r0\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+        printf("\tmov\tr%d,r1\n",dest_reg_abs);
+        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -5815,8 +5817,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-        printf("\tmov\tr%d,r0\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+        printf("\tmov\tr%d,r1\n",dest_reg_abs);
+        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -5970,6 +5972,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         ,user_get_operand_use(&ins->inst->user,0)->Val->name);
 
     memset(reg_save,0, sizeof(reg_save));
+    reg_save[11]=1;
     memset(param_off,-1, sizeof(param_off));
     memset(funcName,0, sizeof(funcName));
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
@@ -6440,7 +6443,7 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
             float  x=value1->pdata->var_pdata.fVal;
             int xx=*(int*)&x;
             char arr[12]="0x";
-            sprintf(arr+2,"%0x",x);
+            sprintf(arr+2,"%0x",xx);
             printf("\tldr\tr0,=%s\n",arr);
             fprintf(fp,"\tldr\tr0,=%s\n",arr);
         } else if(isLocalVarIntType(value1->VTy)){
@@ -6812,8 +6815,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr1,#%d\n",x1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
@@ -6830,8 +6833,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
