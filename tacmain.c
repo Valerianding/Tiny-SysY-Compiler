@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
- //   printf_llvm_ir(instruction_list,argv[1]);
+    //   printf_llvm_ir(instruction_list,argv[1]);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 //
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]){
         renameVariabels(currentFunction);
     }
 
-     //phi上的优化
+    //phi上的优化
     printf_llvm_ir(instruction_list,argv[1]);
 
 //    InstNode *temp2 = instruction_list;
@@ -171,19 +171,23 @@ int main(int argc, char* argv[]){
 //    func_inline(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[1]);
 //    printf("=======func inline end=======\n");
-
-//
-//    //ljw_begin
-//   reg_control(instruction_list,temp);
-    //修改all_in_memory开启/关闭寄存器分配
-    //ljw_end
-
     //lsy_begin
     fix_array(instruction_list);
     printf_llvm_ir(instruction_list,argv[1]);
     //lsy_end
 
-    //    ljf
-    // arm_translate_ins(instruction_list);
+    //ljw_begin
+   reg_control(instruction_list,temp);
+    //修改all_in_memory开启/关闭寄存器分配
+    //ljw_end
+
+
+
+    //    ljf_begin
+//    如果需要打印到文件里面，打开arm_open_file和arm_close_file
+//    arm_open_file(argv[1]);
+//    arm_translate_ins(instruction_list,argv[1]);
+//    arm_close_file(argv[1]);
+    //    ljf_end
     return 0;
 }
