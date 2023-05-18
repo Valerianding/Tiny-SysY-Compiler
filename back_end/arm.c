@@ -7940,6 +7940,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         printf("\tldr\tr1,=%s\n",arr);
         fprintf(fp,"\tldr\tr1,=%s\n",arr);
         left_int_float=0;
+
     }else if(isImmFloatType(value1->VTy)){
         char arr[12]="0x";
         float x=value1->pdata->var_pdata.fVal;
