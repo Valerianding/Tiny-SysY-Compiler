@@ -2410,15 +2410,15 @@ void travel_ir(InstNode *instruction_node)
                         //fpintf(fptr,"* ");
                         if(instruction->user.use_list[1].Val->VTy->ID==Int)
                         {
-                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                            echo_tac[tac_cnt].left_use=1;
+                            // echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            // echo_tac[tac_cnt].left_use=1;
                             // printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                             //fpintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         }
                         else
                         {
-                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                            echo_tac[tac_cnt].left_use=1;
+                            // echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            // echo_tac[tac_cnt].left_use=1;
                             echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                             echo_tac[tac_cnt].right_use=1;
                             // printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
@@ -2435,15 +2435,15 @@ void travel_ir(InstNode *instruction_node)
                         //fpintf(fptr,"* ");
                         if(instruction->user.use_list[1].Val->VTy->ID==Int)
                         {
-                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                            echo_tac[tac_cnt].left_use=1;
+                            // echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            // echo_tac[tac_cnt].left_use=1;
                             // printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                             //fpintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         }
                         else
                         {
-                            echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                            echo_tac[tac_cnt].left_use=1;
+                            // echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                            // echo_tac[tac_cnt].left_use=1;
                             echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                             echo_tac[tac_cnt].right_use=1;
                             // printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
@@ -2455,11 +2455,17 @@ void travel_ir(InstNode *instruction_node)
                 else {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
                     {
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
                         // printf("i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr,"i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
+                        echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                        echo_tac[tac_cnt].left_use=1;
+                        echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                        echo_tac[tac_cnt].right_use=1;
                         // printf("i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                         //fpintf(fptr,"i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                     }
