@@ -24,9 +24,13 @@ int reg_save[16];
 int param_off[4];
 char fileName[256];
 char funcName[256];
+int save_r11;
 void printf_stmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
+    if(save_r11==1){
+        reg_save[11]=1;
+    }
     int k=0,n=0;
     for(int i=4;i<13;i++){
         if(reg_save[i]==1){
@@ -267,7 +271,7 @@ int array_suffix(Value*array,int which_dimension){
     for(int i=which_dimension+1;i<sum_dimension;i++){
         result*= array->pdata->symtab_array_pdata.dimentions[i];
     }
-    return result;
+    return result*4;
 }
 bool imm_is_valid(unsigned int imm){
     int i;
@@ -5972,7 +5976,11 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         ,user_get_operand_use(&ins->inst->user,0)->Val->name);
 
     memset(reg_save,0, sizeof(reg_save));
-    reg_save[11]=1;
+
+//    reg_save[11]=1;fp帧指针并不是每个函数都需要保存，是在该函数调用了其他的函数的时候才需要保存，其实和lr是一样的
+//    上面这种设置方法是错误的，r11是否需要保存取决于该函数有没有破坏r11寄存器，就是函数一开始的时候，有没有mov r11,sp这样的指令
+//    这个mov r11,sp只要是开辟了局部栈也就是执行了sub 这个指令，那么都会执行mov r11,sp也就是破坏掉r11，这个时候就需要保存r11
+    save_r11=0;
     memset(param_off,-1, sizeof(param_off));
     memset(funcName,0, sizeof(funcName));
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
@@ -6369,10 +6377,14 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    也就是说进入函数后，先stmfd sp!,{}再sub
 //    所以说这里保护寄存器的栈帧开辟也就不需要在sub的时候进行了。
     *stakc_size=local_stack;
+    if(local_stack!=0){
+        save_r11=1;
+    }
 //    在sub之前，是需要先保护被破坏的寄存器,lr的保存也放在这里面吧
     printf_stmfd_rlist();
 
     if((*stakc_size)!=0){
+
 //        这里还需要赋值fp
         printf("\tsub\tsp,sp,#%d\n",*stakc_size);
         fprintf(fp,"\tsub\tsp,sp,#%d\n",*stakc_size);
@@ -7474,140 +7486,217 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 // 然后需要乘的数值在value2的ival里面，将其与后面维数的大小相乘(使用的是reg[2])
 // 如果是常数的话，左值的ival放-1或者是-2，然后value2里面的ival存放的就是fixarray的最终结果
 // 也就是直接给的相对于数组首地址的偏移量，不需要再进行相关的计算。
+
+// 这个GEP指令的翻译逻辑应该是得修改一下
     Value *value0,*value1,*value2;
-    int dest_reg,dest_reg_abs,left_reg=ins->inst->_reg_[1],right_reg;
+    int dest_reg,dest_reg_abs,left_reg,right_reg;
+    value0=&ins->inst->user.value;
     value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    dest_reg=ins->inst->_reg_[0];
+    dest_reg_abs=abs(dest_reg);
+    left_reg=ins->inst->_reg_[1];
+    right_reg=ins->inst->_reg_[2];
+    int flag=value0->pdata->var_pdata.iVal;
     int off= get_value_offset_sp(hashMap,value1);
-//    printf("off %d\n",off);
-//   比如先把off装入%1对应的寄存器
-    if(left_reg>100){
-//        直接将%1的偏移量从内存取出
-        int x= get_value_offset_sp(hashMap,value1);
-        printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-        fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-    }else{
-//        将其对应的偏移量直接移动到%1对应的寄存器
-        if(imm_is_valid(off)){
-            printf("\tmov\tr%d,#%d\n",left_reg,off);
-            fprintf(fp,"\tmov\tr%d,#%d\n",left_reg,off);
+    if(flag<0){
+        int x=value2->pdata->var_pdata.iVal*4;
+        x+=off;
+        if(imm_is_valid(x)){
+            printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
+            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
         }else{
             char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",off);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tldr\tr%d,=%s\n",left_reg,arr1);
-            fprintf(fp,"\tldr\tr%d,=%s\n",left_reg,arr1);
+            sprintf(arr1+2,"%0x",x);
+            printf("\tldr\tr%d,=%s\n",dest_reg_abs,x);
+            fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,x);
+        }
+        if(dest_reg<0){
+            x= get_value_offset_sp(hashMap,value0);
+//            如果开的栈比较大，x也是非法立即数怎么办呢，这个也是需要处理的呀
+            printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+        }
+    }else{
+//        flag大于零，需要使用乘加指令
+        int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+        int result= array_suffix(value1->alias,which_dimension);
+        if(imm_is_valid(result)){
+            printf("\tmov\tr2,#%d\n",result);
+            fprintf(fp,"\tmov\tr2,#%d\n",result);
+        }else{
+            char arr1[12]="0x";
+            sprintf(arr1+2,"%0x",result);
+            printf("\tldr\tr2,=%s\n",arr1);
+            fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+        }
+        if(left_reg>100&&right_reg>100){
+            int x1= get_value_offset_sp(hashMap,value1);
+            int x2= get_value_offset_sp(hashMap,value2);
+            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+            printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+        }else if(left_reg>100){
+            int x1= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+        }else if(right_reg>100){
+            int x2= get_value_offset_sp(hashMap,value2);
+            printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+        }else{
+            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+        }
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
         }
     }
 
-    while (1){
-        value0=&ins->inst->user.value;
-        value1= user_get_operand_use(&ins->inst->user,0)->Val;
-        value2= user_get_operand_use(&ins->inst->user,1)->Val;
-        dest_reg=ins->inst->_reg_[0];
-        dest_reg_abs=abs(dest_reg);
-        left_reg=ins->inst->_reg_[1];
-        right_reg=ins->inst->_reg_[2];
-        int flag=value0->pdata->var_pdata.iVal;
-        if(flag<0){
+
+//    printf("off %d\n",off);
+//   比如先把off装入%1对应的寄存器
+//    if(left_reg>100){
+////        直接将%1的偏移量从内存取出
+//        int x= get_value_offset_sp(hashMap,value1);
+//        printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//        fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//    }else{
+////        将其对应的偏移量直接移动到%1对应的寄存器
+//        if(imm_is_valid(off)){
+//            printf("\tmov\tr%d,#%d\n",left_reg,off);
+//            fprintf(fp,"\tmov\tr%d,#%d\n",left_reg,off);
+//        }else{
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",off);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+//            printf("\tldr\tr%d,=%s\n",left_reg,arr1);
+//            fprintf(fp,"\tldr\tr%d,=%s\n",left_reg,arr1);
+//        }
+//    }
+    if(get_next_inst(ins)->inst->Opcode==GEP){
+        ins= get_next_inst(ins);
+        while (1){
+            value0=&ins->inst->user.value;
+            value1= user_get_operand_use(&ins->inst->user,0)->Val;
+            value2= user_get_operand_use(&ins->inst->user,1)->Val;
+            dest_reg=ins->inst->_reg_[0];
+            dest_reg_abs=abs(dest_reg);
+            left_reg=ins->inst->_reg_[1];
+            right_reg=ins->inst->_reg_[2];
+            flag=value0->pdata->var_pdata.iVal;
+            if(flag<0){
 //        偏移量可以直接计算出来,value2.iVal直接存放偏移量
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                x=value2->pdata->var_pdata.iVal;
-                if(imm_is_valid(x)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                    x=value2->pdata->var_pdata.iVal*4;
+                    if(imm_is_valid(x)){
 //                判断value.ival是否为合法立即数
-                    printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
-                    fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
-                }else{
+                        printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
+                        fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
+                    }else{
 //                立即数为非法立即数
-                    char arr1[12]="0x";
-                    sprintf(arr1+2,"%0x",x);
-                    printf("\tldr\tr2,=%s\n",arr1);
-                    fprintf(fp,"\tldr\tr2,=%s\n",arr1);
-                    printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
-                    fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                        char arr1[12]="0x";
+                        sprintf(arr1+2,"%0x",x);
+                        printf("\tldr\tr2,=%s\n",arr1);
+                        fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                        printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                    }
+                    if(dest_reg<0){
+                        x= get_value_offset_sp(hashMap,value0);
+                        printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                        fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                    }
                 }
-                if(dest_reg<0){
-                    x= get_value_offset_sp(hashMap,value0);
-                    printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-                    fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                else{
+                    int x=value2->pdata->var_pdata.iVal;
+                    if(imm_is_valid(x)){
+//                判断value.ival是否为合法立即数
+                        printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
+                        fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
+                    }else{
+//                立即数为非法立即数
+                        char arr1[12]="0x";
+                        sprintf(arr1+2,"%0x",x);
+                        printf("\tldr\tr2,=%s\n",arr1);
+                        fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                        printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                    }
+                    if(dest_reg<0){
+                        x= get_value_offset_sp(hashMap,value0);
+                        printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                        fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                    }
                 }
             }else{
-                int x=value2->pdata->var_pdata.iVal;
-                if(imm_is_valid(x)){
-//                判断value.ival是否为合法立即数
-                    printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
-                    fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
-                }else{
-//                立即数为非法立即数
-                    char arr1[12]="0x";
-                    sprintf(arr1+2,"%0x",x);
-                    printf("\tldr\tr2,=%s\n",arr1);
-                    fprintf(fp,"\tldr\tr2,=%s\n",arr1);
-                    printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
-                    fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
-                }
-                if(dest_reg<0){
-                    x= get_value_offset_sp(hashMap,value0);
-                    printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-                    fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-                }
-            }
-        }else{
 //        mla r0,r1,r2,r3                r1*r2+r3-->r0
 //        这里的设计是reg1+reg2*r2=reg0
 //        需要使用乘加指令进行翻译。需要用到reg0,reg1,reg2这三个寄存器,value1.alias为真正的数组，里面存了维数相关的信息
-            int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
-            int result= array_suffix(value1->alias,which_dimension);
+                int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+                int result= array_suffix(value1->alias,which_dimension);
 //        还需要判断result是否为合法立即数
-            if(imm_is_valid(result)){
-                printf("\tmov\tr2,#%d\n",result);
-                fprintf(fp,"\tmov\tr2,#%d\n",result);
+                if(imm_is_valid(result)){
+                    printf("\tmov\tr2,#%d\n",result);
+                    fprintf(fp,"\tmov\tr2,#%d\n",result);
+                }else{
+                    char arr1[12]="0x";
+                    sprintf(arr1+2,"%0x",result);
+                    printf("\tldr\tr2,=%s\n",arr1);
+                    fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                }
+                if(left_reg>100&&right_reg>100){
+                    int x1= get_value_offset_sp(hashMap,value1);
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+                }else if(left_reg>100){
+                    int x1= get_value_offset_sp(hashMap,value1);
+                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+                }else if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+                }else{
+                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                }
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                    fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                }
+            }
+            if(get_next_inst(ins)->inst->Opcode!=GEP){
+                break;
             }else{
-                char arr1[12]="0x";
-                sprintf(arr1+2,"%0x",result);
-                printf("\tldr\tr2,=%s\n",arr1);
-                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                ins= get_next_inst(ins);
             }
-            if(left_reg>100&&right_reg>100){
-                int x1= get_value_offset_sp(hashMap,value1);
-                int x2= get_value_offset_sp(hashMap,value2);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-            }else if(left_reg>100){
-                int x1= get_value_offset_sp(hashMap,value1);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-            }else if(right_reg>100){
-                int x2= get_value_offset_sp(hashMap,value2);
-                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-            }else{
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-            }
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-            }
-        }
-        if(get_next_inst(ins)->inst->Opcode!=GEP){
-            break;
-        }else{
-            ins= get_next_inst(ins);
         }
     }
+
 
 //    value1 存到value2对应的位置，需要判断value1和value2的类型
     if(get_next_inst((ins))->inst->Opcode==Store){
