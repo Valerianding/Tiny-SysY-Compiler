@@ -1,5 +1,5 @@
 //
-// Created by tom on 23-2-25.
+// Created by ljf on 23-2-25.
 //
 #ifndef C22V1_ARM_H
 #define C22V1_ARM_H
@@ -20,8 +20,8 @@
  */
 bool imm_is_valid(unsigned value);
 
-FILE *open_file(char argv[]);
-
+void arm_open_file(char argv[]);
+void arm_close_file();
 /**
  * @details 获取哈希表的大小
  * @param hashMap
@@ -40,7 +40,7 @@ int get_value_offset_sp(HashMap *hashMap,Value*value);
  * @details 进行指令的翻译，总体翻译逻辑
  * @param ins
  */
-void arm_translate_ins(InstNode *ins);
+void arm_translate_ins(InstNode *ins,char argv[]);
 
 /**
  * @details 进行每条具体指令的翻译
@@ -115,4 +115,9 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack);
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
 void usage_of_global_variables();
+int array_suffix(Value*array,int which_dimension);
+void multiply_and_add_instructions_for_translated_arrays(InstNode*instNode,HashMap*hashMap);
+void handle_reg_save(int reg);
+void printf_stmfd_rlist();
+void printf_ldmfd_rlist();
 #endif //C22V1_ARM_H

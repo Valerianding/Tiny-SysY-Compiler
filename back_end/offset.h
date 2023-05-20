@@ -1,5 +1,5 @@
 //
-// Created by tom on 23-2-25.
+// Created by ljf on 23-2-25.
 //
 
 #ifndef C22V1_OFFSET_H
@@ -56,7 +56,7 @@ offset *offset_node();
  * @param ins
  * @return 哈希表
  */
-HashMap *offset_init(InstNode*ins,int *local_var_num);
+HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num);
 
 
 /**
@@ -68,13 +68,13 @@ HashMap *offset_init(InstNode*ins,int *local_var_num);
  * @param add_sp 用来记录临时变量的开辟
  */
 
-void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num);
+void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num);
 
 //void hashmap_add_left(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
 //void hashmap_add_right(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
 
-void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp);
-void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value);
+void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp,int reg_save_num);
+void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value,int reg_save_num);
 /**
  * @details 销毁哈希表释放内存
  * @param hashMap

@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
- //   printf_llvm_ir(instruction_list,argv[1]);
+    //   printf_llvm_ir(instruction_list,argv[1]);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 //
@@ -93,20 +93,12 @@ int main(int argc, char* argv[]){
     BasicBlock *block = temp->inst->Parent;
 
 
+
+    // correctType()
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         printf("-------function  start---------\n");
         correctType(currentFunction);
-        print_function_info(currentFunction);
-        clear_visited_flag(block);
-        removeUnreachable(currentFunction);
-        calculate_dominance(currentFunction);
-        calculatePostDominance(currentFunction);
-        clear_visited_flag(block);
-        calculate_dominance_frontier(currentFunction);
-        calculate_iDominator(currentFunction);
-        calculate_DomTree(currentFunction);
-        calculateNonLocals(currentFunction);
-        printf("after non locals\n");
+        dominanceAnalysis(currentFunction);
     }
 
     // 建立phi之前
@@ -132,7 +124,7 @@ int main(int argc, char* argv[]){
         renameVariabels(currentFunction);
     }
 
-     //phi上的优化
+    //phi上的优化
     printf_llvm_ir(instruction_list,argv[1]);
 
     block = temp->inst->Parent;
@@ -155,6 +147,7 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
+
     // Liveness 计算之后请注释掉我跑llvm
     //printf_llvm_ir(instruction_list,argv[1]);
 
@@ -165,18 +158,23 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[1]);
 //    printf("=======func inline end=======\n");
 
-//
-//    //ljw_begin
-//   reg_control(instruction_list,temp);
-    //修改all_in_memory开启/关闭寄存器分配
-    //ljw_end
-
-    //lsy_begin TODO core dump
+    //lsy_begin
 //    fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[1]);
     //lsy_end
 
-    //    ljf
-    // arm_translate_ins(instruction_list);
+    //ljw_begin
+//   reg_control(instruction_list,temp);
+    //修改all_in_memory开启/关闭寄存器分配
+    //ljw_end
+
+
+
+    //    ljf_begin
+//    如果需要打印到文件里面，打开arm_open_file和arm_close_file
+//    arm_open_file(argv[1]);
+//    arm_translate_ins(instruction_list,argv[1]);
+//    arm_close_file(argv[1]);
+    //    ljf_end
     return 0;
 }

@@ -54,7 +54,11 @@ void combine(BasicBlock *i, BasicBlock *j){
     //delete labelNode
     deleteIns(labelNode);
 
-    assert(get_next_inst(j->tail_node)->inst->Opcode == Label);
+
+    InstNode *jTailNextNode = get_next_inst(j->tail_node);
+    if(jTailNextNode != NULL){
+        assert(jTailNextNode->inst->Opcode == Label);
+    }
 
     InstNode *nextLabelNode = get_next_inst(j->tail_node);
 
@@ -64,7 +68,8 @@ void combine(BasicBlock *i, BasicBlock *j){
 
         currNode->inst->Parent = i;
         InstNode *tempNode = get_next_inst(currNode);
-        printf("b%d\n",tempNode->inst->Parent->id);
+        if(tempNode != NULL)
+            printf("b%d\n",tempNode->inst->Parent->id);
 
         removeIns(currNode);
         ins_insert_after(currNode,i->tail_node);
@@ -236,7 +241,6 @@ void Mark(Function *currentFunction){
                         HashSetAdd(workList,ins);
                     }
                 }
-
             }
         }
 

@@ -722,7 +722,9 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     }
 
                     Value *v_gmp= ins_get_value_with_name(ins_gmp);
-                    //v_gmp->VTy->ID=AddressTyID;
+                    v_gmp->VTy->ID=AddressTyID;
+                    if(v_array->VTy->ID==ArrayTy_FLOAT || v_array->VTy->ID==ArrayTyID_ConstFLOAT || v_array->VTy->ID==GlobalArrayFloat || v_array->VTy->ID==GlobalArrayConstFLOAT)
+                        v_gmp->pdata->symtab_array_pdata.address_type=1;
                     v_gmp->pdata->var_pdata.iVal=i;
                     v_gmp->alias=v_array;
 
@@ -772,7 +774,10 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         gmp_last= ins_new_binary_operator(GEP,begin_offset_value,v_offset);
                     //是最后一层吧
                     Value *v_gmp= ins_get_value_with_name(gmp_last);
-                    //v_gmp->VTy->ID=AddressTyID;
+                    v_gmp->VTy->ID=AddressTyID;
+                    if(v_array->VTy->ID==ArrayTy_FLOAT || v_array->VTy->ID==ArrayTyID_ConstFLOAT || v_array->VTy->ID==GlobalArrayFloat || v_array->VTy->ID==GlobalArrayConstFLOAT)
+                        v_gmp->pdata->symtab_array_pdata.address_type=1;
+
                     v_gmp->pdata->var_pdata.iVal=v_array->pdata->symtab_array_pdata.dimention_figure-1;
                     v_gmp->alias=v_array;
                     //将这个instruction加入总list
@@ -839,7 +844,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                             //record[i]=v_prev;
                         }
                         Value *v_gmp= ins_get_value_with_name(ins);
-                        //v_gmp->VTy->ID=AddressTyID;
+                        v_gmp->VTy->ID=AddressTyID;
                         v_gmp->pdata->var_pdata.iVal=i;
                         v_gmp->alias=v_array;
                         //更新record
@@ -868,7 +873,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                             num=handle_assign_array(p->right->left,v_arr,1,-1,0);
                     }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
-                        num= create_load_stmt(bstr2cstr(p->left->sVal, '\0'));
+                        num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
                         num= create_call_func(p);
                     create_store_stmt(num,record[v_array->pdata->symtab_array_pdata.dimention_figure-1]);
@@ -946,12 +951,15 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
 
 
         Value *v1= ins_get_value_with_name(gmp);
-        //v1->VTy->ID=AddressTyID;
+        v1->VTy->ID=AddressTyID;
         v1->pdata->var_pdata.iVal=i;
         if(v_array->VTy->ID!=AddressTyID)
             v1->alias=v_array;
         else
+        {
             v1->alias=v_array->alias;
+        }
+
 
         v_last=v1;
 
@@ -2162,6 +2170,8 @@ void create_func_def(past root) {
             {
                 param->VTy->ID=AddressTyID;
                 v_param->VTy->ID=AddressTyID;
+                v_param->pdata->var_pdata.is_offset=1;
+                param->pdata->var_pdata.is_offset=1;
 
                 //传递一下信息
                 v_param->pdata=param->pdata;
@@ -3079,6 +3089,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 Value *v_load= ins_get_value_with_name(ins_load);
                 v_load->alias=v_array;
                 v_load->VTy->ID=AddressTyID;
+                v_load->pdata->var_pdata.is_offset=1;
                 v_load->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
                 v= handle_assign_array(paramss->right->left,v_load,1,-1,0);
             }
@@ -3104,6 +3115,7 @@ void create_params_stmt(past func_params,Value * v_func)
                     Instruction *instruction1= ins_new_binary_operator(GEP, v_f, v_z);
                     v= ins_get_value_with_name(instruction1);
                     v->pdata->var_pdata.iVal=dimension_count+1;  //到时候以dimension_count的态度打印
+                    v->pdata->var_pdata.is_offset=1;
                     v->VTy->ID=AddressTyID;
                     v->alias=v_array;
                     //将这个instruction加入总list
@@ -3142,6 +3154,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 v=ins_get_value_with_name(instruction1);
                 v->VTy->ID=AddressTyID;
                 v->alias=v_test;
+                v->pdata->var_pdata.is_offset=1;
                 v->pdata->var_pdata.iVal=1;
                 InstNode *node = new_inst_node(instruction1);
                 ins_node_add(instruction_list,node);
@@ -3393,9 +3406,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 break;
             case Load:
-                if(instruction->user.use_list->Val->VTy->ID==AddressTyID)
+                if(instruction->user.use_list->Val->VTy->ID==AddressTyID && instruction->user.use_list->Val->pdata->var_pdata.is_offset==1)
                 {
                     instruction->user.value.VTy->ID=AddressTyID;
+                    instruction->user.value.pdata->var_pdata.is_offset=1;
                     if(instruction->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
                     {
                         printf(" %s = load ",instruction->user.value.name);
@@ -3419,12 +3433,12 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 break;
             case Store:
-                if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
+                if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==0)
                 {
                     printf(" store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                     fprintf(fptr," store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 }
-                else if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID==AddressTyID)
+                else if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
                 {
                     printf(" store i32* %d,i32** %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                     fprintf(fptr," store i32* %d,i32** %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -3434,7 +3448,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                     printf(" store i32 %f,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
                     fprintf(fptr," store i32 %f,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
                 }
-                else if(instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
+                else if(instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==0)
                 {
                     printf(" store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                     fprintf(fptr," store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
@@ -4232,10 +4246,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 }
                 else
                 {
-                    if(instruction->user.use_list->Val->VTy->ID!=AddressTyID )
+                    if(instruction->user.use_list->Val->pdata->var_pdata.is_offset==0)
                     {
                         //是对数组参数的最后一个自造的gmp
-                        if(instruction->user.value.VTy->ID==AddressTyID)
+                        if(instruction->user.value.VTy->ID==AddressTyID && instruction->user.value.pdata->var_pdata.is_offset==1)
                         {
                             printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
                             printf(",");
@@ -4450,21 +4464,21 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
                 break;
         }
 
-//        Value *v,*vl,*vr;
-//        v= ins_get_dest(instruction_node->inst);
-//        vl= ins_get_lhs(instruction_node->inst);
-//        vr= ins_get_rhs(instruction_node->inst);
-//        if(v!=NULL)
-//            printf("left:%s,\t",type_str[v->VTy->ID]);
-//        if(vl!=NULL)
-//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-//        if(vr!=NULL)
-//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n\n");
-//
-//        if(instruction->isCritical){
-//            printf("isCritical\n\n");
-//        }
+        Value *v,*vl,*vr;
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+        printf("\n\n");
+
+        if(instruction->isCritical){
+            printf("isCritical\n\n");
+        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
@@ -4492,6 +4506,15 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
 
 void fix_array(struct _InstNode *instruction_node)
 {
+    //将offset值全部清0
+    InstNode *tem= get_next_inst(instruction_node);
+    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
+        Instruction *instruction = instruction_node->inst;
+        instruction->user.value.pdata->var_pdata.is_offset=0;
+        instruction_node= get_next_inst(instruction_node);
+    }
+
+    //fix array
     InstNode *start=instruction_node;
     instruction_node= get_next_inst(instruction_node);
     int offset=0;
@@ -4680,6 +4703,24 @@ void travel_finish_type(struct _InstNode *instruction_node)
                     }
                     else
                         instruction->user.value.VTy->ID=Var_FLOAT;
+                }
+                else if(instruction->user.use_list->Val->VTy->ID==AddressTyID)
+                {
+                    if(instruction->user.value.VTy->ID==Unknown && instruction->user.use_list->Val->pdata->var_pdata.is_offset==0)
+                    {
+                        Value *v_array= get_prev_inst(instruction_node)->inst->user.value.alias;
+                        if(v_array->VTy->ID==ArrayTy_INT || v_array->VTy->ID==ArrayTyID_ConstINT || v_array->VTy->ID==GlobalArrayInt || v_array->VTy->ID==GlobalArrayConstINT)
+                            instruction->user.value.VTy->ID=Var_INT;
+                        else if(v_array->VTy->ID==AddressTyID)
+                        {
+                            if(v_array->pdata->symtab_array_pdata.address_type==0)
+                                instruction->user.value.VTy->ID=Var_INT;
+                            else
+                                instruction->user.value.VTy->ID=Var_FLOAT;
+                        }
+                        else
+                            instruction->user.value.VTy->ID=Var_FLOAT;
+                    }
                 }
                 else if(instruction->user.use_list->Val->VTy->ID==Param_INT)
                 {

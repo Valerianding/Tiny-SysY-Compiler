@@ -25,7 +25,6 @@ InstNode* new_phi(Value *val);
 void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals);
 void deleteLoadStore(Function *currentFunction);
 void SSADeconstruction(Function *currentFunction);
-void calculateNonLocals(Function *currentFunction);
 void correctPhiNode(Function *currentFunction);
 void sequentialCopy(Function *currentFunction);
 void prunePhi(Function *currentFunction);

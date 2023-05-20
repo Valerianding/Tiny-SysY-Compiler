@@ -32,7 +32,7 @@ void live_init_block()
         live[i].name=NULL;
         live[i].first_use=-1;
         live[i].last_def=-1;
-        live[i].last=1;
+        live[i].last=-1;
         live[i].first=-1;
         live[i].isin=0;
         live[i].isout=0;
@@ -1316,18 +1316,18 @@ void travel_ir(InstNode *instruction_node)
             case Alloca:
                 if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+//                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+//                    echo_tac[tac_cnt].dest_use=0;
                 }
                 else if(instruction->user.use_list->Val!=NULL && instruction->user.use_list->Val->VTy->ID==AddressTyID)
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+//                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+//                    echo_tac[tac_cnt].dest_use=0;
                 }
                 else
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+//                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+//                    echo_tac[tac_cnt].dest_use=0;
                 }
                 break;
             case Load:
@@ -1349,29 +1349,32 @@ void travel_ir(InstNode *instruction_node)
             case Store:
                 if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
                 {
-                   
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->VTy->ID==AddressTyID)
                 {
-                   
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else if(instruction->user.use_list->Val->VTy->ID==Float || instruction->user.use_list->Val->VTy->ID==Const_FLOAT)
                 {
-                   
+                   echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else if(instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].dest_use=0;
-                    echo_tac[tac_cnt].left_name=instruction->user.use_list[1].Val->name;
-                    echo_tac[tac_cnt].left_use=1;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=0;
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 else
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].dest_use=0;
-                    echo_tac[tac_cnt].left_name=instruction->user.use_list[1].Val->name;
-                    echo_tac[tac_cnt].left_use=1;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=0;
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_use=1;
                 }
                 break;
             case br:
@@ -2425,10 +2428,10 @@ void travel_ir(InstNode *instruction_node)
                         //正常的
                     else{
                         //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                        printf(",");
+                        // printf(",");
                         //fpintf(fptr,",");
                         //printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                        printf("* ");
+                        // printf("* ");
                         //fpintf(fptr,"* ");
                         if(instruction->user.use_list[1].Val->VTy->ID==Int)
                         {
@@ -2611,7 +2614,7 @@ void travel_ir(InstNode *instruction_node)
                 Value *dest = instruction->user.value.alias;
                 Value *src = ins_get_lhs(instruction);
                 if(isImm(src)){
-                    echo_tac[tac_cnt].dest_name=dest->alias->name;
+                    echo_tac[tac_cnt].dest_name=dest->name;
                     echo_tac[tac_cnt].dest_use=0;
                     // printf(" %s(%s) = %d\n",dest->name,dest->alias->name,src->pdata->var_pdata.iVal);
                 }else{
@@ -2725,6 +2728,9 @@ void addtoout(BasicBlock *this_block)
             strcpy(live_out_name[block_out_num++].name,liveOutVariable->name);
         }
     }
+        // printf("out:\n");
+        // for(int i=0;i<block_out_num;i++)
+        //     printf("%s\n",live_out_name[i]);
     return ;
 }
 
@@ -2742,11 +2748,11 @@ void bian_init(BasicBlock * this_block)
         }
         if(echo_tac[i].left_use>=0)
         {
-            addtolive(echo_tac[i].left_name,i,echo_tac[i].dest_use);
+            addtolive(echo_tac[i].left_name,i,echo_tac[i].left_use);
         }
         if(echo_tac[i].right_use>=0)
         {
-            addtolive(echo_tac[i].right_name,i,echo_tac[i].dest_use);
+            addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use);
         }
     }
     // printf("tacid:%d\n",this_block->id);
@@ -2780,8 +2786,8 @@ void bian_init(BasicBlock * this_block)
                 create_bian(i,j);
         }
     }
-    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%s\t%s\n",i,echo_tac[i].dest_name,echo_tac[i].left_name,echo_tac[i].right_name);
-    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
 }
 
 
@@ -2843,7 +2849,7 @@ void reg_control_block(BasicBlock *cur)
     return ;
 
     #else
-    printf("thie blcok start at %d\n",cur->head_node->inst->i);
+    // printf("this blcok start at %d\n",cur->head_node->inst->i);
     travel_ir(cur->head_node);
     live_init_block();
     bian_init(cur);

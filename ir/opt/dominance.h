@@ -33,7 +33,8 @@ void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child);
 void DomTreePrinter(DomTreeNode *root);
 void HashSetCopy(HashSet *dest,HashSet *src);
 bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
-void constructReverseCfg(Function *currentFunction);
+void cleanAll(Function *currentFunction);
+void dominanceAnalysis(Function *currentFunction);
 void calculatePostDominance(Function *currentFunction);
 void removeUnreachable(Function *currentFunction);
 #endif //C22V1_DOMINANCE_H

@@ -558,49 +558,6 @@ InstNode *newCopyOperation(Value *src){
 }
 
 
-void calculateNonLocals(Function *currentFunction){
-    BasicBlock *entry = currentFunction->entry;
-    BasicBlock *end = currentFunction->tail;
-
-    InstNode *currNode = entry->head_node;
-    InstNode *tailNode = end->tail_node;
-
-    clear_visited_flag(entry);
-
-    currentFunction->nonLocals = HashSetInit();
-    HashSet *nonLocals = currentFunction->nonLocals;
-    HashSet *killed = HashSetInit();
-    while(currNode != get_next_inst(tailNode)){
-        BasicBlock *block = currNode->inst->Parent;
-        if(block->visited == false){
-            block->visited = true;
-            // 每次都要重新计算killed
-            HashSetClean(killed);
-        }
-        if(currNode->inst->Opcode == Load){
-            Value *lhs = ins_get_lhs(currNode->inst);
-            if(lhs != NULL && isLocalVar(lhs) && !HashSetFind(killed,lhs)){
-                HashSetAdd(nonLocals,lhs);
-            }
-        }
-
-        if(currNode->inst->Opcode == Store){
-            Value *rhs = ins_get_rhs(currNode->inst);
-            if(rhs != NULL && isLocalVar(rhs) && !HashSetFind(killed,rhs)){
-                HashSetAdd(killed, rhs);
-            }
-        }
-        currNode = get_next_inst(currNode);
-    }
-
-    HashSetFirst(nonLocals);
-    printf("nonLocals: ");
-    for(Value *nonLocalValue = HashSetNext(nonLocals); nonLocalValue != NULL; nonLocalValue = HashSetNext(nonLocals)){
-        printf("%s ", nonLocalValue->name);
-    }
-    HashSetDeinit(killed);
-    clear_visited_flag(entry);
-}
 
 void correctPhiNode(Function *currentFunction){
 

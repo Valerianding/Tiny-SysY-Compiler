@@ -632,3 +632,57 @@ void removeUnreachable(Function *currentFunction){
 
     print_block_info(entry);
 }
+
+void cleanAll(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
+    HashSet *workList = HashSetInit();
+    clear_visited_flag(entry);
+
+    // workList 是的一个HashSet
+    HashSetAdd(workList,entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+
+        assert(block->visited == false);
+        block->visited = true;
+
+        HashSetClean(block->pDom);
+        HashSetClean(block->dom);
+        HashSetClean(block->df);
+        HashSetClean(block->rdf);
+
+
+        DomTreeNode *domTreeNode = block->domTreeNode;
+        if(domTreeNode != NULL){
+            HashSetDeinit(domTreeNode->children);
+            free(domTreeNode);
+        }
+        // 再其它函数里面进行清理
+        block->domTreeNode = NULL;
+
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
+        }
+
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
+        }
+    }
+}
+
+void dominanceAnalysis(Function *currentFunction){
+    cleanAll(currentFunction);
+    print_function_info(currentFunction);
+    clear_visited_flag(currentFunction->entry);
+    removeUnreachable(currentFunction);
+    calculate_dominance(currentFunction);
+    calculatePostDominance(currentFunction);
+    clear_visited_flag(currentFunction->entry);
+    calculate_dominance_frontier(currentFunction);
+    calculate_iDominator(currentFunction);
+    calculate_DomTree(currentFunction);
+    calculateNonLocals(currentFunction);
+    printf("after non locals\n");
+}

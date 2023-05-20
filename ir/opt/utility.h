@@ -20,4 +20,5 @@ InstNode *findNode(BasicBlock *block,Instruction *inst);
 bool isCriticalOperator(InstNode *insNode);
 bool isCalculationOperator(InstNode *instNode);
 bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
+void calculateNonLocals(Function *currentFunction);
 #endif //C22V1_UTILITY_H
