@@ -683,6 +683,5 @@ void dominanceAnalysis(Function *currentFunction){
     calculate_dominance_frontier(currentFunction);
     calculate_iDominator(currentFunction);
     calculate_DomTree(currentFunction);
-    calculateNonLocals(currentFunction);
     printf("after non locals\n");
 }

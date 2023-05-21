@@ -70,10 +70,9 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-    //   printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1]);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
-//
 
     bblock_divide(instruction_list);
 
@@ -92,8 +91,6 @@ int main(int argc, char* argv[]){
 
     BasicBlock *block = temp->inst->Parent;
 
-
-
     // correctType()
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         printf("-------function  start---------\n");
@@ -105,8 +102,8 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[1]);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        calculateNonLocals(currentFunction);
         mem2reg(currentFunction);
-        printf("after one mem2reg Function!\n");
     }
 
     // 优化之前
@@ -137,16 +134,12 @@ int main(int argc, char* argv[]){
     //printf_llvm_ir(instruction_list,argv[1]);
 
 
-    //phi后优化
-
-
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         clear_visited_flag(currentFunction->entry);
         printf("after out of SSA!\n");
         calculateLiveness1(currentFunction);
         printLiveness(currentFunction);
     }
-
 
     // Liveness 计算之后请注释掉我跑llvm
     //printf_llvm_ir(instruction_list,argv[1]);

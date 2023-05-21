@@ -6,6 +6,14 @@
 #ifndef C22V1_DVNT_H
 #define C22V1_DVNT_H
 #include "utility.h"
+#include "bblock.h"
+#include "dominance.h"
+typedef struct Expression{
+    Opcode op;
+    unsigned int lhsValueNumber;
+    unsigned int rhsValueNumber;
+}Expression;
+
 bool DVNT(Function *currentFunction);
-bool DVNT_EACH(BasicBlock *block, HashMap *hashMap);
+bool DVNT_EACH(BasicBlock *block, HashMap *table,HashMap *var2num,Function *currentFunction);
 #endif //C22V1_DVNT_H
