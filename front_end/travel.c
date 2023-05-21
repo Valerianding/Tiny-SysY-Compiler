@@ -2994,6 +2994,7 @@ void declare_all_alloca(struct _mapList* func_map,bool flag)
                     Instruction *instruction= ins_new_unary_operator(Alloca, (Value *) value);
                     //与符号表对应的绑定在一起
                     Value *v_alias= ins_get_value_with_name(instruction);
+                    v_alias->VTy->ID=((Value *) value)->VTy->ID;
                     ((Value*)value)->alias=v_alias;v_alias->alias=((Value*)value);
                     //将这个instruction加入总list
                     InstNode *node = new_inst_node(instruction);
@@ -4476,9 +4477,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             printf("value2:%s,\t",type_str[vr->VTy->ID]);
         printf("\n\n");
 
-        if(instruction->isCritical){
-            printf("isCritical\n\n");
-        }
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
@@ -4640,7 +4641,7 @@ void fix_array2(struct _InstNode *instruction_node)
             }
         }
             //定义不会出现这种情况，只可能在赋值时出现，赋值一次都是多条，不存在复用
-        else if((instruction->Opcode==GEP && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1))
+        else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.use_list[1].Val!=NULL && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1))
         {
             //直接找到gep的最后一条,其他的全噶了
             while(get_next_inst(instruction_node)->inst->Opcode==GEP)
