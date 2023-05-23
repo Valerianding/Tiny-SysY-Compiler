@@ -25,6 +25,7 @@ int param_off[4];
 char fileName[256];
 char funcName[256];
 int save_r11;
+int global_flag=0;
 void printf_stmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
@@ -7942,16 +7943,22 @@ InstNode * arm_trans_zeroinitializer(InstNode *ins){
 }
 
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
-
+// 使用.bss替代.data表示该全局变量没有被初始化，
+// 现在的设计就是就当全部都初始化了的，如果没有初始化就赋0，
+// 但是这样是不行的，应该先检测是否被初始化，没有放在.bss里面，有放在.data里面
 //全局变量声明
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//    if(global_flag==0){
+//        printf("\t.bss\n");
+//        fprintf(fp,"\t.bss\n");
+//    }
     if(isGlobalVarIntType(value1->VTy)){
         char name[270];
-        sprintf(name,"%s:",value1->name+1);
+        sprintf(name,"\t.data\n%s:",value1->name+1);
         strcat(globalvar_message,name);
-        strcat(globalvar_message,"\n\t.long\t");
+        strcat(globalvar_message,"\n\t.data\t");
         char value_int[12];
         sprintf(value_int,"%d",value1->pdata->var_pdata.iVal);
         strcat(globalvar_message,value_int);
@@ -7959,9 +7966,9 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         
     } else if(isGlobalVarFloatType(value1->VTy)){
         char name[270];
-        sprintf(name,"%s:",value1->name+1);
+        sprintf(name,"\t.data\n%s:",value1->name+1);
         strcat(globalvar_message,name);
-        strcat(globalvar_message,"\n\t.long\t");
+        strcat(globalvar_message,"\n\t.data\t");
 
         char value_int[12]="0x";
         float x=value1->pdata->var_pdata.fVal;
