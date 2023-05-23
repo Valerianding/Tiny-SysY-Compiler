@@ -46,6 +46,7 @@ int main(int argc, char* argv[]){
     }
     yyin=fopen(argv[4], "r");
 
+
     Instruction *ins_head= ins_new_unary_operator(ALLBEGIN,NULL);
     instruction_list= new_inst_node(ins_head);
     t[0]='%';
@@ -67,6 +68,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
+
     //printf_llvm_ir(instruction_list,argv[1]);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
@@ -88,7 +90,6 @@ int main(int argc, char* argv[]){
 
     BasicBlock *block = temp->inst->Parent;
 
-    // correctType()
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         printf("-------function  start---------\n");
         correctType(currentFunction);
