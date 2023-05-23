@@ -7462,24 +7462,24 @@ InstNode * arm_trans_bitcast(InstNode *ins){
 //    printf("arm_trans_bitcast\n");
     return ins;
 }
-void multiply_and_add_instructions_for_translated_arrays(InstNode*ins,HashMap*hashMap){
-    Value *value0=&ins->inst->user.value;
-    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
-    int which_dimension=value0->pdata->var_pdata.iVal;
-    int off=0;
-    int dest_reg=ins->inst->_reg_[0];
-    int dest_reg_abs= abs(dest_reg);
-    int left_reg=ins->inst->_reg_[1];
-    int right_reg=ins->inst->_reg_[2];
-    if(left_reg>100){
-        int x=get_value_offset_sp(hashMap,value1);
-        printf("\tldr\tr%d,");
-        fprintf(fp,"\tldr\tr%d,");
-    }
-
-    return;
-}
+//void multiply_and_add_instructions_for_translated_arrays(InstNode*ins,HashMap*hashMap){
+//    Value *value0=&ins->inst->user.value;
+//    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//    int which_dimension=value0->pdata->var_pdata.iVal;
+//    int off=0;
+//    int dest_reg=ins->inst->_reg_[0];
+//    int dest_reg_abs= abs(dest_reg);
+//    int left_reg=ins->inst->_reg_[1];
+//    int right_reg=ins->inst->_reg_[2];
+//    if(left_reg>100){
+//        int x=get_value_offset_sp(hashMap,value1);
+//        printf("\tldr\tr%d,");
+//        fprintf(fp,"\tldr\tr%d,");
+//    }
+//
+//    return;
+//}
 InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 // 这个需要大改，ldr和str可以在这里处理掉，就不需要再去修改load和store对应的翻译了
 // 使用乘加指令，首先需要记录当前所在的维数，这个lsy可能会存放在value0的ival里面(大于0就表示维数)
