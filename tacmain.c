@@ -46,18 +46,15 @@ int main(int argc, char* argv[]){
     }
     yyin=fopen(argv[4], "r");
 
-
     Instruction *ins_head= ins_new_unary_operator(ALLBEGIN,NULL);
     instruction_list= new_inst_node(ins_head);
     t[0]='%';
-
     //TODO 还有没有更好的做法呢
     init_insnode_stack(&S_continue);
     init_insnode_stack(&S_break);
     init_insnode_stack(&S_return);
     init_insnode_stack(&S_and);
     init_insnode_stack(&S_or);
-
     this=(Symtab*) malloc(sizeof(Symtab));
     symtab_init(this);
     yyparse();
