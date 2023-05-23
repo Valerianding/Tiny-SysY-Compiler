@@ -3111,6 +3111,7 @@ int check_edge()
             }
         }
     }
+    return 0;
 }
 
 void reg_inmem_one_ins(int id)
