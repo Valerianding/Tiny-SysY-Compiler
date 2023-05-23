@@ -1,8 +1,10 @@
 #include "bblock.h"
 #include "stdio.h"
+extern int instruction_uid;
 BasicBlock *bb_create(){
     BasicBlock *this = (BasicBlock*)malloc(sizeof(BasicBlock));
     memset(this,0,sizeof(BasicBlock));
+    this->id = instruction_uid++;
     this->preBlocks = HashSetInit();
     this->in = HashSetInit();
     this->out = HashSetInit();

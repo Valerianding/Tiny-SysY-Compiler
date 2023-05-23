@@ -73,16 +73,24 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
                     switch (subexpression->op) {
                         case Add: {
                             if(((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))) && subexpression->op == currNode->inst->Opcode){
-                                //满足条件
+                                //并且还需要类型相等才能替换
                                 replace = subExpr->key;
-                                flag = true;
+                                if(replace->VTy->ID != dest->VTy->ID){
+                                    replace = NULL;
+                                }else{
+                                    flag = true;
+                                }
                             }
                             break;
                         }
                         case Sub:{
                             if((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) && subexpression->op == currNode->inst->Opcode){
                                 replace = subExpr->key;
-                                flag = true;
+                                if(replace->VTy->ID != dest->VTy->ID){
+                                    replace = NULL;
+                                }else{
+                                    flag = true;
+                                }
                             }
                             break;
                         }
@@ -90,21 +98,33 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
                             if(((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))) && subexpression->op == currNode->inst->Opcode){
                                 //满足条件
                                 replace = subExpr->key;
-                                flag = true;
+                                if(replace->VTy->ID != dest->VTy->ID){
+                                    replace = NULL;
+                                }else{
+                                    flag = true;
+                                }
                             }
                             break;
                         }
                         case Div:{
                             if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs) && subexpression->op == currNode->inst->Opcode){
                                 replace = subExpr->key;
-                                flag = true;
+                                if(replace->VTy->ID != dest->VTy->ID){
+                                    replace = NULL;
+                                }else{
+                                    flag = true;
+                                }
                             }
                             break;
                         }
                         case Mod:{
                             if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs) && subexpression->op == currNode->inst->Opcode){
                                 replace = subExpr->key;
-                                flag = true;
+                                if(replace->VTy->ID != dest->VTy->ID){
+                                    replace = NULL;
+                                }else{
+                                    flag = true;
+                                }
                             }
                             break;
                         }

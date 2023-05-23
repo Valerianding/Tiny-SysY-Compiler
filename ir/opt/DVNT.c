@@ -126,6 +126,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
             Value *phiValue = ins_get_dest(phiNode->inst);
             if (isMeaningLess) {
+                changed = true;
                 //当前的phi Value
                 //value number必须是malloc出来的
                 unsigned int *pValueNumber = (unsigned int *) malloc(sizeof(unsigned int));
@@ -156,7 +157,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 unsigned int *pNewValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
                 *pNewValueNumber = value_number_seed;
                 value_number_seed++;
-                //put it into the var2 num table
+                //put it into the var2num table
                 HashMapPut(var2num,phiValue,pNewValueNumber);
                 phiNode = get_next_inst(phiNode);
             }
@@ -205,6 +206,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     if(lhs != NULL) {
                         if(!isImm(lhs)){
                             pLhsNumber = HashMapGet(var2num,lhs);
+
+                            //还有可能是参数所以无法取出来，对于参数而言我们也是var_num_seed去存
+
                             assert(pLhsNumber != NULL);
                             LhsNumber = *pLhsNumber;
                         }else{
@@ -224,7 +228,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             assert(pRhsNumber != NULL);
                             RhsNumber = *pRhsNumber;
                         }else{
-                            if(!isImmInt(rhs)){
+                            if(isImmInt(rhs)){
                                 RhsNumber = (unsigned int)rhs->pdata->var_pdata.iVal;
                             }else if(isImmFloat(rhs)){
                                 RhsNumber = (unsigned int)rhs->pdata->var_pdata.fVal;
@@ -236,6 +240,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     //然后去table里面查有没有
                     //table里面
                     Value *replace = NULL;
+                    Value *dest = ins_get_dest(currNode->inst);
                     HashMapFirst(table);
                     for (Pair *pair = HashMapNext(table); pair != NULL; pair = HashMapNext(table)) {
                         Expression *expression = pair->value;
@@ -245,26 +250,45 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                 if((expression->op == currNode->inst->Opcode)  &&
                                    ((expression->rhsValueNumber == RhsNumber && expression->lhsValueNumber == LhsNumber)
                                     || expression->rhsValueNumber == LhsNumber && expression->lhsValueNumber == RhsNumber)){
-                                    //
                                     replace = pair->key;
+                                    if(replace->VTy->ID == dest->VTy->ID){
+                                        changed = true;
+                                    }else{
+                                        replace = NULL;
+                                    }
                                 }
                                 break;
                             }
                             case Sub:{
                                 if((expression->op == currNode->inst->Opcode) && expression->lhsValueNumber == LhsNumber && expression->rhsValueNumber == RhsNumber){
                                     replace = pair->key;
+                                    if(replace->VTy->ID == dest->VTy->ID){
+                                        changed = true;
+                                    }else{
+                                        replace = NULL;
+                                    }
                                 }
                                 break;
                             }
                             case Mod:{
                                 if((expression->op == currNode->inst->Opcode) && expression->lhsValueNumber == LhsNumber && expression->rhsValueNumber == RhsNumber){
                                     replace = pair->key;
+                                    if(replace->VTy->ID == dest->VTy->ID){
+                                        changed = true;
+                                    }else{
+                                        replace = NULL;
+                                    }
                                 }
                                 break;
                             }
                             case Div:{
                                 if((expression->op == currNode->inst->Opcode) && expression->lhsValueNumber == LhsNumber && expression->rhsValueNumber == RhsNumber){
                                     replace = pair->key;
+                                    if(replace->VTy->ID == dest->VTy->ID){
+                                        changed = true;
+                                    }else{
+                                        replace = NULL;
+                                    }
                                 }
                                 break;
                             }
@@ -272,9 +296,12 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                 if((expression->op == currNode->inst->Opcode)  &&
                                    ((expression->rhsValueNumber == RhsNumber && expression->lhsValueNumber == LhsNumber)
                                     || expression->rhsValueNumber == LhsNumber && expression->lhsValueNumber == RhsNumber)){
-
-                                    //
                                     replace = pair->key;
+                                    if(replace->VTy->ID == dest->VTy->ID){
+                                        changed = true;
+                                    }else{
+                                        replace = NULL;
+                                    }
                                 }
                                 break;
                             }
@@ -286,19 +313,19 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                     //break 到这里
                     if(replace != NULL){
-                        //const flooding 之前跑这个PASS
-                        Value *dest = ins_get_dest(currNode->inst);
+                        changed = true;
                         valueReplaceAll(dest,replace,currentFunction);
 
                         //现在的dest也需要构建一个value number
                         //找到replace的value number
+
+                        //一定不能是一个常数
                         unsigned int  *pReplaceValueNumber = HashMapGet(var2num,replace);
                         assert(pReplaceValueNumber != NULL);
                         unsigned int replaceValueNumber = *pReplaceValueNumber;
 
                         unsigned int *pDestValueNumber = (unsigned int*) malloc(sizeof(unsigned int));
                         *pDestValueNumber = replaceValueNumber;
-
                         // var2put
                         HashMapPut(var2num,dest,pDestValueNumber);
                     }else{
@@ -308,19 +335,28 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         unsigned int hashValueNumber = getHashValueNumber(currNode->inst->Opcode,LhsNumber,RhsNumber);
                         unsigned int *pHashValueNumber = (unsigned int *)malloc(sizeof(unsigned int));
                         *pHashValueNumber = hashValueNumber;
-                        //HashMapPut(var2num,pHashValueNumber);
+                        HashMapPut(var2num,dest,pHashValueNumber);
 
 
                         newExpression->op = currNode->inst->Opcode;
                         newExpression->lhsValueNumber = LhsNumber;
                         newExpression->rhsValueNumber = RhsNumber;
-                        //
 
-                        //HashMapPut(table,,);
+                        HashMapPut(table,dest,newExpression);
 
                         //记录当前基本块新产生的
+                        HashSetAdd(newScope,dest);
                     }
                 }
+            }
+
+            if(changed){
+                //remove this instruction and set
+                InstNode *tempNode = get_next_inst(currNode);
+                deleteIns(currNode);
+                currNode = tempNode;
+            }else{
+                currNode = get_next_inst(currNode);
             }
         }else{
             //DO NOT MOV
@@ -344,6 +380,10 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
     //deallocate the scope for B
     HashSetFirst(newScope);
     for(Value *pushed = HashSetNext(newScope); pushed != NULL; pushed = HashSetNext(newScope)){
+        //先释放内存再清空
+        Expression *expression = HashMapGet(table,pushed);
+        free(expression);
+        expression = NULL;
         HashMapRemove(table,pushed);
     }
     return changed;

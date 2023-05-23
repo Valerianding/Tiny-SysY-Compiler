@@ -1,5 +1,6 @@
 .idea/
-test_cases/:
 cmake-build-debug/
+test_cases/
 libs/.DS_Store
+tacmain.c
 .DS_Store

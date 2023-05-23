@@ -667,15 +667,19 @@ void SSADeconstruction(Function *currentFunction){
                         printf("critical edge splitting!!!!!!!!!\n");
                         // 分割当前关键边
                         BasicBlock *newBlock = bb_create();
+
+
                         printf("prev block :%d \n",prevBlock->id);
                         InstNode *prevTail = prevBlock->tail_node;
                         InstNode *prevTailNext = get_next_inst(prevBlock->tail_node);
 
                         Instruction *newBlockLabel = ins_new_zero_operator(Label);
+                        newBlockLabel->user.value.pdata->instruction_pdata.true_goto_location = newBlock->id;
                         InstNode *newBlockLabelNode = new_inst_node(newBlockLabel);
 
                         //直接跳转语句
                         Instruction *newBlockBr = ins_new_zero_operator(br);
+                        newBlockBr->user.value.pdata->instruction_pdata.true_goto_location = block->id;
                         InstNode *newBlockBrNode = new_inst_node(newBlockBr);
 
 
@@ -690,7 +694,9 @@ void SSADeconstruction(Function *currentFunction){
                         // 维护这个基本块中的信息 TODO 没有维护支配信息等
                         bb_set_block(newBlock,newBlockLabelNode, newBlockBrNode);
                         newBlock->Parent = currentFunction;
-                        newBlock->id = -2; // 如果是-2的话 表示是新的节点
+
+
+                        //维护跳转语句
                         // 前一个基本块到底是true 还是 false 是block
                         if (prevBlock->true_block == block) {
                             prevBlock->true_block = newBlock;
@@ -702,6 +708,10 @@ void SSADeconstruction(Function *currentFunction){
                         //移除原来那个边
                         HashSetRemove(block->preBlocks, prevBlock);
                         HashSetAdd(block->preBlocks, newBlock);
+
+
+                        //维护后面block的前驱
+
                         // 修改phiInfo里面的信息
                         InstNode *correctNode = get_next_inst(block->head_node);
                         while(correctNode->inst->Opcode == Phi){

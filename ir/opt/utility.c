@@ -337,7 +337,7 @@ void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction
     InstNode *tailNode = currentFunction->tail->tail_node;
     while(currNode != tailNode){
         if(currNode->inst->Opcode == Phi){
-            HashSet *phiSet = currNode->inst->user.value.pdata;
+            HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
             HashSetFirst(phiSet);
             for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                 if(phiInfo->define == oldValue){

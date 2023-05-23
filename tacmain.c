@@ -8,15 +8,12 @@
 #include "stdio.h"
 #include "bb_divide.h"
 #include "dominance.h"
-#include "mem2reg.h"
 #include "travel.h"
 #include "register_allocation.h"
 #include "livenessanalysis.h"
 #include "PassManager.h"
 #include "func_inline.h"
-//FIXME: test purpose only!
-Symtab* test_symtab;
-
+#include "mem2reg.h"
 extern int yyparse();
 //extern past TRoot;
 Symtab *this;
@@ -142,7 +139,7 @@ int main(int argc, char* argv[]){
     }
 
     // Liveness 计算之后请注释掉我跑llvm
-    //printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1]);
 
 
     //TODO 目前函数内联放在这里了，暂时的
