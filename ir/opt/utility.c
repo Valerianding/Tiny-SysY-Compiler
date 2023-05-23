@@ -328,3 +328,23 @@ void calculateNonLocals(Function *currentFunction){
     HashSetDeinit(killed);
     clear_visited_flag(entry);
 }
+
+
+void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction){
+    value_replaceAll(oldValue,newValue);
+
+    InstNode *currNode = currentFunction->entry->head_node;
+    InstNode *tailNode = currentFunction->tail->tail_node;
+    while(currNode != tailNode){
+        if(currNode->inst->Opcode == Phi){
+            HashSet *phiSet = currNode->inst->user.value.pdata;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                if(phiInfo->define == oldValue){
+                    phiInfo->define = newValue;
+                }
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
+}

@@ -21,4 +21,5 @@ bool isCriticalOperator(InstNode *insNode);
 bool isCalculationOperator(InstNode *instNode);
 bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
 void calculateNonLocals(Function *currentFunction);
+void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction);
 #endif //C22V1_UTILITY_H

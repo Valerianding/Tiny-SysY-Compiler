@@ -1,30 +1,23 @@
-
-
-
-//mark test
-int mark(){
-    int a = getint();
-    int b = getint();
-    int c = getint();
-    int d = getint();
-    int e = getint();
-    int f = getint();
-
-
-    int u = a + b;
-    int v = c + d;
-    int w = e + f;
-    int x;
-    int y;
-    if(1){
-        x = c + d;
-        y = c + d;
-    }else{
-        u = a + b;
-        x = e + f;
-        y = e + f;
+int ifWhile() {
+    int a;
+    a = 0;
+    int b;
+    b = 3;
+    if (a == 5) {
+        while(b == 2){
+            b = b + 2;
+        }
+        b = b + 25;
     }
-    int z = u + y;
-    u = a + b;
-    return u;
+    else
+        while (a < 5) {
+            b = b * 2;
+            a = a + 1;
+        }
+    return (b);
+}
+
+
+int main(){
+    return (ifWhile());
 }

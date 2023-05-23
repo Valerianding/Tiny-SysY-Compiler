@@ -9,10 +9,16 @@
 
 #include "DVNT.h"
 
-Opcode valueOperator[] = {Call,Add,Sub, Div,Mul,Mod};
+const Opcode valueOperator[] = {Load,Call,Add,Sub, Div,Mul,Mod};
 unsigned int value_number_seed = 1;
 bool isValueAbleOperator(InstNode *instNode){
-
+    int n = sizeof(valueOperator) / sizeof(Opcode);
+    for (int i = 0; i < n; ++i) {
+        if(instNode->inst->Opcode == valueOperator[i]){
+            return true;
+        }
+    }
+    return false;
 }
 
 bool DVNT(Function *currentFunction){
@@ -68,14 +74,12 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
     while (phiNode != tailNode) {
         if (phiNode->inst->Opcode == Phi) {
             HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
-            // TODO 目前只考虑了变量和meaningless的情况
-            // 需要针对立即数、和redundant
-
-            // 应该不存在redundant 的情况
+            // TODO 应该不存在redundant 的情况
             HashSetFirst(phiSet);
             bool isMeaningLess = true;
             unsigned int currDefineValueNumber = 0;
             unsigned int prevDefineValueNumber = 0;
+            int time = 0;
             //undefine, 1, 1也需要优化
             for (pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)) {
                 Value *define = phiInfo->define;
@@ -106,11 +110,13 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         }
                     }
 
-                    if(prevDefineValueNumber != 0 && prevDefineValueNumber != currDefineValueNumber){
+                    if(time != 0 && prevDefineValueNumber != currDefineValueNumber){
                             //代表了不一样了 需要 assgin new value number了
                             isMeaningLess = false;
                             break;
                     }else{
+                        time++;
+                        prevDefineValueNumber = currDefineValueNumber;
                         //代表还是一样的，我们需要继续比较
                         continue;
                     }
@@ -127,8 +133,6 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                 //put it into var2num
                 HashMapPut(var2num,phiValue,pValueNumber);
-
-
                 Value *replace = NULL;
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -140,22 +144,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 }
 
                 //valuereplace结果
-                //value_replaceAll(phiValue,replace);
-
-                //修改所有的phiFunction里面的参数
-
-                InstNode *funcHead = currentFunction->entry->head_node;
-                InstNode *funcTail = currentFunction->tail->tail_node;
-                while(funcHead != funcTail){
-                    if(funcHead->inst->Opcode == Phi){
-                       HashSet *phiSet = funcHead->inst->user.value.pdata->pairSet;
-                       HashSetFirst(phiSet);
-                       for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-
-                       }
-                    }
-                    funcHead = get_next_inst(funcHead);
-                }
+                valueReplaceAll(phiValue,replace,currentFunction);
 
                 //remove this instruction!!
                 InstNode *tempNode = get_next_inst(phiNode);
@@ -164,6 +153,12 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
             }else{
                 //create a new value number for this phi
 
+                unsigned int *pNewValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                *pNewValueNumber = value_number_seed;
+                value_number_seed++;
+                //put it into the var2 num table
+                HashMapPut(var2num,phiValue,pNewValueNumber);
+                phiNode = get_next_inst(phiNode);
             }
         }else{
             phiNode = get_next_inst(phiNode);
@@ -187,6 +182,15 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     HashMapPut(var2num, dest, pValue_number);
                     break;
                 }
+                case Load:{
+                    //如果是load我们也需要分配一个
+                    Value *dest = ins_get_dest(currNode->inst);
+                    unsigned int *pValue_number = (unsigned int *)malloc(sizeof(unsigned int));
+                    *pValue_number = value_number_seed;
+                    value_number_seed++;
+                    HashMapPut(var2num,dest,pValue_number);
+                    break;
+                }
                 default: {
                     // 进入这里面就只有几个了
                     //其余的情况
@@ -205,9 +209,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             LhsNumber = *pLhsNumber;
                         }else{
                             if(isImmInt(lhs)){
-                                LhsNumber = lhs->pdata->var_pdata.iVal;
+                                LhsNumber = (unsigned int)lhs->pdata->var_pdata.iVal;
                             }else if(isImmFloat(lhs)){
-                                LhsNumber = lhs->pdata->var_pdata.fVal;
+                                LhsNumber = (unsigned int)lhs->pdata->var_pdata.fVal;
                             }else{
                                 assert(false);
                             }
@@ -221,18 +225,16 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             RhsNumber = *pRhsNumber;
                         }else{
                             if(!isImmInt(rhs)){
-                                RhsNumber = rhs->pdata->var_pdata.iVal;
+                                RhsNumber = (unsigned int)rhs->pdata->var_pdata.iVal;
                             }else if(isImmFloat(rhs)){
-                                RhsNumber = rhs->pdata->var_pdata.fVal;
+                                RhsNumber = (unsigned int)rhs->pdata->var_pdata.fVal;
                             }
                         }
                     }
 
 
                     //然后去table里面查有没有
-                    //table 里面
-
-                    //
+                    //table里面
                     Value *replace = NULL;
                     HashMapFirst(table);
                     for (Pair *pair = HashMapNext(table); pair != NULL; pair = HashMapNext(table)) {
@@ -245,7 +247,6 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                     || expression->rhsValueNumber == LhsNumber && expression->lhsValueNumber == RhsNumber)){
                                     //
                                     replace = pair->key;
-
                                 }
                                 break;
                             }
@@ -274,26 +275,51 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                                     //
                                     replace = pair->key;
-
                                 }
                                 break;
                             }
                             default:{
                                 assert(false);
-                                break;
                             }
                         }
                     }
 
                     //break 到这里
                     if(replace != NULL){
+                        //const flooding 之前跑这个PASS
+                        Value *dest = ins_get_dest(currNode->inst);
+                        valueReplaceAll(dest,replace,currentFunction);
+
+                        //现在的dest也需要构建一个value number
+                        //找到replace的value number
+                        unsigned int  *pReplaceValueNumber = HashMapGet(var2num,replace);
+                        assert(pReplaceValueNumber != NULL);
+                        unsigned int replaceValueNumber = *pReplaceValueNumber;
+
+                        unsigned int *pDestValueNumber = (unsigned int*) malloc(sizeof(unsigned int));
+                        *pDestValueNumber = replaceValueNumber;
+
+                        // var2put
+                        HashMapPut(var2num,dest,pDestValueNumber);
+                    }else{
+
+                        //不存在，我们需要new hash
+                        Expression *newExpression =  (Expression *)malloc(sizeof(Expression));
+                        unsigned int hashValueNumber = getHashValueNumber(currNode->inst->Opcode,LhsNumber,RhsNumber);
+                        unsigned int *pHashValueNumber = (unsigned int *)malloc(sizeof(unsigned int));
+                        *pHashValueNumber = hashValueNumber;
+                        //HashMapPut(var2num,pHashValueNumber);
+
+
+                        newExpression->op = currNode->inst->Opcode;
+                        newExpression->lhsValueNumber = LhsNumber;
+                        newExpression->rhsValueNumber = RhsNumber;
                         //
 
-                    }else{
-                        Expression *newExpression =  (Expression *)malloc(sizeof(Expression));
+                        //HashMapPut(table,,);
 
+                        //记录当前基本块新产生的
                     }
-
                 }
             }
         }else{
