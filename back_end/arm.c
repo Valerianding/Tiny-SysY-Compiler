@@ -295,21 +295,25 @@ void arm_open_file(char filename[]){
 //        perror("open file error");
 //    }
 //    return myopen;
-    char new_ext[] = ".s";
-    char *dot_ptr = strrchr(filename, '.');
-    if(dot_ptr) {
-        int basename_len = dot_ptr - filename;  // 计算基本文件名的长度
-        char new_filename[basename_len + strlen(new_ext) + 1];  // 为新文件名分配足够的空间
-
-        strncpy(new_filename, filename, basename_len);  // 复制基本文件名
-        new_filename[basename_len] = '\0';  // 在基本文件名后添加空字符
-        strcat(new_filename, new_ext);  // 连接新的扩展名
-//        打开文件
-        fp= fopen(new_filename,"w");
-        printf("new_filename %s\n",new_filename);
-    } else {
-        printf("输入文件名有误\n");
-    }
+//    char new_ext[] = ".s";
+//    char *dot_ptr = strrchr(filename, '.');
+//    if(dot_ptr) {
+//        int basename_len = dot_ptr - filename;  // 计算基本文件名的长度
+//        char new_filename[basename_len + strlen(new_ext) + 1];  // 为新文件名分配足够的空间
+//
+//        strncpy(new_filename, filename, basename_len);  // 复制基本文件名
+//        new_filename[basename_len] = '\0';  // 在基本文件名后添加空字符
+//        strcat(new_filename, new_ext);  // 连接新的扩展名
+////        打开文件
+//        fp= fopen(new_filename,"w");
+//        printf("new_filename %s\n",new_filename);
+//    } else {
+//        printf("输入文件名有误\n");
+//    }
+//    return;
+    char new_ext[260];
+    strcpy(new_ext,filename);
+    fp= fopen(new_ext,"w");
     return;
 }
 void arm_close_file(){
@@ -501,17 +505,19 @@ void usage_of_global_variables(){
 }
 void arm_translate_ins(InstNode *ins,char argv[]){
 //    global_hashmap=HashMapInit();
-    char new_ext[] = ".c";
-    char *dot_ptr = strrchr(argv, '.');
-    if(dot_ptr) {
-        int basename_len = dot_ptr - argv;  // 计算基本文件名的长度
-        char new_filename[basename_len + strlen(new_ext) + 1];  // 为新文件名分配足够的空间
-
-        strncpy(new_filename, argv, basename_len);  // 复制基本文件名
-        new_filename[basename_len] = '\0';  // 在基本文件名后添加空字符
-        strcat(new_filename, new_ext);  // 连接新的扩展名
-        strcpy(fileName,new_filename);
-    }
+//    char new_ext[] = ".c";
+//    char *dot_ptr = strrchr(argv, '.');
+//    if(dot_ptr) {
+//        int basename_len = dot_ptr - argv;  // 计算基本文件名的长度
+//        char new_filename[basename_len + strlen(new_ext) + 1];  // 为新文件名分配足够的空间
+//
+//        strncpy(new_filename, argv, basename_len);  // 复制基本文件名
+//        new_filename[basename_len] = '\0';  // 在基本文件名后添加空字符
+//        strcat(new_filename, new_ext);  // 连接新的扩展名
+//        strcpy(fileName,new_filename);
+//    }
+    memset(fileName,0,sizeof(fileName));
+    strcpy(fileName,argv);
 
 
     InstNode *head;
