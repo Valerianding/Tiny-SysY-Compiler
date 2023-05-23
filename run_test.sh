@@ -47,7 +47,7 @@ then
         echo ${filename}
         cd ../
         # ./compiler >a.log
-        ./cmake-build-debug/compiler test_cases/$filename$file_c
+        ./cmake-build-debug/compiler -S -o test_cases/$filename$file_as test_cases/$filename$file_c -O2
         ret=$?
         if [ $ret -ne $stm ]
         then
@@ -179,7 +179,7 @@ do
     FILE_IN=$filename$file_in
     cd ../
     # ./compiler >a.log
-    ./cmake-build-debug/compiler test_cases/$filename$file_c
+    ./cmake-build-debug/compiler -S -o test_cases/$filename$file_as test_cases/$filename$file_c -O2
     ret=$?
     if [ $ret -ne $stm ]
     then
