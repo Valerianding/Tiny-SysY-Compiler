@@ -9,7 +9,7 @@ struct SString * live_in_name;
 struct SString * live_out_name;
 int edge_num;
 int var_num=0;
-int KK = 7;
+int KK = 6;
 int rig_num;
 int block_in_num,block_out_num;
 struct  reg_now * echo_tac;
@@ -2894,7 +2894,8 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
             else
             {
-                reg_uid+=6;
+                if(reg_uid==5)  reg_uid=12;
+                else    reg_uid+=6;
                 // if(echo_tac[i].dest_use==0)
                 // {
                 //     if(i==live[var_uid].last) 
@@ -2936,7 +2937,8 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
             else
             {
-                reg_uid+=6;
+                if(reg_uid==5)  reg_uid=12;
+                else    reg_uid+=6;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)
@@ -2963,7 +2965,8 @@ void add_to_ir()
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
             else
             {
-                reg_uid+=6;
+                if(reg_uid==5)  reg_uid=12;
+                else    reg_uid+=6;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)

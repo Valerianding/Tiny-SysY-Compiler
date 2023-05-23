@@ -116,7 +116,7 @@ void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack)
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
 void usage_of_global_variables();
 int array_suffix(Value*array,int which_dimension);
-void multiply_and_add_instructions_for_translated_arrays(InstNode*instNode,HashMap*hashMap);
+//void multiply_and_add_instructions_for_translated_arrays(InstNode*instNode,HashMap*hashMap);
 void handle_reg_save(int reg);
 void printf_stmfd_rlist();
 void printf_ldmfd_rlist();
