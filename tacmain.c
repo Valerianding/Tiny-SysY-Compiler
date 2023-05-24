@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
 
-    //printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
     }
 
     // 建立phi之前
-    printf_llvm_ir(instruction_list,argv[4]);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]){
     }
 
     // 优化之前
-    printf_llvm_ir(instruction_list,argv[4]);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
         Mark(currentFunction);
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
     }
 
     //phi上的优化
-    printf_llvm_ir(instruction_list,argv[4]);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]){
     }
 
     //请注释掉我跑llvm脚本
-    //printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1],1);
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -140,18 +140,18 @@ int main(int argc, char* argv[]){
     }
 
     // Liveness 计算之后请注释掉我跑llvm
-    printf_llvm_ir(instruction_list,argv[1]);
+    printf_llvm_ir(instruction_list,argv[1],1);
 
 
     //TODO 目前函数内联放在这里了，暂时的
 //    printf("=======func inline=========\n");
 //    func_inline(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[1]);
+//    printf_llvm_ir(instruction_list,argv[1],1);
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
     fix_array(instruction_list);
-    printf_llvm_ir(instruction_list,argv[4]);
+    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin

@@ -3349,7 +3349,7 @@ char* no_global_name(const char *name)
     return name2;
 }
 
-void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
+void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int before)
 {
     bool flag_func=false;
 
@@ -3371,8 +3371,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -3409,7 +3409,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name)
             case Load:
                 if(instruction->user.use_list->Val->VTy->ID==AddressTyID && instruction->user.use_list->Val->pdata->var_pdata.is_offset==1)
                 {
-                    instruction->user.value.VTy->ID=AddressTyID;
+                    if(before)
+                        instruction->user.value.VTy->ID=AddressTyID;
                     instruction->user.value.pdata->var_pdata.is_offset=1;
                     if(instruction->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
                     {

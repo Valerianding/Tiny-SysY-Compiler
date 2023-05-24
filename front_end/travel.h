@@ -31,7 +31,7 @@ struct _Value* create_return_load(Value *v_return);
 void declare_all_alloca(struct _mapList* func_map, bool flag);
 void declare_global_alloca(struct _mapList* func_map);
 void create_params_stmt(past func_params,Value* v);
-void printf_llvm_ir(struct _InstNode *instruction_node,char* file_name);
+void printf_llvm_ir(struct _InstNode *instruction_node,char* file_name,int before);
 void create_while_stmt(past root,Value* v_return);
 InstNode *true_location_handler(int type,Value *v_real,int true_goto_location);
 InstNode *false_location_handler(int type,Value *v_real,int false_goto_location);
