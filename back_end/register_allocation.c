@@ -29,7 +29,8 @@ void live_init_block()
     for(int i=0;i<(tac_cnt+30)*3;i++)
     {
         live[i].num=i;
-        live[i].name=NULL;
+        // live[i].name=NULL;
+        live[i].name=(char *)malloc(MAXSTRINGSIZE);
         live[i].first_use=-1;
         live[i].last_def=-1;
         live[i].last=-1;
@@ -37,9 +38,9 @@ void live_init_block()
         live[i].isin=0;
         live[i].isout=0;
     }
-    _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((tac_cnt+31)*(tac_cnt+30)*9/2));
-    live_in_name=NULL;
-    live_out_name=NULL;
+    // _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((tac_cnt+31)*(tac_cnt+30)*9/2));
+    // live_in_name=NULL;
+    // live_out_name=NULL;
     return ;
 }
 
@@ -2712,7 +2713,7 @@ void addtoin(BasicBlock *this_block)
     for(Value *liveInVariable = HashSetNext(this_block->in); liveInVariable != NULL; liveInVariable = HashSetNext(this_block->in)){
         assert(liveInVariable->name != NULL);
         if(liveInVariable->name != NULL){
-            live_in_name[block_in_num].name =(char *)malloc(sizeof(liveInVariable->name)+1);
+            live_in_name[block_in_num].name =(char *)malloc(sizeof(liveInVariable->name)+3);
             strcpy(live_in_name[block_in_num++].name,liveInVariable->name);
         }
     }
@@ -2730,7 +2731,7 @@ void addtoout(BasicBlock *this_block)
     for(Value *liveOutVariable = HashSetNext(this_block->out); liveOutVariable != NULL; liveOutVariable = HashSetNext(this_block->out)){
         assert(liveOutVariable->name != NULL);
         if(liveOutVariable->name != NULL){
-            live_out_name[block_out_num].name =(char *)malloc(sizeof(liveOutVariable->name)+1);
+            live_out_name[block_out_num].name =(char *)malloc(sizeof(liveOutVariable->name)+3);
             strcpy(live_out_name[block_out_num++].name,liveOutVariable->name);
         }
     }
@@ -2784,6 +2785,7 @@ void bian_init(BasicBlock * this_block)
             }
         }
     }
+    _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((var_num)*(var_num)/2));
     for(int i=0;i<var_num;i++)
     {
         for(int j=i+1;j<var_num;j++)
@@ -2824,7 +2826,7 @@ void reg_control_func(Function *currentFunction)
     block_num=0;
     InstNode *currNode = entry->head_node;
     BasicBlock *currNodeParent = currNode->inst->Parent;
-    block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*1000);
+    block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*10000);
     block_list[block_num++].reg_block=currNode->inst->Parent;
     block_list[0].reg_block->visited=1;
     while(currNode != get_next_inst(end->tail_node)){
@@ -3077,6 +3079,7 @@ void add_to_ir()
 
 void clean_reg()
 {
+    // for(int i=0;i<(tac_cnt+30)*3;i++)   free(live[i].name);
     if(live) free(live);
     if(_bian) free(_bian);
     if(list_of_variables) free(list_of_variables);
