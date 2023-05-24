@@ -32,32 +32,12 @@ bool DVNT(Function *currentFunction){
 // 需要lhsValueNumber和rhsValueNumber保持一个相对位置
 // 常数我们可以用负数直接代替，所以我们不希望我们产生的hashValueNumber是一个负数
 unsigned long getHashValueNumber(Opcode opcode,unsigned int lhsValueNumber, unsigned int rhsValueNumber){
-  const unsigned int p1 = 131, p2 = 137, p3 = 139;
-  unsigned int h1 = 0, h2 = 0, h3 = 0;
-  for(int i = 0; i < 31; i++){
-      if(opcode && (1 << i)){
-          h1 ^= (p1 << i);
-      }
-  }
-  for(int i = 0; i < 31; i++){
-      if(lhsValueNumber && (1 << i)){
-          h2 ^= (p2 << i);
-      }
-  }
-  for(int i = 0; i < 31; i++){
-      if(rhsValueNumber && (1 << i)){
-          h3 ^= (p3 << i);
-      }
-  }
-  unsigned hashValue =  ((h1 << 16) | (h2 << 8) | h3);
-
-  while(hashValue == opcode || hashValue == lhsValueNumber || hashValue == rhsValueNumber){
-      h1 += p1;
-      h2 += p2;
-      h3 += p3;
-      hashValue = ((h1 << 16) | (h2 << 8) | h3);
-  }
-  return hashValue;
+    unsigned long long hash_value = (unsigned long long)(opcode << 32 | lhsValueNumber << 16 | rhsValueNumber);
+    unsigned int hash = 5381;
+    for(int i = 0; i < 8; i ++){
+        hash = ((hash << 5) + hash) + ((unsigned char *)&hash_value)[i];
+    }
+    return hash;
 }
 
 bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *currentFunction) {
@@ -134,6 +114,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                 //put it into var2num
                 HashMapPut(var2num,phiValue,pValueNumber);
+
+
+                //TODO 这里需要修改部分
                 Value *replace = NULL;
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -146,6 +129,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                 //valuereplace结果
                 valueReplaceAll(phiValue,replace,currentFunction);
+
+
+                //理论上来说的
 
                 //remove this instruction!!
                 InstNode *tempNode = get_next_inst(phiNode);
@@ -171,6 +157,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
     InstNode *currNode = block->head_node;
     while (currNode != tailNode) {
         if(isValueAbleOperator(currNode)){
+            bool useless = false;
             switch (currNode->inst->Opcode) {
                 case Call: {
                     //无论call的是什么都需要给左边新建一个value number
@@ -198,17 +185,24 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     Value *lhs = ins_get_lhs(currNode->inst);
                     Value *rhs = ins_get_rhs(currNode->inst);
 
-                    //
+                    InstNode *headNode = currentFunction->entry->head_node;
+                    int paramNum = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
+
                     unsigned int *pLhsNumber = NULL;
                     unsigned int *pRhsNumber = NULL;
                     unsigned int LhsNumber;
                     unsigned int RhsNumber;
                     if(lhs != NULL) {
                         if(!isImm(lhs)){
-                            pLhsNumber = HashMapGet(var2num,lhs);
-
                             //还有可能是参数所以无法取出来，对于参数而言我们也是var_num_seed去存
-
+                            if(isParam(lhs,paramNum)){
+                                //assign a new ValueNumber to this
+                                unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                                *pValueNumber = value_number_seed;
+                                value_number_seed++;
+                                HashMapPut(var2num,lhs,pValueNumber);
+                            }
+                            pLhsNumber = HashMapGet(var2num,lhs);
                             assert(pLhsNumber != NULL);
                             LhsNumber = *pLhsNumber;
                         }else{
@@ -224,6 +218,12 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                     if(rhs != NULL){
                         if(!isImm(rhs)){
+                            if(isParam(rhs,paramNum)){
+                                unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                                *pValueNumber = value_number_seed;
+                                value_number_seed++;
+                                HashMapPut(var2num,rhs,pValueNumber);
+                            }
                             pRhsNumber = HashMapGet(var2num, rhs);
                             assert(pRhsNumber != NULL);
                             RhsNumber = *pRhsNumber;
@@ -235,7 +235,6 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             }
                         }
                     }
-
 
                     //然后去table里面查有没有
                     //table里面
@@ -313,6 +312,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                     //break 到这里
                     if(replace != NULL){
+                        useless = true;
                         changed = true;
                         valueReplaceAll(dest,replace,currentFunction);
 
@@ -341,7 +341,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         newExpression->op = currNode->inst->Opcode;
                         newExpression->lhsValueNumber = LhsNumber;
                         newExpression->rhsValueNumber = RhsNumber;
-
+                        printf("Lhs value number %d Rhs value number %d dest value number is %d\n",LhsNumber,RhsNumber,hashValueNumber);
                         HashMapPut(table,dest,newExpression);
 
                         //记录当前基本块新产生的
@@ -349,9 +349,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     }
                 }
             }
-
-            if(changed){
-                //remove this instruction and set
+            if(useless) {
                 InstNode *tempNode = get_next_inst(currNode);
                 deleteIns(currNode);
                 currNode = tempNode;

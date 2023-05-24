@@ -1,5 +1,11 @@
-
 int test(){
-    int a = 1;
-    return a;
+    int a = getint();
+    int temp;
+    while(a < 10){
+        int c = getint();
+        while(c < 20){
+            temp = a + c;
+        }
+    }
+    return temp;
 }

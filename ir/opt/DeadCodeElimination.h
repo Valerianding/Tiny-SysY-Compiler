@@ -9,7 +9,7 @@
 #include "dominance.h"
 bool isEssentialOperator(InstNode *inst);
 void Mark(Function *currentFunction);
-void Sweep(Function *currentFunction);
+bool Sweep(Function *currentFunction);
 void Clean(Function *currentFunction);
 bool OnePass(Vector *vector);
 void removeBlock(BasicBlock *block);

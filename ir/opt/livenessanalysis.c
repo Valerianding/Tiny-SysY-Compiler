@@ -142,14 +142,14 @@ void calculateLiveness1(Function *currentFunction){
 
             if(lhs != NULL && !isImm(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs) && !isLocalArray(lhs)){
                 if(!HashSetFind(exitLiveIn,lhs)){
-                    printf("lhs add %s\n",lhs->name);
+                    //printf("lhs add %s\n",lhs->name);
                     HashSetAdd(exitLiveIn,lhs);
                 }
             }
 
             if(rhs != NULL && !isImm(rhs) && !isGlobalVar(rhs) && !isGlobalArray(rhs) && !isLocalArray(lhs)){
                 if(!HashSetFind(exitLiveIn,rhs)){
-                    printf("rhs add %s\n",rhs->name);
+                    //printf("rhs add %s\n",rhs->name);
                     HashSetAdd(exitLiveIn,rhs);
                 }
             }
@@ -192,7 +192,7 @@ void calculateLiveness1(Function *currentFunction){
         while(currNode != removeBlock->head_node){
 
             if(isValidOperator(currNode)){
-                printf("current  is %d\n",currNode->inst->i);
+                //printf("current  is %d\n",currNode->inst->i);
 
                 Value *def = NULL;
                 Value *lhs = NULL;
@@ -237,14 +237,14 @@ void calculateLiveness1(Function *currentFunction){
 
                 if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
                     if(!HashSetFind(tempSet,lhs)){
-                        printf("lhs add %s\n",lhs->name);
+                        //printf("lhs add %s\n",lhs->name);
                         HashSetAdd(tempSet,lhs);
                     }
                 }
 
                 if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
                     if(!HashSetFind(tempSet,rhs)){
-                        printf("rhs add %s\n",rhs->name);
+                        //printf("rhs add %s\n",rhs->name);
                         HashSetAdd(tempSet,rhs);
                     }
                 }
@@ -438,14 +438,14 @@ void calculateLiveness(Function *currentFunction){
 
                 if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
                     if(!HashSetFind(tempSet,lhs)){
-                        printf("lhs add %s\n",lhs->name);
+                        //printf("lhs add %s\n",lhs->name);
                         HashSetAdd(tempSet,lhs);
                     }
                 }
 
                 if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
                     if(!HashSetFind(tempSet,rhs)){
-                        printf("rhs add %s\n",rhs->name);
+                        //printf("rhs add %s\n",rhs->name);
                         HashSetAdd(tempSet,rhs);
                     }
                 }

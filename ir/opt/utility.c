@@ -348,3 +348,14 @@ void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction
         currNode = get_next_inst(currNode);
     }
 }
+
+bool isParam(Value *val, int paramNum){
+    char *name = val->name;
+    assert(name[0] == '%');
+    name++;
+    int num = atoi(name);
+    if(num <= paramNum - 1){
+        return true;
+    }
+    return false;
+}

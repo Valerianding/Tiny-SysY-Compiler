@@ -105,14 +105,7 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4]);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        Mark(currentFunction);
-        Sweep(currentFunction);
-        commonSubexpressionElimination(currentFunction);
-        //为了loop 作准备
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction);
-        loop(currentFunction);
-        Clean(currentFunction);
+        DVNT(currentFunction);
         renameVariabels(currentFunction);
     }
 
@@ -137,7 +130,7 @@ int main(int argc, char* argv[]){
     }
 
     // Liveness 计算之后请注释掉我跑llvm
-    printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[1]);
 
 
     //TODO 目前函数内联放在这里了，暂时的
@@ -147,12 +140,12 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-    fix_array(instruction_list);
-    printf_llvm_ir(instruction_list,argv[4]);
+//    fix_array(instruction_list);
+//    printf_llvm_ir(instruction_list,argv[4]);
     //lsy_end
 
     //ljw_begin
-   reg_control(instruction_list,temp);
+//   reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
 
@@ -162,9 +155,9 @@ int main(int argc, char* argv[]){
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 
-    arm_open_file(argv[3]);
-    arm_translate_ins(instruction_list,argv[3]);
-    arm_close_file(argv[3]);
+//    arm_open_file(argv[3]);
+//    arm_translate_ins(instruction_list,argv[3]);
+//    arm_close_file(argv[3]);
     //    ljf_end
     return 0;
 }

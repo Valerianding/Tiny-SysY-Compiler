@@ -129,16 +129,7 @@ bool isEssentialOperator(InstNode *inst){
     return false;
 }
 
-bool isParam(Value *val, int paramNum){
-    char *name = val->name;
-    assert(name[0] == '%');
-    name++;
-    int num = atoi(name);
-    if(num <= paramNum - 1){
-        return true;
-    }
-    return false;
-}
+
 
 void Mark(Function *currentFunction){
     //
@@ -267,7 +258,8 @@ void Mark(Function *currentFunction){
     }
 }
 
-void Sweep(Function *currentFunction) {
+bool Sweep(Function *currentFunction) {
+    bool changed = false;
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;
     //
@@ -275,7 +267,7 @@ void Sweep(Function *currentFunction) {
     while (currNode != tail->tail_node) {
         if (currNode->inst->isCritical == false && !isEssentialOperator(currNode)) {
             if (currNode->inst->Opcode == br_i1) {
-
+                changed = true;
                 InstNode *nextNode = get_next_inst(currNode);
 
                 //rewrite i with a jump to i's nearest marked postDominator
@@ -314,6 +306,7 @@ void Sweep(Function *currentFunction) {
                 // br 不变
                 assert(false);
             } else {
+                changed = true;
                 // 除了br不变的话其他的
                 // TODO 解决delete_inst相关的问题
                 InstNode *nextNode = get_next_inst(currNode);
@@ -324,6 +317,7 @@ void Sweep(Function *currentFunction) {
             currNode = get_next_inst(currNode);
         }
     }
+    return changed;
 }
 
 // 深度优先就是后序遍历的逆

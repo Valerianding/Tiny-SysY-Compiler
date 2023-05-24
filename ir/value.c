@@ -45,7 +45,7 @@ void value_replaceAll(Value *oldValue,Value *newValue){
         Use *use1 = oldValue->use_list;
         Use *use2 = use1->Next;
         while(use1 != NULL){
-            printf("at use : %p, replace by : %p\n",use1,newValue);
+            printf("at use : %p, replace by : %s\n",use1,newValue->name);
             value_add_use(newValue,use1);
             use1->Val = newValue;
             use1 = use2;
