@@ -3311,18 +3311,19 @@ void printf_global_array(Value* v_array,FILE* fptr)
     fprintf(fptr,"],");
 }
 
-char* c2ll(const char* file_name)
-{
-    char *p= malloc(sizeof (file_name));
-    p= strcpy(p,file_name);
-    char *q=".ll";
-    int i=0;
-    while(p[i]!='.' || i<2)
-    {
-        i++;
+char* c2ll(const char* file_name) {
+    char *p = malloc(strlen(file_name) + 4); // 分配足够的空间存放新字符串，长度加4是因为要添加后缀".ll"
+    if (p == NULL) { // 内存分配失败，返回 NULL
+        return NULL;
     }
-    p[i]='\0';
-    strcat(p,q);
+    strcpy(p, file_name); // 复制原字符串
+    char *dot_pos = strrchr(p, '.'); // 查找最后一个 '.'
+    if (dot_pos == NULL || dot_pos - p <= 1) { // 如果找不到 dots 或者最后一个 '.' 在第二个字符或之前，返回 NULL
+        free(p);
+        return NULL;
+    }
+    *dot_pos = '\0'; // 将最后一个 '.' 替换成 '\0'，截断字符串
+    strcat(p, ".ll"); // 添加后缀
     return p;
 }
 
