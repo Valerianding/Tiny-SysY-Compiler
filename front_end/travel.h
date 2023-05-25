@@ -69,5 +69,6 @@ char* c2ll(const char* file_name);
 void print_array(struct _InstNode *instruction_node);
 
 void get_param_list(Value* v_func,int* give_count);
+void move_give_param(struct _InstNode *instruction_node);
 
 #endif
