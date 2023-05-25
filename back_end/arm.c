@@ -6608,6 +6608,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         }
     }else{
         int i;
+        int k=num-1;
         for(i=1;i<4;++i){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
@@ -6649,7 +6650,9 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             }
         }
         for (int j = num-4; j > 0; j--) {
-            tmp=one_param[i++];
+//            原因好像是在这里，应该逆序压栈，所以之前的tmp=one_param[i++]是有问题的，
+//            和之前不同的是one_param里面的参数是从0-(num-1)排布的，并不是说帮我修改为应该压栈的顺序
+            tmp=one_param[k--];
             int left_reg=tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
