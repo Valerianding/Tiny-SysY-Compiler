@@ -148,6 +148,7 @@ struct _Value *create_call_func(past root)
     {
         //可能已经存成库函数了
         v=symtab_lookup_withmap(this, bstr2cstr(root->left->sVal, '\0'),&this->value_maps->next->next->map);
+        //第一次读到库函数，赋个type
         if(v==NULL)
         {
             v=(Value*) malloc(sizeof (Value));
@@ -170,6 +171,14 @@ struct _Value *create_call_func(past root)
             v->name=(char*) malloc(sizeof(bstr2cstr(root->left->sVal,0)));
             strcpy(v->name,bstr2cstr(root->left->sVal,0));
             symtab_insert_withmap(this,&this->value_maps->next->next->map,v->name,v);
+
+            //赋个type
+            if(strcmp(v->name,"getint")==0 || strcmp(v->name,"getch")==0 || strcmp(v->name,"getarray")==0 || strcmp(v->name,"getfarray")==0)
+                v->pdata->symtab_func_pdata.return_type.ID=Var_INT;
+            else if(strcmp(v->name,"getfloat")==0)
+                v->pdata->symtab_func_pdata.return_type.ID=Var_FLOAT;
+            else
+                v->pdata->symtab_func_pdata.return_type.ID=Unknown;
         }
     }
 
@@ -2319,7 +2328,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
     value_init(final_result);
 
     //记录后缀表达式
-    past str[10000];
+    past str[20000];
     int i = 0;
 
     //后序遍历语法树
@@ -2359,8 +2368,6 @@ struct _Value *cal_expr(past expr,int type,int* real) {
         }
     }
     str[i]=NULL;
-
-    //travel_expr(str, i);        //TODO:check
 
     //计算后缀表达式
     value_stack PS2;
@@ -3363,16 +3370,16 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     int p=0;
 
     int give_count=0;
-    for(int i=0;i<50;i++)
+    for(int i=0;i<1000;i++)
         params[i]=NULL;
-    for(int k=0;k<50;k++)
+    for(int k=0;k<1000;k++)
         one_param[k]=NULL;
 
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4698,7 +4705,9 @@ void travel_finish_type(struct _InstNode *instruction_node)
                         instruction->user.value.VTy->ID=Var_INT;
                     else if(v_array->VTy->ID==AddressTyID)
                     {
-                        if(v_array->pdata->symtab_array_pdata.address_type==0)
+                        if(instruction->user.use_list->Val->pdata->var_pdata.is_offset==1)
+                            instruction->user.value.VTy->ID=AddressTyID;
+                        else if(v_array->pdata->symtab_array_pdata.address_type==0)
                             instruction->user.value.VTy->ID=Var_INT;
                         else
                             instruction->user.value.VTy->ID=Var_FLOAT;

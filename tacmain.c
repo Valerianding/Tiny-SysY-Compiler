@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
 
-    //printf_llvm_ir(instruction_list,argv[1],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        DVNT(currentFunction);
+
         renameVariabels(currentFunction);
     }
 
@@ -131,7 +131,9 @@ int main(int argc, char* argv[]){
     }
 
     // Liveness 计算之后请注释掉我跑llvm
-    //printf_llvm_ir(instruction_list,argv[4],1);
+
+    //printf_llvm_ir(instruction_list,argv[1],1);
+
 
 
 
@@ -143,7 +145,8 @@ int main(int argc, char* argv[]){
 
     //lsy_begin
 //    fix_array(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[4],1);
+
+//    printf_llvm_ir(instruction_list,argv[4],0);
 
     //lsy_end
 
