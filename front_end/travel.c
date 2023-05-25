@@ -178,7 +178,7 @@ struct _Value *create_call_func(past root)
             else if(strcmp(v->name,"getfloat")==0)
                 v->pdata->symtab_func_pdata.return_type.ID=Var_FLOAT;
             else
-                v->pdata->symtab_func_pdata.return_type.ID=VoidTyID;
+                v->pdata->symtab_func_pdata.return_type.ID=Unknown;
         }
     }
 
