@@ -4705,7 +4705,9 @@ void travel_finish_type(struct _InstNode *instruction_node)
                         instruction->user.value.VTy->ID=Var_INT;
                     else if(v_array->VTy->ID==AddressTyID)
                     {
-                        if(v_array->pdata->symtab_array_pdata.address_type==0)
+                        if(instruction->user.use_list->Val->pdata->var_pdata.is_offset==1)
+                            instruction->user.value.VTy->ID=AddressTyID;
+                        else if(v_array->pdata->symtab_array_pdata.address_type==0)
                             instruction->user.value.VTy->ID=Var_INT;
                         else
                             instruction->user.value.VTy->ID=Var_FLOAT;
