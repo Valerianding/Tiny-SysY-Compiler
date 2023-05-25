@@ -57,6 +57,7 @@ int main(int argc, char* argv[]){
     init_insnode_stack(&S_or);
     this=(Symtab*) malloc(sizeof(Symtab));
     symtab_init(this);
+
     yyparse();
     return_index=0;
     TRoot=TRoot->left;
