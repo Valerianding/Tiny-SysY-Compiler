@@ -105,7 +105,7 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        DVNT(currentFunction);
+        RunPasses(currentFunction);
         renameVariabels(currentFunction);
     }
 
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]){
     //lsy_end
 
     //ljw_begin
-    reg_control(instruction_list,temp);
+   reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
 
