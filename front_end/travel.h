@@ -63,7 +63,7 @@ bool begin_tmp(const char* name);
 bool begin_global(const char* name);
 char* no_global_name(const char *name);
 
-char* c2ll(char* file_name);
+char* c2ll(const char* file_name);
 
 //等着删
 void print_array(struct _InstNode *instruction_node);

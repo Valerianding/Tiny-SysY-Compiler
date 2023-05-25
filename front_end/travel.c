@@ -3311,9 +3311,10 @@ void printf_global_array(Value* v_array,FILE* fptr)
     fprintf(fptr,"],");
 }
 
-char* c2ll(char* file_name)
+char* c2ll(const char* file_name)
 {
-    char *p=file_name;
+    char *p= malloc(sizeof (file_name));
+    p= strcpy(p,file_name);
     char *q=".ll";
     int i=0;
     while(p[i]!='.' || i<2)
