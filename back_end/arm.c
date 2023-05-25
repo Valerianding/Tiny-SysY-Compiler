@@ -343,8 +343,18 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 //    是参数,不用处理,这里是用来计算局部变量的栈开多大，再加上param_num*4就可以得到总的栈帧的大小了。
 //    这里和之前的设计不同的是，r0-r3转递过来的参数也是当局部变量来处理的，但是超出r3的其他变量会在父函数give_param翻译的时候就直接str并且改变sp
 //    所以说这里不需要为多余的参数再开辟空间，所以说这里是需要处理r0-r3这几个参数的就是对应%0-%3需要开辟局部变量空间
-    if(value->name!=NULL && strcmp(value->name,name)<0 && strlen(value->name)<= strlen(name)){
-        if(strcmp(value->name,param_name)<0&& strlen(value->name)<= strlen(param_name)){
+
+// 这里面的判断逻辑好像是有问题的,换一种方法，就是直接将%i生成数字i再进行比较
+    int value_name_num=-1;
+    int name_num= atoi(name+1);
+    int param_name_num= atoi(param_name+1);
+    if(value->name!=NULL){
+        value_name_num= atoi(value->name+1);
+    }
+//    if(value->name!=NULL && strcmp(value->name,name)<0 && strlen(value->name)<= strlen(name)){
+//        if(strcmp(value->name,param_name)<0&& strlen(value->name)<= strlen(param_name)){
+    if(value_name_num!=-1 && value_name_num<name_num){
+        if(value_name_num<param_name_num){
 //            为r0-r3对应的参数
 //这个HashMapContian好像是有问题的，但是所有的问题都应该是没有进行hashPut
             if(!HashMapContain(hashMap, value)){
