@@ -3370,12 +3370,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     Value *v_cur_array=NULL;
 
     int p=0;
-
     int give_count=0;
-    for(int i=0;i<1000;i++)
-        params[i]=NULL;
-    for(int k=0;k<1000;k++)
-        one_param[k]=NULL;
 
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
@@ -4761,6 +4756,42 @@ void travel_finish_type(struct _InstNode *instruction_node)
 //            case LESS:
 //            case LESSEQ:
                 instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
+                break;
+        }
+        instruction_node= get_next_inst(instruction_node);
+    }
+}
+
+void move_give_param(struct _InstNode *instruction_node)
+{
+    instruction_node= get_next_inst(instruction_node);
+    Instruction *instruction=NULL;
+
+    int give_count=0;
+    for(int i=0;i<1000;i++)
+        params[i]=NULL;
+    for(int k=0;k<1000;k++)
+        one_param[k]=NULL;
+
+    while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
+    {
+        instruction=instruction_node->inst;
+        switch (instruction_node->inst->Opcode)
+        {
+            case GIVE_PARAM:
+                params[give_count++]=instruction_node;
+                break;
+            case Call:
+                get_param_list(instruction->user.use_list->Val,&give_count);
+                //将one_param的ir都后移到该条call前面
+                Value *v_func=instruction->user.use_list->Val;
+                int num=v_func->pdata->symtab_func_pdata.param_num;
+                for(int i=0;i<num;i++)
+                {
+                    InstNode *param=one_param[i];
+                    removeIns(param);
+                    ins_insert_before(param,instruction_node);
+                }
                 break;
         }
         instruction_node= get_next_inst(instruction_node);

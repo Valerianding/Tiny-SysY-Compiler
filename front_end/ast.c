@@ -658,7 +658,7 @@ float cal_easy_expr_f(past expr)
     past p1 = expr;
     past q = NULL;     //记录刚刚访问过的结点
     //记录后缀表达式
-    past str[100];
+    past str[30000];
     int i = 0;
 
     while (p1 != NULL || stackSize(s))
