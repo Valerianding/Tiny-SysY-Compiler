@@ -6532,6 +6532,10 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
+//  现在需要处理的操作就是有可能参数传的是全局变量的情况
+//  但是全局变量要进行传参的话，跟局部变量是一致的，全局变量会先被load，giveparam里面是不会出现globel类型的参数的
+//  所以说这个应该不需要改
+
 //  这个是用来标定参数传递的，这个可不仅仅是一个标定作用，
 //  这个是在处理数组传参（传数组首地址），和地址指针的时候需要用到。
 //要考虑吧普通的参数传递和数组地址参数传递，还要考虑参数个数的问题。如果传递的是float型的参数呢？使用IEEE754放在通用寄存器中
@@ -7516,8 +7520,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x);
-            printf("\tldr\tr%d,=%s\n",dest_reg_abs,x);
-            fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,x);
+            printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+            fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
         }
         if(dest_reg<0){
             x= get_value_offset_sp(hashMap,value0);
