@@ -3375,8 +3375,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4664,6 +4664,12 @@ void fix_array2(struct _InstNode *instruction_node)
             replace_lhs_operand(instruction_node->inst,instruction_node->inst->user.use_list[1].Val->alias);
             replace_rhs_operand(instruction_node->inst,v_offset);
             instruction_node->inst->user.value.pdata->var_pdata.iVal=-2;
+        }
+        //一维数组,is_offset=1
+        else
+        {
+            if(instruction->Opcode==GEP && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure==1 && instruction->user.value.pdata->var_pdata.is_offset==1)
+                instruction->user.value.pdata->var_pdata.iVal=-1;
         }
         instruction_node= get_next_inst(instruction_node);
     }
