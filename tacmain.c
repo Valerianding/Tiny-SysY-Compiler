@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
     }
 
     //请注释掉我跑llvm脚本
-    //printf_llvm_ir(instruction_list,argv[1],1);
+    //printf_llvm_ir(instruction_list,argv[4],1);
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
     }
 
     // Liveness 计算之后请注释掉我跑llvm
-    //printf_llvm_ir(instruction_list,argv[1]);
+    //printf_llvm_ir(instruction_list,argv[4],1);
 
 
 
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]){
 
     //lsy_begin
 //    fix_array(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[4]);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     //lsy_end
 
