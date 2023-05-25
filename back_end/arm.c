@@ -7958,7 +7958,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         char name[270];
         sprintf(name,"\t.data\n%s:",value1->name+1);
         strcat(globalvar_message,name);
-        strcat(globalvar_message,"\n\t.data\t");
+        strcat(globalvar_message,"\n\t.long\t");
         char value_int[12];
         sprintf(value_int,"%d",value1->pdata->var_pdata.iVal);
         strcat(globalvar_message,value_int);
@@ -7968,7 +7968,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         char name[270];
         sprintf(name,"\t.data\n%s:",value1->name+1);
         strcat(globalvar_message,name);
-        strcat(globalvar_message,"\n\t.data\t");
+        strcat(globalvar_message,"\n\t.long\t");
 
         char value_int[12]="0x";
         float x=value1->pdata->var_pdata.fVal;
