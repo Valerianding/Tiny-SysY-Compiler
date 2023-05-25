@@ -220,7 +220,6 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
             case Load:
                 if(instruction->user.use_list->Val->VTy->ID==AddressTyID)
                 {
-                    instruction->user.value.VTy->ID=AddressTyID;
                     printf(" %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                     //fpintf(fptr," %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 } else
@@ -1338,7 +1337,6 @@ void travel_ir(InstNode *instruction_node)
                     echo_tac[tac_cnt].dest_use=0;
                     echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                     echo_tac[tac_cnt].left_use=1;
-                    instruction->user.value.VTy->ID=AddressTyID;
                 } else
                 {
                     echo_tac[tac_cnt].dest_name=instruction->user.value.name;
