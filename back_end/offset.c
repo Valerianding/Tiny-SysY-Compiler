@@ -61,7 +61,13 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
     else if((!isImmIntType(key->VTy))&&(!isImmFloatType(key->VTy)) ){
         if(!HashMapContain(hashMap,key)){
 //            printf("name:%s  keyname:%s\n",name,key->name);
-            if(strcmp(key->name,name)<0 &&  strlen(key->name) <= strlen(name)){
+            int name_num= atoi(name+1);
+            int key_name_num=-1;
+            if(key->name!=NULL){
+                key_name_num= atoi(key->name+1);
+            }
+//            if(strcmp(key->name,name)<0 &&  strlen(key->name) <= strlen(name)){
+            if(key_name_num!=-1 && key_name_num<name_num){
 //                按照之前的处理是，传递过来的参数都是放在栈的顶部来进行存放的，
 //                这里生成的仅仅是供给获取偏移量的时候使用，是一说这里计算其于sp距离的时候，
 //                还需要考虑其是前四个参数还是后面的参数，前四个参数直接将(*add_sp)+=4就可以了，
