@@ -45,6 +45,40 @@ Value *get_const(Instruction *instruction)
     return ins_get_rhs(instruction);
 }
 
+//void label_cancomb(Function *currentFunction)
+//{
+//    BasicBlock *entry = currentFunction->entry;
+//    BasicBlock *end = currentFunction->tail;
+//
+//    InstNode *currNode = get_next_inst(entry->head_node);
+//
+//    while (currNode != get_next_inst(end->tail_node)) {
+//        if(check(currNode->inst,0))
+//        {
+//            Instruction *instruction=currNode->inst;
+//            Use* use=instruction->user.value.use_list;
+//            while(use!=NULL)
+//            {
+//                Value *left_user=&use->Parent->value;
+//                Instruction *instruction2=(Instruction*)left_user;
+//                //TODO 判断两条ir在同一基本块
+//                //如果有不在同一基本块的ir，暂时默认动不了这条ir
+//                if(check(instruction2,1))
+//                {
+//                    use=use->Next;
+//                    //给当前这条node打条标记吧
+//                    currNode->inst->user.value.pdata->var_pdata.iVal=-10;
+//                }
+//                else
+//                {
+//                    currNode->inst->user.value.pdata->var_pdata.iVal=0;
+//                    break;
+//                }
+//            }
+//        }
+//        currNode= get_next_inst(currNode);
+//    }
+//}
 
 //合并
 void combination(Instruction *instruction_A,Instruction * instruction_B)
@@ -81,6 +115,7 @@ void combination(Instruction *instruction_A,Instruction * instruction_B)
 
 void instruction_combination(Function *currentFunction)
 {
+    //label_cancomb(currentFunction);
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
 
@@ -104,8 +139,11 @@ void instruction_combination(Function *currentFunction)
                     currNode->inst->user.value.pdata->var_pdata.iVal=-10;
                     combination(currNode->inst,instruction2);
                 }
-                else        //TODO 提取加一个能否combi的判定
-                    break;
+                else        //TODO 提取加一个能否combi的判定,(好像不用，可以部分combi，部分不combi，也可以
+                {
+                    currNode->inst->user.value.pdata->var_pdata.iVal=0;
+                    use=use->Next;
+                }
             }
         }
         currNode= get_next_inst(currNode);

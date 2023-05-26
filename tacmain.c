@@ -14,6 +14,7 @@
 #include "PassManager.h"
 #include "func_inline.h"
 #include "mem2reg.h"
+#include "inscomb.h"
 extern int yyparse();
 //extern past TRoot;
 Symtab *this;
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-    move_give_param(instruction_list);
+//    move_give_param(instruction_list);
     printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
@@ -109,6 +110,13 @@ int main(int argc, char* argv[]){
         renameVariabels(currentFunction);
     }
 
+    //依托答辩，漏洞一堆，先别开别开
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        instruction_combination(currentFunction);
+//        renameVariabels(currentFunction);
+//    }
+//    printf_llvm_ir(instruction_list,argv[4],1);
+
     //phi上的优化
     printf_llvm_ir(instruction_list,argv[4],1);
 
@@ -117,6 +125,7 @@ int main(int argc, char* argv[]){
         SSADeconstruction(currentFunction);
         cleanLiveSet(currentFunction);
     }
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     //请注释掉我跑llvm脚本
     //printf_llvm_ir(instruction_list,argv[4],1);
@@ -156,9 +165,9 @@ int main(int argc, char* argv[]){
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 //
-    arm_open_file(argv[3]);
-    arm_translate_ins(instruction_list,argv[3]);
-    arm_close_file(argv[3]);
+//    arm_open_file(argv[3]);
+//    arm_translate_ins(instruction_list,argv[3]);
+//    arm_close_file(argv[3]);
     //    ljf_end
     return 0;
 }
