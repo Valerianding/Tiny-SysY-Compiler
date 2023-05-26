@@ -97,7 +97,7 @@ float getOperandValue(Value *operand){
     return 0;
 }
 
-void renameVariabels(Function *currentFunction) {
+void renameVariables(Function *currentFunction) {
     bool haveParam = false;
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
@@ -358,4 +358,13 @@ bool isParam(Value *val, int paramNum){
         return true;
     }
     return false;
+}
+
+void HashSetCopy(HashSet *dest,HashSet *src){
+    HashSetFirst(src);
+    for(void *key = HashSetNext(src); key != NULL; key = HashSetNext(src)){
+        if(!HashSetFind(dest,key)){
+            HashSetAdd(dest,key);
+        }
+    }
 }

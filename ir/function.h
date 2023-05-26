@@ -14,6 +14,8 @@ struct _Function{
 
     HashMap *loadSet;
     HashMap *storeSet;
+
+    HashSet *loops; // 存储loop结构
     Function *Next;
 };
 

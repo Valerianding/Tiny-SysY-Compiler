@@ -31,8 +31,6 @@ void calculate_iDominator(Function *currentFunction);
 void calculate_DomTree(Function *currentFunction);
 void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child);
 void DomTreePrinter(DomTreeNode *root);
-void HashSetCopy(HashSet *dest,HashSet *src);
-bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
 void cleanAll(Function *currentFunction);
 void dominanceAnalysis(Function *currentFunction);
 void calculatePostDominance(Function *currentFunction);

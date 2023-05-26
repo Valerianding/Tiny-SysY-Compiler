@@ -3,15 +3,6 @@
 #include "dominance.h"
 
 //只针对BasicBlock类型
-void HashSetCopy(HashSet *dest,HashSet *src){
-    HashSetFirst(src);
-    for(BasicBlock *key = HashSetNext(src); key != NULL; key = HashSetNext(src)){
-        if(!HashSetFind(dest,key)){
-            HashSetAdd(dest,key);
-        }
-    }
-}
-
 
 DomTreeNode *createDomTreeNode(BasicBlock *block,BasicBlock *parent){
     DomTreeNode *domTreeNode = (DomTreeNode*)malloc(sizeof(DomTreeNode));
@@ -627,7 +618,7 @@ void removeUnreachable(Function *currentFunction){
     }
 
     clear_visited_flag(entry);
-    renameVariabels(currentFunction);
+    renameVariables(currentFunction);
     clear_visited_flag(entry);
 
     print_block_info(entry);

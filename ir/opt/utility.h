@@ -10,7 +10,7 @@ void clear_visited_flag(BasicBlock *block);
 void correctType(Function *currentFunction);
 float getOperandValue(Value *operand);
 bool isCompareOperator(InstNode *insNode);
-void renameVariabels(Function *currentFunction);
+void renameVariables(Function *currentFunction);
 void showInstructionInfo(InstNode *instruction_list);
 void showBlockInfo(InstNode *instruction_list);
 void HashSetClean(HashSet *set);
@@ -23,4 +23,5 @@ bool HashSetDifferent(HashSet *lhs,HashSet *rhs);
 void calculateNonLocals(Function *currentFunction);
 void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction);
 bool isParam(Value *val, int paramNum);
+void HashSetCopy(HashSet *dest, HashSet *src);
 #endif //C22V1_UTILITY_H

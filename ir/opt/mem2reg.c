@@ -239,7 +239,7 @@ void mem2reg(Function *currentFunction){
 
     printf("after delete alloca load store\n");
     // 让LLVM IR符合标准
-    renameVariabels(currentFunction);
+    renameVariables(currentFunction);
 
 
     // OK 记得释放内存哦
@@ -753,7 +753,7 @@ void SSADeconstruction(Function *currentFunction){
         currNode = get_next_inst(currNode);
     }
 
-    //renameVariabels(currentFunction);
+    //renameVariables(currentFunction);
 
     sequentialCopy(currentFunction);
 }

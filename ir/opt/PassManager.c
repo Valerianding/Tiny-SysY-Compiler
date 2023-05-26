@@ -13,6 +13,9 @@ void RunPasses(Function *currentFunction){
     Mark(currentFunction);
     effective |= Sweep(currentFunction);
 
+
+    calculateLiveness(currentFunction);
+    loop(currentFunction);
     //CFG clean
     Clean(currentFunction);
     if(effective) RunPasses(currentFunction);

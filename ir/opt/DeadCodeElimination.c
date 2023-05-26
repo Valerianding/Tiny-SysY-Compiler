@@ -700,7 +700,7 @@ void Clean(Function *currentFunction){
 
         removeUnreachable(currentFunction);
 
-        renameVariabels(currentFunction);
+        renameVariables(currentFunction);
 
         VectorDeinit(vector);
     }

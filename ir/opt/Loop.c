@@ -14,13 +14,11 @@ void HashSetCopyBlock(HashSet *dest, HashSet *src){
 void loop(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
 
-    //showBlockInfo(instruction_list);
-    // 寻找循环体结构
     HashSet *workList = HashSetInit();  // 先把所有的基本块放在这里面 bfs
     clear_visited_flag(entry);
 
+    HashSet *allLoops = HashSetInit();
     //bfs
-
     //由于后续loop invariant的时候可能导致 visited flag 损失所以我们用一个HashSet来存
     HashSet *visited = HashSetInit();
 
@@ -39,7 +37,9 @@ void loop(Function *currentFunction){
             if(HashSetFind(visited,block->true_block)){
                 BasicBlock *head = block->true_block;
                 if(HashSetFind(dom,head)){
-                    findbody(block->true_block, block);
+                    Loop * currentLoop = constructLoop(block->true_block, block);
+                    //添加到当前的loop集合当中
+                    HashSetAdd(allLoops, currentLoop);
                 }
             }else{
                 printf("true add block %d\n",block->true_block->id);
@@ -51,7 +51,8 @@ void loop(Function *currentFunction){
             if(HashSetFind(visited,block->false_block)){
                 BasicBlock *head = block->false_block;
                 if(HashSetFind(dom,head)){
-                    findbody(block->false_block, block);
+                    Loop *currentLoop = constructLoop(block->false_block, block);
+                    HashSetAdd(allLoops, currentLoop);
                 }
             }else{
                 printf("false add block %d\n",block->false_block->id);
@@ -59,18 +60,71 @@ void loop(Function *currentFunction){
             }
         }
     }
-    renameVariabels(currentFunction);
+
+    //对刚刚收集到的loop进行一系列的整合构建
+    HashSetFirst(allLoops);
+    for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
+        HashSetFirst(l->loopBody);
+        printf("Loop head b%d: ",l->head->id);
+        for(BasicBlock *block = HashSetNext(l->loopBody); block != NULL; block = HashSetNext(l->loopBody)){
+            printf("b%d",block->id);
+        }
+        printf("\n");
+    }
+
+
+    //循环森林的构建
+    HashSet *tempSet = HashSetInit();
+    HashSetCopy(tempSet,allLoops);
+    assert(HashSetSize(allLoops) == HashSetSize(tempSet));
+
+    HashSetFirst(allLoops);
+    for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
+        //找到一个头节点
+        BasicBlock *head = l->head;
+        //寻找包含它的最小body数的Loop
+
+        Loop *parent = NULL;
+        HashSetFirst(tempSet);
+        unsigned int minSize = 0xffffffff;
+        for(Loop *next = HashSetNext(tempSet); l != NULL; l = HashSetNext(tempSet)){
+            if(next != l && HashSetFind(next->loopBody,head)){
+                //存在嵌套
+                if(minSize == 0xffffffff || minSize > HashSetSize(next->loopBody)){
+                    parent = next;
+                    minSize = HashSetSize(next->loopBody);
+                }
+            }
+        }
+
+        //现在
+        assert(false);
+    }
 }
 
-void findbody(BasicBlock *head,BasicBlock *tail){
+
+//找到loop的头和body
+Loop *constructLoop(BasicBlock *head,BasicBlock *tail){
+    Loop *loop = (Loop *)malloc(sizeof(Loop));
+
+    //initialize data structure
+    memset(loop,0,sizeof(Loop));
+    loop->tail = tail;
+    loop->head = head;
+    loop->exit = HashSetInit();
+    loop->loopBody = HashSetInit();
+    loop->child = HashSetInit();
+
+    //helper data structure
     stack *workStack = stackInit();
-    HashSet *loop = HashSetInit();
+    HashSet *loopBody = loop->loopBody;
+    HashSet *exit = loop->exit;
+
     // 将head 和 tail放进去
-    HashSetAdd(loop, tail);
-    HashSetAdd(loop,head);
+    HashSetAdd(loopBody, tail);
+    HashSetAdd(loopBody,head);
 
-
-    //现将tail 放进去的
+    //将tail 放进去的
     stackPush(workStack,tail);
     while(stackSize(workStack) != 0){
         BasicBlock *block = NULL;
@@ -79,25 +133,35 @@ void findbody(BasicBlock *head,BasicBlock *tail){
         assert(block != NULL);
         HashSetFirst(block->preBlocks);
         for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
-            if(!HashSetFind(loop,preBlock)){
-                HashSetAdd(loop,preBlock);
+            if(!HashSetFind(loopBody,preBlock)){
+                HashSetAdd(loopBody,preBlock);
                 stackPush(workStack,preBlock);
             }
         }
     }
 
     // 打印看看循环找的对不对
-    HashSetFirst(loop);
+    HashSetFirst(loopBody);
     printf("loop : ");
-    for(BasicBlock *block = HashSetNext(loop); block != NULL; block = HashSetNext(loop)){
+    for(BasicBlock *block = HashSetNext(loopBody); block != NULL; block = HashSetNext(loopBody)){
         printf("b%d",block->id);
     }
     printf("\n");
 
+    //找出循环的出口
+    HashSetFirst(loopBody);
+    BasicBlock *loopBlock = NULL;
+    for(loopBlock = HashSetNext(loopBody); loopBlock != NULL; loopBlock = HashSetNext(loopBody)){
+        if(loopBlock->true_block && !HashSetFind(loopBody,loopBlock->true_block)){
+            HashSetAdd(exit,loopBlock->true_block);
+        }
+        if(loopBlock->false_block && !HashSetFind(loopBody,loopBlock->false_block)){
+            HashSetAdd(exit,loopBlock->false_block);
+        }
+    }
 
-    printf("loopInvariant begins!\n");
-    loopVariant(loop,head);
-    printf("loopInvariant ends!\n ");
+    assert(HashSetSize(exit) >= 1);
+    return loop;
 }
 
 
