@@ -130,9 +130,9 @@ void instruction_combination(Function *currentFunction)
             {
                 Value *left_user=&use->Parent->value;
                 Instruction *instruction2=(Instruction*)left_user;
-                //TODO 判断两条ir在同一基本块
+                //判断两条ir在同一基本块
                 //如果有不在同一基本块的ir，暂时默认动不了这条ir
-                if(check(instruction2,1))
+                if(instruction2->Parent->id==instruction->Parent->id && check(instruction2,1))
                 {
                     use=use->Next;
                     //给当前这条node打条标记吧
