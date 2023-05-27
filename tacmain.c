@@ -110,13 +110,13 @@ int main(int argc, char* argv[]){
         printf("big loop size : %d", HashSetSize(currentFunction->loops));
         renameVariables(currentFunction);
     }
+    printf_llvm_ir(instruction_list,argv[4],1);
 
-    //依托答辩，漏洞一堆，先别开别开
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        instruction_combination(currentFunction);
-//        renameVariabels(currentFunction);
-//    }
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    //基本块内inscomb ok，基本块间ing
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        instruction_combination(currentFunction);
+        renameVariabels(currentFunction);
+    }
 
     //phi上的优化
     //printf_llvm_ir(instruction_list,argv[4],1);
