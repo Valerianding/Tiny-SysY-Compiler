@@ -17,7 +17,8 @@ void loop(Function *currentFunction){
     HashSet *workList = HashSetInit();  // 先把所有的基本块放在这里面 bfs
     clear_visited_flag(entry);
 
-    HashSet *allLoops = HashSetInit();
+    currentFunction->loops = HashSetInit();
+    HashSet *allLoops = currentFunction->loops;
     //bfs
     //由于后续loop invariant的时候可能导致 visited flag 损失所以我们用一个HashSet来存
     HashSet *visited = HashSetInit();
@@ -31,7 +32,6 @@ void loop(Function *currentFunction){
         //block 我们是一定没有visited
         HashSetAdd(visited, block);
 
-        printf("current block is %d\n",block->id);
         HashSet *dom = block->dom;
         if(block->true_block){
             if(HashSetFind(visited,block->true_block)){
@@ -42,7 +42,6 @@ void loop(Function *currentFunction){
                     HashSetAdd(allLoops, currentLoop);
                 }
             }else{
-                printf("true add block %d\n",block->true_block->id);
                 HashSetAdd(workList,block->true_block);
             }
         }
@@ -55,7 +54,6 @@ void loop(Function *currentFunction){
                     HashSetAdd(allLoops, currentLoop);
                 }
             }else{
-                printf("false add block %d\n",block->false_block->id);
                 HashSetAdd(workList,block->false_block);
             }
         }
@@ -87,7 +85,7 @@ void loop(Function *currentFunction){
         Loop *parent = NULL;
         HashSetFirst(tempSet);
         unsigned int minSize = 0xffffffff;
-        for(Loop *next = HashSetNext(tempSet); l != NULL; l = HashSetNext(tempSet)){
+        for(Loop *next = HashSetNext(tempSet); next != NULL; next = HashSetNext(tempSet)){
             if(next != l && HashSetFind(next->loopBody,head)){
                 //存在嵌套
                 if(minSize == 0xffffffff || minSize > HashSetSize(next->loopBody)){
@@ -97,9 +95,14 @@ void loop(Function *currentFunction){
             }
         }
 
-        //现在
-        assert(false);
+        if(parent != NULL){
+            printf("b%d parent is b%d\n",l->head->id,parent->head->id);
+            l->parent = parent;
+            HashSetAdd(parent->child,l);
+            HashSetRemove(allLoops,l);
+        }
     }
+
 }
 
 

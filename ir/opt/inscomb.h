@@ -5,5 +5,11 @@
 #ifndef C22V1_INSCOMB_H
 #define C22V1_INSCOMB_H
 #include <function.h>
+#include <stdbool.h>
 void instruction_combination(Function *currentFunction);
+bool check(Instruction *instruction,int location);
+int get_const_location(Instruction* instruction);
+Value *get_value(Instruction *instruction);
+Value *get_const(Instruction *instruction);
+void combination(Instruction *instruction_A,Instruction * instruction_B);
 #endif //C22V1_INSCOMB_H

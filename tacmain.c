@@ -14,6 +14,7 @@
 #include "PassManager.h"
 #include "func_inline.h"
 #include "mem2reg.h"
+#include "inscomb.h"
 extern int yyparse();
 //extern past TRoot;
 Symtab *this;
@@ -65,7 +66,7 @@ int main(int argc, char* argv[]){
     flag_blocklist=1;
     create_instruction_list(TRoot,NULL);
     travel_finish_type(instruction_list);
-    move_give_param(instruction_list);
+//    move_give_param(instruction_list);
     printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
@@ -106,31 +107,42 @@ int main(int argc, char* argv[]){
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
         loop(currentFunction);
+        printf("big loop size : %d", HashSetSize(currentFunction->loops));
         renameVariables(currentFunction);
     }
 
-    //phi上的优化
-    printf_llvm_ir(instruction_list,argv[4],1);
-//
-//    block = temp->inst->Parent;
+    //依托答辩，漏洞一堆，先别开别开
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        SSADeconstruction(currentFunction);
-//        cleanLiveSet(currentFunction);
+//        instruction_combination(currentFunction);
+//        renameVariabels(currentFunction);
 //    }
-//
-//    //请注释掉我跑llvm脚本
-//    //printf_llvm_ir(instruction_list,argv[4],1);
-//
-//
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        clear_visited_flag(currentFunction->entry);
-//        printf("after out of SSA!\n");
-//        calculateLiveness1(currentFunction);
-//        printLiveness(currentFunction);
-//    }
-//
-//    // Liveness 计算之后请注释掉我跑llvm
 //    printf_llvm_ir(instruction_list,argv[4],1);
+
+    //phi上的优化
+    //printf_llvm_ir(instruction_list,argv[4],1);
+
+
+    block = temp->inst->Parent;
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        SSADeconstruction(currentFunction);
+        cleanLiveSet(currentFunction);
+    }
+    //printf_llvm_ir(instruction_list,argv[4],1);
+
+    //请注释掉我跑llvm脚本
+    //printf_llvm_ir(instruction_list,argv[4],1);
+
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        clear_visited_flag(currentFunction->entry);
+        printf("after out of SSA!\n");
+        calculateLiveness1(currentFunction);
+        printLiveness(currentFunction);
+    }
+
+    // Liveness 计算之后请注释掉我跑llvm
+    //printf_llvm_ir(instruction_list,argv[4],1);
+
 
 
 
