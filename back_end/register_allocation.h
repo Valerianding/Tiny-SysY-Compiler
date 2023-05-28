@@ -24,6 +24,7 @@
 
 
 #define all_in_memory 0
+#define reg_alloc_test 0
 struct reg_queue
 {
     int variable_index;
@@ -123,6 +124,8 @@ void addtolive(char * name,int tacid,int ifuse);
 void addtoin(BasicBlock *this_block);
 void addtoout(BasicBlock *this_block);
 void create_bian(int i,int j);
+void bian_init(BasicBlock * this_block);
+void bian_init_test();
 void add_to_ir();
 void ir_reg_init(InstNode *instruction_node);
 void clean_reg();//完成后释放内存
