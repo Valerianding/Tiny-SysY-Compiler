@@ -129,3 +129,4 @@ void bian_init_test();
 void add_to_ir();
 void ir_reg_init(InstNode *instruction_node);
 void clean_reg();//完成后释放内存
+void printf_asm_test(char * filename_test);

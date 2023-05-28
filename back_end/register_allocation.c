@@ -2888,6 +2888,14 @@ void reg_control(struct _InstNode *instruction_node,InstNode *temp)
 }
 
 
+void printf_asm_test(char * filename_test)
+{
+    char new_ext[1000];
+    strcpy(new_ext,filename_test);
+    FILE *fp_test= fopen(new_ext,"w");
+    fprintf(fp_test,"ljw\n");
+    return ;
+}
 
 void reg_control_func(Function *currentFunction)
 {
