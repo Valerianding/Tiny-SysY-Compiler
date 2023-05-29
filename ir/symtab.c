@@ -69,6 +69,7 @@ void scope_start(Symtab *this)
 
     //新map m
     MapList *m=(MapList*) malloc(sizeof(MapList));
+    m->next=NULL;m->child=NULL;
     sc_map_init_sv(&m->map,0,0);
     m->scope_level=this->S.top;
 
