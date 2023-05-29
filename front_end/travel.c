@@ -3997,8 +3997,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                     for(BasicBlock *block = HashSetNext(parent->preBlocks); block != NULL; block = HashSetNext(parent->preBlocks)){
                         printf("%%%d ",block->id);
                     }
+                    printf("\n");
                 }
-                printf("\n");
                 break;
             case Add:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
