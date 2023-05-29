@@ -10,5 +10,6 @@
 #include "livenessanalysis.h"
 #include "Loop.h"
 #include "DVNT.h"
+#include "memlvn.h"
 void RunPasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

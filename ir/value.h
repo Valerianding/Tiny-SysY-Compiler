@@ -101,6 +101,6 @@ bool isGlobalVarFloat(Value *val); // 是否全局float变量
 bool isGlobalArray(Value *val); // 是否是全局数组
 bool isGlobalArrayInt(Value *val); // 是否全局int数组
 bool isGlobalArrayFloat(Value *val); // 是否全局float数组
-
+bool isAddress(Value *val);
 bool isArrayInitialize(Value *val); // 判断是否初始化了数组
 #endif

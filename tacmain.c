@@ -40,6 +40,7 @@ void yyerror(char *s)
 }
 
 int main(int argc, char* argv[]){
+    srand(time(NULL));
     //lsy
     if(argc < 2 ){
         printf("ERROR: input file name is needed. \n");
@@ -106,17 +107,22 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        loop(currentFunction);
-        printf("big loop size : %d", HashSetSize(currentFunction->loops));
+        commonSubexpressionElimination(currentFunction);
+        memlvn(currentFunction);
+        Mark(currentFunction);
+        Sweep(currentFunction);
         renameVariables(currentFunction);
     }
+
+
     printf_llvm_ir(instruction_list,argv[4],1);
 
+
     //基本块内inscomb ok，基本块间ing
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        instruction_combination(currentFunction);
-        renameVariabels(currentFunction);
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        instruction_combination(currentFunction);
+//        renameVariables(currentFunction);
+//    }
 
     //phi上的优化
     //printf_llvm_ir(instruction_list,argv[4],1);
@@ -172,5 +178,6 @@ int main(int argc, char* argv[]){
 //    arm_translate_ins(instruction_list,argv[3]);
 //    arm_close_file(argv[3]);
     //    ljf_end
+
     return 0;
 }

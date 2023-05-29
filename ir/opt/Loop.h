@@ -20,5 +20,6 @@ typedef struct Loop{
 // 每次需要对循环做优化的时候就再计算
 void loop(Function *currentFunction);
 Loop *constructLoop(BasicBlock *head,BasicBlock *tail);
+void findBody(Loop *loop);
 void loopVariant(HashSet *loop, BasicBlock *head);
 #endif //C22V1_LOOP_H

@@ -8,22 +8,15 @@
 struct _Function{
     BasicBlock *entry;
     BasicBlock *tail;
-
     HashSet *nonLocals;
     struct _DomNode *root;
-
     HashMap *loadSet;
     HashMap *storeSet;
-
     HashSet *loops; // 存储loop结构
     Function *Next;
 };
 
-void function_init(Function *this);
-
 Function *function_create();
-
-Function *get_next_func(Function *this);
 
 void func_set(Function *this,BasicBlock *head,BasicBlock *tail);
 

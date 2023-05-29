@@ -165,6 +165,13 @@ bool isGlobalArray(Value *val){
     return false;
 }
 
+bool isAddress(Value *val){
+    if(val->VTy->ID == AddressTyID){
+        return true;
+    }
+    return false;
+}
+
 bool isArrayInitialize(Value *val){
     if(val->pdata->symtab_array_pdata.is_init == (unsigned int)1){
         return true;

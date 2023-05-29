@@ -332,7 +332,6 @@ void calculateNonLocals(Function *currentFunction){
 
 void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction){
     value_replaceAll(oldValue,newValue);
-
     InstNode *currNode = currentFunction->entry->head_node;
     InstNode *tailNode = currentFunction->tail->tail_node;
     while(currNode != tailNode){
@@ -367,4 +366,41 @@ void HashSetCopy(HashSet *dest,HashSet *src){
             HashSetAdd(dest,key);
         }
     }
+}
+
+unsigned long int hash_values(Vector *valueVector) {
+    int count = VectorSize(valueVector);
+    unsigned int seed = 0x9747b28c;
+    unsigned int m = 0x5bd1e995;
+    unsigned int r = 24;
+    unsigned int h = seed ^ (count * 4);
+
+    Value *val = NULL;
+    for(int i = 0; i < count; i++) {
+        VectorGet(valueVector,i,(void *)&val);
+        assert(val != NULL);
+        unsigned int k;
+        //尝试在hash里面解决掉这个立即数的问题
+        if(isImm(val)){
+            if(isImmInt(val)){
+                k = val->pdata->var_pdata.iVal;
+            }else{
+                k = val->pdata->var_pdata.fVal;
+            }
+        }else{
+            k = *((unsigned int *)val);
+        }
+
+        k *= m;
+        k ^= k >> r;
+        k *= m;
+        h *= m;
+        h ^= k;
+    }
+
+    h ^= h >> 13;
+    h *= m;
+    h ^= h >> 15;
+
+    return (unsigned long int)h;
 }
