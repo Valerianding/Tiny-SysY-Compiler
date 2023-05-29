@@ -82,7 +82,7 @@ past newUnaryNode(char* nodeType, int op, past right)
     return root;
 }*/
 
-//还处在这一大步，没有往下一大步走，适合于递归
+//还处在这一大步，没有往下一大步 走，适合于递归
 past newFollowNode(char* nodeType, past thisNode, past follow)
 {
     past root = NULL;
@@ -158,7 +158,7 @@ int get_array_total_occupy(Value* a,int begin)
 //将var插入符号表
 void insert_var_into_symtab(past type,past p)
 {
-    //int a;
+    //int a
     if(strcmp(bstr2cstr(p->nodeType,'\0'),"ID")==0)
     {
         Value *v=(Value*) malloc(sizeof (Value));

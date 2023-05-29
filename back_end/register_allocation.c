@@ -1273,39 +1273,70 @@ void travel_ir(InstNode *instruction_node)
     int temp_cnt=0;
     tac_cnt=0;
     InstNode * temp_instruction_node= get_next_inst(instruction_node);
-    while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=ALLBEGIN && temp_instruction_node->inst->Opcode!=br
-    && temp_instruction_node->inst->Opcode!=br_i1
-     && temp_instruction_node->inst->Opcode!=br_i1_false && temp_instruction_node->inst->Opcode!=br_i1_true
-    && temp_instruction_node->inst->Opcode!=FunEnd && temp_instruction_node->inst->Opcode!=Return)
-    {
-        Instruction *instruction=temp_instruction_node->inst;
-        temp_cnt++;
-        temp_instruction_node= get_next_inst(temp_instruction_node);
-    }
-    echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
-    instruction_node= get_next_inst(instruction_node);
-    Value *v_cur_array=NULL;
-    for(int i=0;i<temp_cnt+30;i++)
-    {
-        echo_tac[i].dest_name=NULL;
-        echo_tac[i].left_name=NULL;
-        echo_tac[i].right_name=NULL;
-        echo_tac[i].dest_use=-1;
-        echo_tac[i].left_use=-1;
-        echo_tac[i].right_use=-1;
-        echo_tac[i].irnode=NULL;
-    }
-    int p=0;
-    int if_br_ir=0;
-    InstNode* params[100];
-    InstNode * one_param[100];
-    int give_count=0;
-    for(int i=0;i<100;i++)
-        params[i]=NULL;
+    #if  reg_alloc_test
+        while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=FunEnd)
+        {
+            Instruction *instruction=temp_instruction_node->inst;
+            temp_cnt++;
+            temp_instruction_node= get_next_inst(temp_instruction_node);
+        }
+        echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
+        instruction_node= get_next_inst(instruction_node);
+        Value *v_cur_array=NULL;
+        for(int i=0;i<temp_cnt+30;i++)
+        {
+            echo_tac[i].dest_name=NULL;
+            echo_tac[i].left_name=NULL;
+            echo_tac[i].right_name=NULL;
+            echo_tac[i].dest_use=-1;
+            echo_tac[i].left_use=-1;
+            echo_tac[i].right_use=-1;
+            echo_tac[i].irnode=NULL;
+        }
+        int p=0;
+        int if_br_ir=0;
+        InstNode* params[100];
+        InstNode * one_param[100];
+        int give_count=0;
+        for(int i=0;i<100;i++)
+            params[i]=NULL;
 
-    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br
-     && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
-    && instruction_node->inst->Opcode!=FunEnd)
+        while (instruction_node!=NULL && instruction_node->inst->Opcode!=FunEnd)
+    #else
+        while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=ALLBEGIN && temp_instruction_node->inst->Opcode!=br
+        && temp_instruction_node->inst->Opcode!=br_i1
+        && temp_instruction_node->inst->Opcode!=br_i1_false && temp_instruction_node->inst->Opcode!=br_i1_true
+        && temp_instruction_node->inst->Opcode!=FunEnd && temp_instruction_node->inst->Opcode!=Return)
+        {
+            Instruction *instruction=temp_instruction_node->inst;
+            temp_cnt++;
+            temp_instruction_node= get_next_inst(temp_instruction_node);
+        }
+        echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
+        instruction_node= get_next_inst(instruction_node);
+        Value *v_cur_array=NULL;
+        for(int i=0;i<temp_cnt+30;i++)
+        {
+            echo_tac[i].dest_name=NULL;
+            echo_tac[i].left_name=NULL;
+            echo_tac[i].right_name=NULL;
+            echo_tac[i].dest_use=-1;
+            echo_tac[i].left_use=-1;
+            echo_tac[i].right_use=-1;
+            echo_tac[i].irnode=NULL;
+        }
+        int p=0;
+        int if_br_ir=0;
+        InstNode* params[100];
+        InstNode * one_param[100];
+        int give_count=0;
+        for(int i=0;i<100;i++)
+            params[i]=NULL;
+
+        while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br
+        && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
+        && instruction_node->inst->Opcode!=FunEnd)
+    #endif
     {
         // printf("opcode:%d\t%d\t%d\n", instruction_node->inst->Opcode,__LINE__,instruction_node->inst->i); 
         Instruction *instruction=instruction_node->inst;
@@ -1313,6 +1344,7 @@ void travel_ir(InstNode *instruction_node)
         echo_tac[tac_cnt].irnode=instruction;
         switch (instruction_node->inst->Opcode)
         {
+            printf("cnt:%d\n",tac_cnt);
             case Alloca:
                 if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
                 {
@@ -1382,7 +1414,11 @@ void travel_ir(InstNode *instruction_node)
                 {
                     echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
                     echo_tac[tac_cnt].dest_use=1;
-                    if_br_ir = 1;
+                    #if reg_alloc_test
+                    
+                    #else
+                        if_br_ir = 1;
+                    #endif
                     break;
                 }
             case br_i1_false:
@@ -1721,7 +1757,12 @@ void travel_ir(InstNode *instruction_node)
                 {
                     echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                     echo_tac[tac_cnt].left_use=1;
-                    if_br_ir=1;
+                    #if reg_alloc_test
+                    
+                    #else
+                        if_br_ir = 1;
+                    #endif
+                    break;
                     // printf(" ret i32 %s\n",instruction->user.use_list->Val->name);
                     //fpintf(fptr," ret i32 %s\n",instruction->user.use_list->Val->name);
                 }
@@ -2796,6 +2837,39 @@ void bian_init(BasicBlock * this_block)
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
 }
 
+void bian_init_test()
+{
+    var_num=0;
+    edge_num=0;
+    for(int i=0;i<tac_cnt;i++)
+    {
+        if(echo_tac[i].dest_use>=0)
+        {
+            addtolive(echo_tac[i].dest_name,i,echo_tac[i].dest_use);
+        }
+        if(echo_tac[i].left_use>=0)
+        {
+            addtolive(echo_tac[i].left_name,i,echo_tac[i].left_use);
+        }
+        if(echo_tac[i].right_use>=0)
+        {
+            addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use);
+        }
+    }
+    // printf("tacid:%d\n",this_block->id);
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((var_num)*(var_num)/2));
+    for(int i=0;i<var_num;i++)
+    {
+        for(int j=i+1;j<var_num;j++)
+        {
+            if(!(live[i].last<live[j].first||live[i].first>live[j].last))
+                create_bian(i,j);
+        }
+    }
+    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
+}
 
 void reg_control(struct _InstNode *instruction_node,InstNode *temp)
 {
@@ -2814,34 +2888,76 @@ void reg_control(struct _InstNode *instruction_node,InstNode *temp)
 }
 
 
+void printf_asm_test(char * filename_test)
+{
+    char new_ext[1000];
+    strcpy(new_ext,filename_test);
+    FILE *fp_test= fopen(new_ext,"w");
+    fprintf(fp_test,"ljw\n");
+    return ;
+}
 
 void reg_control_func(Function *currentFunction)
 {
-    BasicBlock *entry = currentFunction->entry;
-    BasicBlock *end = currentFunction->tail;
+    #if reg_alloc_test
+        BasicBlock *entry = currentFunction->entry;
+        BasicBlock *end = currentFunction->tail;
 
-    clear_visited_flag(entry);
-    block_num=0;
-    InstNode *currNode = entry->head_node;
-    BasicBlock *currNodeParent = currNode->inst->Parent;
-    block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*10000);
-    block_list[block_num++].reg_block=currNode->inst->Parent;
-    block_list[0].reg_block->visited=1;
-    while(currNode != get_next_inst(end->tail_node)){
-        currNodeParent = currNode->inst->Parent;
-        if(currNodeParent->visited == false){
-            currNodeParent->visited = true;
-            block_list[block_num++].reg_block=currNode->inst->Parent;
+        clear_visited_flag(entry);
+        block_num=0;
+        InstNode *currNode = entry->head_node;
+        BasicBlock *currNodeParent = currNode->inst->Parent;
+        travel_ir(currNodeParent->head_node);
+        live_init_block();
+        bian_init_test();
+        init_RIG();
+        create_RIG();
+        check_edge();
+        // print_info();
+        minimize_RIG();
+        init_non_available_colors();
+
+        while(first_fit_coloring())
+        {
+            reset_colors();
+            reset_queue();
+            spill_variable();
         }
-        currNode = get_next_inst(currNode);
-    }
-    // printf("func block_num:%d\n\n",block_num);
-    // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
-    clear_visited_flag(entry);
-    for(int i=0;i<block_num;i++)
-        reg_control_block(block_list[i].reg_block);
-    free(block_list);
-    block_list=NULL;
+        // test_ans();
+        // print_colors();
+        color_removed(); 
+        add_to_ir();
+        clean_reg();
+    #else
+        BasicBlock *entry = currentFunction->entry;
+        BasicBlock *end = currentFunction->tail;
+
+        clear_visited_flag(entry);
+        block_num=0;
+        InstNode *currNode = entry->head_node;
+        BasicBlock *currNodeParent = currNode->inst->Parent;
+        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*10000);
+        block_list[block_num++].reg_block=currNode->inst->Parent;
+        block_list[0].reg_block->visited=1;
+        while(currNode != get_next_inst(end->tail_node)){
+            currNodeParent = currNode->inst->Parent;
+            if(currNodeParent->visited == false){
+                currNodeParent->visited = true;
+                block_list[block_num++].reg_block=currNode->inst->Parent;
+            }
+            currNode = get_next_inst(currNode);
+        }
+        // printf("func block_num:%d\n\n",block_num);
+        // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
+        clear_visited_flag(entry);
+        for(int i=0;i<block_num;i++)
+        {
+            printf("block:%d\n",i);
+            reg_control_block(block_list[i].reg_block);
+        }
+        free(block_list);
+        block_list=NULL;
+    #endif
     return ;
 }
 
@@ -2849,35 +2965,36 @@ void reg_control_block(BasicBlock *cur)
 {
     #if all_in_memory
 
-    travel_ir(cur->head_node);
-    for(int j=0;j<tac_cnt;j++)
-        reg_inmem_one_ins(j);
-    return ;
+        travel_ir(cur->head_node);
+        for(int j=0;j<tac_cnt;j++)
+            reg_inmem_one_ins(j);
+        return ;
 
     #else
-    // printf("this blcok start at %d\n",cur->head_node->inst->i);
-    travel_ir(cur->head_node);
-    live_init_block();
-    bian_init(cur);
-    init_RIG();
-    create_RIG();
-    check_edge();
-    //print_info();
-    minimize_RIG();
-    init_non_available_colors();
+        // printf("this blcok start at %d\n",cur->head_node->inst->i);
+        travel_ir(cur->head_node);
+        live_init_block();
+        bian_init(cur);
+        init_RIG();
+        create_RIG();
+        check_edge();
+        //print_info();
+        minimize_RIG();
+        init_non_available_colors();
 
-    while(first_fit_coloring())
-    {
-        reset_colors();
-        reset_queue();
-        spill_variable();
-    }
-    // test_ans();
-    // print_colors();
-    color_removed(); 
-    add_to_ir();
-    clean_reg();
-    return ;
+        while(first_fit_coloring())
+        {
+            reset_colors();
+            reset_queue();
+            spill_variable();
+        }
+        // test_ans();
+        // print_colors();
+        color_removed(); 
+        add_to_ir();
+        clean_reg();
+        return ;
+
     #endif
 }
 

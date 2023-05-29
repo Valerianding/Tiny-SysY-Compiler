@@ -428,6 +428,8 @@ past array_all_zeros(past init_val_list)
 ///不允许暂时错误，必须精准，[5][2][2][2],在tmp_carry为[0][1][0][0]时，不能暂时[0][2][0][0],必须是[1][0][0][0]
 int carry_last_i_save(Value* v_array,int carry[],int i)
 {
+    int carry_time=0;
+
     //将后面的清0
     for(int j=v_array->pdata->symtab_array_pdata.dimention_figure-i+1;j<v_array->pdata->symtab_array_pdata.dimention_figure;j++)
         carry[j]=0;
@@ -438,10 +440,11 @@ int carry_last_i_save(Value* v_array,int carry[],int i)
         //要进位
     else
     {
-        while(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1)
+        while((carry_time==0 && carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1) || (carry_time>0 && carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]))
         {
             carry[v_array->pdata->symtab_array_pdata.dimention_figure-i]=0;
             carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]++;
+            carry_time++;
             i++;
         }
     }
@@ -615,7 +618,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
     bool have_num_before=false;                //记录该层是否遇见过num_int过，没有false,有true
     int carry_point;                     //记录前面有num_int时，下一次InitValList从数组的第几位开始get地址
 
-    int tmp_carry[v_array->pdata->symtab_array_pdata.dimention_figure-1];         //有时会拷贝carry数组到tmp_carry作为进入handle递归前起点处的暂存，用于判断有前面有num_int时，InitValList结束后的下一个起始位置
+    int tmp_carry[v_array->pdata->symtab_array_pdata.dimention_figure];         //有时会拷贝carry数组到tmp_carry作为进入handle递归前起点处的暂存，用于判断有前面有num_int时，InitValList结束后的下一个起始位置
 
     //record数组记录着0，1，2位的左值
     //比如三维数组，从第一维开始初始化(下标0)，使用begin_value；从第二维开始初始化(下标1)，则使用record[0]，只用走第三维，则使用record[1];record[2]闲置
@@ -1291,6 +1294,25 @@ int handle_and_or(past root,bool flag,bool last_or)
             InstNode *node = new_inst_node(ins_icmp);
             ins_node_add(instruction_list,node);
         }
+        else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "LValArray") == 0)
+        {
+            Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->left->left->sVal, '\0'));
+            Value *v_get= NULL;
+            if(v_array->VTy->ID==AddressTyID)
+                v_get=handle_assign_array(root->left->right->left,v_array->alias,1,-1,0);
+            else
+                v_get=handle_assign_array(root->left->right->left,v_array,1,-1,0);
+            //生成一条icmp ne
+            //包装0
+            Value *v_zero=(Value*) malloc(sizeof (Value));
+            value_init_int(v_zero,0);
+            Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_get,v_zero);
+            //v_real
+            v1= ins_get_value_with_name(ins_icmp);
+            //将这个instruction加入总list
+            InstNode *node = new_inst_node(ins_icmp);
+            ins_node_add(instruction_list,node);
+        }
             //num_int
         else
         {
@@ -1355,7 +1377,11 @@ int handle_and_or(past root,bool flag,bool last_or)
         else if(strcmp(bstr2cstr(root->left->right->nodeType, '\0'), "LValArray") == 0)
         {
             Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->left->right->left->sVal, '\0'));
-            Value *v_get= handle_assign_array(root->left->right->right->left,v_array,1,-1,0);
+            Value *v_get= NULL;
+            if(v_array->VTy->ID==AddressTyID)
+                v_get=handle_assign_array(root->left->right->left,v_array->alias,1,-1,0);
+            else
+                v_get=handle_assign_array(root->left->right->left,v_array,1,-1,0);
             //生成一条icmp ne
             //包装0
             Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -3152,7 +3178,8 @@ void create_params_stmt(past func_params,Value * v_func)
                 v=(Value*) malloc(sizeof (Value));
                 value_init_float(v, v_test->pdata->var_pdata.fVal);
             }
-            else if(v_test->VTy->ID==ArrayTy_INT || v_test->VTy->ID==ArrayTy_FLOAT || v_test->VTy->ID==ArrayTyID_ConstINT || v_test->VTy->ID==ArrayTyID_ConstFLOAT || v_test->VTy->ID==GlobalArrayConstFLOAT || v_test->VTy->ID==GlobalArrayConstINT || v_test->VTy->ID==GlobalArrayFloat || v_test->VTy->ID==GlobalArrayInt)
+            //TODO 加了address，有二维传二维的情况
+            else if(v_test->VTy->ID==ArrayTy_INT || v_test->VTy->ID==ArrayTy_FLOAT || v_test->VTy->ID==ArrayTyID_ConstINT || v_test->VTy->ID==ArrayTyID_ConstFLOAT || v_test->VTy->ID==GlobalArrayConstFLOAT || v_test->VTy->ID==GlobalArrayConstINT || v_test->VTy->ID==GlobalArrayFloat || v_test->VTy->ID==GlobalArrayInt )
             {
                 //只走一维，补0
                 //取得首地址，gmp一下
@@ -3166,6 +3193,16 @@ void create_params_stmt(past func_params,Value * v_func)
                 v->pdata->var_pdata.iVal=1;
                 InstNode *node = new_inst_node(instruction1);
                 ins_node_add(instruction_list,node);
+            }
+            else if(v_test->VTy->ID==AddressTyID)
+            {
+                //只走一维，补0
+                //取得首地址，gmp一下
+                v= create_load_stmt(bstr2cstr(paramss->sVal, '\0'));
+                v->VTy->ID=AddressTyID;
+                v->alias=v_test;
+                v->pdata->var_pdata.is_offset=1;
+                v->pdata->var_pdata.iVal=1;
             }
             else
                 v= create_load_stmt(bstr2cstr(paramss->sVal, '\0'));
@@ -3375,8 +3412,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4482,9 +4519,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             printf("value2:%s,\t",type_str[vr->VTy->ID]);
         printf("\n\n");
 
-//        if(instruction->isCritical){
-//            printf("isCritical\n\n");
-//        }
+        if(instruction->isCritical){
+            printf("isCritical\n\n");
+        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
