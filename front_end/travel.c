@@ -428,6 +428,8 @@ past array_all_zeros(past init_val_list)
 ///不允许暂时错误，必须精准，[5][2][2][2],在tmp_carry为[0][1][0][0]时，不能暂时[0][2][0][0],必须是[1][0][0][0]
 int carry_last_i_save(Value* v_array,int carry[],int i)
 {
+    int carry_time=0;
+
     //将后面的清0
     for(int j=v_array->pdata->symtab_array_pdata.dimention_figure-i+1;j<v_array->pdata->symtab_array_pdata.dimention_figure;j++)
         carry[j]=0;
@@ -438,10 +440,11 @@ int carry_last_i_save(Value* v_array,int carry[],int i)
         //要进位
     else
     {
-        while(carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1)
+        while((carry_time==0 && carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]-1) || (carry_time>0 && carry[v_array->pdata->symtab_array_pdata.dimention_figure-i] >= v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-i]))
         {
             carry[v_array->pdata->symtab_array_pdata.dimention_figure-i]=0;
             carry[v_array->pdata->symtab_array_pdata.dimention_figure-i-1]++;
+            carry_time++;
             i++;
         }
     }
@@ -615,7 +618,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
     bool have_num_before=false;                //记录该层是否遇见过num_int过，没有false,有true
     int carry_point;                     //记录前面有num_int时，下一次InitValList从数组的第几位开始get地址
 
-    int tmp_carry[v_array->pdata->symtab_array_pdata.dimention_figure-1];         //有时会拷贝carry数组到tmp_carry作为进入handle递归前起点处的暂存，用于判断有前面有num_int时，InitValList结束后的下一个起始位置
+    int tmp_carry[v_array->pdata->symtab_array_pdata.dimention_figure];         //有时会拷贝carry数组到tmp_carry作为进入handle递归前起点处的暂存，用于判断有前面有num_int时，InitValList结束后的下一个起始位置
 
     //record数组记录着0，1，2位的左值
     //比如三维数组，从第一维开始初始化(下标0)，使用begin_value；从第二维开始初始化(下标1)，则使用record[0]，只用走第三维，则使用record[1];record[2]闲置
