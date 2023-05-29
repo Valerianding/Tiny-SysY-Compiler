@@ -501,7 +501,7 @@ void borrow_save(Value* v_array,int carry[])
 //给全局数组初值赋值
 void assign_global_array(past p,Value* v_array,int i,int level)
 {
-    int move=v_array->pdata->symtab_array_pdata.dimentions[level];
+    int move=v_array->pdata->symtab_array_pdata.dimentions[v_array->pdata->symtab_array_pdata.dimention_figure-1-level];
     while(p!=NULL)
     {
         if(strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0)
@@ -3293,14 +3293,15 @@ void printf_global_array(Value* v_array,FILE* fptr)
         int ele_num= get_array_total_occupy(v_array,0);
         ele_num/=4;
         int i=0;
-        int move=v_array->pdata->symtab_array_pdata.dimentions[0];
+        int move=v_array->pdata->symtab_array_pdata.dimentions[1];
         while(i<ele_num)
         {
-            printf("[%d x i32]",v_array->pdata->symtab_array_pdata.dimentions[0]);
-            fprintf(fptr,"[%d x i32]",v_array->pdata->symtab_array_pdata.dimentions[0]);
+            printf("[%d x i32]",v_array->pdata->symtab_array_pdata.dimentions[1]);
+            fprintf(fptr,"[%d x i32]",v_array->pdata->symtab_array_pdata.dimentions[1]);
             if(!all_zeros(v_array,i,move))
             {
                 printf("[");
+                fprintf(fptr,"[");
                 for(int j=i;j<i+move;j++)
                 {
                     if(j==i)
@@ -3996,8 +3997,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                     for(BasicBlock *block = HashSetNext(parent->preBlocks); block != NULL; block = HashSetNext(parent->preBlocks)){
                         printf("%%%d ",block->id);
                     }
-                    printf("\n");
                 }
+                printf("\n");
                 break;
             case Add:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
@@ -4507,17 +4508,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 break;
         }
 
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
         if(instruction->isCritical){
             printf("isCritical\n\n");
