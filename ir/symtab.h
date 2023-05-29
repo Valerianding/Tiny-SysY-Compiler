@@ -18,7 +18,7 @@ typedef struct _mapList MapList;
 //stack里的内容是指向map的指针
 struct _Stack{
     int top;
-    MapList* value_map[128];
+    MapList* value_map[300];
 };
 typedef struct _Stack Stack;
 
