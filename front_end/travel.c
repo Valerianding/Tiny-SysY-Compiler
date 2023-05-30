@@ -763,6 +763,14 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                 num=(Value*) malloc(sizeof (Value));
                 value_init_float(num,p->fVal);
             }
+            else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
+            {
+                num= cal_expr(p,Unknown,0);
+                if(num->VTy->ID==Int)
+                    value_init_int(num,num->pdata->var_pdata.iVal);
+                else
+                    value_init_float(num,num->pdata->var_pdata.fVal);
+            }
             //!如果是0就不处理
             //p->iVal是0,直接将位置+1
             if(num!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0 && num->pdata->var_pdata.iVal==0)
@@ -1536,24 +1544,32 @@ int handle_and_or(past root,bool flag,bool last_or)
 
 void reduce_and(int false_index)
 {
-    while (!insnode_is_empty(S_and))
+    //先弹出顶层的一条tmp
+    InstNode *node=NULL;
+    insnode_pop(&S_and,&node);
+    insnode_top(&S_and,&node);
+    while (!insnode_is_empty(S_and) && node->inst->Opcode!=tmp)
     {
-        InstNode *node=NULL;
         insnode_pop(&S_and,&node);
         node->inst->user.value.pdata->instruction_pdata.false_goto_location=false_index;
+        insnode_top(&S_and,&node);
     }
 }
 
 void reduce_or(int true_index,int false_index)
 {
-    while(!insnode_is_empty(S_or))
+    //先弹出顶层的一条tmp
+    InstNode *node=NULL;
+    insnode_pop(&S_or,&node);
+    insnode_top(&S_or,&node);
+    while(!insnode_is_empty(S_or) && node->inst->Opcode!=tmp)
     {
-        InstNode *node=NULL;
         insnode_pop(&S_or,&node);
         if(node->inst->user.value.pdata->instruction_pdata.true_goto_location==-2)
             node->inst->user.value.pdata->instruction_pdata.true_goto_location=true_index;
         else if(node->inst->user.value.pdata->instruction_pdata.false_goto_location==-2)
             node->inst->user.value.pdata->instruction_pdata.false_goto_location=false_index;
+        insnode_top(&S_or,&node);
     }
 }
 
@@ -1681,9 +1697,10 @@ void create_if_stmt(past root,Value* v_return) {
             }
             return;
         }
-//        if(result==1)
-//            //后面都不用t_index，让t_index回归正轨
-//            t_index--;
+        //生成一条tmp入栈
+        Instruction *ins_tmp= ins_new_zero_operator(tmp);
+        insnode_push(&S_or, new_inst_node(ins_tmp));
+        insnode_push(&S_and, new_inst_node(ins_tmp));
     }
 
 
@@ -1838,6 +1855,10 @@ void create_if_else_stmt(past root,Value* v_return) {
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
         result=handle_and_or(root->left,false,true);
+        //生成一条tmp入栈
+        Instruction *ins_tmp= ins_new_zero_operator(tmp);
+        insnode_push(&S_or, new_inst_node(ins_tmp));
+        insnode_push(&S_and, new_inst_node(ins_tmp));
     }
 
     InstNode *node1=NULL;
@@ -2054,6 +2075,10 @@ void create_while_stmt(past root,Value* v_return)
             //生成一条br_i1_false
             ins_false=true_location_handler(br_i1_false,NULL,t_index++);
         }
+        //生成一条tmp入栈
+        Instruction *tmp_= ins_new_zero_operator(tmp);
+        insnode_push(&S_or, new_inst_node(tmp_));
+        insnode_push(&S_and, new_inst_node(tmp_));
     }
 
     InstNode *node_first_bri1=NULL;
@@ -4508,17 +4533,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 break;
         }
 
-//        Value *v,*vl,*vr;
-//        v= ins_get_dest(instruction_node->inst);
-//        vl= ins_get_lhs(instruction_node->inst);
-//        vr= ins_get_rhs(instruction_node->inst);
-//        if(v!=NULL)
-//            printf("left:%s,\t",type_str[v->VTy->ID]);
-//        if(vl!=NULL)
-//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-//        if(vr!=NULL)
-//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n\n");
+        Value *v,*vl,*vr;
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+        printf("\n\n");
 
         if(instruction->isCritical){
             printf("isCritical\n\n");
