@@ -8109,10 +8109,16 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         strcat(globalvar_message,name);
         strcat(globalvar_message,"\n\t.long\t");
 
-        char value_int[12]="0x";
+//        char value_int[12]="0x";
+//        float x=value1->pdata->var_pdata.fVal;
+//        int xx=*(int*)&x;
+//        sprintf(value_int+2,"%0x",xx);
+//        这里直接使用IEEE754格式的值就可以，不需要使用16进制
+//        之前的使用16进制的逻辑是没有问题的，但是使用十六进制需要明确加上0x
+        char value_int[12];
         float x=value1->pdata->var_pdata.fVal;
         int xx=*(int*)&x;
-        sprintf(value_int,"%0x",xx);
+        sprintf(value_int,"%d",xx);
         strcat(globalvar_message,value_int);
         strcat(globalvar_message,"\n");
 
