@@ -65,12 +65,12 @@ int main(int argc, char* argv[]){
     stack_new(this);
     declare_global_alloca(this->value_maps->next);
     flag_blocklist=1;
-    create_instruction_list(TRoot,NULL);
+    create_instruction_list(TRoot,NULL,0);
     travel_finish_type(instruction_list);
     move_give_param(instruction_list);
     printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
-//  showAst(TRoot,0);
+ // showAst(TRoot,0);
 
     bblock_divide(instruction_list);
 
@@ -159,12 +159,12 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-//    fix_array(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[4],0);
+    fix_array(instruction_list);
+    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
-//   reg_control(instruction_list,temp);
+   reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
 
