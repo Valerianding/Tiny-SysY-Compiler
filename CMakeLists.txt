@@ -47,7 +47,7 @@ add_executable(compiler
         ${DIR_LIB}
         ${DIR_CONTAINER}
         ${DIR_BACK}
-        tacmain.c ir/opt/DVNT.c)
+        tacmain.c ir/opt/DVNT.c ir/opt/memlvn.c)
 
 set(CMAKE_BUILD_TYPE Debug)
 #aux_source_directory(. DIR_SRC)

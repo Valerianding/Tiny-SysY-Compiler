@@ -1,14 +1,5 @@
 #include "function.h"
 
-
-void Function_init(Function *this){
-    memset(this,0,sizeof(Function));
-}
-
-Function *get_next_func(Function *this){
-    return this->Next;
-}
-
 Function *function_create(){
     Function *this = (Function*)malloc(sizeof(Function));
     memset(this,0,sizeof(Function));

@@ -509,3 +509,40 @@ void loopVariant(HashSet *loop, BasicBlock *head){
     HashSetDeinit(loopInvariantVariable);
     HashSetDeinit(def);
 }
+
+
+void findBody(Loop *loop){
+    //reconstruct loop after optimize
+    printf("original size is %d\n", HashSetSize(loop->loopBody));
+    //clean current loop body
+    HashSetClean(loop->loopBody);
+
+    //
+    BasicBlock *tail = loop->tail;
+    BasicBlock *head = loop->head;
+
+    //
+    stack *stack = stackInit();
+    HashSetAdd(loop->loopBody,tail);
+    HashSetAdd(loop->loopBody,head);
+
+    stackPush(stack,tail);
+
+    BasicBlock *block = NULL;
+    while(stackSize(stack) != 0){
+        stackTop(stack,(void *)&block);
+        stackPop(stack);
+        assert(block != NULL);
+
+        //
+        HashSetFirst(block->preBlocks);
+        for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
+            if(!HashSetFind(loop->loopBody,preBlock)){
+                HashSetAdd(loop->loopBody,preBlock);
+                stackPush(stack,preBlock);
+            }
+        }
+    }
+
+    printf("new Size is %d\n", HashSetSize(loop->loopBody));
+}
