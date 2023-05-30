@@ -7966,7 +7966,129 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 //全局变量声明
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    Value *value2=NULL;
+    if(isGlobalArrayIntType(value1->VTy)|| isGlobalArrayFloatType(value1->VTy)){
+//        说明这个全局变量是全局变量数组类型
+//        它的初始化信息可以通过value1->pdata->symtab_array_pdata.is_init查看，如果为1表示已被初始化，0表示未被初始化
+//        value1->pdata->symtab_array_pdata.array可以知道它被初始化的值，为零表示未被初始化，不为零表示已经进行了初始化
+//        value1->pdata->symtab_array_pdata.f_array表示浮点型数组
+        if(isGlobalArrayIntType(value1->VTy)){
+            int arr_size= get_array_total_occupy(value1,0);
+            int arr_num=arr_size/4;//获取数组总的元素个数
+            if(value1->pdata->symtab_array_pdata.is_init==1){
+//                这里处理的是已经初始化了的全局数组
+                char name[270];
+                sprintf(name,"\t.data\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                int zero_count=0;
+                for(int i=0;i<arr_num;i++){
+                    if(value1->pdata->symtab_array_pdata.array[i]!=0){
+                        if(zero_count>0){
+                            strcat(globalvar_message,"\n\t.zero\t");
+                            char value_int[12];
+                            sprintf(value_int,"%d",zero_count*4);
+                            strcat(globalvar_message,value_int);
+//                            strcat(globalvar_message,"\n");
+//                            printf(".zero %d\n", zero_count * 4);
+                            zero_count = 0;
+                        }
+//                        printf(".long %d\n", value1->pdata->symtab_array_pdata.array[i]);
+                        strcat(globalvar_message,"\n\t.long\t");
+                        char value_int[12];
+                        sprintf(value_int,"%d",value1->pdata->symtab_array_pdata.array[i]);
+                        strcat(globalvar_message,value_int);
+//                        strcat(globalvar_message,"\n");
+                    }
+                    else
+                    {
+                        zero_count++;
+                    }
+                }
+                if (zero_count > 0)
+                {
+//                    printf(".zero %d\n", zero_count * 4);
+                    strcat(globalvar_message,"\n\t.zero\t");
+                    char value_int[12];
+                    sprintf(value_int,"%d",zero_count*4);
+                    strcat(globalvar_message,value_int);
+                    strcat(globalvar_message,"\n");
+                }else{
+                    strcat(globalvar_message,"\n");
+                }
+            }else{
+//                这里处理的是未初始化的全局数组
+                char name[270];
+                sprintf(name,"\t.bss\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                strcat(globalvar_message,"\n\t.zero\t");
+                char value_int[12];
+                sprintf(value_int,"%d",arr_size);
+                strcat(globalvar_message,value_int);
+                strcat(globalvar_message,"\n");
+            }
+        }
+        else if(isGlobalArrayFloatType(value1->VTy)){
+            int arr_size= get_array_total_occupy(value1,0);
+            int arr_num=arr_size/4;//获取数组总的元素个数
+            if(value1->pdata->symtab_array_pdata.is_init==1){
+//                这里处理的是已经初始化了的全局数组
+                char name[270];
+                sprintf(name,"\t.data\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                int zero_count=0;
+                for(int i=0;i<arr_num;i++){
+                    if(value1->pdata->symtab_array_pdata.f_array[i]!=0){
+                        if(zero_count>0){
+                            strcat(globalvar_message,"\n\t.zero\t");
+                            char value_int[12];
+                            sprintf(value_int,"%d",zero_count*4);
+                            strcat(globalvar_message,value_int);
+//                            strcat(globalvar_message,"\n");
+//                            printf(".zero %d\n", zero_count * 4);
+                            zero_count = 0;
+                        }
+//                        printf(".long %d\n", value1->pdata->symtab_array_pdata.array[i]);
+                        strcat(globalvar_message,"\n\t.long\t");
+//                        对于float需要使用IEEE754格式
+                        float x=value1->pdata->symtab_array_pdata.f_array[i];
+                        int xx=*(int *)(&x);
+                        char value_int[12];
+                        sprintf(value_int,"%d",xx);
+                        strcat(globalvar_message,value_int);
+//                        strcat(globalvar_message,"\n");
+                    }
+                    else
+                    {
+                        zero_count++;
+                    }
+                }
+                if (zero_count > 0)
+                {
+//                    printf(".zero %d\n", zero_count * 4);
+                    strcat(globalvar_message,"\n\t.zero\t");
+                    char value_int[12];
+                    sprintf(value_int,"%d",zero_count*4);
+                    strcat(globalvar_message,value_int);
+                    strcat(globalvar_message,"\n");
+                }else{
+                    strcat(globalvar_message,"\n");
+                }
+            }else{
+//                这里处理的是未初始化的全局数组
+                char name[270];
+                sprintf(name,"\t.bss\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                strcat(globalvar_message,"\n\t.zero\t");
+                char value_int[12];
+                sprintf(value_int,"%d",arr_size);
+                strcat(globalvar_message,value_int);
+                strcat(globalvar_message,"\n");
+            }
+        }
+    }else{
+        value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    }
+
 //    if(global_flag==0){
 //        printf("\t.bss\n");
 //        fprintf(fp,"\t.bss\n");
@@ -7993,10 +8115,6 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         sprintf(value_int,"%0x",xx);
         strcat(globalvar_message,value_int);
         strcat(globalvar_message,"\n");
-
-    } else if(isGlobalArrayIntType(value1->VTy)){
-
-    } else if(isGlobalArrayFloatType(value1->VTy)){
 
     }
 
