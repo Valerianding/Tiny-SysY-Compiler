@@ -1,7 +1,7 @@
 //
 // Created by ljf on 23-2-25.
 //
-#include <unistd.h>
+
 #include "arm.h"
 
 //ri
@@ -14,7 +14,7 @@ extern InstNode *params[];
 extern HashMap *global_hashmap;
 int give_count=0;
 int globalvar_num;
-char globalvar_message[10000];
+char globalvar_message[100000];
 
 //存放打开文件的FILE指针
 FILE *fp;
@@ -7511,8 +7511,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 // 然后需要乘的数值在value2的ival里面，将其与后面维数的大小相乘(使用的是reg[2])
 // 如果是常数的话，左值的ival放-1或者是-2，然后value2里面的ival存放的就是fixarray的最终结果
 // 也就是直接给的相对于数组首地址的偏移量，不需要再进行相关的计算。
-
 // 这个GEP指令的翻译逻辑应该是得修改一下
+
+//现在是需要处理全局变量了，是不是全局变量是通过value1的类型来判断的
+//全局变量数组的处理和普通数组的处理好像是差别不大的，就是第一条GEP的时候，value1对应为全局变量数组，
+//也就是说其数组首地址的偏移量是不用从栈的hashmap中取出偏移量，从栈hashmap中取出数组首地址的偏移量直接就是int类型的数，可以直接用于计算
+//但是对于全局数组来说，数组首地址对应的翻译为ldr rd,.LCPI_1_0这些，所以说第一个数组首地址并不能像局部数组首地址那样直接用于计算
+
     Value *value0,*value1,*value2;
     int dest_reg,dest_reg_abs,left_reg,right_reg;
     value0=&ins->inst->user.value;
@@ -7522,70 +7527,142 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     dest_reg_abs=abs(dest_reg);
     left_reg=ins->inst->_reg_[1];
     right_reg=ins->inst->_reg_[2];
-    int flag=value0->pdata->var_pdata.iVal;
-    int off= get_value_offset_sp(hashMap,value1);
-    if(flag<0){
-        int x=value2->pdata->var_pdata.iVal*4;
-        x+=off;
-        if(imm_is_valid(x)){
-            printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
-            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
-        }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x);
-            printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-            fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-        }
-        if(dest_reg<0){
-            x= get_value_offset_sp(hashMap,value0);
+    if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+        int flag=value0->pdata->var_pdata.iVal;
+        int off= get_value_offset_sp(hashMap,value1);
+        if(flag<0){
+            int x=value2->pdata->var_pdata.iVal*4;
+            x+=off;
+            if(imm_is_valid(x)){
+                printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
+                fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x);
+                printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+                fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+            }
+            if(dest_reg<0){
+                x= get_value_offset_sp(hashMap,value0);
 //            如果开的栈比较大，x也是非法立即数怎么办呢，这个也是需要处理的呀
-            printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-            fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-        }
-    }else{
-//        flag大于零，需要使用乘加指令
-        int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
-        int result= array_suffix(value1->alias,which_dimension);
-        if(imm_is_valid(result)){
-            printf("\tmov\tr2,#%d\n",result);
-            fprintf(fp,"\tmov\tr2,#%d\n",result);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",result);
-            printf("\tldr\tr2,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr1);
-        }
-        if(left_reg>100&&right_reg>100){
-            int x1= get_value_offset_sp(hashMap,value1);
-            int x2= get_value_offset_sp(hashMap,value2);
-            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-        }else if(left_reg>100){
-            int x1= get_value_offset_sp(hashMap,value1);
-            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-        }else if(right_reg>100){
-            int x2= get_value_offset_sp(hashMap,value2);
-            printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-        }else{
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-        }
-        if(dest_reg<0){
-            int x= get_value_offset_sp(hashMap,value0);
-            printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-            fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+//        flag大于零，需要使用乘加指令,
+//        但是这里好像没有处理%1偏移一个a的情况,这个目前有效的处理方法是判断value1是否为address就可以了
+//        如果是address，说明这不是基于数组首地址的，不然就说明这是基于数组首地址的
+//        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
+            int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+            int result= array_suffix(value1->alias,which_dimension);
+            if(imm_is_valid(result)){
+                printf("\tmov\tr2,#%d\n",result);
+                fprintf(fp,"\tmov\tr2,#%d\n",result);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",result);
+                printf("\tldr\tr2,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            }
+            if(left_reg>100&&right_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+            }else if(left_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+            }else if(right_reg>100){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+            }else{
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+            }
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
         }
     }
+    else if(isGlobalArrayIntType(value1->VTy)|| isGlobalArrayFloatType(value1->VTy)){
+        int flag=value0->pdata->var_pdata.iVal;
+        if(flag<0){
+//            常数的计算
+            int x=value2->pdata->var_pdata.iVal*4;
+            LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
+            if(lcptLabel==NULL){
+                printf("GEP Global error\n");
+            }
+            printf("\tldr\tr0,%s\n",lcptLabel->LCPI);
+            fprintf(fp,"\tldr\tr0,%s\n",lcptLabel->LCPI);
+            printf("\tadd\tr%d,r0,#%d\n",dest_reg_abs,x);
+            fprintf(fp,"\tadd\tr%d,r0,#%d\n",dest_reg_abs,x);
+            if(dest_reg<0){
+                x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
+        } else{
+//        flag大于零，需要使用乘加指令,
+//        但是这里好像没有处理%1偏移一个a的情况,这个目前有效的处理方法是判断value1是否为address就可以了
+//        如果是address，说明这不是基于数组首地址的，不然就说明这是基于数组首地址的
+//        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
+            int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+            int result= array_suffix(value1->alias,which_dimension);
+            if(imm_is_valid(result)){
+                printf("\tmov\tr2,#%d\n",result);
+                fprintf(fp,"\tmov\tr2,#%d\n",result);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",result);
+                printf("\tldr\tr2,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            }
+            if(left_reg>100&&right_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+            }else if(left_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+            }else if(right_reg>100){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+            }else{
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+            }
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
+        }
+    }
+
 
 
 //    printf("off %d\n",off);

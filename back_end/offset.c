@@ -50,10 +50,30 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
             HashMapPut(global_hashmap,key,lcptLabel);
         }
 
-    }else if(isGlobalArrayIntType(key->VTy)){
-        ;
-    } else if(isGlobalArrayIntType(key->VTy)){
-        ;
+    }
+//    现在需要将全局变量的数组的处理也要加上,全局变量数组的使用和普通全局变量的使用差不多
+//    也是.LCPI_0_0:
+//	            .long	brr
+//	  这样的形式来进行处理的
+//    加进去之后，具体的处理方式就是放在数组的处理里里面了，需要处理全局int型，全局float型，GMP和load和store里面去进行处理了
+    else if(isGlobalArrayIntType(key->VTy)){
+
+        if(!HashMapContain(global_hashmap,key)){
+            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            lcptLabel->INTTRUE__FLOATFALSE=true;
+            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+            HashMapPut(global_hashmap,key,lcptLabel);
+        }
+
+    } else if(isGlobalArrayFloatType(key->VTy)){
+
+        if(!HashMapContain(global_hashmap,key)){
+            LCPTLabel *lcptLabel=(LCPTLabel*) malloc(sizeof(LCPTLabel));
+            lcptLabel->INTTRUE__FLOATFALSE=false;
+            sprintf(lcptLabel->LCPI,".LCPI%d_%d",func_num,in_func_num++);
+            HashMapPut(global_hashmap,key,lcptLabel);
+        }
+
     }
 
 //    局部变量就是直接放在hashmap里面

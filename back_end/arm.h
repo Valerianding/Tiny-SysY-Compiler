@@ -11,7 +11,7 @@
 #include "function.h"
 #include "offset.h"
 #include "travel.h"
-
+#include <unistd.h>
 
 /**
  * 判断立即数int是否有效
