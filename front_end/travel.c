@@ -87,6 +87,13 @@ void create_continue_stmt(past root,Value* v_return,int block)
     insnode_top(&S_continue,&ins_location);
     node_continue->inst->user.value.pdata->instruction_pdata.true_goto_location=ins_location->inst->user.value.pdata->instruction_pdata.true_goto_location;
 
+    //block不正常，补编号
+    if(block==1)
+    {
+        true_location_handler(Label,NULL,t_index);
+        t_index++;
+    }
+
     if (root->next != NULL)
         create_instruction_list(root->next,v_return,block);
 }
@@ -99,6 +106,13 @@ void create_break_stmt(past root,Value* v_return,int block)
     node_break->inst->user.value.pdata->instruction_pdata.false_goto_location=-while_scope;
     //是0就代表是break
     insnode_push(&S_break,node_break);
+
+    //block不正常，补编号
+    if(block==1)
+    {
+        true_location_handler(Label,NULL,t_index);
+        t_index++;
+    }
 
     if (root->next != NULL)
         create_instruction_list(root->next,v_return,block);
@@ -1429,6 +1443,9 @@ int handle_and_or(past root,bool flag,bool last_or)
         InstNode *ins1= false_location_handler(br_i1, v1, t_index++);
         insnode_push(&S_or,ins1);
 
+        //加一条tmp
+        Instruction *ins_tmp= ins_new_zero_operator(tmp);
+        insnode_push(&S_and, new_inst_node(ins_tmp));
         //消调&&栈
         reduce_and(t_index-1);
     }
@@ -1603,7 +1620,7 @@ void create_if_stmt(past root,Value* v_return,int block) {
             if(root->next!=NULL) {
 //                if(strcmp(bstr2cstr(root->next->nodeType, '\0'), "BlockItemList") == 0)
 //                    flag_blocklist=0;
-                create_instruction_list(root->next,v_return,block);
+                create_instruction_list(root->next,v_return,1);         //TODO block真该给1吗
             }
             return;
         }
@@ -1970,7 +1987,7 @@ void create_while_stmt(past root,Value* v_return,int block)
         if((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0 && root->left->iVal==0) || (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0 && root->left->fVal==0))
         {
             if(root->next!=NULL)
-                create_instruction_list(root->next,v_return,block);
+                create_instruction_list(root->next,v_return,1);
             return;
         }
     }
@@ -3445,8 +3462,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4657,6 +4674,14 @@ void fix_array2(struct _InstNode *instruction_node)
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
 
+        Value *v_te=NULL;
+        InstNode *node=NULL;
+        if(instruction_node!=NULL && instruction->Opcode==GEP && get_next_inst(instruction_node)!=NULL)
+        {
+            node=get_next_inst(instruction_node);
+            v_te=get_next_inst(instruction_node)->inst->user.use_list[1].Val;
+        }
+
         //这两条可以合并了
         if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1))
         {
@@ -4716,7 +4741,7 @@ void fix_array2(struct _InstNode *instruction_node)
             }
         }
             //定义不会出现这种情况，只可能在赋值时出现，赋值一次都是多条，不存在复用
-        else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.use_list[1].Val!=NULL && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1))
+        else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.use_list[1].Val!=NULL && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1))
         {
             //直接找到gep的最后一条,其他的全噶了
             while(get_next_inst(instruction_node)->inst->Opcode==GEP)
