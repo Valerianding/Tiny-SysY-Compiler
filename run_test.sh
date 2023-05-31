@@ -20,6 +20,7 @@ act_err=()
 ll_err=()
 as_err=()
 out_err=()
+file_="_"
 file_c=".c"
 file_ll=".ll"
 file_as=".s"
@@ -39,7 +40,7 @@ le_count=0
 
 if [ $argu -ne $stm ]
 then
-    for file in $(ls $single_file_name*[.c])
+    for file in $(ls $single_file_name$file_*[.c])
     do
         out_value=1
         filename=${file%.*}
