@@ -1282,6 +1282,17 @@ int handle_and_or(past root,bool flag,bool last_or)
             v1= cal_logic_expr(root->left);
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "ID") == 0)
         {
+            Value *v= symtab_dynamic_lookup(this,bstr2cstr(root->left->sVal, '\0'));
+            if(v->VTy->ID==Const_INT || v->VTy->ID==Const_FLOAT)
+            {
+                //直接失败短路
+                if(((v->VTy->ID==Const_INT && v->pdata->var_pdata.iVal==0) || (v->VTy->ID==Const_FLOAT && v->pdata->var_pdata.fVal==0)) && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0)
+                    return 0;
+
+                //直接成功为1
+                if(((v->VTy->ID==Const_INT && v->pdata->var_pdata.iVal!=0) || (v->VTy->ID==Const_FLOAT && v->pdata->var_pdata.fVal!=0)) && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
+                    return 1;
+            }
             Value *v_load= create_load_stmt(bstr2cstr(root->left->sVal, '\0'));
             //生成一条icmp ne
             //包装0
@@ -1346,11 +1357,11 @@ int handle_and_or(past root,bool flag,bool last_or)
         else
         {
             //直接失败短路
-            if((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0 && root->left->iVal==0) && (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0 && root->left->fVal==0) && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0)
+            if(((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0 && root->left->iVal==0) || (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0 && root->left->fVal==0)) && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0)
                 return 0;
 
             //直接成功为1
-            if((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0 && root->left->iVal!=0) && (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0 && root->left->fVal!=0) && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
+            if(((strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_int") == 0 && root->left->iVal!=0) || (strcmp(bstr2cstr(root->left->nodeType, '\0'), "num_float") == 0 && root->left->fVal!=0)) && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
                 return 1;
         }
 
@@ -1425,6 +1436,8 @@ int handle_and_or(past root,bool flag,bool last_or)
             //ID
         else
         {
+            Value *v= symtab_dynamic_lookup(this,bstr2cstr(root->left->sVal, '\0'));
+
             Value *v_load= create_load_stmt(bstr2cstr(root->left->right->sVal, '\0'));
             //生成一条icmp ne
             //包装0
@@ -1468,6 +1481,22 @@ int handle_and_or(past root,bool flag,bool last_or)
                 v2= cal_logic_expr(root->right);
             else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "ID") == 0)
             {
+                Value *v= symtab_dynamic_lookup(this,bstr2cstr(root->right->sVal, '\0'));
+                if(v->VTy->ID==Const_INT || v->VTy->ID==Const_FLOAT)
+                {
+                    //直接失败,生成br_i1_false
+                    if(((v->VTy->ID==Const_INT && v->pdata->var_pdata.iVal==0) || (v->VTy->ID==Const_FLOAT && v->pdata->var_pdata.fVal==0)) && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0) {
+                        InstNode *ins_false= true_location_handler(br_i1_false,NULL,t_index++);
+                        insnode_push(&S_and,ins_false);
+                    }
+
+                    //直接成功,生成br_i1_true
+                    if(((v->VTy->ID==Const_INT && v->pdata->var_pdata.iVal!=0) || (v->VTy->ID==Const_FLOAT && v->pdata->var_pdata.fVal!=0)) && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0) {
+                        InstNode *ins_true= true_location_handler(br_i1_true,NULL,t_index++);
+                        insnode_push(&S_or,ins_true);
+                    }
+                    goto L;
+                }
                 Value *v_load= create_load_stmt(bstr2cstr(root->right->sVal, '\0'));
                 //生成一条icmp ne
                 //包装0
@@ -1540,6 +1569,7 @@ int handle_and_or(past root,bool flag,bool last_or)
                 }
             }
 
+            L:
             if(strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0 && v2!=NULL)
             {
                 InstNode *ins1 = true_location_handler(br_i1, v2, t_index++);
@@ -1917,7 +1947,8 @@ void create_if_else_stmt(past root,Value* v_return,int block) {
         {
             reduce_and(t_index);
             reduce_or(trur_point,t_index);
-            t_index++;
+            if(result!=1)        //直接短路的根本没有这些语句，不需要reduce
+                t_index++;
         }
     }
 
@@ -4858,12 +4889,12 @@ void travel_finish_type(struct _InstNode *instruction_node)
 //            case LESSEQ:
                 instruction->user.value.VTy->ID=instruction->user.use_list->Val->VTy->ID;
                 break;
-//            case br:              //如果是return语句的br被多重{}影响，在这里修改
-//                if(get_next_inst(instruction_node)->inst->Opcode!=Label && get_next_inst(instruction_node)->inst->Opcode!=FunEnd)
-//                {
-//                    //
-//                }
-//                break;
+            case Label:
+                if(get_next_inst(instruction_node)->inst->Opcode==Label && instruction->user.value.pdata->instruction_pdata.true_goto_location==get_next_inst(instruction_node)->inst->user.value.pdata->instruction_pdata.true_goto_location)
+                {
+                    deleteIns(get_next_inst(instruction_node));
+                }
+                break;
         }
         instruction_node= get_next_inst(instruction_node);
     }
