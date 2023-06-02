@@ -11,6 +11,9 @@ void value_init(Value* this){
     this->VTy = (Type*)malloc(sizeof(Type));
     this->VTy->ID = Unknown;
     this->pdata = (PData*)malloc(sizeof(PData));
+    this->visitedObjects = HashSetInit();
+    this->containInput = false;
+    this->containOutput = false;
     this->use_list = NULL;
 }
 
@@ -45,7 +48,6 @@ void value_replaceAll(Value *oldValue,Value *newValue){
         Use *use1 = oldValue->use_list;
         Use *use2 = use1->Next;
         while(use1 != NULL){
-            printf("at use : %p, replace by : %s\n",use1,newValue->name);
             value_add_use(newValue,use1);
             use1->Val = newValue;
             use1 = use2;
@@ -89,14 +91,14 @@ bool isLocalVar(Value *val){
 }
 
 bool isLocalVarInt(Value *val){
-    if(isLocalVarIntType(val->VTy) && val->IsFromArray == false){
+    if(isLocalVarIntType(val->VTy)){
         return true;
     }
     return false;
 }
 
 bool isLocalVarFloat(Value *val){
-    if(isLocalVarFloatType(val->VTy) && val->IsFromArray == false){
+    if(isLocalVarFloatType(val->VTy)){
         return true;
     }
     return false;

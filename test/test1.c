@@ -1,10 +1,17 @@
-int a[5];
-int b = 10;
-int main() {
-    a[4] = 1;
-    a[4] = 2;
-    a[4] = a[4] + 1;
-    b = b + 1;
-    int ans = a[2 * 2] + a[2 * 2] + a[2 * 2] + b;
-    return ans;
+int a[10] = {1};
+int b[10] = {1};
+int c = 10;
+void test2(){
+    b[1] = b[1] + 1;
+    c = c + 10;
+}
+
+int test(){
+    a[1] = a[1] + 1;
+    test2();
+}
+
+int main(){
+    int arr[10][10];
+    test(arr[0]);
 }

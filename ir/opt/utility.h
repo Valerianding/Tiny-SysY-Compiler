@@ -28,4 +28,7 @@ void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction
 bool isParam(Value *val, int paramNum);
 void HashSetCopy(HashSet *dest, HashSet *src);
 unsigned long int hash_values(Vector *valueVector);
+bool isSySYFunction(Value *function);
+bool isInputFunction(Value *function);
+bool isOutputFunction(Value *function);
 #endif //C22V1_UTILITY_H
