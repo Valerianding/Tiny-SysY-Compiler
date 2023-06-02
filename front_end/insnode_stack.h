@@ -8,7 +8,7 @@
 #include "../ir/bblock.h"
 #include <stdbool.h>
 
-#define insnode_stack_Size 100
+#define insnode_stack_Size 1000
 
 //目前是专为cal_expr()设计的
 typedef struct{

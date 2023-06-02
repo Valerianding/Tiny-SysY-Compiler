@@ -1,7 +1,7 @@
 //
 // Created by ljf on 23-2-25.
 //
-#include <unistd.h>
+
 #include "arm.h"
 
 //ri
@@ -14,7 +14,7 @@ extern InstNode *params[];
 extern HashMap *global_hashmap;
 int give_count=0;
 int globalvar_num;
-char globalvar_message[10000];
+char globalvar_message[100000];
 
 //存放打开文件的FILE指针
 FILE *fp;
@@ -7511,8 +7511,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 // 然后需要乘的数值在value2的ival里面，将其与后面维数的大小相乘(使用的是reg[2])
 // 如果是常数的话，左值的ival放-1或者是-2，然后value2里面的ival存放的就是fixarray的最终结果
 // 也就是直接给的相对于数组首地址的偏移量，不需要再进行相关的计算。
-
 // 这个GEP指令的翻译逻辑应该是得修改一下
+
+//现在是需要处理全局变量了，是不是全局变量是通过value1的类型来判断的
+//全局变量数组的处理和普通数组的处理好像是差别不大的，就是第一条GEP的时候，value1对应为全局变量数组，
+//也就是说其数组首地址的偏移量是不用从栈的hashmap中取出偏移量，从栈hashmap中取出数组首地址的偏移量直接就是int类型的数，可以直接用于计算
+//但是对于全局数组来说，数组首地址对应的翻译为ldr rd,.LCPI_1_0这些，所以说第一个数组首地址并不能像局部数组首地址那样直接用于计算
+
     Value *value0,*value1,*value2;
     int dest_reg,dest_reg_abs,left_reg,right_reg;
     value0=&ins->inst->user.value;
@@ -7522,70 +7527,142 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     dest_reg_abs=abs(dest_reg);
     left_reg=ins->inst->_reg_[1];
     right_reg=ins->inst->_reg_[2];
-    int flag=value0->pdata->var_pdata.iVal;
-    int off= get_value_offset_sp(hashMap,value1);
-    if(flag<0){
-        int x=value2->pdata->var_pdata.iVal*4;
-        x+=off;
-        if(imm_is_valid(x)){
-            printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
-            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
-        }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x);
-            printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-            fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-        }
-        if(dest_reg<0){
-            x= get_value_offset_sp(hashMap,value0);
+    if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+        int flag=value0->pdata->var_pdata.iVal;
+        int off= get_value_offset_sp(hashMap,value1);
+        if(flag<0){
+            int x=value2->pdata->var_pdata.iVal*4;
+            x+=off;
+            if(imm_is_valid(x)){
+                printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
+                fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",x);
+                printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+                fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+            }
+            if(dest_reg<0){
+                x= get_value_offset_sp(hashMap,value0);
 //            如果开的栈比较大，x也是非法立即数怎么办呢，这个也是需要处理的呀
-            printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-            fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-        }
-    }else{
-//        flag大于零，需要使用乘加指令
-        int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
-        int result= array_suffix(value1->alias,which_dimension);
-        if(imm_is_valid(result)){
-            printf("\tmov\tr2,#%d\n",result);
-            fprintf(fp,"\tmov\tr2,#%d\n",result);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",result);
-            printf("\tldr\tr2,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr1);
-        }
-        if(left_reg>100&&right_reg>100){
-            int x1= get_value_offset_sp(hashMap,value1);
-            int x2= get_value_offset_sp(hashMap,value2);
-            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-        }else if(left_reg>100){
-            int x1= get_value_offset_sp(hashMap,value1);
-            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-        }else if(right_reg>100){
-            int x2= get_value_offset_sp(hashMap,value2);
-            printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-        }else{
-            printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-            fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-        }
-        if(dest_reg<0){
-            int x= get_value_offset_sp(hashMap,value0);
-            printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
-            fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+//        flag大于零，需要使用乘加指令,
+//        但是这里好像没有处理%1偏移一个a的情况,这个目前有效的处理方法是判断value1是否为address就可以了
+//        如果是address，说明这不是基于数组首地址的，不然就说明这是基于数组首地址的
+//        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
+            int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+            int result= array_suffix(value1->alias,which_dimension);
+            if(imm_is_valid(result)){
+                printf("\tmov\tr2,#%d\n",result);
+                fprintf(fp,"\tmov\tr2,#%d\n",result);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",result);
+                printf("\tldr\tr2,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            }
+            if(left_reg>100&&right_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+            }else if(left_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+            }else if(right_reg>100){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+            }else{
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+            }
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
         }
     }
+    else if(isGlobalArrayIntType(value1->VTy)|| isGlobalArrayFloatType(value1->VTy)){
+        int flag=value0->pdata->var_pdata.iVal;
+        if(flag<0){
+//            常数的计算
+            int x=value2->pdata->var_pdata.iVal*4;
+            LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
+            if(lcptLabel==NULL){
+                printf("GEP Global error\n");
+            }
+            printf("\tldr\tr0,%s\n",lcptLabel->LCPI);
+            fprintf(fp,"\tldr\tr0,%s\n",lcptLabel->LCPI);
+            printf("\tadd\tr%d,r0,#%d\n",dest_reg_abs,x);
+            fprintf(fp,"\tadd\tr%d,r0,#%d\n",dest_reg_abs,x);
+            if(dest_reg<0){
+                x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
+        } else{
+//        flag大于零，需要使用乘加指令,
+//        但是这里好像没有处理%1偏移一个a的情况,这个目前有效的处理方法是判断value1是否为address就可以了
+//        如果是address，说明这不是基于数组首地址的，不然就说明这是基于数组首地址的
+//        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
+            int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+            int result= array_suffix(value1->alias,which_dimension);
+            if(imm_is_valid(result)){
+                printf("\tmov\tr2,#%d\n",result);
+                fprintf(fp,"\tmov\tr2,#%d\n",result);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",result);
+                printf("\tldr\tr2,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            }
+            if(left_reg>100&&right_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+            }else if(left_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+            }else if(right_reg>100){
+                int x2= get_value_offset_sp(hashMap,value2);
+                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+            }else{
+                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+            }
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
+        }
+    }
+
 
 
 //    printf("off %d\n",off);
@@ -7966,7 +8043,129 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 //全局变量声明
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    Value *value2=NULL;
+    if(isGlobalArrayIntType(value1->VTy)|| isGlobalArrayFloatType(value1->VTy)){
+//        说明这个全局变量是全局变量数组类型
+//        它的初始化信息可以通过value1->pdata->symtab_array_pdata.is_init查看，如果为1表示已被初始化，0表示未被初始化
+//        value1->pdata->symtab_array_pdata.array可以知道它被初始化的值，为零表示未被初始化，不为零表示已经进行了初始化
+//        value1->pdata->symtab_array_pdata.f_array表示浮点型数组
+        if(isGlobalArrayIntType(value1->VTy)){
+            int arr_size= get_array_total_occupy(value1,0);
+            int arr_num=arr_size/4;//获取数组总的元素个数
+            if(value1->pdata->symtab_array_pdata.is_init==1){
+//                这里处理的是已经初始化了的全局数组
+                char name[270];
+                sprintf(name,"\t.data\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                int zero_count=0;
+                for(int i=0;i<arr_num;i++){
+                    if(value1->pdata->symtab_array_pdata.array[i]!=0){
+                        if(zero_count>0){
+                            strcat(globalvar_message,"\n\t.zero\t");
+                            char value_int[12];
+                            sprintf(value_int,"%d",zero_count*4);
+                            strcat(globalvar_message,value_int);
+//                            strcat(globalvar_message,"\n");
+//                            printf(".zero %d\n", zero_count * 4);
+                            zero_count = 0;
+                        }
+//                        printf(".long %d\n", value1->pdata->symtab_array_pdata.array[i]);
+                        strcat(globalvar_message,"\n\t.long\t");
+                        char value_int[12];
+                        sprintf(value_int,"%d",value1->pdata->symtab_array_pdata.array[i]);
+                        strcat(globalvar_message,value_int);
+//                        strcat(globalvar_message,"\n");
+                    }
+                    else
+                    {
+                        zero_count++;
+                    }
+                }
+                if (zero_count > 0)
+                {
+//                    printf(".zero %d\n", zero_count * 4);
+                    strcat(globalvar_message,"\n\t.zero\t");
+                    char value_int[12];
+                    sprintf(value_int,"%d",zero_count*4);
+                    strcat(globalvar_message,value_int);
+                    strcat(globalvar_message,"\n");
+                }else{
+                    strcat(globalvar_message,"\n");
+                }
+            }else{
+//                这里处理的是未初始化的全局数组
+                char name[270];
+                sprintf(name,"\t.bss\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                strcat(globalvar_message,"\n\t.zero\t");
+                char value_int[12];
+                sprintf(value_int,"%d",arr_size);
+                strcat(globalvar_message,value_int);
+                strcat(globalvar_message,"\n");
+            }
+        }
+        else if(isGlobalArrayFloatType(value1->VTy)){
+            int arr_size= get_array_total_occupy(value1,0);
+            int arr_num=arr_size/4;//获取数组总的元素个数
+            if(value1->pdata->symtab_array_pdata.is_init==1){
+//                这里处理的是已经初始化了的全局数组
+                char name[270];
+                sprintf(name,"\t.data\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                int zero_count=0;
+                for(int i=0;i<arr_num;i++){
+                    if(value1->pdata->symtab_array_pdata.f_array[i]!=0){
+                        if(zero_count>0){
+                            strcat(globalvar_message,"\n\t.zero\t");
+                            char value_int[12];
+                            sprintf(value_int,"%d",zero_count*4);
+                            strcat(globalvar_message,value_int);
+//                            strcat(globalvar_message,"\n");
+//                            printf(".zero %d\n", zero_count * 4);
+                            zero_count = 0;
+                        }
+//                        printf(".long %d\n", value1->pdata->symtab_array_pdata.array[i]);
+                        strcat(globalvar_message,"\n\t.long\t");
+//                        对于float需要使用IEEE754格式
+                        float x=value1->pdata->symtab_array_pdata.f_array[i];
+                        int xx=*(int *)(&x);
+                        char value_int[12];
+                        sprintf(value_int,"%d",xx);
+                        strcat(globalvar_message,value_int);
+//                        strcat(globalvar_message,"\n");
+                    }
+                    else
+                    {
+                        zero_count++;
+                    }
+                }
+                if (zero_count > 0)
+                {
+//                    printf(".zero %d\n", zero_count * 4);
+                    strcat(globalvar_message,"\n\t.zero\t");
+                    char value_int[12];
+                    sprintf(value_int,"%d",zero_count*4);
+                    strcat(globalvar_message,value_int);
+                    strcat(globalvar_message,"\n");
+                }else{
+                    strcat(globalvar_message,"\n");
+                }
+            }else{
+//                这里处理的是未初始化的全局数组
+                char name[270];
+                sprintf(name,"\t.bss\n%s:",value1->name+1);
+                strcat(globalvar_message,name);
+                strcat(globalvar_message,"\n\t.zero\t");
+                char value_int[12];
+                sprintf(value_int,"%d",arr_size);
+                strcat(globalvar_message,value_int);
+                strcat(globalvar_message,"\n");
+            }
+        }
+    }else{
+        value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    }
+
 //    if(global_flag==0){
 //        printf("\t.bss\n");
 //        fprintf(fp,"\t.bss\n");
@@ -7987,16 +8186,18 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         strcat(globalvar_message,name);
         strcat(globalvar_message,"\n\t.long\t");
 
-        char value_int[12]="0x";
+//        char value_int[12]="0x";
+//        float x=value1->pdata->var_pdata.fVal;
+//        int xx=*(int*)&x;
+//        sprintf(value_int+2,"%0x",xx);
+//        这里直接使用IEEE754格式的值就可以，不需要使用16进制
+//        之前的使用16进制的逻辑是没有问题的，但是使用十六进制需要明确加上0x
+        char value_int[12];
         float x=value1->pdata->var_pdata.fVal;
         int xx=*(int*)&x;
-        sprintf(value_int,"%0x",xx);
+        sprintf(value_int,"%d",xx);
         strcat(globalvar_message,value_int);
         strcat(globalvar_message,"\n");
-
-    } else if(isGlobalArrayIntType(value1->VTy)){
-
-    } else if(isGlobalArrayFloatType(value1->VTy)){
 
     }
 

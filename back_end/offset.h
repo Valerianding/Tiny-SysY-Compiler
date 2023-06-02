@@ -36,7 +36,7 @@ typedef struct _offset{
 //LCPILabel
 typedef struct _LCPILabel{
     char LCPI[100];
-    bool INTTRUE__FLOATFALSE;
+    bool INTTRUE__FLOATFALSE;//false表示为float类型，true表示为int类型
 //    bool memory;
 //    int regr;
 //    int load;
