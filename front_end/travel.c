@@ -4803,6 +4803,7 @@ void fix_array2(struct _InstNode *instruction_node)
 
 void travel_finish_type(struct _InstNode *instruction_node)
 {
+    int flag_rename=0;
     instruction_node= get_next_inst(instruction_node);
     Instruction *instruction=NULL;
     while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
@@ -4895,9 +4896,28 @@ void travel_finish_type(struct _InstNode *instruction_node)
                     deleteIns(get_next_inst(instruction_node));
                 }
                 break;
+            case br:
+                //如果有无用ir就删去
+                if(get_next_inst(instruction_node)->inst->Opcode!=Label)
+                {
+                    flag_rename=1;
+                    InstNode *insnode_tmp=get_next_inst(instruction_node);
+                    while(insnode_tmp->inst->Opcode!=Label)
+                    {
+                        InstNode *now=insnode_tmp;
+                        insnode_tmp= get_prev_inst(insnode_tmp);
+                        deleteIns(now);
+
+                        insnode_tmp= get_next_inst(insnode_tmp);
+                    }
+                }
+                break;
         }
         instruction_node= get_next_inst(instruction_node);
     }
+
+    if(flag_rename==1)      //TODO 如果删除了无用ir，需要重命名
+        ;
 }
 
 void move_give_param(struct _InstNode *instruction_node)
