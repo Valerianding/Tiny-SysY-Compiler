@@ -21,6 +21,8 @@ typedef struct pair{
 
 #define  NumUserOperandsBits 27
 
+
+/* 怎么能有这么丑陋的数据结构 受不了一点！*/
 struct _PData{
     struct {
         int true_goto_location;       //跳转位置
@@ -69,7 +71,11 @@ struct _Value{
     unsigned HasName : 1;
     bool Useless : 1;
     bool IsPhi : 1;
-    bool IsFromArray : 1; // 默认是false
+
+    HashSet *visitedObjects; //访问过的变量和数组
+    bool containInput : 1; //是否含有输入
+    bool containOutput : 1; //是否含有输出
+
     char *name;
     struct _Value *alias;
     PData *pdata;

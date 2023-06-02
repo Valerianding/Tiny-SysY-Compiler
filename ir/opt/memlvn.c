@@ -60,6 +60,10 @@ void memlvn(Function *current){
 }
 
 void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
+    InstNode *funcHead = currentFunction->entry->head_node;
+    assert(funcHead->inst->Opcode == FunBegin);
+    int paramNum = funcHead->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
+    printf("paramNum is %d\n",paramNum);
     HashMap *memory = HashMapInit(); //Array -> StoreInfo
 
     InstNode *head = block->head_node;
@@ -74,6 +78,9 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
             //TODO 如果是数组就走这边 如果不是数组我们需要单独处理
             if(!isGlobalVar(loadPlace)){
                 Instruction *gepInstruction = (Instruction*)loadPlace;
+                if(gepInstruction->Opcode == bitcast){
+
+                }
                 Vector *indexVector = VectorInit(10);
                 //lhs 是位置 rhs是偏移量
                 Value *gepValue = ins_get_lhs(gepInstruction);
@@ -83,16 +90,16 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 VectorPushBack(indexVector,gepIndex);
 
                 //TODO 这里是第一个gepValue
-                while(!HashSetFind(arrays,gepValue) && !isGlobalArray(gepValue)){
+                while(!HashSetFind(arrays,gepValue) && !isGlobalArray(gepValue) && !isParam(gepValue,paramNum)){
                     gepInstruction = (Instruction*)gepValue;
-                    gepIndex = ins_get_rhs(gepInstruction);
-                    VectorPushBack(indexVector,gepIndex);
-                    gepValue = ins_get_lhs(gepInstruction);
-                    if(isGlobalArray(gepValue)) break;
-                    printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
+                    if(gepInstruction->Opcode == bitcast){
+                       gepValue = ins_get_lhs(gepInstruction);
+                    }else{
+                        gepIndex = ins_get_rhs(gepInstruction);
+                        VectorPushBack(indexVector,gepIndex);
+                        gepValue = ins_get_lhs(gepInstruction);
+                    }
                 }
-
-
 
                 unsigned long int hash_value = hash_values(indexVector);
                 printf("load %s index is %d\n",gepValue->name,hash_value);
@@ -163,13 +170,19 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 VectorPushBack(indexVector,gepIndex);
 
                 printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
-                while(!HashSetFind(arrays,gepValue) && !isGlobalArray(gepValue)){
+                while(!HashSetFind(arrays,gepValue) && !isGlobalArray(gepValue) && !isParam(gepValue,paramNum)){
                     gepInstruction = (Instruction*)gepValue;
-                    gepValue = ins_get_lhs(gepInstruction);
-                    gepIndex = ins_get_rhs(gepInstruction);
-                    VectorPushBack(indexVector,gepIndex);
-                    if(isGlobalArray(gepValue)) break;
-                    printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
+                    //如果遇到了bitcast语句怎么办
+                    if(gepInstruction->Opcode == bitcast){
+                        //需要找到LHS就行并且gepindex为NULL;
+                        //actually it is bitcast instruction
+                        gepValue = ins_get_lhs(gepInstruction);
+                    }else{
+                        gepValue = ins_get_lhs(gepInstruction);
+                        gepIndex = ins_get_rhs(gepInstruction);
+                        VectorPushBack(indexVector,gepIndex);
+                        printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
+                    }
                 }
 
                 printf("indexVectorSize is %d\n", VectorSize(indexVector));
@@ -225,6 +238,67 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 }
                 currNode = get_next_inst(currNode);
             }
+        }else if(currNode->inst->Opcode == Call){
+            //assert(false);
+
+            Value *functionValue = ins_get_lhs(currNode->inst);
+
+            //存在两种情况
+            //第一种情况是调用的函数（及其再下层的被调用的函数）和现在的函数访问了相同的全局变量，
+            //那么我们需要清除对于全局变量的存储信息
+            //第二种情况是给调用函数传递了参数那么默认被调函数修改了数组，我们需要对传递的数组进行清除
+
+            //case 1:
+            HashSetFirst(functionValue->visitedObjects);
+            for(Value *visited = HashSetNext(functionValue->visitedObjects); visited != NULL; visited = HashSetNext(functionValue->visitedObjects)){
+                printf("remove %s info\n",visited->name);
+                HashMapFirst(memory);
+                for(Pair *pair = HashMapNext(memory); pair != NULL; pair = HashMapNext(memory)){
+                    Array *array = pair->key;
+                    StoreInfo *storeInfo = pair->value;
+                    if(array->array == visited){
+                        //this storeInfo in memory is useless
+                        HashMapRemove(memory,array);
+                        free(array);
+                        free(storeInfo);
+                    }
+                }
+            }
+
+
+            //case 2:
+            int calledParamNum = functionValue->pdata->symtab_func_pdata.param_num;
+            InstNode *paramNode = currNode;
+            Value *paramValue = NULL;
+            //往前找
+            while(calledParamNum--){
+                paramNode = get_prev_inst(paramNode);
+                assert(paramNode->inst->Opcode == GIVE_PARAM);
+                paramValue = ins_get_lhs(paramNode->inst);
+                //看看give Param的Value是啥！
+                //如果是地址的话 找到对应的数组 清除memory里面对应数组的信息
+                //不是数组我们都可以不用管吧
+                Instruction *ins = NULL;
+                if(isAddress(paramValue)){
+                    while(!HashSetFind(arrays,paramValue) && !isGlobalArray(paramValue) && !isParam(paramValue,paramNum)){
+                        ins = (Instruction*)paramValue;
+                        paramValue = ins_get_lhs(ins);
+                    }
+
+                    printf("find paramValue array %s",paramValue->name);
+                    HashMapFirst(memory);
+                    for(Pair *pair = HashMapNext(memory); pair != NULL; pair = HashMapNext(memory)){
+                        Array *array = pair->key;
+                        StoreInfo *storeInfo = pair->value;
+                        if(array->array == paramValue){
+                            HashMapRemove(memory,array);
+                            free(array);
+                            free(storeInfo);
+                        }
+                    }
+                }
+            }
+            currNode = get_next_inst(currNode);
         }else{
             currNode = get_next_inst(currNode);
         }

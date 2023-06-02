@@ -68,10 +68,6 @@ void correctType(Function *currentFunction){
         if(headNode->inst->Opcode == Alloca && insValue->VTy->ID == AddressTyID){
             insValue->VTy->ID = Var_INT;
         }
-        if(headNode->inst->Opcode == GEP){
-            // get 出来的这个变量
-          insValue->IsFromArray = 1;
-        }
 
 //        // TODO 还有很多function我们没有设置Type
 //        if(headNode->inst->Opcode == Call){
@@ -403,4 +399,33 @@ unsigned long int hash_values(Vector *valueVector) {
     h ^= h >> 15;
 
     return (unsigned long int)h;
+}
+
+bool isSySYFunction(Value *function){
+    if(strcmp(function->name,"getint") == 0){
+        return true;
+    }else if(strcmp(function->name,"getfloat") == 0){
+        return true;
+    }else if(strcmp(function->name,"putint") == 0){
+        return true;
+    }
+    return false;
+}
+
+bool isInputFunction(Value *function){
+    if(strcmp(function->name,"getint") == 0){
+        return true;
+    }else if(strcmp(function->name,"getfloat") == 0){
+        return true;
+    }
+    return false;
+}
+
+bool isOutputFunction(Value *function){
+    if(strcmp(function->name,"putint") == 0){
+        return true;
+    }else if(strcmp(function->name,"putfloat") == 0){
+        return true;
+    }
+    return false;
 }

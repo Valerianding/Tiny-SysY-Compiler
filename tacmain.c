@@ -12,9 +12,9 @@
 #include "register_allocation.h"
 #include "livenessanalysis.h"
 #include "PassManager.h"
-#include "func_inline.h"
 #include "mem2reg.h"
-#include "inscomb.h"
+#include "sideEffect.h"
+
 extern int yyparse();
 //extern past TRoot;
 Symtab *this;
@@ -96,21 +96,23 @@ int main(int argc, char* argv[]){
     }
 
     // 建立phi之前
-    printf_llvm_ir(instruction_list,argv[4],1);
+    //printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
         mem2reg(currentFunction);
     }
 
-    // 优化之前
+     //优化之前
     printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        //sideEffect(currentFunction);
         commonSubexpressionElimination(currentFunction);
         memlvn(currentFunction);
-        Mark(currentFunction);
-        Sweep(currentFunction);
+        //ConstFolding(currentFunction);
+        //Mark(currentFunction);
+        //Sweep(currentFunction);
         renameVariables(currentFunction);
     }
 
@@ -142,7 +144,7 @@ int main(int argc, char* argv[]){
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         clear_visited_flag(currentFunction->entry);
         printf("after out of SSA!\n");
-        calculateLiveness1(currentFunction);
+        calculateLiveness(currentFunction);
         printLiveness(currentFunction);
     }
 
@@ -164,7 +166,7 @@ int main(int argc, char* argv[]){
     //lsy_end
 
     //ljw_begin
-   reg_control(instruction_list,temp);
+    //reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end
 
