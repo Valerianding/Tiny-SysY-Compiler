@@ -2551,7 +2551,10 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 (x2->VTy->ID==Int || x2->VTy->ID==Const_INT)) {
                 Value *v3=(Value*) malloc(sizeof (Value));
                 value_init(v3);
-                v3->VTy->ID=Int;
+                if(type==Var_FLOAT)
+                    v3->VTy->ID=Float;
+                else
+                    v3->VTy->ID=Int;
                 switch ((*pp)->iVal) {
                     case '+':
                         v3->pdata->var_pdata.iVal = x1->pdata->var_pdata.iVal + x2->pdata->var_pdata.iVal;
@@ -2577,13 +2580,18 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                             v3->pdata->var_pdata.iVal=0;
                         break;
                 }
+                if(v3->VTy->ID!=Int)
+                    v3->pdata->var_pdata.fVal=(float)v3->pdata->var_pdata.iVal;
                 push_value(&PS2, v3);
             }
             else if ((x1->VTy->ID==Float || x1->VTy->ID==Const_FLOAT || x1->VTy->ID==Int || x1->VTy->ID==Const_INT) &&
                      (x2->VTy->ID==Float || x2->VTy->ID==Const_FLOAT || x2->VTy->ID==Int || x2->VTy->ID==Const_INT)) {
                 Value *v3=(Value*) malloc(sizeof (Value));
                 value_init(v3);
-                v3->VTy->ID=Float;
+                if(type==Var_INT)
+                    v3->VTy->ID=Int;
+                else
+                    v3->VTy->ID=Float;
                 switch ((*pp)->iVal) {
                     case '+':
                         if((x1->VTy->ID==Float || x1->VTy->ID==Const_FLOAT) && (x2->VTy->ID==Float || x2->VTy->ID==Const_FLOAT))
@@ -2624,6 +2632,8 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                             v3->pdata->var_pdata.iVal=0;
                         break;
                 }
+                if(v3->VTy->ID!=Float)
+                    v3->pdata->var_pdata.iVal=(int)v3->pdata->var_pdata.fVal;
                 push_value(&PS2, v3);
             }
             else
@@ -4588,17 +4598,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 break;
         }
 
-//        Value *v,*vl,*vr;
-//        v= ins_get_dest(instruction_node->inst);
-//        vl= ins_get_lhs(instruction_node->inst);
-//        vr= ins_get_rhs(instruction_node->inst);
-//        if(v!=NULL)
-//            printf("left:%s,\t",type_str[v->VTy->ID]);
-//        if(vl!=NULL)
-//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-//        if(vr!=NULL)
-//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n\n");
+        Value *v,*vl,*vr;
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+        printf("\n\n");
 //
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
@@ -4803,7 +4813,6 @@ void fix_array2(struct _InstNode *instruction_node)
 
 void travel_finish_type(struct _InstNode *instruction_node)
 {
-    int flag_rename=0;
     instruction_node= get_next_inst(instruction_node);
     Instruction *instruction=NULL;
     while(instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
@@ -4900,7 +4909,6 @@ void travel_finish_type(struct _InstNode *instruction_node)
                 //如果有无用ir就删去
                 if(get_next_inst(instruction_node)->inst->Opcode!=Label)
                 {
-                    flag_rename=1;
                     InstNode *insnode_tmp=get_next_inst(instruction_node);
                     while(insnode_tmp->inst->Opcode!=Label)
                     {
@@ -4915,9 +4923,6 @@ void travel_finish_type(struct _InstNode *instruction_node)
         }
         instruction_node= get_next_inst(instruction_node);
     }
-
-    if(flag_rename==1)      //TODO 如果删除了无用ir，需要重命名
-        ;
 }
 
 void move_give_param(struct _InstNode *instruction_node)
@@ -5007,3 +5012,1128 @@ void get_param_list(Value* v_func,int* give_count)
         (*give_count)-=v_func->pdata->symtab_func_pdata.param_num;
     }
 }
+
+//void printf_one_llvm_ir(struct _InstNode *instruction_node,char *file_name)
+//{
+//    bool flag_func=false;
+//
+//    instruction_node= get_next_inst(instruction_node);
+//    const char* ll_file= c2ll(file_name);
+//
+//    FILE *fptr= fopen(ll_file,"w");
+//
+//    Value *v_cur_array=NULL;
+//
+//    int p=0;
+//    int give_count=0;
+//
+//    Instruction *instruction=instruction_node->inst;
+//    printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+//    printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//    switch (instruction_node->inst->Opcode)
+//    {
+//        case Alloca:
+//            if(instruction->user.use_list!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
+//            {
+//                printf(" %s = alloca ",instruction->user.value.name);
+//                fprintf(fptr," %s = alloca ",instruction->user.value.name);
+//                printf_array(instruction->user.use_list->Val,0,fptr);
+//                printf(",align 16\n");
+//                fprintf(fptr,",align 16\n");
+//            }
+//            else if(instruction->user.use_list!=NULL && instruction->user.use_list->Val->VTy->ID==AddressTyID)
+//            {
+//                if(instruction->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+//                {
+//                    printf(" %s = alloca ",instruction->user.value.name);
+//                    fprintf(fptr," %s = alloca ",instruction->user.value.name);
+//                    printf_array(instruction->user.use_list->Val,1,fptr);
+//                    printf("*,align 4\n");
+//                    fprintf(fptr,"*,align 4\n");
+//                }
+//                else
+//                {
+//                    printf(" %s = alloca i32*,align 4\n",instruction->user.value.name);
+//                    fprintf(fptr," %s = alloca i32*,align 4\n",instruction->user.value.name);
+//                }
+//            }
+//            else
+//            {
+//                printf(" %s = alloca i32,align 4\n",instruction->user.value.name);
+//                fprintf(fptr," %s = alloca i32,align 4\n",instruction->user.value.name);
+//            }
+//            break;
+//        case Load:
+//            if(instruction->user.use_list->Val->VTy->ID==AddressTyID && instruction->user.use_list->Val->pdata->var_pdata.is_offset==1)
+//            {
+//                instruction->user.value.pdata->var_pdata.is_offset=1;
+//                if(instruction->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+//                {
+//                    printf(" %s = load ",instruction->user.value.name);
+//                    fprintf(fptr," %s = load ",instruction->user.value.name);
+//                    printf_array(instruction->user.use_list->Val,1,fptr);
+//                    printf("*,");
+//                    fprintf(fptr,"*,");
+//                    printf_array(instruction->user.use_list->Val,1,fptr);
+//                    printf("** %s,align 4\n",instruction->user.use_list->Val->name);
+//                    fprintf(fptr,"** %s,align 4\n",instruction->user.use_list->Val->name);
+//                }
+//                else
+//                {
+//                    printf(" %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                    fprintf(fptr," %s = load i32*,i32** %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                }
+//            } else
+//            {
+//                printf(" %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                fprintf(fptr," %s = load i32,i32* %s,align 4\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//            }
+//            break;
+//        case Store:
+//            if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==0)
+//            {
+//                printf(" store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                fprintf(fptr," store i32 %d,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//            }
+//            else if((instruction->user.use_list->Val->VTy->ID==Int || instruction->user.use_list->Val->VTy->ID==Const_INT) && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
+//            {
+//                printf(" store i32* %d,i32** %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                fprintf(fptr," store i32* %d,i32** %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//            }
+//            else if(instruction->user.use_list->Val->VTy->ID==Float || instruction->user.use_list->Val->VTy->ID==Const_FLOAT)
+//            {
+//                printf(" store i32 %f,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                fprintf(fptr," store i32 %f,i32* %s,align 4\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//            }
+//            else if(instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==0)
+//            {
+//                printf(" store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                fprintf(fptr," store i32 %s,i32* %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+//                {
+//                    printf(" store ");
+//                    fprintf(fptr," store ");
+//                    printf_array(instruction->user.use_list[1].Val,1,fptr);
+//                    printf("* %s,",instruction->user.use_list->Val->name);
+//                    fprintf(fptr,"* %s,",instruction->user.use_list->Val->name);
+//                    printf_array(instruction->user.use_list->Val,1,fptr);
+//                    printf("** %s,align 4\n",instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr,"** %s,align 4\n",instruction->user.use_list[1].Val->name);
+//                } else{
+//                    printf(" store i32* %s,i32** %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," store i32* %s,i32** %s,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case br:
+//            printf(" br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+//            fprintf(fptr," br label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+//            break;
+//        case br_i1:
+//            printf(" br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+//            fprintf(fptr," br i1 %s,label %%%d,label %%%d\n\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+//            break;
+//        case br_i1_false:
+//            printf(" br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+//            fprintf(fptr," br i1 false,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+//            break;
+//        case br_i1_true:
+//            printf(" br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+//            fprintf(fptr," br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+//            break;
+//        case EQ:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp eq i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp eq i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//
+//            break;
+//        case LESS:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp slt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp slt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp slt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp slt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp slt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp slt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case NOTEQ:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp ne i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp ne i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case GREAT:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp sgt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp sgt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp sgt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp sgt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp sgt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp sgt i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case GREATEQ:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp sge i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp sge i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp sge i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp sge i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp sge i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp sge i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case LESSEQ:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp sle i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp sle i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s = icmp sle i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s = icmp sle i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s = icmp sle i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s = icmp sle i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case FunBegin:
+//            if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID==VoidTyID)
+//            {
+//                printf("define dso_local void @%s(",instruction->user.use_list->Val->name);
+//                fprintf(fptr,"define dso_local void @%s(",instruction->user.use_list->Val->name);
+//            } else
+//            {
+//                printf("define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+//                fprintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+//            }
+//            p=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
+//            int ii=p;
+//            InstNode* node2=get_next_inst(instruction_node);
+//            while (p>0)
+//            {
+//                if(p==instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
+//                {
+//                    if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
+//                    {
+//                        while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+//                            node2=get_next_inst(node2);      //node2能指向真实value
+//                        if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+//                        {
+//                            printf_array(node2->inst->user.use_list->Val,1,fptr);
+//                            printf("* %%0");
+//                            fprintf(fptr,"* %%0");
+//                            node2= get_next_inst(node2);
+//                        }
+//                        else {
+//                            printf("i32* %%0");
+//                            fprintf(fptr,"i32* %%0");
+//                        }
+//                    }
+//                    else
+//                    {
+//                        printf("i32 %%0");
+//                        fprintf(fptr,"i32 %%0");
+//                    }
+//                }
+//                else
+//                {
+//                    if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
+//                    {
+//                        while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+//                            node2=get_next_inst(node2);      //node2能指向真实value
+//                        if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+//                        {
+//                            printf(",");
+//                            fprintf(fptr,",");
+//                            printf_array(node2->inst->user.use_list->Val,1,fptr);
+//                            printf("* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+//                            fprintf(fptr,"* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+//                            node2= get_next_inst(node2);
+//                        }
+//                        else
+//                        {
+//                            printf(",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+//                            fprintf(fptr,",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+//                        }
+//                    }
+//                    else
+//                    {
+//                        printf(",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+//                        fprintf(fptr,",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+//                    }
+//                }
+//                p--;
+//            }
+//            printf(") #0{\n");
+//            fprintf(fptr,") #0{\n");
+//            break;
+//        case Return:
+//            if(instruction->user.use_list==NULL)
+//            {
+//                printf(" ret void\n");
+//                fprintf(fptr," ret void\n");
+//            }
+//            else if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                printf(" ret i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
+//                fprintf(fptr," ret i32 %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
+//            }
+//            else if(instruction->user.use_list->Val->VTy->ID==Float)
+//            {
+//                printf(" ret i32 %f\n",instruction->user.use_list->Val->pdata->var_pdata.fVal);
+//                fprintf(fptr," ret i32 %f\n",instruction->user.use_list->Val->pdata->var_pdata.fVal);
+//            }
+//            else
+//            {
+//                printf(" ret i32 %s\n",instruction->user.use_list->Val->name);
+//                fprintf(fptr," ret i32 %s\n",instruction->user.use_list->Val->name);
+//            }
+//
+////                printf("}\n\n");
+////                fprintf(fptr,"}\n\n");
+//            break;
+//        case Call:
+//            get_param_list(instruction->user.use_list->Val,&give_count);
+//            if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
+//            {
+//                //非库函数
+//                if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
+//                {
+//                    printf(" %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                    fprintf(fptr," %s = call i32 @%s(",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                }
+//                    //是库函数
+//                else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
+//                {
+//                    printf(" %s = call i32 (",instruction->user.value.name);
+//                    fprintf(fptr," %s = call i32 (",instruction->user.value.name);
+//                }
+//                else
+//                {
+//                    printf(" %s = call i32 (...) @%s (",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                    fprintf(fptr," %s = call i32 (...) @%s (",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                }
+//            }
+//            else     //voidTypeID
+//            {
+//                //非库函数
+//                if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
+//                {
+//                    printf(" call void @%s(",instruction->user.use_list->Val->name);
+//                    fprintf(fptr," call void @%s(",instruction->user.use_list->Val->name);
+//                }
+//                    //是库函数
+//                else if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->next->map)->pdata->symtab_func_pdata.param_num!=0)
+//                {
+//                    printf(" call void (");
+//                    fprintf(fptr," call void (");
+//                }
+//                else
+//                {
+//                    printf(" call void (...) @%s (",instruction->user.use_list->Val->name);
+//                    fprintf(fptr," void i32 (...) @%s (",instruction->user.use_list->Val->name);
+//                }
+//            }
+//
+//            //参数
+//            if(symtab_lookup_withmap(this,instruction->user.use_list->Val->name,&this->value_maps->next->map)==NULL && instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+//            {
+//                for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
+//                {
+//                    if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+//                    {
+//                        v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+//                        //就i32*
+//                        if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+//                        {
+//                            printf("i32*,");
+//                            fprintf(fptr,"i32*,");
+//                        }
+//                        else
+//                        {
+//                            printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+//                            printf("*,");
+//                            fprintf(fptr,"*,");
+//                        }
+//                    }
+//                    else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+//                    {
+//                        printf("i32*,");
+//                        fprintf(fptr,"i32*,");
+//                    }
+//                    else
+//                    {
+//                        printf("i32,");
+//                        fprintf(fptr,"i32,");
+//                    }
+//                }
+//                printf("...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
+//                fprintf(fptr,"...)bitcast(i32 (...)* @%s to i32(",instruction->user.use_list->Val->name);
+//
+//                for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
+//                {
+//                    if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+//                    {
+//                        v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+//                        if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+//                        {
+//                            printf("i32*,");
+//                            fprintf(fptr,"i32*,");
+//                        }
+//                        else
+//                        {
+//                            printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+//                            printf("*,");
+//                            fprintf(fptr,"*,");
+//                        }
+//                    }
+//                    else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+//                    {
+//                        printf("i32*,");
+//                        fprintf(fptr,"i32*,");
+//                    }
+//                    else
+//                    {
+//                        printf("i32,");
+//                        fprintf(fptr,"i32,");
+//                    }
+//                }
+//                printf("...)*)(");
+//                fprintf(fptr,"...)*)(");
+//            }
+//
+//            //参数
+//            if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+//            {
+//                for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
+//                {
+//                    if(i==0)
+//                    {
+//                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==Int)
+//                        {
+//                            printf("i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+//                            fprintf(fptr,"i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+//                        }
+//                        else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+//                        {
+//                            v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+//                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+//                            {
+//                                printf("i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                                fprintf(fptr,"i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                            }
+//                            else
+//                            {
+//                                printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+//                                printf("* %s",one_param[i]->inst->user.use_list->Val->name);
+//                                fprintf(fptr,"* %s",one_param[i]->inst->user.use_list->Val->name);
+//                            }
+//                        }
+//                        else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+//                        {
+//                            printf("i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                            fprintf(fptr,"i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                        }
+//                        else
+//                        {
+//                            printf("i32 %s",one_param[i]->inst->user.use_list->Val->name);
+//                            fprintf(fptr,"i32 %s",one_param[i]->inst->user.use_list->Val->name);
+//                        }
+//
+//                    }
+//                    else
+//                    {
+//                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==Int)
+//                        {
+//                            printf(",i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+//                            fprintf(fptr,",i32 %d",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal);
+//                        }
+//                        else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+//                        {
+//                            v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
+//                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+//                            {
+//                                printf(",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                                fprintf(fptr,",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                            }
+//                            else
+//                            {
+//                                printf(",");
+//                                fprintf(fptr,",");
+//                                printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+//                                printf("* ");
+//                                fprintf(fptr,"* ");
+//                                printf("%s",one_param[i]->inst->user.use_list->Val->name);
+//                                fprintf(fptr,"%s",one_param[i]->inst->user.use_list->Val->name);
+//                            }
+//                        }
+//                        else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID)
+//                        {
+//                            printf(",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                            fprintf(fptr,",i32* %s",one_param[i]->inst->user.use_list->Val->name);
+//                        }
+//                        else
+//                        {
+//                            printf(",i32 %s",one_param[i]->inst->user.use_list->Val->name);
+//                            fprintf(fptr,",i32 %s",one_param[i]->inst->user.use_list->Val->name);
+//                        }
+//                    }
+//                }
+//            }
+//
+//            printf(")\n");
+//            fprintf(fptr,")\n");
+//            break;
+//        case Label:
+//            printf("%d:                  ; preds = ",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+//            fprintf(fptr,"%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+//            if(instruction->Parent){
+//                BasicBlock *parent = instruction->Parent;
+//                HashSetFirst(parent->preBlocks);
+//                for(BasicBlock *block = HashSetNext(parent->preBlocks); block != NULL; block = HashSetNext(parent->preBlocks)){
+//                    printf("%%%d ",block->id);
+//                }
+//            }
+//            printf("\n");
+//            break;
+//        case Add:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= add nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= add nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= add nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= add nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= add nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= add nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else if(instruction->user.use_list->Val->VTy->ID==Float)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= add nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= add nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= add nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= add nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= add nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= add nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= add nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= add nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= add nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= add nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= add nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= add nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case Sub:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= sub nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= sub nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= sub nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= sub nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= sub nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= sub nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else if(instruction->user.use_list->Val->VTy->ID==Float)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= sub nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= sub nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= sub nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= sub nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= sub nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= sub nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= sub nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= sub nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= sub nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= sub nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= sub nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= sub nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case Mul:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= mul nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= mul nsw i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= mul nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= mul nsw i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= mul nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= mul nsw i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else if(instruction->user.use_list->Val->VTy->ID==Float)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= mul nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= mul nsw i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= mul nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= mul nsw i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= mul nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= mul nsw i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= mul nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= mul nsw i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= mul nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= mul nsw i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= mul nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= mul nsw i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case Div:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= sdiv i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= sdiv i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= sdiv i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= sdiv i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= sdiv i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= sdiv i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else if(instruction->user.use_list->Val->VTy->ID==Float)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= sdiv i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= sdiv i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= sdiv i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= sdiv i32 %f,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= sdiv i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= sdiv i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= sdiv i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= sdiv i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+//                {
+//                    printf(" %s= sdiv i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr," %s= sdiv i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= sdiv i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= sdiv i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case Mod:
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= srem i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= srem i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= srem i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= srem i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                {
+//                    printf(" %s= srem i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr," %s= srem i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                }
+//                else
+//                {
+//                    printf(" %s= srem i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                    fprintf(fptr," %s= srem i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                }
+//            }
+//            break;
+//        case bitcast:
+//            //第一条bitcast
+//            if(instruction->user.value.pdata->var_pdata.iVal==1)
+//            {
+//                //v_cur_array=instruction->user.use_list->Val->alias;
+//                printf(" %s=bitcast ",instruction->user.value.name);
+//                fprintf(fptr," %s=bitcast ",instruction->user.value.name);
+//                printf_array(instruction->user.use_list->Val->alias,0,fptr);
+//                printf("* %s to i8*\n",instruction->user.use_list->Val->name);
+//                fprintf(fptr,"* %s to i8*\n",instruction->user.use_list->Val->name);
+//            }
+//            else
+//            {
+//                printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                fprintf(fptr," %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
+//                printf_array(instruction->user.use_list->Val->alias,0,fptr);
+//                printf("*\n");
+//                fprintf(fptr,"*\n");
+//            }
+//            break;
+//
+//        case GEP:
+//            if(instruction->user.value.alias!=NULL)
+//                v_cur_array=instruction->user.value.alias;
+//            //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
+//            printf(" %s=getelementptr inbounds ",instruction->user.value.name);
+//            fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
+//            if(instruction->user.value.pdata->var_pdata.iVal<0)
+//            {
+//                printf_array(v_cur_array,0,fptr);
+//                printf(",");
+//                fprintf(fptr,",");
+//                printf_array(v_cur_array,0,fptr);
+//                printf("* %s,i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                fprintf(fptr,"* %s,i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//            }
+//            else
+//            {
+//                if(instruction->user.use_list->Val->pdata->var_pdata.is_offset==0)
+//                {
+//                    //是对数组参数的最后一个自造的gmp
+//                    if(instruction->user.value.VTy->ID==AddressTyID && instruction->user.value.pdata->var_pdata.is_offset==1)
+//                    {
+//                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
+//                        printf(",");
+//                        fprintf(fptr,",");
+//                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
+//                        printf("* ");
+//                        fprintf(fptr,"* ");
+//                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                        {
+//                            printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                            fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                        }
+//                        else
+//                        {
+//                            printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                            fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                        }
+//                    }
+//                        //正常的
+//                    else{
+//                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+//                        printf(",");
+//                        fprintf(fptr,",");
+//                        printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
+//                        printf("* ");
+//                        fprintf(fptr,"* ");
+//                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                        {
+//                            printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                            fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                        }
+//                        else
+//                        {
+//                            printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                            fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                        }
+//                    }
+//
+//                }
+//                else {
+//                    Value *array=instruction->user.value.alias;
+//                    if(array->pdata->symtab_array_pdata.dimentions[0]==0)
+//                    {
+//                        printf_array(array,1,fptr);
+//                        printf(",");
+//                        fprintf(fptr,",");
+//                        printf_array(array,1,fptr);
+//                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                        {
+//                            printf("* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                            fprintf(fptr,"* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                        }
+//                        else
+//                        {
+//                            printf("* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                            fprintf(fptr,"* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                        }
+//                    }
+//                    else
+//                    {
+//                        if(instruction->user.use_list[1].Val->VTy->ID==Int)
+//                        {
+//                            printf("i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                            fprintf(fptr,"i32,i32* %s,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                        }
+//                        else
+//                        {
+//                            printf("i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                            fprintf(fptr,"i32,i32* %s,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//                        }
+//                    }
+//                }
+//            }
+//
+//            printf("\n");
+//            fprintf(fptr,"\n");
+//            //}
+//            break;
+//        case MEMSET:
+//            flag_func=true;
+//            printf(" call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//            fprintf(fptr," call void @llvm.memset.p0i8.i64(i8* align 16 %s, i8 0, i64 %d, i1 false)\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//            break;
+//        case MEMCPY:
+//            flag_func=true;
+//            printf(" call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
+//            fprintf(fptr," call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
+//            printf_array(instruction->user.use_list[1].Val,0,fptr);
+//            printf("* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
+//                   get_array_total_occupy(instruction->user.use_list[1].Val,0));
+//            fprintf(fptr,"* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
+//                    get_array_total_occupy(instruction->user.use_list[1].Val,0));
+//            break;
+//        case GLOBAL_VAR:
+//            if(instruction->user.use_list->Val->VTy->ID!=ArrayTy_INT && instruction->user.use_list->Val->VTy->ID!=ArrayTy_FLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayInt && instruction->user.use_list->Val->VTy->ID!=GlobalArrayFloat && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstINT && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstINT)
+//            {
+//                if(instruction->user.use_list->Val->VTy->ID==GlobalVarInt)
+//                {
+//                    printf("%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                    fprintf(fptr,"%s=dso_local global i32 %d,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+//                } else
+//                {
+//                    printf("%s=dso_local global i32 %f,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                    fprintf(fptr,"%s=dso_local global i32 %f,align 4\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+//                }
+//            }
+//            else
+//            {
+//                v_cur_array=instruction->user.use_list->Val;
+//                if(instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT)
+//                {
+//                    printf("%s= internal constant ",instruction->user.use_list->Val->name);
+//                    fprintf(fptr,"%s= internal constant ",instruction->user.use_list->Val->name);
+//                    printf_global_array(instruction->user.use_list->Val,fptr);
+//                    printf("align 4\n");
+//                    fprintf(fptr,"align 4\n");
+//                }
+//                else
+//                {
+//                    printf("%s=dso_local global ",instruction->user.use_list->Val->name);
+//                    fprintf(fptr,"%s=dso_local global ",instruction->user.use_list->Val->name);
+//                    printf_global_array(instruction->user.use_list->Val,fptr);
+//                    if(instruction->user.use_list->Val->pdata->symtab_array_pdata.is_init==0)
+//                    {
+//                        printf(" zeroinitializer, align 4\n");
+//                        fprintf(fptr," zeroinitializer, align 4\n");
+//                    }
+//                    else
+//                    {
+//                        printf("align 4\n");
+//                        fprintf(fptr,"align 4\n");
+//                    }
+//                }
+//            }
+//            break;
+//        case GIVE_PARAM:
+//            params[give_count++]=instruction_node;
+//            if(instruction->user.use_list->Val->VTy->ID==Int)
+//                printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+//            else
+//                printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+//            break;
+//        case FunEnd:
+//            printf("}\n\n");
+//            fprintf(fptr,"}\n\n");
+//            break;
+//        case zext:
+//            printf(" %s = zext i1 %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//            fprintf(fptr," %s = zext i1 %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//            break;
+//        case XOR:
+//            printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//            fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+//            break;
+//        case Phi:{
+//            Value *insValue = ins_get_dest(instruction);
+//            HashSet *phiSet = instruction->user.value.pdata->pairSet;
+//            HashSetFirst(phiSet);
+//            printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
+//            fprintf(fptr," %s = phi i32",instruction->user.value.name);
+//            unsigned int size=HashSetSize(phiSet);
+//            int i=0;
+//            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+//                BasicBlock *from = phiInfo->from;
+//                Value *incomingVal = phiInfo->define;
+//                if(i + 1 == size)      //最后一次
+//                {
+//                    if(incomingVal != NULL && isImm(incomingVal)){
+//                        printf("[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
+//                        fprintf(fptr,"[%d , %%%d]",incomingVal->pdata->var_pdata.iVal,from->id);
+//                    }else if(incomingVal != NULL){
+//                        printf("[%s , %%%d]",incomingVal->name,from->id);
+//                        fprintf(fptr,"[%s , %%%d]",incomingVal->name,from->id);
+//                    }else{
+//                        //是NULL的话就
+//                        printf("[ undef, %%%d] ",from->id);
+//                        fprintf(fptr,"[ undef, %%%d] ",from->id);
+//                    }
+//                }
+//                else
+//                {
+//                    if(incomingVal != NULL && isImm(incomingVal)){
+//                        printf("[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+//                        fprintf(fptr,"[%d , %%%d], ",incomingVal->pdata->var_pdata.iVal,from->id);
+//                    }else if(incomingVal != NULL){
+//                        printf("[%s , %%%d], ",incomingVal->name,from->id);
+//                        fprintf(fptr,"[%s , %%%d], ",incomingVal->name,from->id);
+//                    }else{
+//                        printf("[ undef, %%%d], ",from->id);
+//                        fprintf(fptr,"[ undef, %%%d], ",from->id);
+//                    }
+//                }
+//                i++;
+//            }
+//            printf("\n");
+//            //printf("a phi instruction\n");
+//            break;
+//        }
+//        case CopyOperation:{
+//            Value *dest = instruction->user.value.alias;
+//            Value *src = ins_get_lhs(instruction);
+//            if(isImm(src)){
+//                printf(" %s(%s) = %d\n",dest->name,dest->alias->name,src->pdata->var_pdata.iVal);
+//            }else{
+//                printf(" %s(%s) = %s\n", dest->name,dest->alias->name,src->name);
+//            }
+//
+//            //printf("a copy operation\n");
+//            break;
+//        }
+//        default:
+//            break;
+//    }
+
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
+//
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
+//}
