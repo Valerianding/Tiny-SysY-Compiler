@@ -3503,8 +3503,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
-        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        printf("%d ",instruction->user.value.pdata->var_pdata.iVal);
+//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4598,17 +4598,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 break;
         }
 
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 //
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
@@ -4910,7 +4910,7 @@ void travel_finish_type(struct _InstNode *instruction_node)
                 if(get_next_inst(instruction_node)->inst->Opcode!=Label)
                 {
                     InstNode *insnode_tmp=get_next_inst(instruction_node);
-                    while(insnode_tmp->inst->Opcode!=Label)
+                    while(insnode_tmp!=NULL && insnode_tmp->inst->Opcode!=Label && insnode_tmp->inst->Opcode!=FunEnd)
                     {
                         InstNode *now=insnode_tmp;
                         insnode_tmp= get_prev_inst(insnode_tmp);
