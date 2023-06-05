@@ -22,7 +22,7 @@ bool isEmpty(BasicBlock *block){
     // 第一个InstNode 是Label
     // 最后一个是br 或者 br_label
     while(inst != block->tail_node){
-        if(inst->inst->Opcode == Label || inst->inst->Opcode == Phi){
+        if(inst->inst->Opcode == Label || inst->inst->Opcode == Phi || inst->inst->Opcode == FunBegin){
             inst = get_next_inst(inst);
         }else{
             return false;
@@ -344,7 +344,6 @@ bool OnePass(Vector* vector) {
         VectorGet(vector, i, (void *) &block);
         if(block->visited == false){
             block->visited = true;
-
         }
         bool processed = false;
         assert(block != NULL);
@@ -380,11 +379,9 @@ bool OnePass(Vector* vector) {
         //if i ends in a jump to j then
         if (block->tail_node->inst->Opcode == br) {
             //if i is empty then
-            if (isEmpty(block)) {
+            if (isEmpty(block) && block->head_node->inst->Opcode != FunBegin) {
                 //replace transfers to i with transfers to j
                 BasicBlock *j = block->true_block;
-
-
                 //首先去判断是否符合条件
 
                 //跳过Label
@@ -408,6 +405,7 @@ bool OnePass(Vector* vector) {
                         }
 
                         //另外如果j的phi包含一个不含phi函数的空基本快的前驱，如果这个基本块还有多个前驱的话，也是unremovable
+                        //TODO 那为什么不是
                         bool iHasPhi = false;
                         InstNode *iNode = block->head_node;
                         while(iNode != block->tail_node){
@@ -430,7 +428,6 @@ bool OnePass(Vector* vector) {
                 if(removeAble && processed == false){
                     processed = true;
                     printf("remove empty!\n");
-                    changed = true;
                     //符合先决条件
                     //如果block里面有phi函数
 
@@ -482,7 +479,6 @@ bool OnePass(Vector* vector) {
                                 iNode = nextNode;
                             }else{
                                 //到的这里是j里面有被i使用的
-
                                 //我们期待所有的i里面的phi都能被j使用 默认都已经处理掉了所以我们
                                 iNode = get_next_inst(iNode);
                             }
@@ -541,6 +537,7 @@ bool OnePass(Vector* vector) {
             //if j has only one predecessor
             BasicBlock *j = block->true_block;
             if (HashSetSize(j->preBlocks) == 1 && processed == false) {
+                changed = true;
                 processed = true;
                 HashSetFirst(j->preBlocks);
                 BasicBlock *jPrev = HashSetNext(j->preBlocks);
@@ -562,7 +559,7 @@ bool OnePass(Vector* vector) {
                 printf("\n");
 
                 HashSetFirst(j->preBlocks);
-                changed = false;
+
                 //combine i and j
                 combine(block, j);
             }
@@ -663,13 +660,45 @@ bool OnePass(Vector* vector) {
 }
 
 
+void EntryElimination(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
+    printf("entry head %d tail %d\n",entry->head_node->inst->i,entry->tail_node->inst->i);
+    print_one_ins_info(entry->head_node);
+    print_one_ins_info(get_next_inst(entry->head_node));
+
+
+    //反正entry又不可能有phi函数，并且后面的基本块不能含有phi函数
+//    if(isEmpty(entry) ){
+//        InstNode *headNode = entry->head_node;
+//        InstNode *tailNode = entry->tail_node;
+//
+//        //remove the last b node and the next label Node;
+//        deleteIns(tailNode);
+//        BasicBlock *nextBlock = get_next_inst(tailNode)->inst->Parent;
+//        InstNode *nextLabel = nextBlock->head_node;
+//        InstNode *nextTail = nextBlock->tail_node;
+//
+//
+//        //see if the next Block
+//        bool nextHasPhi = false;
+//        while(nextLabel != )
+//        deleteIns(nextLabel);
+//
+//        //let the next block be the first -> should change the headnode for nextblock
+//        nextBlock->head_node = headNode;
+//
+//
+//        //change the preBlocks for nextBlock
+//    }
+}
+
+
 void Clean(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     bool changed = true;
     while(changed){
          changed = false;
         // compute postorder
-
         Vector *vector = VectorInit(10);
 
         clear_visited_flag(entry);
@@ -677,11 +706,9 @@ void Clean(Function *currentFunction){
         // DepthFirst的逆
         depthFirstTraversal(vector,entry);
 
-
         int size = (int)VectorSize(vector);
 
         printf("vector size is %u\n",size);
-
 
         BasicBlock *temp = NULL;
 

@@ -14,6 +14,10 @@ typedef struct Loop{
     HashSet *exit;
     HashSet *loopBody;
     HashSet *child; // loop *
+
+    Value *inductionVariable; //inductionVariable may be NULL also for the initValue and modifier
+    Value *initValue; //induction variable's init value
+    Value *modifier; //modifier is the dest of the instruction that change the inductionVariable
 }Loop;
 
 
@@ -21,5 +25,9 @@ typedef struct Loop{
 void loop(Function *currentFunction);
 Loop *constructLoop(BasicBlock *head,BasicBlock *tail);
 void findBody(Loop *loop);
-void loopVariant(HashSet *loop, BasicBlock *head);
+void findExit(Loop *loop);
+bool LICM_EACH(Loop *loop);
+bool LICM(Function *currentFunction);
+bool dfsLoopTree(Loop *loop);
+void reconstructLoop(Loop *loop);
 #endif //C22V1_LOOP_H

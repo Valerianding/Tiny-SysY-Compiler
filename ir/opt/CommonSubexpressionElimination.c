@@ -5,16 +5,6 @@
 #include "CommonSubexpressionElimination.h"
 const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
 //TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
-Subexpression *createSubExpression(Value *lhs, Value *rhs, Opcode op){
-    Subexpression *subexpression = (Subexpression*)malloc(sizeof(Subexpression));
-    memset(subexpression, 0, sizeof(Subexpression));
-    subexpression->lhs = lhs;
-    subexpression->rhs = rhs;
-    subexpression->op = op;
-    return subexpression;
-}
-
-
 bool isSimpleOperator(InstNode *instNode){
     for (int i = 0; i < sizeof(simpleOpcodes) / sizeof(Opcode); i++){
         if (instNode->inst->Opcode == simpleOpcodes[i]){
@@ -67,141 +57,6 @@ bool isSame(Value *left, Value *right){
     return false;
 }
 
-bool commonSubexpression1(BasicBlock *block, Function *currentFunction){
-    bool effective = false;
-    InstNode *currNode = block->head_node;
-    HashMap *commonSubExpression = HashMapInit();
-    //反正block的结尾
-    while(currNode != block->tail_node){
-        printf("currNode is %d\n",currNode->inst->i);
-        if(isSimpleOperator(currNode)){
-            printf("simpleOperator %d\n",currNode->inst->i);
-            Value *lhs = ins_get_lhs(currNode->inst);
-            Value *rhs = ins_get_rhs(currNode->inst);
-            Value *dest = ins_get_dest(currNode->inst);
-            if((isImm(lhs) || isLocalVar(lhs) || isLocalArray(lhs) || isGlobalArray(lhs) || isGlobalVar(lhs) ||
-                    isAddress(lhs)) && (isImm(rhs) || isLocalVar(rhs))){
-                //看看现在的HashMap里面包不包含
-                HashMapFirst(commonSubExpression);
-                bool flag = false;
-                Value *replace = NULL;
-                printf("HashMapSize is %d\n",HashMapSize(commonSubExpression));
-                for(Pair *subExpr = HashMapNext(commonSubExpression); subExpr != NULL; subExpr = HashMapNext(commonSubExpression)){
-                    Subexpression *subexpression = subExpr->value;
-                    if(subexpression->op != currNode->inst->Opcode) continue;
-                    // TODO 没有考虑IMM！！
-                    switch (currNode->inst->Opcode) {
-                        case Add: {
-                            printf("Add\n");
-                            if(((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))) && subexpression->op == currNode->inst->Opcode){
-                                //并且还需要类型相等才能替换
-                                replace = subExpr->key;
-                                if(replace->VTy->ID != dest->VTy->ID){
-                                    replace = NULL;
-                                }else{
-                                    flag = true;
-                                }
-                            }
-                            break;
-                        }
-                        case Sub:{
-                            printf("Sub\n");
-                            if((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) && subexpression->op == currNode->inst->Opcode){
-                                replace = subExpr->key;
-                                if(replace->VTy->ID != dest->VTy->ID){
-                                    replace = NULL;
-                                }else{
-                                    flag = true;
-                                }
-                            }
-                            break;
-                        }
-                        case Mul:{
-                            printf("Mul\n");
-                            if(((isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs)) || (isSame(subexpression->lhs,rhs) && isSame(subexpression->rhs,lhs))) && subexpression->op == currNode->inst->Opcode){
-                                //满足条件
-                                replace = subExpr->key;
-                                if(replace->VTy->ID != dest->VTy->ID){
-                                    replace = NULL;
-                                }else{
-                                    flag = true;
-                                }
-                            }
-                            break;
-                        }
-                        case Div:{
-                            printf("Div\n");
-                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs) && subexpression->op == currNode->inst->Opcode){
-                                replace = subExpr->key;
-                                if(replace->VTy->ID != dest->VTy->ID){
-                                    replace = NULL;
-                                }else{
-                                    flag = true;
-                                }
-                            }
-                            break;
-                        }
-                        case Mod:{
-                            printf("Mod\n");
-                            if(isSame(subexpression->lhs,lhs) && isSame(subexpression->rhs,rhs) && subexpression->op == currNode->inst->Opcode){
-                                replace = subExpr->key;
-                                if(replace->VTy->ID != dest->VTy->ID){
-                                    replace = NULL;
-                                }else{
-                                    flag = true;
-                                }
-                            }
-                            break;
-                        }
-                        case GEP:{
-                            printf("Gep\n");
-                            if(subexpression->lhs == lhs && currNode->inst->Opcode == subexpression->op){
-                                printf("same array!\n");
-                                if(isImmInt(subexpression->rhs) && isImmInt(rhs) && (subexpression->rhs->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal)){
-                                    replace = subExpr->key;
-                                    flag = true;
-                                }else if(subexpression->rhs == rhs){
-                                    replace = subExpr->key;
-                                    flag = true;
-                                }
-                            }
-                            break;
-                        }
-                        default:{
-                            assert(false);
-                        }
-                    }
-                }
-                //
-                if(flag){
-                    printf("%s replaced by: %s\n",dest->name,replace->name);
-                    effective = true;
-                    assert(replace != NULL);
-                    valueReplaceAll(dest,replace,currentFunction);
-
-
-                    InstNode *next = get_next_inst(currNode);
-                    deleteIns(currNode);
-                    currNode = next;
-                    printf("next currNode is %d\n",currNode->inst->i);
-                }else{
-
-                    Subexpression *newSubExpression = createSubExpression(lhs,rhs,currNode->inst->Opcode);
-                    HashMapPut( commonSubExpression,dest,newSubExpression);
-                    currNode = get_next_inst(currNode);
-                    printf("next currNode is %d\n",currNode->inst->i);
-                }
-            }else{
-                currNode = get_next_inst(currNode);
-            }
-        }else{
-            currNode = get_next_inst(currNode);
-        }
-    }
-    HashMapDeinit(commonSubExpression);
-    return effective;
-}
-
 uint32_t hash_expr(int Opcode, Value* lhs, Value* rhs) {
     uintptr_t p1;
     if(isImm(lhs)){
@@ -244,8 +99,6 @@ uint32_t hash_expr(int Opcode, Value* lhs, Value* rhs) {
 
 
 /*
- *
- *
  * construct a hash_num
  * see if it has been seen before
  * if so, find the dest
@@ -278,6 +131,8 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
                 if(key != NULL){
                     //printf("has seen before!\n");
                     //has seen before
+
+                    effective = true;
                     valueReplaceAll(dest,key,currentFunction);
 
                     //delete this instruction
@@ -295,4 +150,6 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
             currNode = get_next_inst(currNode);
         }
     }
+    HashMapDeinit(num2var);
+    return effective;
 }

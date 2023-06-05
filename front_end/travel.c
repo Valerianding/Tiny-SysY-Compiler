@@ -4597,7 +4597,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-
         Value *v,*vl,*vr;
         v= ins_get_dest(instruction_node->inst);
         vl= ins_get_lhs(instruction_node->inst);
@@ -4613,7 +4612,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
         if(instruction->isCritical){
             printf("isCritical\n\n");
         }
-
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
@@ -4911,7 +4909,7 @@ void travel_finish_type(struct _InstNode *instruction_node)
                 if(get_next_inst(instruction_node)->inst->Opcode!=Label)
                 {
                     InstNode *insnode_tmp=get_next_inst(instruction_node);
-                    while(insnode_tmp->inst->Opcode!=Label)
+                    while(insnode_tmp!=NULL && insnode_tmp->inst->Opcode!=Label && insnode_tmp->inst->Opcode!=FunEnd)
                     {
                         InstNode *now=insnode_tmp;
                         insnode_tmp= get_prev_inst(insnode_tmp);

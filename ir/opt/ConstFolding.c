@@ -25,23 +25,23 @@ bool ConstFolding(Function *currentFunction){
                     changed = true;
                     if(isLocalVarInt(dest)){
                         dest->VTy->ID = Int;
-                        int left = (int)getOperandValue(lhs);
-                        int right = (int)getOperandValue(rhs);
+                        float left = getOperandValue(lhs);
+                        float right = (int)getOperandValue(rhs);
                         switch(currNode->inst->Opcode){
                             case Add:
-                               dest->pdata->var_pdata.iVal = left + right;
+                               dest->pdata->var_pdata.iVal = (int)(left + right);
                                break;
                             case Sub:
-                                dest->pdata->var_pdata.iVal = left - right;
+                                dest->pdata->var_pdata.iVal = (int)(left - right);
                                 break;
                             case Mul:
-                                dest->pdata->var_pdata.iVal = left * right;
+                                dest->pdata->var_pdata.iVal = (int)(left * right);
                                 break;
                             case Div:
-                                dest->pdata->var_pdata.iVal = left / right;
+                                dest->pdata->var_pdata.iVal = (int)(left / right);
                                 break;
                             case Mod:
-                                dest->pdata->var_pdata.iVal = left % right;
+                                dest->pdata->var_pdata.iVal = (int)left % (int)right;
                                 break;
                         }
                     }else if(isLocalVarFloat(dest)){

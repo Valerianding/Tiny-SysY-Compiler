@@ -576,7 +576,6 @@ void removeUnreachable(Function *currentFunction){
         BasicBlock *parent = currNode->inst->Parent;
         if(parent->visited == false){
             //
-
             printf("block %d is unreachable!\n",parent->id);
             assert(parent->head_node == currNode);
             InstNode *deleteNode = currNode;
@@ -618,7 +617,7 @@ void removeUnreachable(Function *currentFunction){
     }
 
     clear_visited_flag(entry);
-    renameVariables(currentFunction);
+    //renameVariables(currentFunction);
     clear_visited_flag(entry);
 
     print_block_info(entry);

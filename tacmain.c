@@ -95,29 +95,33 @@ int main(int argc, char* argv[]){
         dominanceAnalysis(currentFunction);
     }
 
-    // 建立phi之前
-    //printf_llvm_ir(instruction_list,argv[4],1);
+     //建立phi之前
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
         mem2reg(currentFunction);
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction);
     }
 
-     //优化之前
+     //mem2reg之后，优化前
     printf_llvm_ir(instruction_list,argv[4],1);
 
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        //sideEffect(currentFunction);
-        commonSubexpressionElimination(currentFunction);
-        memlvn(currentFunction);
-        //ConstFolding(currentFunction);
-        //Mark(currentFunction);
-        //Sweep(currentFunction);
-        renameVariables(currentFunction);
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        sideEffect(currentFunction);
+//        commonSubexpressionElimination(currentFunction);
+//        memlvn(currentFunction);
+//        ConstFolding(currentFunction);
+//        Mark(currentFunction);
+//        Sweep(currentFunction);
+//        Clean(currentFunction);
+//        loop(currentFunction);
+//        LICM(currentFunction);
+//        renameVariables(currentFunction);
+//    }
 
-
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //基本块内inscomb ok，基本块间ing
@@ -129,15 +133,13 @@ int main(int argc, char* argv[]){
     //phi上的优化
     //printf_llvm_ir(instruction_list,argv[4],1);
 
-
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
         cleanLiveSet(currentFunction);
     }
-    //printf_llvm_ir(instruction_list,argv[4],1);
 
-    //请注释掉我跑llvm脚本
+    //请注释掉我跑llvm脚本 phi函数消除
     //printf_llvm_ir(instruction_list,argv[4],1);
 
 
@@ -151,9 +153,6 @@ int main(int argc, char* argv[]){
     // Liveness 计算之后请注释掉我跑llvm
     //printf_llvm_ir(instruction_list,argv[4],1);
 
-
-
-
     //TODO 目前函数内联放在这里了，暂时的
 //    printf("=======func inline=========\n");
 //    func_inline(instruction_list);
@@ -161,8 +160,8 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-    fix_array(instruction_list);
-    printf_llvm_ir(instruction_list,argv[4],0);
+//    fix_array(instruction_list);
+//    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin

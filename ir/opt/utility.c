@@ -9,7 +9,7 @@ const Opcode invalidOpcodes[] = {FunBegin, Label, ALLBEGIN, Alloca, tmp, zext, M
 const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
 const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label,GIVE_PARAM};
 const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET};
-const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div};
+const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
 bool isValidOperator(InstNode *insNode){
     for (int i = 0; i < sizeof(invalidOpcodes) / sizeof(Opcode); i++) {
         if (insNode->inst->Opcode == invalidOpcodes[i]) {

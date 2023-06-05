@@ -43,6 +43,9 @@ InstNode *get_func_start(InstNode *cur){
 }
 
 void print_function_info(Function *this){
-    printf("function : %p entry : b%d tail : b%d\n", this, this->entry->id, this->tail->id);
+    InstNode *funcHead = this->entry->head_node;
+    assert(funcHead->inst->Opcode == FunBegin);
+    Value *function = ins_get_lhs(funcHead->inst);
+    printf("function : %s entry : b%d tail : b%d\n", function->name, this->entry->id, this->tail->id);
     printf("------------------------\n");
 }
