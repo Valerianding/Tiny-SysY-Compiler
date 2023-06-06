@@ -7423,19 +7423,19 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 InstNode * arm_trans_br_i1(InstNode *ins){
 //    int i=ins->inst->i;
     int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-    printf("\tbne\tLABEL%d\n",x);
-    fprintf(fp,"\tbne\tLABEL%d\n",x);
+    printf("\tbne\t%sLABEL%d\n",funcName,x);
+    fprintf(fp,"\tbne\t%sLABEL%d\n",funcName,x);
     x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-    printf("\tb\tLABEL%d\n",x);
-    fprintf(fp,"\tb\tLABEL%d\n",x);
+    printf("\tb\t%sLABEL%d\n",funcName,x);
+    fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
     return  ins;
 }
 
 InstNode * arm_trans_br(InstNode *ins){
 
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-    printf("\tb\tLABEL%d\n",x);
-    fprintf(fp,"\tb\tLABEL%d\n",x);
+    printf("\tb\t%sLABEL%d\n",funcName,x);
+    fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
     return ins;
 }
 
@@ -7456,8 +7456,8 @@ InstNode * arm_trans_br_i1_false(InstNode *ins){
 InstNode * arm_trans_Label(InstNode *ins){
 //强制跳转的位置
     int x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-    printf("LABEL%d:\n",x);
-    fprintf(fp,"LABEL%d:\n",x);
+    printf("%sLABEL%d:\n",funcName,x);
+    fprintf(fp,"%sLABEL%d:\n",funcName,x);
     return ins;
 }
 
