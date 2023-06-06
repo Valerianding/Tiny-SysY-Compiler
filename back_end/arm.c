@@ -6536,6 +6536,7 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
         printf("\tmov\tr2,#%d\n",x);
         fprintf(fp,"\tmov\tr2,#%d\n",x);
         printf("\tbl\tmemset\n");
+
         fprintf(fp,"\tbl\tmemset\n");
     }
     return ins;
