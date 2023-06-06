@@ -8225,6 +8225,7 @@ InstNode *arm_trans_Phi(InstNode *ins){
 InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
 //    Value*value0=&ins->inst->user.value;
     Value*value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    int memset_value=0;
 //    Value*value2= user_get_operand_use(&ins->inst->user,1)->Val;
 //    printf("arm_trans_MEMSET\n");
     if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)|| isGlobalArrayIntType(value1->VTy)||isGlobalArrayFloatType(value1->VTy)){
@@ -8232,8 +8233,15 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
         int x=get_value_offset_sp(hashMap,value1);
         printf("\tadd\tr0,r11,#%d\n",x);
         fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
-        printf("\tmov\tr1,#0\n");
-        fprintf(fp,"\tmov\tr1,#0\n");
+        if(imm_is_valid(memset_value)){
+            printf("\tmov\tr1,#%d\n",memset_value);
+            fprintf(fp,"\tmov\tr1,#%d\n",memset_value);
+        }else{
+            char arr[12]="0x";
+            sprintf(arr+2,"%0x",memset_value);
+            printf("\tldr\tr1,=%s\n",arr);
+            fprintf(fp,"\tldr\tr1,=%s\n",arr);
+        }
         x= get_array_total_occupy(value1->alias,0);
         printf("\tmov\tr2,#%d\n",x);
         fprintf(fp,"\tmov\tr2,#%d\n",x);
