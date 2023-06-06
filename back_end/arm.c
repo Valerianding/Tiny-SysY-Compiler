@@ -7518,6 +7518,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //也就是说其数组首地址的偏移量是不用从栈的hashmap中取出偏移量，从栈hashmap中取出数组首地址的偏移量直接就是int类型的数，可以直接用于计算
 //但是对于全局数组来说，数组首地址对应的翻译为ldr rd,.LCPI_1_0这些，所以说第一个数组首地址并不能像局部数组首地址那样直接用于计算
 
+
+//现在就是说在GEP的时候，如果是局部数组，直接将结果加上r11，这样直接就给出绝对地址
+//如果说是全局数组的话，就不用加，计算出来的自然就是绝对地址了
     Value *value0,*value1,*value2;
     int dest_reg,dest_reg_abs,left_reg,right_reg;
     value0=&ins->inst->user.value;
@@ -7534,13 +7537,19 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             int x=value2->pdata->var_pdata.iVal*4;
             x+=off;
             if(imm_is_valid(x)){
-                printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
-                fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
+//                printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
+//                fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
+                printf("\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
+                fprintf(fp,"\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
             }else{
                 char arr1[12]="0x";
                 sprintf(arr1+2,"%0x",x);
-                printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-                fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+//                printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+//                fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+                printf("\tldr\tr0,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+                printf("\tadd\tr%d,r11,r0\n",dest_reg_abs);
+                fprintf(fp,"\tadd\tr%d,r11,r0\n",dest_reg_abs);
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
@@ -7589,6 +7598,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
                 fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
             }
+            printf("\tadd\tr%d,r11,r%d\n",dest_reg_abs,dest_reg_abs);
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
@@ -8228,6 +8238,8 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
     int left_reg=ins->inst->_reg_[1];//需要存的值，能是变量，也可能是立即数
     int right_reg=ins->inst->_reg_[2];
+
+//    表示将某个值存放到数组中，这个数组可能是全局数组也可能是局部数组，这个数组给定直接就是绝对地址
     if(value2->VTy->ID==AddressTyID){
 //        这个value2->VTy==AddressTyID是不是标识局部数组store的唯一标识这个还需要确认和处理
 //        处理局部数组的store，处理完成之后就直接返回就可以了，不需要影响到其他全局变量的处理
@@ -8240,6 +8252,9 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         }else{
             right_reg_end=right_reg;
         }
+
+//      这里计算完成之后就是就是right_reg_end里面存放的就是需要保存到的绝对的地址
+
 
 //        printf("reg0:%d,reg1:%d,reg2:%d\n",dest_reg,left_reg,right_reg);
 
@@ -8254,11 +8269,11 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
                 int x= get_value_offset_sp(hashMap,value1);
                 printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
                 fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tstr\tr%d,[r11,r%d]\n",left_reg-100,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r11,r%d]\n",left_reg-100,right_reg_end);
+                printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
             }else{
-                printf("\tstr\tr%d,[r11,r%d]\n",left_reg,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r11,r%d]\n",left_reg,right_reg_end);
+                printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
             }
         }
         else if(isGlobalVarIntType(value1->VTy)){
@@ -8272,15 +8287,15 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         } else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
             printf("\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
             fprintf(fp,"\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
-            printf("\tstr\tr1,[r11,r%d]\n",right_reg_end);
-            fprintf(fp,"\tstr\tr1,[r11,r%d]\n",right_reg_end);
+            printf("\tstr\tr1,[r%d]\n",right_reg_end);
+            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",value1->pdata->var_pdata.iVal);
             printf("\tldr\tr1,=%s\n",arr1);
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tstr\tr1,[r11,r%d]\n",right_reg_end);
-            fprintf(fp,"\tstr\tr1,[r11,r%d]\n",right_reg_end);
+            printf("\tstr\tr1,[r%d]\n",right_reg_end);
+            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmFloatType(value1->VTy)){
             float x2=value2->pdata->var_pdata.fVal;
             int *xx2=(int*)&x2;
@@ -8288,29 +8303,29 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             sprintf(arr1+2,"%0x",*xx2);
             printf("\tldr\tr1,=%s\n",arr1);
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tstr\tr1,[r11,r%d]\n",right_reg_end);
-            fprintf(fp,"\tstr\tr1,[r11,r%d]\n",right_reg_end);
+            printf("\tstr\tr1,[r%d]\n",right_reg_end);
+            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isLocalVarIntType(value1->VTy)){
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
                 fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tstr\tr%d,[r11,r%d]\n",left_reg-100,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r11,r%d]\n",left_reg-100,right_reg_end);
+                printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
             }else{
-                printf("\tstr\tr%d,[r11,r%d]\n",left_reg,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r11,r%d]\n",left_reg,right_reg_end);
+                printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
             }
         }else if(isLocalVarFloatType(value1->VTy)){
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
                 fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tstr\tr%d,[r11,r%d]\n",left_reg-100,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r11,r%d]\n",left_reg-100,right_reg_end);
+                printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
             }else{
-                printf("\tstr\tr%d,[r11,r%d]\n",left_reg,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r11,r%d]\n",left_reg,right_reg_end);
+                printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
             }
         }else if(isLocalArrayIntType(value1->VTy)){
 
@@ -8319,6 +8334,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         }
         return ins;
     }
+//  表示将一个值存放到全局变量中
     int left_int_float=-1;
     if(isGlobalVarIntType(value1->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
@@ -8446,54 +8462,67 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
     return ins;
 }
 InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
+//在GEP中已经算出了变量的绝对地址，局部变量已经加上r11,全局变量不需要加上r11，所以说这里的load和store就是直接处理就可以了
+//还有就是涉及到数组的（包括局部数组和全局数组），value1的类型都是AddressTyID，这里是并不能判断他是局部数组还是全局数组的
+
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     int dest_reg=ins->inst->_reg_[0];
     int dest_reg_abs=abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     if(value1->VTy->ID==AddressTyID){
-//        这个是跟store差不多的，处理局部数组的load问题
+//        这个是跟store差不多的，处理局部数组的和全局数组load问题
+//        所以说这里面再去判断value1的类型是没有什么意义的
         if(left_reg>100){
-            if(isLocalVarIntType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
-                int x= get_value_offset_sp(hashMap,value1);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
-                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
-            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
-                ;
-            }else if(isLocalVarIntType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
-                ;
-            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
-                int x= get_value_offset_sp(hashMap,value1);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
-                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
-            }else{
-//            这里还会出现unknown的情况和其他的
-                int x= get_value_offset_sp(hashMap,value1);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
-                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
-            }
+//            这里说明GEP计算好的偏移量被放置如栈内存中
+            int x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+//            if(isLocalVarIntType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
+//                int x= get_value_offset_sp(hashMap,value1);
+//                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
+//                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
+//            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
+//                ;
+//            }else if(isLocalVarIntType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
+//                ;
+//            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
+//                int x= get_value_offset_sp(hashMap,value1);
+//                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
+//                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
+//            }else{
+////            这里还会出现unknown的情况和其他的
+//                int x= get_value_offset_sp(hashMap,value1);
+//                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+//                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
+//                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg-100);
+//            }
+
         }else{
-            if(isLocalVarIntType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
-                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
-                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
-            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
-                ;
-            }else if(isLocalVarIntType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
-                ;
-            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
-                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
-                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
-            }else{
-//            这里还会出现unknown的情况
-                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
-                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
-            }
+            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+//            if(isLocalVarIntType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
+//                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
+//                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
+//            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarIntType(value1->VTy)){
+//                ;
+//            }else if(isLocalVarIntType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
+//                ;
+//            }else if(isLocalVarFloatType(value0->VTy)&& isLocalVarFloatType(value1->VTy)){
+//                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
+//                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
+//            }else{
+////            这里还会出现unknown的情况
+//                printf("\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
+//                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",dest_reg_abs,left_reg);
+//            }
         }
         if(dest_reg<0){
             int x= get_value_offset_sp(hashMap,value0);
@@ -8502,6 +8531,8 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
         }
         return ins;
     }
+
+//    处理普通全局变量
     if(isGlobalVarIntType(value1->VTy)){
         LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
         if(lcptLabel==NULL){
