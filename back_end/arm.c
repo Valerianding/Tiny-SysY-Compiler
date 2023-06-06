@@ -6523,22 +6523,22 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 //    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
 // 这个现在暂定是用来进行数组的初始话操作。bl memset来进行处理，就不需要调用多次store
-    Value *value0=&ins->inst->user.value;
-//    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-    if(isLocalArrayIntType(value0->VTy)|| isLocalArrayFloatType(value0->VTy)|| isGlobalArrayIntType(value0->VTy)||isGlobalArrayFloatType(value0->VTy)){
-//        printf("%s\n",value0->alias->name);
-        int x=get_value_offset_sp(hashMap,value0);
-        printf("\tadd\tr0,r11,#%d\n",x);
-        fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
-        printf("\tmov\tr1,#0\n");
-        fprintf(fp,"\tmov\tr1,#0\n");
-        x= get_array_total_occupy(value0->alias,0);
-        printf("\tmov\tr2,#%d\n",x);
-        fprintf(fp,"\tmov\tr2,#%d\n",x);
-        printf("\tbl\tmemset\n");
-
-        fprintf(fp,"\tbl\tmemset\n");
-    }
+//    Value *value0=&ins->inst->user.value;
+////    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    if(isLocalArrayIntType(value0->VTy)|| isLocalArrayFloatType(value0->VTy)|| isGlobalArrayIntType(value0->VTy)||isGlobalArrayFloatType(value0->VTy)){
+////        printf("%s\n",value0->alias->name);
+//        int x=get_value_offset_sp(hashMap,value0);
+//        printf("\tadd\tr0,r11,#%d\n",x);
+//        fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
+//        printf("\tmov\tr1,#0\n");
+//        fprintf(fp,"\tmov\tr1,#0\n");
+//        x= get_array_total_occupy(value0->alias,0);
+//        printf("\tmov\tr2,#%d\n",x);
+//        fprintf(fp,"\tmov\tr2,#%d\n",x);
+//        printf("\tbl\tmemset\n");
+//
+//        fprintf(fp,"\tbl\tmemset\n");
+//    }
     return ins;
 }
 
@@ -8222,9 +8222,25 @@ InstNode *arm_trans_Phi(InstNode *ins){
     return ins;
 }
 
-InstNode *arm_trans_MEMSET(InstNode *ins){
-
+InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
+//    Value*value0=&ins->inst->user.value;
+    Value*value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    Value*value2= user_get_operand_use(&ins->inst->user,1)->Val;
 //    printf("arm_trans_MEMSET\n");
+    if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)|| isGlobalArrayIntType(value1->VTy)||isGlobalArrayFloatType(value1->VTy)){
+//        printf("%s\n",value0->alias->name);
+        int x=get_value_offset_sp(hashMap,value1);
+        printf("\tadd\tr0,r11,#%d\n",x);
+        fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
+        printf("\tmov\tr1,#0\n");
+        fprintf(fp,"\tmov\tr1,#0\n");
+        x= get_array_total_occupy(value1->alias,0);
+        printf("\tmov\tr2,#%d\n",x);
+        fprintf(fp,"\tmov\tr2,#%d\n",x);
+        printf("\tbl\tmemset\n");
+
+        fprintf(fp,"\tbl\tmemset\n");
+    }
     return ins;
 }
 InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
@@ -8659,7 +8675,7 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
         case Phi:
             return arm_trans_Phi(ins);
         case MEMSET:
-            return arm_trans_MEMSET(ins);
+            return arm_trans_MEMSET(hashMap,ins);
         case CopyOperation:
             return arm_trans_CopyOperation(ins,hashMap);
         default:
