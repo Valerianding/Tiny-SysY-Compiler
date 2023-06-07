@@ -7354,66 +7354,66 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("\tbge\tLABEL%d\n",x);
-            fprintf(fp,"\tbge\tLABEL%d\n",x);
+            printf("\tbge\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tbge\t%sLABEL%d\n",funcName,x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("\tb\tLABEL%d\n",x);
-            fprintf(fp,"\tb\tLABEL%d\n",x);
+            printf("\tb\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==GREAT){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("\tble\tLABEL%d\n",x);
-            fprintf(fp,"\tble\tLABEL%d\n",x);
+            printf("\tble\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tble\t%sLABEL%d\n",funcName,x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("\tb\tLABEL%d\n",x);
-            fprintf(fp,"\tb\tLABEL%d\n",x);
+            printf("\tb\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==LESSEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("\tbgt\tLABEL%d\n",x);
-            fprintf(fp,"\tbgt\tLABEL%d\n",x);
+            printf("\tbgt\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tbgt\t%sLABEL%d\n",funcName,x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("\tb\tLABEL%d\n",x);
-            fprintf(fp,"\tb\tLABEL%d\n",x);
+            printf("\tb\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==GREATEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("\tblt\tLABEL%d\n",x);
-            fprintf(fp,"\tblt\tLABEL%d\n",x);
+            printf("\tblt\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tblt\t%sLABEL%d\n",funcName,x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("\tb\tLABEL%d\n",x);
-            fprintf(fp,"\tb\tLABEL%d\n",x);
+            printf("\tb\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==EQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("\tbne\tLABEL%d\n",x);
-            fprintf(fp,"\tbne\tLABEL%d\n",x);
+            printf("\tbne\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tbne\t%sLABEL%d\n",funcName,x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("\tb\tLABEL%d\n",x);
-            fprintf(fp,"\tb\tLABEL%d\n",x);
+            printf("\tb\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==NOTEQ){
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
             int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("\tbeq\tLABEL%d\n",x);
-            fprintf(fp,"\tbeq\tLABEL%d\n",x);
+            printf("\tbeq\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tbeq\t%sLABEL%d\n",funcName,x);
             x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("\tb\tLABEL%d\n",x);
-            fprintf(fp,"\tb\tLABEL%d\n",x);
+            printf("\tb\t%sLABEL%d\n",funcName,x);
+            fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     }
     return ins;
