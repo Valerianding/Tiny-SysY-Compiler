@@ -17,7 +17,7 @@
 #define CLEARBIT(i,j)   ( RIG[(((i*rig_num)+j)/32)] &= ~(1 << ((i*rig_num+j)%32)) )  
 #define CHECKBIT(i,j)  ( RIG[(((i*rig_num)+j)/32)] & (1 << ((i*rig_num+j)%32)) )
 
-#define MAXSTRINGSIZE 40
+#define MAXSTRINGSIZE 100
 #define NO_COLOR -1
 #define REMOVED -2
 #define SPILLED -3
@@ -76,13 +76,6 @@ struct  reg_now
     int left_use;
     int right_use;
 };
-
-
-
-
-
-
-
 
 
 

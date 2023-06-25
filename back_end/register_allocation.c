@@ -25,8 +25,8 @@ void live_init_block()
 {
     rig_num=0;
     edge_num=0;
-    live=(struct name_num *)malloc(sizeof(struct name_num)*((tac_cnt+30)*3));
-    for(int i=0;i<(tac_cnt+30)*3;i++)
+    live=(struct name_num *)malloc(sizeof(struct name_num)*((tac_cnt+20)*3));
+    for(int i=0;i<(tac_cnt+19)*3;i++)
     {
         live[i].num=i;
         // live[i].name=NULL;
@@ -1307,11 +1307,15 @@ void travel_ir(InstNode *instruction_node)
         && temp_instruction_node->inst->Opcode!=br_i1
         && temp_instruction_node->inst->Opcode!=br_i1_false && temp_instruction_node->inst->Opcode!=br_i1_true
         && temp_instruction_node->inst->Opcode!=FunEnd && temp_instruction_node->inst->Opcode!=Return)
+        // while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br
+        // && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
+        // && instruction_node->inst->Opcode!=FunEnd)
         {
             Instruction *instruction=temp_instruction_node->inst;
             temp_cnt++;
             temp_instruction_node= get_next_inst(temp_instruction_node);
         }
+        // printf("\n\ntemp_cnt:%d\n\n",temp_cnt);
         echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
         instruction_node= get_next_inst(instruction_node);
         Value *v_cur_array=NULL;
@@ -1333,7 +1337,7 @@ void travel_ir(InstNode *instruction_node)
         for(int i=0;i<100;i++)
             params[i]=NULL;
 
-        while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br
+        while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN 
         && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
         && instruction_node->inst->Opcode!=FunEnd)
     #endif
@@ -1409,7 +1413,14 @@ void travel_ir(InstNode *instruction_node)
                 }
                 break;
             case br:
-                break;
+                {
+                    #if reg_alloc_test
+                        
+                    #else
+                        if_br_ir = 1;
+                    #endif
+                    break;
+                }
             case br_i1:
                 {
                     echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
@@ -1420,13 +1431,26 @@ void travel_ir(InstNode *instruction_node)
                         if_br_ir = 1;
                     #endif
                     break;
+                    // printf(" br i1 %s,label %%%d,label %%%d\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 }
             case br_i1_false:
-    
-                break;
+                {
+                    #if reg_alloc_test
+                        
+                    #else
+                        if_br_ir = 1;
+                    #endif
+                    break;
+                }
             case br_i1_true:
-                
-                break;
+                {
+                    #if reg_alloc_test
+                        
+                    #else
+                        if_br_ir = 1;
+                    #endif
+                    break;
+                }
             case EQ:
                 if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float)
                 {
@@ -2752,7 +2776,8 @@ void addtoin(BasicBlock *this_block)
     for(Value *liveInVariable = HashSetNext(this_block->in); liveInVariable != NULL; liveInVariable = HashSetNext(this_block->in)){
         assert(liveInVariable->name != NULL);
         if(liveInVariable->name != NULL){
-            live_in_name[block_in_num].name =(char *)malloc(sizeof(liveInVariable->name)+3);
+            // live_in_name[block_in_num].name =(char *)malloc(sizeof(liveInVariable->name)+3);
+            live_in_name[block_in_num].name =(char *)malloc(1000);
             strcpy(live_in_name[block_in_num++].name,liveInVariable->name);
         }
     }
@@ -2770,7 +2795,8 @@ void addtoout(BasicBlock *this_block)
     for(Value *liveOutVariable = HashSetNext(this_block->out); liveOutVariable != NULL; liveOutVariable = HashSetNext(this_block->out)){
         assert(liveOutVariable->name != NULL);
         if(liveOutVariable->name != NULL){
-            live_out_name[block_out_num].name =(char *)malloc(sizeof(liveOutVariable->name)+3);
+            // live_out_name[block_out_num].name =(char *)malloc(sizeof(liveOutVariable->name)+3);
+            live_out_name[block_out_num].name =(char *)malloc(1000);
             strcpy(live_out_name[block_out_num++].name,liveOutVariable->name);
         }
     }
@@ -2882,7 +2908,7 @@ void reg_control(struct _InstNode *instruction_node,InstNode *temp)
     ir_reg_init(instruction_node);
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next)
     {
-        // printf("func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
+        printf("func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
         reg_control_func(currentFunction);
     }
     printf_llvm_ir_withreg(instruction_node);
@@ -3197,15 +3223,17 @@ void add_to_ir()
 void clean_reg()
 {
     // for(int i=0;i<(tac_cnt+30)*3;i++)   free(live[i].name);
-    if(live) free(live);
-    if(_bian) free(_bian);
-    if(list_of_variables) free(list_of_variables);
-    if(RIG) free(RIG);
-    if(head) free(head);
-    if(echo_tac) free(echo_tac);
-    if(non_available_colors) free(non_available_colors);
-    if(live_in_name) free(live_in_name);
-    if(live_out_name) free(live_out_name);
+    // for(int tietie=0;tietie<block_in_num;tietie++)  free(live_in_name[tietie].name);
+    // for(int tietie=0;tietie<block_out_num;tietie++)  free(live_out_name[tietie].name);
+    // if(live) free(live);
+    // if(_bian) free(_bian);
+    // if(list_of_variables) free(list_of_variables);
+    // if(RIG) free(RIG);
+    // if(head) free(head);
+    // if(echo_tac) free(echo_tac);
+    // if(non_available_colors) free(non_available_colors);
+    // if(live_in_name) free(live_in_name);
+    // if(live_out_name) free(live_out_name);
     live_in_name=NULL;
     live_out_name=NULL;
     live=NULL;
