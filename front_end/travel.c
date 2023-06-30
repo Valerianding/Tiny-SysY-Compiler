@@ -4784,7 +4784,7 @@ void fix_array2(struct _InstNode *instruction_node)
         else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.use_list[1].Val!=NULL && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1))
         {
             //直接找到gep的最后一条,其他的全噶了
-            while(get_next_inst(instruction_node)->inst->Opcode==GEP)
+            while(get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
             {
                 InstNode *now=instruction_node;
                 instruction_node= get_prev_inst(instruction_node);
