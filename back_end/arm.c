@@ -7701,7 +7701,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
 //            printf("GEP next1\n");
-//            非第一条GEP而且是常数的偏移,常数的偏移的话直接add就可以了
+//            非第一条GEP而且是常数的偏移（其后不含变量）,常数的偏移的话直接add就可以了
 //            想这种情况right_reg=0,直接取value2里面的值就可以了
             int x=value2->pdata->var_pdata.iVal*4;
             if(left_reg>100){
@@ -7714,7 +7714,30 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
                 fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
             }
-        }else{
+        }else if(isImmIntType(value2->VTy)){
+//            非第一条GEP，且常数，其后是非常数,这里可以直接value2.ival*维数计算之后的值，再和基准相加
+            int y=value2->pdata->var_pdata.iVal;
+            int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+            int result= array_suffix(value1->alias,which_dimension);
+            result*=y;
+
+            if(left_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,result);
+                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,result);
+            }else{
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,result);
+                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,result);
+            }
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
+        }
+        else{
 //            非第一条GEP且非常数的偏移
 //            printf("GEP next2\n");
 
