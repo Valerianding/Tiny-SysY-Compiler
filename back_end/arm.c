@@ -7533,6 +7533,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     dest_reg_abs=abs(dest_reg);
     left_reg=ins->inst->_reg_[1];
     right_reg=ins->inst->_reg_[2];
+//    数组好像只有第一条GEP指令的value1类型是对的，之后的GEP指令对应的都是address,全局比那辆也是一样的，所以说可以利用value1的类型来判断是不是第一条GEP
     if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
         int flag=value0->pdata->var_pdata.iVal;
         int off= get_value_offset_sp(hashMap,value1);
@@ -7565,6 +7566,11 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        但是这里好像没有处理%1偏移一个a的情况,这个目前有效的处理方法是判断value1是否为address就可以了
 //        如果是address，说明这不是基于数组首地址的，不然就说明这是基于数组首地址的
 //        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
+
+//        还存在一个问题就是，数组的首地址是没有分配寄存器的，
+//        如果left_reg=0就代表这个计算数组的第一条GEP，是基于数组首地址的，所以代码的逻辑得改一下，
+//        还需要处理的就是，GEP直接计算出角绝对地址，load和store的时候不需要再加上r11，
+//        所以说，如arr[a][b][c]生成多条GEP，但是只需要再其中一条GEP加上一个r11就可以了，就是第一条GEP的时候
             int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
             int result= array_suffix(value1->alias,which_dimension);
             if(imm_is_valid(result)){
@@ -7576,32 +7582,52 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tldr\tr2,=%s\n",arr1);
                 fprintf(fp,"\tldr\tr2,=%s\n",arr1);
             }
-            if(left_reg>100&&right_reg>100){
-                int x1= get_value_offset_sp(hashMap,value1);
-                int x2= get_value_offset_sp(hashMap,value2);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-            }else if(left_reg>100){
-                int x1= get_value_offset_sp(hashMap,value1);
-                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-            }else if(right_reg>100){
-                int x2= get_value_offset_sp(hashMap,value2);
-                printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-            }else{
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+//            计算数组的第一条GEP，基于数组首地址进行偏移，还需要加上r11
+            if(left_reg==0){
+                int x1= get_value_offset_sp(hashMap,value1);//数组首地址的偏移量,这里可以直接r11加上数组首地址的偏移量就可以了
+                printf("\tadd\tr1,r11,#%d\n",x1);
+                fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                }else{
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                }
+//                printf("\tadd\tr%d,r11,r%d\n",dest_reg_abs,dest_reg_abs);
             }
-            printf("\tadd\tr%d,r11,r%d\n",dest_reg_abs,dest_reg_abs);
+//            else{  //之后的GEP
+//                if(left_reg>100&&right_reg>100){
+//                    int x1= get_value_offset_sp(hashMap,value1);
+//                    int x2= get_value_offset_sp(hashMap,value2);
+//                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+//                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
+//                }else if(left_reg>100){
+//                    int x1= get_value_offset_sp(hashMap,value1);
+//                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
+//                }else if(right_reg>100){
+//                    int x2= get_value_offset_sp(hashMap,value2);
+//                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
+//                }else{
+//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+//                }
+//            }
+//
+
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
@@ -7609,6 +7635,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             }
         }
     }
+//    全局变量的第一条GEP
     else if(isGlobalArrayIntType(value1->VTy)|| isGlobalArrayFloatType(value1->VTy)){
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
@@ -7618,10 +7645,10 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             if(lcptLabel==NULL){
                 printf("GEP Global error\n");
             }
-            printf("\tldr\tr0,%s\n",lcptLabel->LCPI);
-            fprintf(fp,"\tldr\tr0,%s\n",lcptLabel->LCPI);
-            printf("\tadd\tr%d,r0,#%d\n",dest_reg_abs,x);
-            fprintf(fp,"\tadd\tr%d,r0,#%d\n",dest_reg_abs,x);
+            printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+            fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
+            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
                 printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
@@ -7643,6 +7670,65 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tldr\tr2,=%s\n",arr1);
                 fprintf(fp,"\tldr\tr2,=%s\n",arr1);
             }
+            if(left_reg==0){
+                int x;
+                LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
+                if(lcptLabel==NULL){
+                    printf("GEP Global error\n");
+                }
+                printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
+                fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                }else{
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                }
+            }
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
+        }
+    }
+// 非第一条GEP，局部数组和全局数组都是一样的处理
+    else{
+        int flag=value0->pdata->var_pdata.iVal;
+        if(flag<0){
+//            printf("GEP next1\n");
+//            非第一条GEP而且是常数的偏移,常数的偏移的话直接add就可以了
+//            想这种情况right_reg=0,直接取value2里面的值就可以了
+            int x=value2->pdata->var_pdata.iVal*4;
+            if(left_reg>100){
+                int x1= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
+                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
+            }else{
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
+                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
+            }
+        }else{
+//            非第一条GEP且非常数的偏移
+//            printf("GEP next2\n");
+
+            int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
+            int result= array_suffix(value1->alias,which_dimension);
+            if(imm_is_valid(result)){
+                printf("\tmov\tr2,#%d\n",result);
+                fprintf(fp,"\tmov\tr2,#%d\n",result);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",result);
+                printf("\tldr\tr2,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            }
             if(left_reg>100&&right_reg>100){
                 int x1= get_value_offset_sp(hashMap,value1);
                 int x2= get_value_offset_sp(hashMap,value2);
@@ -7675,8 +7761,6 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             }
         }
     }
-
-
 
 //    printf("off %d\n",off);
 //   比如先把off装入%1对应的寄存器
