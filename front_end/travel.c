@@ -4597,21 +4597,21 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
-        if(instruction->isCritical){
-            printf("isCritical\n\n");
-        }
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
@@ -4799,6 +4799,14 @@ void fix_array2(struct _InstNode *instruction_node)
             replace_lhs_operand(instruction_node->inst,instruction_node->inst->user.use_list[1].Val->alias);
             replace_rhs_operand(instruction_node->inst,v_offset);
             instruction_node->inst->user.value.pdata->var_pdata.iVal=-2;
+        }
+        //上一种情况，比如d[b][3],但是下一条不是GEP了，或者下条是GEP,但是无法简化
+        //将iVal还原回原本维度
+        else if(instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
+        {
+            //拿到上一条GEP的维度+1
+            int pre_dimen= get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal;
+            instruction->user.value.pdata->var_pdata.iVal=pre_dimen+1;
         }
         //一维数组,is_offset=1
         else
