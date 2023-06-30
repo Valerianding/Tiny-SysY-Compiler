@@ -348,7 +348,8 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
     int value_name_num=-1;
     int name_num= atoi(name+1);
     int param_name_num= atoi(param_name+1);
-    if(value->name!=NULL){
+//    这里好像有问题，就是函数名只有一个字母的情况，get_one,名字只有一个g,g+1进行atoi就会得到0，所以需要判断第一个字母是不是%
+    if(value->name!=NULL && value->name[0]=='%'){
         value_name_num= atoi(value->name+1);
     }
 //    if(value->name!=NULL && strcmp(value->name,name)<0 && strlen(value->name)<= strlen(name)){
@@ -365,6 +366,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
                 node->regs=-1;
                 node->offset_sp=*local_stack;
                 param_off[x]=node->offset_sp;
+//                printf("param_off[%d]=%d\n",x,*local_stack);
                 (*local_stack)+=4;
                 HashMapPut(hashMap,value,node);
             }
@@ -7506,7 +7508,7 @@ InstNode * arm_trans_bitcast(InstNode *ins){
 //    return;
 //}
 InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
-//    因为之前设计上的问题，所以说需要把数组的load和store进行分离，这个的实现逻辑是需要改的
+// 因为之前设计上的问题，所以说需要把数组的load和store进行分离，这个的实现逻辑是需要改的
 // 这个需要大改，ldr和str可以在这里处理掉，就不需要再去修改load和store对应的翻译了
 // 使用乘加指令，首先需要记录当前所在的维数，这个lsy可能会存放在value0的ival里面(大于0就表示维数)
 // 然后需要乘的数值在value2的ival里面，将其与后面维数的大小相乘(使用的是reg[2])
