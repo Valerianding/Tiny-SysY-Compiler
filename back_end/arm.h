@@ -110,7 +110,7 @@ InstNode * arm_trans_MEMCPY(InstNode *ins);
 InstNode * arm_trans_zeroinitializer(InstNode *ins);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode *arm_trans_Phi(InstNode *ins);
-InstNode *arm_trans_MEMSET(InstNode *ins);
+InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack);
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
