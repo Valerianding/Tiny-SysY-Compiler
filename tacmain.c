@@ -108,20 +108,20 @@ int main(int argc, char* argv[]){
      //mem2reg之后，优化前
     printf_llvm_ir(instruction_list,argv[4],1);
 
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        sideEffect(currentFunction);
-//        commonSubexpressionElimination(currentFunction);
-//        memlvn(currentFunction);
-//        ConstFolding(currentFunction);
-//        Mark(currentFunction);
-//        Sweep(currentFunction);
-//        Clean(currentFunction);
-//        loop(currentFunction);
-//        LICM(currentFunction);
-//        renameVariables(currentFunction);
-//    }
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        sideEffect(currentFunction);
+        commonSubexpressionElimination(currentFunction);
+        memlvn(currentFunction);
+        ConstFolding(currentFunction);
+        Mark(currentFunction);
+        Sweep(currentFunction);
+        Clean(currentFunction);
+        loop(currentFunction);
+        LICM(currentFunction);
+        renameVariables(currentFunction);
+    }
 
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //基本块内inscomb ok，基本块间ing
@@ -143,12 +143,12 @@ int main(int argc, char* argv[]){
     //printf_llvm_ir(instruction_list,argv[4],1);
 
 
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        clear_visited_flag(currentFunction->entry);
-        printf("after out of SSA!\n");
-        calculateLiveness(currentFunction);
-        printLiveness(currentFunction);
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        clear_visited_flag(currentFunction->entry);
+//        printf("after out of SSA!\n");
+//        calculateLiveness(currentFunction);
+//        printLiveness(currentFunction);
+//    }
 
     // Liveness 计算之后请注释掉我跑llvm
     //printf_llvm_ir(instruction_list,argv[4],1);
@@ -167,7 +167,7 @@ int main(int argc, char* argv[]){
     //ljw_begin
     //reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
-    //ljw_end
+    //ljw_end`1`
 
 
 
