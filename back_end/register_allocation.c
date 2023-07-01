@@ -11,6 +11,7 @@ int edge_num;
 int var_num=0;
 int KK = 6;
 int rig_num;
+int reg_param_num;
 int block_in_num,block_out_num;
 struct  reg_now * echo_tac;
 // BasicBlock * block_list[1000];
@@ -444,46 +445,72 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID==VoidTyID)
                 {
                     printf("define dso_local void @%s(",instruction->user.use_list->Val->name);
-                    //fpintf(fptr,"define dso_local void @%s(",instruction->user.use_list->Val->name);
+                    // fprintf(fptr,"define dso_local void @%s(",instruction->user.use_list->Val->name);
                 } else
                 {
                     printf("define dso_local i32 @%s(",instruction->user.use_list->Val->name);
-                    //fpintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+                    // fprintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
                 }
                 p=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
                 int ii=p;
+                InstNode* node2=get_next_inst(instruction_node);
                 while (p>0)
                 {
                     if(p==instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
                     {
                         if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
                         {
-                            printf("i32* %%0");
-                            //fpintf(fptr,"i32* %%0");
+                            while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+                                node2=get_next_inst(node2);      //node2能指向真实value
+                            if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+                            {
+                                // printf_array(node2->inst->user.use_list->Val,1,fptr);
+                                printf("* %%0");
+                                // fprintf(fptr,"* %%0");
+                                node2= get_next_inst(node2);
+                            }
+                            else {
+                                printf("i32* %%0");
+                                // fprintf(fptr,"i32* %%0");
+                            }
                         }
                         else
                         {
                             printf("i32 %%0");
-                            //fpintf(fptr,"i32 %%0");
+                            // fprintf(fptr,"i32 %%0");
                         }
                     }
                     else
                     {
                         if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
                         {
-                            printf(",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
-                            //fpintf(fptr,",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+                                node2=get_next_inst(node2);      //node2能指向真实value
+                            if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+                            {
+                                printf(",");
+                                // fprintf(fptr,",");
+                                // printf_array(node2->inst->user.use_list->Val,1,fptr);
+                                printf("* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                                // fprintf(fptr,"* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                                node2= get_next_inst(node2);
+                            }
+                            else
+                            {
+                                printf(",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                                // fprintf(fptr,",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            }
                         }
                         else
                         {
                             printf(",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
-                            //fpintf(fptr,",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            // fprintf(fptr,",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
                         }
                     }
                     p--;
                 }
                 printf(") #0{\n");
-                //fpintf(fptr,") #0{\n");
+                // fprintf(fptr,") #0{\n");
                 break;
             case Return:
                 if(instruction->user.use_list==NULL)
@@ -1348,7 +1375,7 @@ void travel_ir(InstNode *instruction_node)
         echo_tac[tac_cnt].irnode=instruction;
         switch (instruction_node->inst->Opcode)
         {
-            printf("cnt:%d\n",tac_cnt);
+            // printf("cnt:%d\n",tac_cnt);
             case Alloca:
                 if(instruction->user.use_list->Val!=NULL && (instruction->user.use_list->Val->VTy->ID==ArrayTy_INT || instruction->user.use_list->Val->VTy->ID==ArrayTy_FLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayInt || instruction->user.use_list->Val->VTy->ID==GlobalArrayFloat || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstINT || instruction->user.use_list->Val->VTy->ID==ArrayTyID_ConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstFLOAT || instruction->user.use_list->Val->VTy->ID==GlobalArrayConstINT))
                 {
@@ -1720,46 +1747,72 @@ void travel_ir(InstNode *instruction_node)
                 if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID==VoidTyID)
                 {
                     // printf("define dso_local void @%s(",instruction->user.use_list->Val->name);
-                    //fpintf(fptr,"define dso_local void @%s(",instruction->user.use_list->Val->name);
+                    // fprintf(fptr,"define dso_local void @%s(",instruction->user.use_list->Val->name);
                 } else
                 {
                     // printf("define dso_local i32 @%s(",instruction->user.use_list->Val->name);
-                    //fpintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
+                    // fprintf(fptr,"define dso_local i32 @%s(",instruction->user.use_list->Val->name);
                 }
                 p=instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;
                 int ii=p;
+                InstNode* node2=get_next_inst(instruction_node);
                 while (p>0)
                 {
                     if(p==instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num)
                     {
                         if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
                         {
-                            // printf("i32* %%0");
-                            //fpintf(fptr,"i32* %%0");
+                            while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+                                node2=get_next_inst(node2);      //node2能指向真实value
+                            if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+                            {
+                                // printf_array(node2->inst->user.use_list->Val,1,fptr);
+                                // printf("* %%0");
+                                // fprintf(fptr,"* %%0");
+                                node2= get_next_inst(node2);
+                            }
+                            else {
+                                // printf("i32* %%0");
+                                // fprintf(fptr,"i32* %%0");
+                            }
                         }
                         else
                         {
                             // printf("i32 %%0");
-                            //fpintf(fptr,"i32 %%0");
+                            // fprintf(fptr,"i32 %%0");
                         }
                     }
                     else
                     {
                         if(instruction->user.use_list->Val->pdata->symtab_func_pdata.param_type_lists[ii-p].ID==AddressTyID)
                         {
-                            // printf(",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
-                            //fpintf(fptr,",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            while(node2->inst->user.use_list==NULL || (node2->inst->user.use_list->Val!=NULL && node2->inst->user.use_list->Val->VTy->ID!=AddressTyID))
+                                node2=get_next_inst(node2);      //node2能指向真实value
+                            if(node2->inst->user.use_list->Val->pdata->symtab_array_pdata.dimentions[0]==0)
+                            {
+                                // printf(",");
+                                // fprintf(fptr,",");
+                                // printf_array(node2->inst->user.use_list->Val,1,fptr);
+                                // printf("* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                                // fprintf(fptr,"* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                                node2= get_next_inst(node2);
+                            }
+                            else
+                            {
+                                // printf(",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                                // fprintf(fptr,",i32* %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            }
                         }
                         else
                         {
                             // printf(",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
-                            //fpintf(fptr,",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
+                            // fprintf(fptr,",i32 %%%d",instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num-p);
                         }
                     }
                     p--;
                 }
                 // printf(") #0{\n");
-                //fpintf(fptr,") #0{\n");
+                // fprintf(fptr,") #0{\n");
                 break;
             case Return:
                 if(instruction->user.use_list==NULL)
@@ -2771,9 +2824,10 @@ void create_bian(int i,int j)
 void addtoin(BasicBlock *this_block)
 {
     block_in_num=0;
-    live_in_name=(struct SString *)malloc(sizeof(struct SString)*var_num);
-    HashSetFirst(this_block->in);
-    for(Value *liveInVariable = HashSetNext(this_block->in); liveInVariable != NULL; liveInVariable = HashSetNext(this_block->in)){
+    BasicBlock *reg_curblock=this_block;
+    live_in_name=(struct SString *)malloc(sizeof(struct SString)*(var_num+10));
+    HashSetFirst(reg_curblock->in);
+    for(Value *liveInVariable = HashSetNext(reg_curblock->in); liveInVariable != NULL; liveInVariable = HashSetNext(reg_curblock->in)){
         assert(liveInVariable->name != NULL);
         if(liveInVariable->name != NULL){
             // live_in_name[block_in_num].name =(char *)malloc(sizeof(liveInVariable->name)+3);
@@ -2781,9 +2835,15 @@ void addtoin(BasicBlock *this_block)
             strcpy(live_in_name[block_in_num++].name,liveInVariable->name);
         }
     }
-    // printf("in:\n");
+    // printf("reg_param_num:%d\n",reg_param_num);
+    for(int i=0;i<reg_param_num;i++)
+    {
+        live_in_name[block_in_num].name =(char *)malloc(1000);
+        sprintf(live_in_name[block_in_num++].name,"%%%d",i);
+    }
+    // printf("in:\tblockid:%d\tnum:%d\n",reg_curblock->id,block_in_num);
     // for(int i=0;i<block_in_num;i++)
-    //     printf("%s\n",live_in_name[i]);
+    //     printf("%s\n",live_in_name[i].name);
     return ;
 }
 
@@ -2976,6 +3036,8 @@ void reg_control_func(Function *currentFunction)
             }
             currNode = get_next_inst(currNode);
         }
+        InstNode *headNode = entry->head_node;
+        reg_param_num = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
         // printf("func block_num:%d\n\n",block_num);
         // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
         clear_visited_flag(entry);
