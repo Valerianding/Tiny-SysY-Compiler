@@ -304,3 +304,10 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
         }
     }
 }
+
+
+//delete store only alloca and its stores
+void remove_store_only(Function *function){
+
+
+}

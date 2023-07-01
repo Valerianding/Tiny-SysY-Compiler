@@ -9,15 +9,32 @@
 #include <stack.h>
 typedef struct Loop{
     struct Loop *parent;
-    BasicBlock *head;
-    BasicBlock *tail; //back-edge's tail
-    HashSet *exit;
-    HashSet *loopBody;
+
     HashSet *child; // loop *
 
-    Value *inductionVariable; //inductionVariable may be NULL also for the initValue and modifier
-    Value *initValue; //induction variable's init value
-    Value *modifier; //modifier is the dest of the instruction that change the inductionVariable
+    //entry block (head of back edge)
+    BasicBlock *head;
+    //tail block (tail of back edge)
+    BasicBlock *tail;
+    // exiting Block(it is actually called exiting Block)
+    HashSet *exitingBlock;
+    //all blocks of loop containing entry and tail
+    HashSet *loopBody;
+    //inductionVariable may be NULL also for the initValue and modifier
+    Value *inductionVariable;
+    //induction variable's init value
+    Value *initValue;
+    //modifier is the dest of the instruction that change the inductionVariable
+    //for example %3 if %3 = %ind_var + c
+    Value *modifier;
+    //the end condition of loop
+    Value *end_cond;
+
+
+    //block to jump when leaving loop entry
+    BasicBlock *body_block;
+    //block to jump to when the loop exits
+    BasicBlock *exit_block;
 }Loop;
 
 
@@ -26,8 +43,6 @@ void loop(Function *currentFunction);
 Loop *constructLoop(BasicBlock *head,BasicBlock *tail);
 void findBody(Loop *loop);
 void findExit(Loop *loop);
-bool LICM_EACH(Loop *loop);
-bool LICM(Function *currentFunction);
-bool dfsLoopTree(Loop *loop);
+void findInductionVariable(Loop *loop);
 void reconstructLoop(Loop *loop);
 #endif //C22V1_LOOP_H

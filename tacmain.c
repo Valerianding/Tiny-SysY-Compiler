@@ -108,18 +108,17 @@ int main(int argc, char* argv[]){
      //mem2reg之后，优化前
     printf_llvm_ir(instruction_list,argv[4],1);
 
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        sideEffect(currentFunction);
-        commonSubexpressionElimination(currentFunction);
-        memlvn(currentFunction);
-        ConstFolding(currentFunction);
-        Mark(currentFunction);
-        Sweep(currentFunction);
-        Clean(currentFunction);
-        loop(currentFunction);
-        LICM(currentFunction);
-        renameVariables(currentFunction);
-    }
+   for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+       //sideEffect(currentFunction);
+       //commonSubexpressionElimination(currentFunction);
+       //memlvn(currentFunction);
+       //ConstFolding(currentFunction);
+       loop(currentFunction);
+       Mark(currentFunction);
+       Sweep(currentFunction);
+       Clean(currentFunction);
+       renameVariables(currentFunction);
+   }
 
     printf_llvm_ir(instruction_list,argv[4],1);
 
@@ -133,17 +132,18 @@ int main(int argc, char* argv[]){
     //phi上的优化
     //printf_llvm_ir(instruction_list,argv[4],1);
 
-    block = temp->inst->Parent;
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        SSADeconstruction(currentFunction);
-        cleanLiveSet(currentFunction);
-    }
+//    block = temp->inst->Parent;
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        SSADeconstruction(currentFunction);
+//        cleanLiveSet(currentFunction);
+//    }
 
     //请注释掉我跑llvm脚本 phi函数消除
     //printf_llvm_ir(instruction_list,argv[4],1);
 
 
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
 //        clear_visited_flag(currentFunction->entry);
 //        printf("after out of SSA!\n");
 //        calculateLiveness(currentFunction);

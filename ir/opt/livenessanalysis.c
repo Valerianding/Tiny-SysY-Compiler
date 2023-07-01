@@ -276,8 +276,14 @@ void calculateLiveness1(Function *currentFunction){
 // 包含phi函数的 活跃变量分析
 //用作 loop invariant等地方
 void calculateLiveness(Function *currentFunction){
+
+
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;
     InstNode *tailNode = tail->tail_node;
+
+    clear_visited_flag(entry);
+    //we need at least run for all the blocks once use the visited flag to achieve that purpose
     while(tailNode->inst->Opcode != Return){
         //向前查找
         tailNode = get_prev_inst(tailNode);
@@ -292,6 +298,8 @@ void calculateLiveness(Function *currentFunction){
 
     HashSetAdd(workList,exit);
 
+
+    bool firstTime = false;
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
@@ -379,6 +387,7 @@ void calculateLiveness(Function *currentFunction){
         if(HashSetDifferent(originalOutSet,block->out)){
             changed = true;
         }
+        HashSetDeinit(originalOutSet);
 
         HashSet *tempSet = HashSetInit();
         HashSetCopyValue(tempSet,block->out);
@@ -418,6 +427,7 @@ void calculateLiveness(Function *currentFunction){
                     lhs = NULL;
                     rhs = NULL;
                 }else if(currNode->inst->Opcode == GIVE_PARAM){
+                    printf("lhs : %s!!!!\n",lhs->name);
                     rhs = NULL;
                 }else if(currNode->inst->Opcode == Phi){
                     lhs = NULL;
@@ -455,12 +465,14 @@ void calculateLiveness(Function *currentFunction){
 
         changed |= HashSetCopyValue(block->in, tempSet);
 
-
-        if(changed || (block == currentFunction->tail)){
+        if(changed || (block == currentFunction->tail) || block->visited == false){
+            block->visited = true;
             HashSetFirst(block->preBlocks);
             for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
                 HashSetAdd(workList,preBlock);
             }
         }
     }
+
+    clear_visited_flag(entry);
 }
