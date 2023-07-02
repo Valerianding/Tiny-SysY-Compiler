@@ -1,23 +1,27 @@
-int get_one(int a) {
-    return 1;
+int a = 7;
+
+int func() {
+    int b = a;
+    int a = 1;
+    if (a == b) {
+        a = a + 1;
+        return 1;
+    }
+    else
+        return 0;
 }
 
-int deepWhileBr(int a, int b) {
-    int c;
-    c = a + b;
-    while (c < 75) {
-        int d;
-        d = 42;
-        if (c < 100) {
-            c = c + d;
-            if (c > 99) {
-                int e;
-                e = d * 2;
-                if (get_one(0) == 1) {
-                    c = e * 2;
-                }
-            }
-        }
+int main() {
+    int result = 0;
+    int i = 0;
+    while (i < 100) {
+        if (func() == 1)
+            result = result + 1;
+        i = i + 1;
     }
-    return (c);
+    if (result < 100)
+        putint(1);
+    else
+        putint(0);
+    return 0;
 }

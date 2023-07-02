@@ -126,9 +126,9 @@ void renameVariables(Function *currentFunction) {
         if(copyNode->inst->Opcode == CopyOperation){
             Value *copyDest = ins_get_dest(copyNode->inst)->alias;
             char *copyNum = &copyDest->name[1];
-            //printf("string %s\n",copyNum);
+            printf("string %s\n",copyNum);
             int num = atoi(copyNum);
-            //printf("num %d\n",num);
+            printf("num %d\n",num);
             HashSetAdd(copyNumSet,(void *)num);
         }
         copyNode = get_next_inst(copyNode);
@@ -136,6 +136,10 @@ void renameVariables(Function *currentFunction) {
 
     while (currNode != tailNode) {
         if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1 && currNode->inst->Opcode != CopyOperation) {
+            while(HashSetFind(copyNumSet,(void *)countVariable)){
+                printf("countVariable %d\n",countVariable);
+                countVariable++;
+            }
             if (currNode->inst->Opcode == Label) {
                 //更新一下BasicBlock的ID 顺便就更新了phi
                 BasicBlock *block = currNode->inst->Parent;
@@ -146,7 +150,6 @@ void renameVariables(Function *currentFunction) {
                 // 普通的instruction语句
                 char *insName = currNode->inst->user.value.name;
 
-                if(HashSetFind(copyNumSet,(void *)countVariable)) countVariable++;
                 //如果不为空那我们可以进行重命名
                 if (insName != NULL && insName[0] == '%') {
                     char newName[10];
