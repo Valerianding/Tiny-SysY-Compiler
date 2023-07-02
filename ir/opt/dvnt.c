@@ -7,7 +7,7 @@
  * a hash map key is variable value is the number
  */
 
-#include "DVNT.h"
+#include "dvnt.h"
 
 const Opcode valueOperator[] = {Load,Call,Add,Sub, Div,Mul,Mod};
 unsigned int value_number_seed = 1;

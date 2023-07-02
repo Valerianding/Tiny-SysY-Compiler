@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/4/16.
 //
 
-#include "CommonSubexpressionElimination.h"
+#include "cse.h"
 const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
 //TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
 bool isSimpleOperator(InstNode *instNode){

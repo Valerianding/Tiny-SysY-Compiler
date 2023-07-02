@@ -4,12 +4,13 @@
 
 #ifndef C22V1_PASSMANAGER_H
 #define C22V1_PASSMANAGER_H
-#include "ConstFolding.h"
-#include "DeadCodeElimination.h"
-#include "CommonSubexpressionElimination.h"
+#include "constfolding.h"
+#include "dce.h"
+#include "cse.h"
 #include "livenessanalysis.h"
-#include "Loop.h"
-#include "DVNT.h"
+#include "loopinfo.h"
+#include "dvnt.h"
 #include "memlvn.h"
+#include "licm.h"
 void RunPasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

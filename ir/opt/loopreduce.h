@@ -5,7 +5,7 @@
 #ifndef C22V1_LOOPREDUCE_H
 #define C22V1_LOOPREDUCE_H
 #include "function.h"
-#include "Loop.h"
+#include "loopinfo.h"
 #include "utility.h"
 bool RunOnLoop(Loop *loop){
     //need to dfs travel

@@ -6,7 +6,7 @@
 #include "symtab.h"
 #include "bblock.h"
 #include "stdio.h"
-#include "bb_divide.h"
+#include "bbdivide.h"
 #include "dominance.h"
 #include "travel.h"
 #include "register_allocation.h"
@@ -109,13 +109,22 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 
    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-       //sideEffect(currentFunction);
-       //commonSubexpressionElimination(currentFunction);
-       //memlvn(currentFunction);
-       //ConstFolding(currentFunction);
+       sideEffect(currentFunction);
+       ConstFolding(currentFunction);
+       commonSubexpressionElimination(currentFunction);
+       memlvn(currentFunction);
+       DVNT(currentFunction);
+
+       //loop
        loop(currentFunction);
+       LICM(currentFunction);
+
+
+       //dce
        Mark(currentFunction);
        Sweep(currentFunction);
+
+       //CfgSimplify
        Clean(currentFunction);
        renameVariables(currentFunction);
    }
@@ -132,14 +141,15 @@ int main(int argc, char* argv[]){
     //phi上的优化
     //printf_llvm_ir(instruction_list,argv[4],1);
 
-//    block = temp->inst->Parent;
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        SSADeconstruction(currentFunction);
-//        cleanLiveSet(currentFunction);
-//    }
+    block = temp->inst->Parent;
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        SSADeconstruction(currentFunction);
+        renameVariables(currentFunction);
+        cleanLiveSet(currentFunction);
+    }
 
     //请注释掉我跑llvm脚本 phi函数消除
-    //printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -165,7 +175,7 @@ int main(int argc, char* argv[]){
     //lsy_end
 
     //ljw_begin
-    //reg_control(instruction_list,temp);
+//    reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
