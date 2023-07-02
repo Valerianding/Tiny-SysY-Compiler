@@ -1954,10 +1954,12 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
+            printf("\tmov\tr1,#%d\n",x1);
+            fprintf(fp,"\tmov\tr1,#%d\n",x1);
             printf("\tldr\tr2,=%s\n",arr2);
             fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tsub\tr%d,r2,#%d\n",dest_reg_abs,x1);
-            fprintf(fp,"\tsub\tr%d,r2,#%d\n",dest_reg_abs,x1);
+            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
+            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    sub r%d,r2,#%d\n",result_regri,x1);
         }else{
             char arr1[12]="0x";
@@ -5737,11 +5739,11 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 int x= get_value_offset_sp(hashMap,value1);
                 printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
                 fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tmov\tr1,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr1,r%d\n",left_reg-100);
+                printf("\tmov\tr0,r%d\n",left_reg-100);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
             } else{
-                printf("\tmov\tr1,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr1,r%d\n",left_reg);
+                printf("\tmov\tr0,r%d\n",left_reg);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
             }
         }else{
             char arr2[12]="0x";

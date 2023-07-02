@@ -1427,14 +1427,14 @@ void travel_ir(InstNode *instruction_node)
                 else if(instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
                 {
                     echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].left_use=0;
+                    echo_tac[tac_cnt].left_use=1;
                     echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                     echo_tac[tac_cnt].right_use=1;
                 }
                 else
                 {
                     echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].left_use=0;
+                    echo_tac[tac_cnt].left_use=1;
                     echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                     echo_tac[tac_cnt].right_use=1;
                 }
@@ -2836,11 +2836,11 @@ void addtoin(BasicBlock *this_block)
         }
     }
     // printf("reg_param_num:%d\n",reg_param_num);
-    for(int i=0;i<reg_param_num;i++)
-    {
-        live_in_name[block_in_num].name =(char *)malloc(1000);
-        sprintf(live_in_name[block_in_num++].name,"%%%d",i);
-    }
+    // for(int i=0;i<reg_param_num;i++)
+    // {
+    //     live_in_name[block_in_num].name =(char *)malloc(1000);
+    //     sprintf(live_in_name[block_in_num++].name,"%%%d",i);
+    // }
     // printf("in:\tblockid:%d\tnum:%d\n",reg_curblock->id,block_in_num);
     // for(int i=0;i<block_in_num;i++)
     //     printf("%s\n",live_in_name[i].name);
