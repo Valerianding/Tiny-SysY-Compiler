@@ -5737,11 +5737,11 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 int x= get_value_offset_sp(hashMap,value1);
                 printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
                 fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tmov\tr1,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr1,r%d\n",left_reg-100);
+                printf("\tmov\tr0,r%d\n",left_reg-100);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
             } else{
-                printf("\tmov\tr1,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr1,r%d\n",left_reg);
+                printf("\tmov\tr0,r%d\n",left_reg);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
             }
         }else{
             char arr2[12]="0x";
