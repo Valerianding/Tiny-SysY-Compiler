@@ -126,8 +126,8 @@ bool LICM_EACH(Loop *loop){
             bool cond2 = true;
 
             //S节点是循环L的所有出口节点的必经节点
-            HashSetFirst(loop->exit);
-            for(BasicBlock *exitBlock = HashSetNext(loop->exit); exitBlock != NULL; exitBlock = HashSetNext(loop->exit)){
+            HashSetFirst(loop->exitingBlock);
+            for(BasicBlock *exitBlock = HashSetNext(loop->exitingBlock); exitBlock != NULL; exitBlock = HashSetNext(loop->exitingBlock)){
                 if(!HashSetFind(exitBlock->dom,block)){
                     cond1 = false;
                 }

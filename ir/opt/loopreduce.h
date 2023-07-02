@@ -14,9 +14,7 @@ bool RunOnLoop(Loop *loop){
 }
 
 bool CheckLoop(Loop *loop){
-    if(HashSetSize(loop->head->preBlocks) != 1 || ){
 
-    }
 }
 
 bool LoopStrengthReduction(Function *function){
@@ -26,7 +24,7 @@ bool LoopStrengthReduction(Function *function){
     HashSetFirst(loops);
     for(Loop *loop = HashSetNext(function->loops); loop != NULL; loop = HashSetNext(function->loops)){
         //
-        RunOnLoop()
+       // RunOnLoop()
     }
 }
 
