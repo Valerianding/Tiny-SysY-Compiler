@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/7/1.
 //
 
-#include "LICM.h"
+#include "licm.h"
 
 bool LICM(Function *currentFunction){
     bool effective = false;

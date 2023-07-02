@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/4/18.
 //
 //
-#include "Loop.h"
+#include "loopinfo.h"
 // get all the loop info
 void loop(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;

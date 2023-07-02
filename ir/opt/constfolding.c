@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/4/7.
 //
 
-#include "ConstFolding.h"
+#include "constfolding.h"
 bool ConstFolding(Function *currentFunction){
     // runs on function
     // 我们仅仅去检查那些
