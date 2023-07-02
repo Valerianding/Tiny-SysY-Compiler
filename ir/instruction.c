@@ -90,10 +90,34 @@ Value *ins_get_value_with_name_and_index(Instruction* ins,int index)
     return v_tmp;
 }
 
+Value *ins_get_value_with_name_and_index_(Instruction* ins,int index)
+{
+    Value *v_tmp = &ins->user.value;
+    sprintf(t_num, "%d", index);
+    strcat(t,t_num);
+    strcat(t,"_");
+    v_tmp->pdata->map_list = getCurMapList(this);
+    v_tmp->name = (char*) malloc(strlen (t));
+    strcpy(v_tmp->name,t);
+    clear_tmp(t);
+    return v_tmp;
+}
+
 //获取instruction.user.value并赋个名字
 Value *ins_get_value_with_name(Instruction *ins){
     Value *v_tmp = &ins->user.value;
     sprintf(t_num, "%d", t_index++);
+    strcat(t,t_num);
+    v_tmp->pdata->map_list = getCurMapList(this);
+    v_tmp->name = (char*) malloc(strlen (t));
+    strcpy(v_tmp->name,t);
+    clear_tmp(t);
+    return v_tmp;
+}
+
+//得到一个新的命名Value
+Value *ins_get_new_value(Value *v_tmp,int index){
+    sprintf(t_num, "%d", index);
     strcat(t,t_num);
     v_tmp->pdata->map_list = getCurMapList(this);
     v_tmp->name = (char*) malloc(strlen (t));
