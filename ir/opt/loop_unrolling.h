@@ -5,7 +5,7 @@
 #ifndef C22V1_LOOP_UNROLLING_H
 #define C22V1_LOOP_UNROLLING_H
 
-#include "Loop.h"
+#include "loopinfo.h"
 
 void loop_unroll(Function *currentFunction);
 //复制一个信息都相同的value副本
