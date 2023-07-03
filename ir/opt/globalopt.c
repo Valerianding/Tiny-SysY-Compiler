@@ -77,7 +77,7 @@ void CheckGlobalVariable(InstNode *list){
         Use *uses = val->use_list;
         while(uses != NULL){
             User *user = uses->Parent;
-
+            Instruction *ins =
             uses = uses->Next;
         }
     }

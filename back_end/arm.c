@@ -7566,7 +7566,7 @@ InstNode * arm_trans_zext(InstNode *ins){
 InstNode * arm_trans_bitcast(InstNode *ins){
 //类型转换，已经通过映射解决掉了bitcast产生的 多余的mov和load指令的问题
 //    printf("arm_trans_bitcast\n");
-    assert(false);
+    //assert(false);
     return ins;
 }
 //void multiply_and_add_instructions_for_translated_arrays(InstNode*ins,HashMap*hashMap){

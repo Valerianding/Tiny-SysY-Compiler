@@ -1,82 +1,89 @@
-int array[110];
-int n;
-void init(int n) {
-    int i = 1;
-    while (i <= n * n + 1) {
-        array[i] = -1;
+const int INF = 1073741824;
+int a[30][30];
+int step[4][2] = { {1,0},{-1,0},{0,1},{0,-1} };
+int w, h, x_0, y_0, x_1, y_1;
+
+int search(int x, int y, int n)
+{
+    if (n > 10)
+        return INF;
+    int num = INF;
+    int i = 0;
+    while (i < 4) {
+        int coun = 0;
+        int x2 = x, y2 = y;
+        while (a[x2][y2] != 1) {
+            if (x2 == x_1 && y2 == y_1) break;
+            x2 = x2 + step[i][0];
+            y2 = y2 + step[i][1];
+            coun = coun + 1;
+        }
+        if (x2 == x_1 && y2 == y_1)
+            return  1;
+        if (coun <= 1) {
+            i = i + 1;
+            continue;
+        }
+        if (x2 == 0 || x2 == h + 1 || y2 == 0 || y2 == w + 1) {
+            i = i + 1;
+            continue;
+        }
+        a[x2][y2] = 0;
+        int searchResult = search(x2 - step[i][0], y2 - step[i][1], n + 1) + 1;
+        if (searchResult < num)
+            num = searchResult;
+        a[x2][y2] = 1;
         i = i + 1;
     }
+
+    if (num > 10)
+        return  INF;
+    return  num;
 }
 
-int findfa(int a) {
-    if (array[a] == a)
-        return a;
-    else {
-        array[a] = findfa(array[a]);
-        return array[a];
-    }
-}
-void mmerge(int a, int b) {
-    int m = findfa(a);
-    int n = findfa(b);
-    if (m != n) array[m] = n;
-}
-int main() {
-    int t, m;
-    int a, b;
-    t = 1;
-    while (t) {
-        t = t - 1;
-        n = 4;
-        m = 10;
-        int i = 0;
-        int flag = 0;
-        init(n);
-        int k = n * n + 1;
-
-        while (i < m) {
-            a = getint();
-            b = getint();
-
-            if (!flag) {
-                int loc = n * (a - 1) + b;
-
-                array[loc] = loc;
-                if (a == 1) {
-                    array[0] = 0;
-                    mmerge(loc, 0);
-                }
-                if (a == n) {
-                    array[k] = k;
-                    mmerge(loc, k);
-                }
-                if (b < n && array[loc + 1] != -1) {
-                    mmerge(loc, loc + 1);
-                }
-                if (b > 1 && array[loc - 1] != -1) {
-                    mmerge(loc, loc - 1);
-                }
-                if (a < n && array[loc + n] != -1) {
-                    mmerge(loc, loc + n);
-                }
-                if (a > 1 && array[loc - n] != -1) {
-                    mmerge(loc, loc - n);
-                }
-
-                if (array[0] != -1 && array[k] != -1 && findfa(0) == findfa(k)) {
-                    flag = 1;
-                    int tmp = i + 1;
-                    putint(tmp);
-                    putch(10);
-                }
-            }
-
-            i = i + 1;
-        }
-        if (!flag) {
-            putint(-1);
-            putch(10);
-        }
-    }
-    return 0;
-}
+//int main()
+//{
+//    w = getint();
+//    h = getint();
+//    while (w != 0) {
+//        int i, j;
+//        i = 0;
+//        while (i < 30) {
+//            j = 0;
+//            while (j < 30) {
+//                a[i][j] = 1;
+//                j = j + 1;
+//            }
+//            i = i + 1;
+//        }
+//        i = 1;
+//        while (i <= h) {
+//            j = 1;
+//            while (j <= w) {
+//                a[i][j] = getint();
+//                if (a[i][j] == 2) {
+//                    x_0 = i;
+//                    y_0 = j;
+//                }
+//                else if (a[i][j] == 3) {
+//                    x_1 = i;
+//                    y_1 = j;
+//                }
+//                j = j + 1;
+//            }
+//            i = i + 1;
+//        }
+//        int res = search(x_0, y_0, 1);
+//        if (res <= 10) {
+//            putint(res);
+//            putch(10);
+//        }
+//        else {
+//            putint(-1);
+//            putch(10);
+//        }
+//        w = getint();
+//        h = getint();
+//    }
+//    return 0;
+//}
