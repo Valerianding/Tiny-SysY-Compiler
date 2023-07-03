@@ -24,6 +24,7 @@ void CheckGlobalVariable(InstNode *list){
             }
 
 
+            bool flag = true;
             Value *dest = ins_get_dest(globalNode->inst);
             //see if it is only been read
             Use *uses = dest->use_list;
@@ -31,19 +32,27 @@ void CheckGlobalVariable(InstNode *list){
                 User *user = uses->Parent;
                 Instruction *ins = (Instruction *)user;
                 if(ins->Opcode == Store){
-                    globalNode = get_next_inst(globalNode);
-                    continue;
+                    flag = false;
+                    break;
                 }
                 uses = uses->Next;
             }
-
             //add to constant_
-            VectorPushBack(constant_,dest);
-
-            printf("%s is a global only read variable!\n",dest->name);
-
+            if(flag) {
+                VectorPushBack(constant_, dest);
+                printf("%s is a global only read variable!\n", dest->name);
+            }
         }
         globalNode = get_next_inst(globalNode);
     }
 
+
+    Value *val;
+    int size = VectorSize(constant_);
+    for(int i = 0; i < size; i++){
+        VectorGet(constant_,i,&val);
+        if(val != NULL){
+            printf("%s is stored into Vector!\n",val->name);
+        }
+    }
 }
