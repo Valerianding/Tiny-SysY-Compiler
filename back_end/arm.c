@@ -26,6 +26,7 @@ char fileName[256];
 char funcName[256];
 int save_r11;
 int global_flag=0;
+int givae_param_num;
 void printf_stmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
@@ -6066,6 +6067,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    printf("    sub sp,sp,#%d\n",4*x);
     //    在函数开始的时候要进行参数传递的str的处理
     int param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
+    givae_param_num=param_num;
     char name[20];
     sprintf(name, "%c", '%');
     sprintf(name + 1, "%d", param_num);
@@ -6547,9 +6549,18 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
+//  现在需要做的就是数组传参的处理，有可能是全局数组传参，也有可能是局部数组传参
+//  如果是数组传参的话，前面肯定是有一条GEP指令计算出起数组首地址，一边是常数偏移量为0
+//  然后give_param的数组首地址类型被标为address
+//  还有就是因为数组传参之前的GEP已经计算出了数组首地址的绝对地址（将r11加上了）这里就不用加了，直接mov
+
+
+
 //  现在需要处理的操作就是有可能参数传的是全局变量的情况
 //  但是全局变量要进行传参的话，跟局部变量是一致的，全局变量会先被load，giveparam里面是不会出现globel类型的参数的
 //  所以说这个应该不需要改
+
+
 
 //  这个是用来标定参数传递的，这个可不仅仅是一个标定作用，
 //  这个是在处理数组传参（传数组首地址），和地址指针的时候需要用到。
@@ -6572,7 +6583,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
-            //                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
+            // 对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递，但是也是会出现那全局变量来传参的情况，但是不影响
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
@@ -6601,11 +6612,25 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         printf("\tmov\tr%d,r%d\n",i,left_reg);
                         fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
                     }
-                }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                    这个需要另外处理
-                    int x= get_value_offset_sp(hashMap,value1);
-                    printf("\tadd\tr%d,r11,#%d\n",i,x);
-                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
+                }
+//                else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+////                    这个需要另外处理
+//                    int x= get_value_offset_sp(hashMap,value1);
+//                    printf("\tadd\tr%d,r11,#%d\n",i,x);
+//                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
+//                }
+//  表示这个是数组传参，传的是数组首地址，之前是有GEP指令计算过数组首地址的了，所以说这里会被表示为address
+                else if(value1->VTy->ID==AddressTyID){
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                        fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",i,left_reg);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
+                    }
                 }
             }
 //            直接在这个地方判断类型，然后加上add ri,sp,#%d好像就可以了
@@ -6646,11 +6671,24 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         printf("\tmov\tr%d,r%d\n",i,left_reg);
                         fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
                     }
-                }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                    这个需要另外处理
-                    int x= get_value_offset_sp(hashMap,value1);
-                    printf("\tadd\tr%d,r11,#%d\n",i,x);
-                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
+                }
+//                else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+////                    这个需要另外处理
+//                    int x= get_value_offset_sp(hashMap,value1);
+//                    printf("\tadd\tr%d,r11,#%d\n",i,x);
+//                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
+//                }
+                else if(value1->VTy->ID==AddressTyID){
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                        fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",i,left_reg);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
+                    }
                 }
             }
         }
@@ -6687,11 +6725,24 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     printf("\tmov\tr0,r%d\n",left_reg);
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
                 }
-            }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                    这个需要另外处理
-                int x= get_value_offset_sp(hashMap,value1);
-                printf("\tadd\tr0,r11,#%d\n",x);
-                fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
+            }
+//            else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+////                    这个需要另外处理
+//                int x= get_value_offset_sp(hashMap,value1);
+//                printf("\tadd\tr0,r11,#%d\n",x);
+//                fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
+//            }
+            else if(value1->VTy->ID==AddressTyID){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                }else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                }
             }
 //                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
 //                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
@@ -6755,11 +6806,24 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 printf("\tmov\tr0,r%d\n",left_reg);
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
             }
-        }else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-//                    这个需要另外处理
-            int x= get_value_offset_sp(hashMap,value1);
-            printf("\tadd\tr0,r11,#%d\n",x);
-            fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
+        }
+//        else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+////                    这个需要另外处理
+//            int x= get_value_offset_sp(hashMap,value1);
+//            printf("\tadd\tr0,r11,#%d\n",x);
+//            fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
+//        }
+        else if(value1->VTy->ID==AddressTyID){
+            if(left_reg>100){
+                int x= get_value_offset_sp(hashMap,value1);
+                printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+                printf("\tmov\tr0,r%d\n",left_reg-100);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+            }else{
+                printf("\tmov\tr0,r%d\n",left_reg);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+            }
         }
     }
 
@@ -7540,7 +7604,76 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     left_reg=ins->inst->_reg_[1];
     right_reg=ins->inst->_reg_[2];
 //    数组好像只有第一条GEP指令的value1类型是对的，之后的GEP指令对应的都是address,全局比那辆也是一样的，所以说可以利用value1的类型来判断是不是第一条GEP
-    if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+
+
+//    现在计算GEP需要多添加一钟情况。就是该数组是通过数组传参过来的数组，和之前的也是一样的，只有计算第一条GEP的时候方式不同，剩下的GEP是一样的计算步骤
+//    之后是使用isParam（）函数判断该GEP是不是计算的数组传参的GEP，第一个参数是传GEP的数组首地址value1，第二个参数是传该函数的参数个数，这个只在FuncBegin的value里面存有
+//    参数数组的第一条GEP
+    if(isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
+//        printf("isParam\n");
+        int x= get_value_offset_sp(hashMap,value1);
+        printf("\tldr\tr0,[r11,#%d]\n",x);
+        fprintf(fp,"\tldr\tr0,[r11,#%d]\n",x);// r0里面存放的是数组首地址的绝对地址
+        int flag=value0->pdata->var_pdata.iVal;
+        if(flag<0){
+            int y=value2->pdata->var_pdata.iVal*4;
+            if(imm_is_valid(y)){
+                printf("\tadd\tr%d,r0,#%d\n",dest_reg_abs,y);
+                fprintf(fp,"\tadd\tr%d,r0,#%d\n",dest_reg_abs,y);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",y);
+                printf("\tldr\tr1,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+                printf("\tadd\tr%d,r0,r1\n",dest_reg_abs);
+                fprintf(fp,"\tadd\tr%d,r0,r1\n",dest_reg_abs);
+            }
+            if(dest_reg<0){
+                x= get_value_offset_sp(hashMap,value0);
+//            如果开的栈比较大，x也是非法立即数怎么办呢，这个也是需要处理的呀
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
+            }
+        }else{
+//            被乘的常数放在r2,r2与 right_reg相乘，再加上数组首地址的绝对地址r0
+            int which_dimension=value0->pdata->var_pdata.iVal;
+            int result= array_suffix(value1->alias,which_dimension);
+            if(imm_is_valid(result)){
+                printf("\tmov\tr2,#%d\n",result);
+                fprintf(fp,"\tmov\tr2,#%d\n",result);
+            }else{
+                char arr1[12]="0x";
+                sprintf(arr1+2,"%0x",result);
+                printf("\tldr\tr2,=%s\n",arr1);
+                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            }
+//          计算数组传参的第一条GEP，数组首地址是没有进行寄存器分配的
+            if(left_reg==0){
+                // 上面计算得到的r0就是参数数组首地址的绝对偏移量
+//                int x1= get_value_offset_sp(hashMap,value1);//数组首地址的偏移量,这里可以直接r11加上数组首地址的偏移量就可以了
+//                printf("\tadd\tr1,r11,#%d\n",x1);
+//                fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                }else{
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                }
+            }
+
+            if(dest_reg<0){
+                int z= get_value_offset_sp(hashMap,value0);
+                printf("\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,z);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,z);
+            }
+        }
+    }
+//    局部变量的第一条GEP
+    else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
         int flag=value0->pdata->var_pdata.iVal;
         int off= get_value_offset_sp(hashMap,value1);
         if(flag<0){
@@ -7605,34 +7738,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 }
 //                printf("\tadd\tr%d,r11,r%d\n",dest_reg_abs,dest_reg_abs);
             }
-//            else{  //之后的GEP
-//                if(left_reg>100&&right_reg>100){
-//                    int x1= get_value_offset_sp(hashMap,value1);
-//                    int x2= get_value_offset_sp(hashMap,value2);
-//                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-//                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
-//                }else if(left_reg>100){
-//                    int x1= get_value_offset_sp(hashMap,value1);
-//                    printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x1);
-//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
-//                }else if(right_reg>100){
-//                    int x2= get_value_offset_sp(hashMap,value2);
-//                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-//                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg);
-//                }else{
-//                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-//                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-//                }
-//            }
-//
+
 
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -7702,7 +7808,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             }
         }
     }
-// 非第一条GEP，局部数组和全局数组都是一样的处理
+
+    // 非第一条GEP，局部数组和全局数组都是一样的处理
     else{
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){

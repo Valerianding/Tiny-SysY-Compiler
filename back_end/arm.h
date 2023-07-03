@@ -11,6 +11,7 @@
 #include "function.h"
 #include "offset.h"
 #include "travel.h"
+#include "ir/opt/utility.h"
 #include <unistd.h>
 
 /**
