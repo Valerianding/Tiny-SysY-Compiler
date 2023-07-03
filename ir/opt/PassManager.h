@@ -12,5 +12,6 @@
 #include "dvnt.h"
 #include "memlvn.h"
 #include "licm.h"
+#include "globalopt.h"
 void RunPasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

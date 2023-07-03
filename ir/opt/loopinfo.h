@@ -30,7 +30,6 @@ typedef struct Loop{
     //the end condition of loop
     Value *end_cond;
 
-
     //block to jump when leaving loop entry
     BasicBlock *body_block;
     //block to jump to when the loop exits

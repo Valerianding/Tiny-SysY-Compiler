@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/5/31.
 //
 
-#include "sideEffect.h"
+#include "sideeffect.h"
 void sideEffect(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;

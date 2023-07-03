@@ -371,7 +371,6 @@ void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction
 
 bool isParam(Value *val, int paramNum){
     char *name = val->name;
-    assert(name[0] == '%');
     name++;
     int num = atoi(name);
     if(num <= paramNum - 1){
