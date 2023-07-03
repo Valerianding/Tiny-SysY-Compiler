@@ -4804,9 +4804,29 @@ void fix_array2(struct _InstNode *instruction_node)
         //将iVal还原回原本维度
         else if(instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
         {
+            int pre_dimen=0;
             //拿到上一条GEP的维度+1
-            int pre_dimen= get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal;
-            instruction->user.value.pdata->var_pdata.iVal=pre_dimen+1;
+            if(get_prev_inst(instruction_node)->inst->Opcode==GEP)
+            {
+                pre_dimen= get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal;
+                instruction->user.value.pdata->var_pdata.iVal=pre_dimen+1;
+            }
+            else
+                instruction->user.value.pdata->var_pdata.iVal=pre_dimen;
+        }
+        else if(instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==0)
+        {
+            //拿到上一条GEP的维度+1
+            int pre_dimen=0;
+            //拿到上一条GEP的维度+1
+            if(get_prev_inst(instruction_node)->inst->Opcode==GEP)
+            {
+                pre_dimen= get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal;
+                instruction->user.value.pdata->var_pdata.iVal=pre_dimen+1;
+            }
+            else
+                instruction->user.value.pdata->var_pdata.iVal=pre_dimen;
+            instruction->user.value.pdata->var_pdata.is_offset=0;
         }
         //一维数组,is_offset=1
         else
