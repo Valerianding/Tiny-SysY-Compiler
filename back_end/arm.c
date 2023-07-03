@@ -7677,6 +7677,32 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
                     fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
                 }
+            }else if(left_reg>100){
+                printf("\tmov\tr%d,r0\n",left_reg-100);
+                fprintf(fp,"\tmov\tr%d,r0\n",left_reg-100);
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                }else{
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                }
+            }else{
+                printf("\tmov\tr%d,r0\n",left_reg);
+                fprintf(fp,"\tmov\tr%d,r0\n",left_reg);
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                }else{
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                }
             }
 
             if(dest_reg<0){

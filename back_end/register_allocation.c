@@ -2742,7 +2742,7 @@ void addtoin(BasicBlock *this_block)
 {
     block_in_num=0;
     BasicBlock *reg_curblock=this_block;
-    live_in_name=(struct SString *)malloc(sizeof(struct SString)*(var_num+10));
+    live_in_name=(struct SString *)malloc(sizeof(struct SString)*(var_num+1000));
     HashSetFirst(reg_curblock->in);
     for(Value *liveInVariable = HashSetNext(reg_curblock->in); liveInVariable != NULL; liveInVariable = HashSetNext(reg_curblock->in)){
         assert(liveInVariable->name != NULL);
@@ -2767,7 +2767,7 @@ void addtoin(BasicBlock *this_block)
 void addtoout(BasicBlock *this_block)
 {
     block_out_num=0;
-    live_out_name=(struct SString *)malloc(sizeof(struct SString)*var_num);
+    live_out_name=(struct SString *)malloc(sizeof(struct SString)*(var_num+1000));
     HashSetFirst(this_block->out);
     for(Value *liveOutVariable = HashSetNext(this_block->out); liveOutVariable != NULL; liveOutVariable = HashSetNext(this_block->out)){
         assert(liveOutVariable->name != NULL);
