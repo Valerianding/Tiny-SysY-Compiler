@@ -4597,17 +4597,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-//        Value *v,*vl,*vr;
-//        v= ins_get_dest(instruction_node->inst);
-//        vl= ins_get_lhs(instruction_node->inst);
-//        vr= ins_get_rhs(instruction_node->inst);
-//        if(v!=NULL)
-//            printf("left:%s,\t",type_str[v->VTy->ID]);
-//        if(vl!=NULL)
-//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-//        if(vr!=NULL)
-//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n\n");
+        Value *v,*vl,*vr;
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+        printf("\n\n");
 
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
@@ -4811,7 +4811,9 @@ void fix_array2(struct _InstNode *instruction_node)
         //一维数组,is_offset=1
         else
         {
-            if(instruction->Opcode==GEP && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure==1 && instruction->user.value.pdata->var_pdata.is_offset==1)
+//            if(instruction->Opcode==GEP && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure==1 && instruction->user.value.pdata->var_pdata.is_offset==1)
+//                instruction->user.value.pdata->var_pdata.iVal=-1;
+            if(instruction->Opcode==GEP && get_next_inst(instruction_node)->inst->Opcode!=GEP && instruction->user.value.pdata->var_pdata.iVal< instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure && instruction->user.value.pdata->var_pdata.is_offset==1)
                 instruction->user.value.pdata->var_pdata.iVal=-1;
         }
         instruction_node= get_next_inst(instruction_node);
