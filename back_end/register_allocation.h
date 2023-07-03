@@ -6,6 +6,7 @@
 #include "../ir/bblock.h"
 #include "../ir/opt/utility.h"
 #include "value.h"
+#include "travel.h"
 #include "type.h"
 #include "user.h"
 #include "function.h"
