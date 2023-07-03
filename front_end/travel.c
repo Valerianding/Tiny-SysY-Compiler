@@ -435,7 +435,7 @@ past array_all_zeros(past init_val_list)
             return NULL;
         else if(strcmp(bstr2cstr(p->nodeType, '\0'), "InitValList") == 0 || strcmp(bstr2cstr(p->nodeType, '\0'), "ConstExpList") == 0)
             return array_all_zeros(p->left);
-        //是0,且后面没东西了
+            //是0,且后面没东西了
         else if(p->next==NULL)
             return init_val_list;
         p=p->next;
@@ -573,8 +573,8 @@ void handle_global_array(Value* v_array,bool is_global,past vars,int flag)
         {
             past p=vars->right->left;
 
-           // if(p!=NULL)
-                assign_global_array(p,v_array,0,0);
+            // if(p!=NULL)
+            assign_global_array(p,v_array,0,0);
         }
 
             //不是全局的
@@ -2573,7 +2573,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                         break;
                         //!是只有x2的，x1都是0
                     case '!':                                     //TODO !1这种还没处理，目前无法直接判断为假,如果要处理，就定个convert值为一定真和一定假，返回后分别加入if语句那些的num_int
-                     //   (*convert)=!(*convert);
+                        //   (*convert)=!(*convert);
                         if(x2->pdata->var_pdata.iVal==0)
                             v3->pdata->var_pdata.iVal=1;
                         else
@@ -3268,7 +3268,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 v=(Value*) malloc(sizeof (Value));
                 value_init_float(v, v_test->pdata->var_pdata.fVal);
             }
-            //TODO 加了address，有二维传二维的情况
+                //TODO 加了address，有二维传二维的情况
             else if(v_test->VTy->ID==ArrayTy_INT || v_test->VTy->ID==ArrayTy_FLOAT || v_test->VTy->ID==ArrayTyID_ConstINT || v_test->VTy->ID==ArrayTyID_ConstFLOAT || v_test->VTy->ID==GlobalArrayConstFLOAT || v_test->VTy->ID==GlobalArrayConstINT || v_test->VTy->ID==GlobalArrayFloat || v_test->VTy->ID==GlobalArrayInt )
             {
                 //只走一维，补0
@@ -4079,22 +4079,13 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 fprintf(fptr,")\n");
                 break;
             case Label:
-                printf("%d:                  ; preds =  ",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                printf("%d:                  ; preds = ",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 fprintf(fptr,"%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 if(instruction->Parent){
                     BasicBlock *parent = instruction->Parent;
                     HashSetFirst(parent->preBlocks);
                     for(BasicBlock *block = HashSetNext(parent->preBlocks); block != NULL; block = HashSetNext(parent->preBlocks)){
                         printf("%%%d ",block->id);
-                    }
-                }
-                if(instruction->Parent){
-                    printf("sucs = ");
-                    if(instruction->Parent->true_block){
-                        printf("%d ",instruction->Parent->true_block->id);
-                    }
-                    if(instruction->Parent->false_block){
-                        printf("%d ",instruction->Parent->false_block->id);
                     }
                 }
                 printf("\n");
@@ -4677,7 +4668,7 @@ void fix_array(struct _InstNode *instruction_node)
                 if(instruction->user.use_list[1].Val->VTy->ID!=Int)
                 {
                     //标记这组gep已经不能完全算出了
-                      after_=true;
+                    after_=true;
                 }
                 else
                 {
@@ -4809,8 +4800,8 @@ void fix_array2(struct _InstNode *instruction_node)
             replace_rhs_operand(instruction_node->inst,v_offset);
             instruction_node->inst->user.value.pdata->var_pdata.iVal=-2;
         }
-        //上一种情况，比如d[b][3],但是下一条不是GEP了，或者下条是GEP,但是无法简化
-        //将iVal还原回原本维度
+            //上一种情况，比如d[b][3],但是下一条不是GEP了，或者下条是GEP,但是无法简化
+            //将iVal还原回原本维度
         else if(instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
         {
             int pre_dimen=0;
@@ -4837,12 +4828,12 @@ void fix_array2(struct _InstNode *instruction_node)
                 instruction->user.value.pdata->var_pdata.iVal=pre_dimen;
             instruction->user.value.pdata->var_pdata.is_offset=0;
         }
-        //一维数组,is_offset=1
+            //一维数组,is_offset=1
         else
         {
 //            if(instruction->Opcode==GEP && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure==1 && instruction->user.value.pdata->var_pdata.is_offset==1)
 //                instruction->user.value.pdata->var_pdata.iVal=-1;
-            if(instruction->Opcode==GEP && get_next_inst(instruction_node)->inst->Opcode!=GEP && instruction->user.value.pdata->var_pdata.iVal< instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure && instruction->user.value.pdata->var_pdata.is_offset==1)
+            if((instruction->Opcode==GEP && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure==1 && instruction->user.value.pdata->var_pdata.is_offset==1) || (instruction->Opcode==GEP && get_next_inst(instruction_node)->inst->Opcode!=GEP && instruction->user.value.pdata->var_pdata.iVal< instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure && instruction->user.value.pdata->var_pdata.is_offset==1))
                 instruction->user.value.pdata->var_pdata.iVal=-1;
         }
         instruction_node= get_next_inst(instruction_node);
