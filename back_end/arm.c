@@ -7609,7 +7609,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //    现在计算GEP需要多添加一钟情况。就是该数组是通过数组传参过来的数组，和之前的也是一样的，只有计算第一条GEP的时候方式不同，剩下的GEP是一样的计算步骤
 //    之后是使用isParam（）函数判断该GEP是不是计算的数组传参的GEP，第一个参数是传GEP的数组首地址value1，第二个参数是传该函数的参数个数，这个只在FuncBegin的value里面存有
 //    参数数组的第一条GEP
-    if(isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
+
+    if(value1->name[0]=='%'&&isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
 //        printf("isParam\n");
         int x= get_value_offset_sp(hashMap,value1);
         printf("\tldr\tr0,[r11,#%d]\n",x);
