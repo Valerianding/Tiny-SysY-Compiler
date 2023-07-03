@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/3/31.
 //
 
-#include "DeadCodeElimination.h"
+#include "dce.h"
 const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label};
 BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
     bool marked = false;

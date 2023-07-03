@@ -1,4 +1,4 @@
-#include "func_inline.h"
+#include "inliner.h"
 
 extern InstNode * one_param[];   //存放单次正确位置的参数
 extern InstNode* params[];      //存放所有参数

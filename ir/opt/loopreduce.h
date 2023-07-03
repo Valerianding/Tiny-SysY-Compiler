@@ -5,7 +5,7 @@
 #ifndef C22V1_LOOPREDUCE_H
 #define C22V1_LOOPREDUCE_H
 #include "function.h"
-#include "Loop.h"
+#include "loopinfo.h"
 #include "utility.h"
 bool RunOnLoop(Loop *loop){
     //need to dfs travel
@@ -14,9 +14,7 @@ bool RunOnLoop(Loop *loop){
 }
 
 bool CheckLoop(Loop *loop){
-    if(HashSetSize(loop->head->preBlocks) != 1 || ){
 
-    }
 }
 
 bool LoopStrengthReduction(Function *function){
@@ -26,7 +24,7 @@ bool LoopStrengthReduction(Function *function){
     HashSetFirst(loops);
     for(Loop *loop = HashSetNext(function->loops); loop != NULL; loop = HashSetNext(function->loops)){
         //
-        RunOnLoop()
+       // RunOnLoop()
     }
 }
 

@@ -2,8 +2,8 @@
 // Created by Valerian on 2023/4/18.
 //
 
-#ifndef C22V1_LOOP_H
-#define C22V1_LOOP_H
+#ifndef C22V1_LOOPINFO_H
+#define C22V1_LOOPINFO_H
 #include "function.h"
 #include "utility.h"
 #include <stack.h>
@@ -30,7 +30,6 @@ typedef struct Loop{
     //the end condition of loop
     Value *end_cond;
 
-
     //block to jump when leaving loop entry
     BasicBlock *body_block;
     //block to jump to when the loop exits
@@ -45,4 +44,4 @@ void findBody(Loop *loop);
 void findExit(Loop *loop);
 void findInductionVariable(Loop *loop);
 void reconstructLoop(Loop *loop);
-#endif //C22V1_LOOP_H
+#endif //C22V1_LOOPINFO_H

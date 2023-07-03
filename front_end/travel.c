@@ -4079,13 +4079,22 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 fprintf(fptr,")\n");
                 break;
             case Label:
-                printf("%d:                  ; preds = ",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                printf("%d:                  ; preds =  ",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 fprintf(fptr,"%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 if(instruction->Parent){
                     BasicBlock *parent = instruction->Parent;
                     HashSetFirst(parent->preBlocks);
                     for(BasicBlock *block = HashSetNext(parent->preBlocks); block != NULL; block = HashSetNext(parent->preBlocks)){
                         printf("%%%d ",block->id);
+                    }
+                }
+                if(instruction->Parent){
+                    printf("sucs = ");
+                    if(instruction->Parent->true_block){
+                        printf("%d ",instruction->Parent->true_block->id);
+                    }
+                    if(instruction->Parent->false_block){
+                        printf("%d ",instruction->Parent->false_block->id);
                     }
                 }
                 printf("\n");

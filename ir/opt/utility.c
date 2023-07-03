@@ -114,9 +114,32 @@ void renameVariables(Function *currentFunction) {
     }
     countVariable++;
 
-    currNode = get_next_inst(currNode);
-    while (currNode != get_next_inst(end->tail_node)) {
+    currNode = get_next_inst(currNode);  // skip for FuncBegin
+
+
+
+    HashSet *copyNumSet = HashSetInit(); // set for copy operation we don't use the number here
+    InstNode *tailNode = get_next_inst(end->tail_node);
+    //we don't want to use the CopyOperation's same id
+    InstNode *copyNode = currNode;
+    while(copyNode != tailNode){
+        if(copyNode->inst->Opcode == CopyOperation){
+            Value *copyDest = ins_get_dest(copyNode->inst)->alias;
+            char *copyNum = &copyDest->name[1];
+            printf("string %s\n",copyNum);
+            int num = atoi(copyNum);
+            printf("num %d\n",num);
+            HashSetAdd(copyNumSet,(void *)num);
+        }
+        copyNode = get_next_inst(copyNode);
+    }
+
+    while (currNode != tailNode) {
         if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1 && currNode->inst->Opcode != CopyOperation) {
+            while(HashSetFind(copyNumSet,(void *)countVariable)){
+                printf("countVariable %d\n",countVariable);
+                countVariable++;
+            }
             if (currNode->inst->Opcode == Label) {
                 //更新一下BasicBlock的ID 顺便就更新了phi
                 BasicBlock *block = currNode->inst->Parent;
@@ -157,9 +180,11 @@ void renameVariables(Function *currentFunction) {
     // 跳过funcBegin
     BasicBlock *tail = currentFunction->tail;
     currNode = get_next_inst( entry->head_node);
-    while(currNode != get_next_inst(end->tail_node)){
+    InstNode *endNode = get_next_inst(end->tail_node);
+    while(currNode != endNode){
         BasicBlock *block = currNode->inst->Parent;
         if(block->visited == false){
+            printf("block %d\n",block->id);
             block->visited = true;
             InstNode *blockTail = block->tail_node;
             if(block == tail){
@@ -346,7 +371,6 @@ void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction
 
 bool isParam(Value *val, int paramNum){
     char *name = val->name;
-    assert(name[0] == '%');
     name++;
     int num = atoi(name);
     if(num <= paramNum - 1){

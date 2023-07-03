@@ -20,7 +20,6 @@ file(GLOB_RECURSE DIR_OPT ./ir/opt/*.c)
 file(GLOB_RECURSE DIR_CONTAINER ./src/*.c)
 file(GLOB_RECURSE DIR_FRONT ./front_end/*.c)
 file(GLOB_RECURSE DIR_BACK ./back_end/*.c)
-#file(GLOB_RECURSE DIR_BACK ./back_end/*.c)
 
 link_libraries(m)
 

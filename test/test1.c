@@ -1,7 +1,6 @@
+int a = 2;
+int b = 3;
 int test(){
-    int a = getint();
-    int b = getint();
-    while(a < 10){
-        a = a + 1;
-    }
+    a = a + 1;
+    return a;
 }

@@ -2,8 +2,8 @@
 // Created by 12167 on 2023-05-10.
 //
 
-#ifndef C22V1_FUNC_INLINE_H
-#define C22V1_FUNC_INLINE_H
+#ifndef C22V1_INLINER_H
+#define C22V1_INLINER_H
 
 #include "instruction.h"
 #include "bblock.h"
@@ -21,4 +21,4 @@ InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name);
 void renameV(Function *currentFunction);
 void label_func_inline(struct _InstNode* instNode_list);
 
-#endif //C22V1_FUNC_INLINE_H
+#endif //C22V1_INLINER_H
