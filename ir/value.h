@@ -45,8 +45,8 @@ struct _PData{
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
 
     struct {
-        int dimention_figure;               //一维、二维......
-        int dimentions[10];                 //每维的具体值，a[2][3]中的2,3
+        int dimention_figure;               //数组维数是一维、二维......
+        int dimentions[10];                 //每维的具体值，a[2][3]中的2,3；如果是参数数组，第一维是负数
         unsigned int address_type:1;     //type为address的时候标识是int还是float，0是int,1是float
 
         union {
