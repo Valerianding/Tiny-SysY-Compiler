@@ -2243,15 +2243,18 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
             if(right_reg>100){
+
                 int x= get_value_offset_sp(hashMap,value2);
                 printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x);
                 fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x);
-                printf("\tsub\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,x1);
-                fprintf(fp,"\tsub\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,x1);
+                printf("\tmov\tr1,#%d\n",x1);
+                fprintf(fp,"\tmov\tr1,#%d\n",x1);
+                printf("\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                fprintf(fp,"\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
                 ;
-                printf("\tsub\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,x1);
-                fprintf(fp,"\tsub\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,x1);
+                printf("\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                fprintf(fp,"\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
             }
 
         }else{
@@ -7566,7 +7569,7 @@ InstNode * arm_trans_zext(InstNode *ins){
 InstNode * arm_trans_bitcast(InstNode *ins){
 //类型转换，已经通过映射解决掉了bitcast产生的 多余的mov和load指令的问题
 //    printf("arm_trans_bitcast\n");
-    assert(false);
+//    assert(false);
     return ins;
 }
 //void multiply_and_add_instructions_for_translated_arrays(InstNode*ins,HashMap*hashMap){
