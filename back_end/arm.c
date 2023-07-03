@@ -7520,14 +7520,14 @@ InstNode * arm_trans_br(InstNode *ins){
 }
 
 InstNode * arm_trans_br_i1_true(InstNode *ins){
-
+    assert(false);
     printf("arm_trans_br_i1_true\n");
     fprintf(fp,"arm_trans_br_i1_true\n");
     return ins;
 }
 
 InstNode * arm_trans_br_i1_false(InstNode *ins){
-
+    assert(false);
     printf("arm_trans_br_i1_false\n");
     fprintf(fp,"arm_trans_br_i1_false\n");
     return ins;
@@ -7542,13 +7542,14 @@ InstNode * arm_trans_Label(InstNode *ins){
 }
 
 InstNode * arm_trans_tmp(InstNode *ins){
-
+    assert(false);
     printf("arm_trans_tmp\n");
     fprintf(fp,"arm_trans_tmp\n");
     return ins;
 }
 
 InstNode * arm_trans_XOR(InstNode *ins){
+    assert(false);
     printf("arm_trans_XOR\n");
     fprintf(fp,"arm_trans_XOR\n");
     return ins;
@@ -7556,6 +7557,7 @@ InstNode * arm_trans_XOR(InstNode *ins){
 
 InstNode * arm_trans_zext(InstNode *ins){
 //i1扩展为i32
+    assert(false);
     printf("arm_trans_zext\n");
     fprintf(fp,"arm_trans_zext\n");
     return ins;
@@ -7564,6 +7566,7 @@ InstNode * arm_trans_zext(InstNode *ins){
 InstNode * arm_trans_bitcast(InstNode *ins){
 //类型转换，已经通过映射解决掉了bitcast产生的 多余的mov和load指令的问题
 //    printf("arm_trans_bitcast\n");
+    assert(false);
     return ins;
 }
 //void multiply_and_add_instructions_for_translated_arrays(InstNode*ins,HashMap*hashMap){
@@ -8264,14 +8267,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_MEMCPY(InstNode *ins){
-
+    assert(false);
 //    涉及到数组的内容,后端不需要翻译这条ir和memcpy对应的ir
 //    printf("arm_trans_MEMCPY\n");
     return ins;
 }
 
 InstNode * arm_trans_zeroinitializer(InstNode *ins){
-
+    assert(false);
     printf("arm_trans_zeroinitializer\n");
     fprintf(fp,"arm_trans_zeroinitializer\n");
     return ins;
@@ -8447,7 +8450,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 }
 
 InstNode *arm_trans_Phi(InstNode *ins){
-
+    assert(false);
 //    printf("arm_trans_Phi\n");
     return ins;
 }
