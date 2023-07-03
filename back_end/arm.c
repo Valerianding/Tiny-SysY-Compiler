@@ -5908,10 +5908,17 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //        printf("\n");
 //    }
     arm_trans_GIVE_PARAM(hashMap,param_num_);
-
+    if(strcmp(user_get_operand_use(&ins->inst->user,0)->Val->name,"putfloat")==0){
+        printf("\tvmov\ts0,r0\n");
+        fprintf(fp,"\tvmov\ts0,r0\n");
+    }
 //    printf("CALL\n");
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+    if(strcmp(user_get_operand_use(&ins->inst->user,0)->Val->name,"getfloat")==0){
+        printf("\tvmov\tr0,s0\n");
+        fprintf(fp,"\tvmov\tr0,s0\n");
+    }
 //    这里还需要调整sp,去掉压入栈的参数，这里可以使用add直接调整sp，也可以使用mov sp,fp直接调整
     if(param_num_>4){
         int x=param_num_-4;
