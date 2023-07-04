@@ -6,6 +6,7 @@
  * 不循环嵌套
  * 基本块内
  */
+ //TODO 不能加新基本块的话，基本块内也没得做，余数问题无法解决
 
 #define update_modifier 4
 int loop_unroll_up_lines = 3000;
@@ -27,18 +28,67 @@ Value *copy_value(Value *v_source,int index)
 }
 
 //检查init、modifier、end是否都是int常数
-bool check_idc(Loop* loop)
+bool check_idc(Value* initValue,Value* step,Value* end)
 {
-    if(loop->initValue->VTy->ID==Int && loop->modifier->VTy->ID==Int && loop->end_cond->VTy->ID==Int)
+    if(initValue->VTy->ID==Int && end->VTy->ID==Int && step->VTy->ID==Int)
         return true;
     return false;
 }
 
-//计算迭代次数
-//TODO 假设step有正负,但还是需要*,+等符号信息
-int cal_times(int init,int step,int end)
+//粗略计算迭代次数
+int cal_times(int init,Instruction *ins_modifier,Instruction *ins_end_cond,Value* v_step,Value* v_end)
 {
-    return 1;
+    int times=0;
+    int step=v_step->pdata->var_pdata.iVal;
+    int end=v_end->pdata->var_pdata.iVal;
+    double val;bool tag;
+    switch (ins_modifier->Opcode) {
+        case Add:
+            switch (ins_end_cond->Opcode) {
+                case EQ: times = (init == end) ? 1 : 0; break;
+                case NOTEQ: times = ((end - init) % step) == 0 ? (end - init / step) : -1; break;
+                case LESSEQ: case GREATEQ:
+                    times = (end - init) / step + 1; break;
+                case LESS: case GREAT:
+                    times = ((end - init) % step == 0)? (end - init) / step : (end - init) / step + 1; break;
+            }
+            break;
+        case Sub:
+            switch (ins_end_cond->Opcode) {
+                case EQ: times = (init == end) ? 1 : 0; break;
+                case NOTEQ: times = ((init - end) % step) == 0 ? (init - end / step) : -1; break;
+                case LESSEQ: case GREATEQ:
+                    times = (init - end) / step + 1; break;
+                case LESS: case GREAT:
+                    times = ((init - end) % step == 0)? (init - end) / step : (init - end) / step + 1; break;
+            }
+            break;
+        case Mul:
+            val = log((double)end / (double)init) / log((double)step);
+            tag = init * pow(step, val) == end;
+            switch (ins_end_cond->Opcode) {
+                case EQ: times = (init == end) ? 1 : 0; break;
+                case NOTEQ: times = tag ? (int)val : -1; break;
+                case LESSEQ: case GREATEQ:
+                    times = (int)val + 1; break;
+                case LESS: case GREAT:
+                    times = tag ? (int) val : (int) val + 1; break;
+            }
+            break;
+        case Div:
+            val = log((double)init / (double)end) / log((double)step);
+            tag = end * pow(step, val) == init;
+            switch (ins_end_cond->Opcode) {
+                case EQ: times = (init == end) ? 1 : 0; break;
+                case NOTEQ: times = tag ? (int)val : -1; break;
+                case LESSEQ: case GREATEQ:
+                    times = (int)val + 1; break;
+                case LESS: case GREAT:
+                    times = tag ? (int) val : (int) val + 1; break;
+            }
+            break;
+    }
+    return times;
 }
 
 //计算一次迭代的ir总数
@@ -58,32 +108,6 @@ int cal_ir_cnt(HashSet *loopBody)
     return ir_cnt;
 }
 
-bool check_in_latch_phi(Value *v,Value *variable,HashMap* latch_phi_map,HashMap* head_map)
-{
-    //将对应Pair装载
-    if(HashMapContain(latch_phi_map,v))
-    {
-        HashSet *pairSet= HashMapGet(latch_phi_map,v);
-        HashSet *variable_pairSet= HashMapGet(head_map,variable);
-        //遍历pairSet，进行一波装载
-        HashSetFirst(pairSet);
-        for(pair *p = HashSetNext(pairSet); p != NULL; p = HashSetNext(pairSet)){
-            HashSetAdd(variable_pairSet,p);
-        }
-        return true;
-    }
-    return false;
-}
-
-Value *get_replace_value(HashSet* set,int block_id)
-{
-    HashSetFirst(set);
-    for(pair *p = HashSetNext(set); p != NULL; p = HashSetNext(set)){
-        if(block_id==p->from->id)
-            return p->define;
-    }
-    return NULL;
-}
 
 void update_replace_value(HashMap* map,Value* v_before,Value* v_replace)
 {
@@ -104,26 +128,54 @@ void update_replace_value(HashMap* map,Value* v_before,Value* v_replace)
     }
 }
 
+Value *get_replace_value(HashSet* set,int block_id)
+{
+    HashSetFirst(set);
+    for(pair *p = HashSetNext(set); p != NULL; p = HashSetNext(set)){
+        if(block_id==p->from->id)
+            return p->define;
+    }
+    return NULL;
+}
+
 void LOOP_UNROLL_EACH(Loop* loop)
 {
-//    if(!check_idc(loop))
+    //TODO 暂时是嵌套不处理循环展开
+//    if(loop->child!=NULL)
 //        return;
 
-//    int init = loop->initValue->pdata->var_pdata.iVal;
-//    int step = loop->modifier->pdata->var_pdata.iVal;
-//    int end =0;           //拿不到end
-//    if (step == 0) {
-//        return;
-//    }
+   //TODO 目前不做基本块间
+    if(HashSetSize(loop->loopBody) > 2)
+        return;
 
-//    int times= cal_times(init,step,end);
-//    int cnt=cal_ir_cnt(loop->loopBody);
+    Instruction *ins_end_cond=(Instruction*)loop->end_cond;
+    Instruction *ins_modifier=(Instruction*)loop->modifier;
+    Value *v_step=NULL,*v_end=NULL;
+    if(ins_get_lhs(ins_end_cond)==loop->inductionVariable)
+        v_end= ins_get_rhs(ins_end_cond);
+    else
+        v_end= ins_get_lhs(ins_end_cond);
+    if(ins_get_lhs(ins_modifier)==loop->inductionVariable)
+        v_step= ins_get_rhs(ins_modifier);
+    else
+        v_step= ins_get_lhs(ins_modifier);
+
+    //目前只处理常数情况下的
+    if(!check_idc(loop->initValue,v_step,v_end))
+        return;
+
+    if (v_step->pdata->var_pdata.iVal==0) {
+        return;
+    }
+
+    int times= cal_times(loop->initValue->pdata->var_pdata.iVal,ins_modifier,ins_end_cond,v_step,v_end);
+    int cnt=cal_ir_cnt(loop->loopBody);
 
     //超出一定长度的循环，不进行展开
-//    if((long)times*cnt>loop_unroll_up_lines)
-//        return;
+    if((long)times*cnt>loop_unroll_up_lines)
+        return;
 
-    //一个map用来保存变量与最新值的对应关系
+    //一个map用来保存header中变量与最新值的对应关系
     //value*----pair的hashset
     HashMap *v_new_valueMap=HashMapInit();
 
@@ -131,21 +183,10 @@ void LOOP_UNROLL_EACH(Loop* loop)
     //value*-----value*
     HashMap *other_new_valueMap=HashMapInit();
 
-    //先扫latch，如果有phi,保存一个Phi的对应关系
-    //value*----pair的hashset
-    HashMap *v_latch_phiMap=HashMapInit();
-    InstNode *latch_curr_node=get_next_inst(loop->tail->head_node);       //第一条是Label，自动挪到第二条
-    InstNode *latch_tail_node=loop->tail->tail_node;
-    while (latch_curr_node!=latch_tail_node && latch_curr_node->inst->Opcode==Phi)
-    {
-        HashMapPut(v_latch_phiMap,ins_get_dest(latch_curr_node->inst),latch_curr_node->inst->user.value.pdata->pairSet);
-        latch_curr_node= get_next_inst(latch_curr_node);
-    }
-
-
-
-    //再扫head
+    //扫head
     //head块保存一下初始中map中变量与最新更新值的对应关系
+    //%4( %2) = phi i32[%14 , %13], [%2 , %0]
+    //保存一个%4------(13:%14, 0:%2)
     InstNode *head_currNode = get_next_inst(loop->head->head_node);
     InstNode *head_bodyTail = loop->head->tail_node;
 
@@ -158,18 +199,18 @@ void LOOP_UNROLL_EACH(Loop* loop)
         HashSet *phiSet = head_currNode->inst->user.value.pdata->pairSet;
         HashSetFirst(phiSet);
         for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-            Value *incomingVal = phiInfo->define;
-            if(!check_in_latch_phi(incomingVal,variable,v_latch_phiMap,v_new_valueMap))
-            {
-                //不需要装载，说明本身就是给pair,直接装进去
-                HashSetAdd(map_phi_set,phiInfo);
-            }
+            //直接装进去
+            HashSetAdd(map_phi_set,phiInfo);
         }
 
-        //Value *new_value
         head_currNode = get_next_inst(head_currNode);
     }
 
+    /*
+     * 基本块间：
+     * 第一个基本块从label后开始复制(后续块label也需复制)，还是用v_new_valueMap的信息，开始ir都插入在latch块中,后来在curr_block中
+     * phi单独处理,更新到latch的phi时，记得用alias对应到Head块中的phi信息
+     */
     //循环展开
     HashSetFirst(loop->loopBody);
     for(BasicBlock *body = HashSetNext(loop->loopBody); body != NULL; body = HashSetNext(loop->loopBody)){
@@ -183,8 +224,11 @@ void LOOP_UNROLL_EACH(Loop* loop)
             int new_index=0;
             InstNode *currNode = body->head_node;
             InstNode *bodyTail = get_prev_inst(body->tail_node);
+            //留给添加新基本块做准备的
+            BasicBlock *curr_block=NULL;
             //复制这么多份
-            for(int i=0;i<update_modifier-1;i++,currNode=body->head_node)
+            //TODO 余数余数，具体怎么做
+            for(int i=0;i<update_modifier-1;i++,currNode=loop->tail->head_node)
             {
                 while(currNode != bodyTail){
                     if(!hasNoDestOperator(currNode)){
@@ -193,13 +237,16 @@ void LOOP_UNROLL_EACH(Loop* loop)
                         Value *v_r=NULL;
                         Value *v_l=NULL;
                         Instruction *copy_ins=NULL;
-                        //如果map中有，则要替换成最后使用值，而不能用原值
+                        //如果v_new_valueMap中有，则要替换成最后使用值，而不能用原值
                         if(HashMapContain(v_new_valueMap,lhs))
                         {
                             HashSet *set_replace=HashMapGet(v_new_valueMap,lhs);
-                            v_l=get_replace_value(set_replace,body->id);
+                            //loop->tail的block id可能随着新基本块的添加发生改变
+                            v_l=get_replace_value(set_replace,loop->tail->id);
                         }
-                            //变化过的中间变量
+                        //变化过的中间变量
+                        //比如%6= add nsw i32 %2,1，复制第一次后变为%8 = add nsw i32 %6,1
+                        //做一个%6-----%8
                         else if(HashMapContain(other_new_valueMap,lhs))
                             v_l= HashMapGet(other_new_valueMap,lhs);
                         else   //是无所谓的，比如是常数
@@ -228,7 +275,10 @@ void LOOP_UNROLL_EACH(Loop* loop)
                             copy_ins= ins_new_unary_operator(currNode->inst->Opcode,v_l);
 
                         InstNode *node = new_inst_node(copy_ins);
-                        node->inst->Parent=body;
+                        if(curr_block==NULL)
+                            node->inst->Parent=loop->tail;
+                        else
+                            node->inst->Parent=curr_block;
                         ins_insert_before(node,body->tail_node);
 
                         //左值的对应关系也要存起来了
@@ -236,16 +286,12 @@ void LOOP_UNROLL_EACH(Loop* loop)
                         Value *v_dest=ins_get_dest(currNode->inst);
 
                         //如果在另两个表中的对应value里有v_dest，要更新
+                        //如果v_new_valueMap有了新对应关系,比如本来记录了%2( %3) = phi i32[0 , %0], [%6 , %5]
+                        //然后other_new_valueMap中%6与它复制的下一条左值%8有了%6----%8对应，进行替换
                         if(HashMapContain(other_new_valueMap,v_dest))
-                        {
                             update_replace_value(v_new_valueMap, HashMapGet(other_new_valueMap,v_dest),new_dest);
-                            update_replace_value(v_latch_phiMap,HashMapGet(other_new_valueMap,v_dest),new_dest);
-                        }
                         else
-                        {
                             update_replace_value(v_new_valueMap,v_dest,new_dest);
-                            update_replace_value(v_latch_phiMap,v_dest,new_dest);
-                        }
                         HashMapPut(other_new_valueMap,v_dest ,new_dest);
                     }
                     currNode = get_next_inst(currNode);

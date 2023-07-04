@@ -223,6 +223,7 @@ void findInductionVariable(Loop *loop){
     assert(exitTail->inst->Opcode == br_i1);
     Value *cond = ins_get_lhs(exitTail->inst);
     loop->end_cond = cond;
+    printf("end cond is %s\n",cond->name);
 
     //get the exitingBlock block & body block
     BasicBlock *trueBlock = exitBlock->true_block;
