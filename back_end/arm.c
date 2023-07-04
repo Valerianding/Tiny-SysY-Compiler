@@ -4347,10 +4347,13 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
+
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
@@ -4358,17 +4361,25 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             sprintf(arr1+2,"%0x",x1);
             printf("\tldr\tr0,=%s\n",arr1);
             fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+
+            //mov to r1
+            printf("\tmov\tr1,#%d\n",x2);
+            fprintf(fp,"\tmov\tr1,#%d\n",x2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
+
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
             printf("\tldr\tr1,=%s\n",arr2);
             fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
@@ -4380,14 +4391,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             sprintf(arr2+2,"%0x",x2);
             printf("\tldr\tr0,=%s\n",arr1);
             fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+
             printf("\tldr\tr1,=%s\n",arr2);
             fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }
-
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -4402,8 +4415,10 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
+
             printf("\tvcvt.f32.s32\ts0,s0\n");
             fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+
             printf("\tvmov\tr%d,s0\n",dest_reg_abs);
             fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
             if(dest_reg>0){
@@ -4436,10 +4451,13 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(imm_is_valid(x1)){
             printf("\tmov\tr1,#%d\n",x1);
             fprintf(fp,"\tmov\tr1,#%d\n",x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
+
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
+
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
