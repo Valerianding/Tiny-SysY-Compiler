@@ -7738,7 +7738,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tldr\tr1,=%s\n",arr1);
                 fprintf(fp,"\tldr\tr1,=%s\n",arr1);
                 printf("\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
-                printf(fp,"\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
+                fprintf(fp,"\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
