@@ -3505,8 +3505,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-//        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
-//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
+        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4634,17 +4634,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
@@ -4759,8 +4759,9 @@ void fix_array2(struct _InstNode *instruction_node)
             v_te=get_next_inst(instruction_node)->inst->user.use_list[1].Val;
         }
 
-        //这两条可以合并了
-        if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1))
+        //这两条可以合并了(在不是一维数组的情况下)
+        if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && instruction->user.value.alias==get_next_inst(instruction_node)->inst->user.value.alias
+              && instruction->user.value.pdata->symtab_array_pdata.dimention_figure!=1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1))
         {
             //对第一条的左值进行处理
             if(instruction->user.value.use_list!=NULL)
