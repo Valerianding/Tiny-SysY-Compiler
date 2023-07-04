@@ -1,64 +1,63 @@
-int i[1], k[1];
+//int number1;
+//float number2;
+//int number3 = 1;
+//int number4 = 3;
+//int test01(int number){
+//    number = number + 1;
+//}
+//
+//int test00(){
+//    number3 = number3 + 1;
+//    test01(number4);
+//    return number1;
+//}
+//
 
-void inc_impl(int x[], int rec) {
-    if (rec == 0) {
-        x[0] = x[0] + 1;
-    } else {
-        x[0] = x[0] * 2;
-        inc_impl(x, rec - 1);
+
+int func(int a, int b[][59], int c, int d[], int e, int f, int g[], int h, int i)
+{
+    int index = 0;
+    while (index < 10) {
+        putint(b[a][index]);
+        index = index + 1;
     }
+    putch(10);
+
+    putint(d[c]);
+    putch(10);
+
+    while (i < 10) {
+        g[i] = h * 128875 % 3724;
+        i = i + 1;
+        h = h + 7;
+    }
+
+    return e + f;
 }
 
-//void inc(int x[]) {
-//    inc_impl(x, k[0]);
-//}
-//
-//void add_impl(int x[], int y[], int rec) {
-//    if (rec == 0) {
-//        x[0] = x[0] + y[0];
-//    } else {
-//        x[0] = x[0] * 2;
-//        add_impl(x, y, rec - 1);
-//    }
-//}
+int main()
+{
+    int a[61][67] = {};
+    int b[53][59] = {};
 
-//void add(int x[], int y[]) {
-//    add_impl(x, y, k[0]);
-//}
-//
-//void sub_impl(int x[], int y[], int rec) {
-//    if (rec == 0) {
-//        x[0] = x[0] - y[0];
-//    } else {
-//        x[0] = x[0] * 2;
-//        sub_impl(x, y, rec - 1);
-//    }
-//}
-//
-//void sub(int x[], int y[]) {
-//    sub_impl(x, y, k[0]);
-//}
-//
-//int main() {
-//    int j[1], y[1], z[1][2] = {-1};
-//    k[0] = getint();
-//    y[0] = getint();
-//    getarray(z[0]);
-//    while (y[0]) {
-//        j[0] = z[0][0];
-//        while (j[0] < 5) {
-//            putint(i[0]);
-//            putint(j[0]);
-//            putint(y[0]);
-//            putint(z[0][0]);
-//            add(z[0], y);
-//            add(j, y);
-//            sub(z[0], y);
-//        }
-//        inc(i);
-//        add(i, z[0]);
-//        if (i[0] == z[0][1]) break;
-//    }
-//    putch(10);
-//    return 0;
-//}
+    a[17][1] = 6;
+    a[17][3] = 7;
+    a[17][4] = 4;
+    a[17][7] = 9;
+    a[17][11] = 11;
+
+    b[6][1] = 1;
+    b[6][2] = 2;
+    b[6][3] = 3;
+    b[6][9] = 9;
+
+    int ret;
+    ret = func(a[17][1], b, a[17][3], a[17], b[6][3], b[6][0], b[6], b[34][4], b[51][18]) * 3;
+
+    while (ret >= 0) {
+        putint(b[6][ret]); putch(32);
+        ret = ret - 1;
+    }
+    putch(10);
+    return 0;
+}
