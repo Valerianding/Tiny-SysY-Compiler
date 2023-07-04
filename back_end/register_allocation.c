@@ -2806,8 +2806,8 @@ void bian_init(BasicBlock * this_block)
             addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use);
         }
     }
-    printf("tacid:%d\n",this_block->id);
-    for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    // printf("tacid:%d\n",this_block->id);
+    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
     addtoin(this_block);
     addtoout(this_block);
     for(int i=0;i<var_num;i++)
@@ -2838,7 +2838,7 @@ void bian_init(BasicBlock * this_block)
                 create_bian(i,j);
         }
     }
-    for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
+    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
 }
 
@@ -2885,7 +2885,7 @@ void reg_control(struct _InstNode *instruction_node,InstNode *temp)
     ir_reg_init(instruction_node);
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next)
     {
-        printf("func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
+        // printf("func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
         reg_control_func(currentFunction);
     }
     printf_llvm_ir_withreg(instruction_node);
