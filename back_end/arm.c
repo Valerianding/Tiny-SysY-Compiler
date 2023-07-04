@@ -4347,10 +4347,13 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
+
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
@@ -4358,17 +4361,25 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             sprintf(arr1+2,"%0x",x1);
             printf("\tldr\tr0,=%s\n",arr1);
             fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+
+            //mov to r1
+            printf("\tmov\tr1,#%d\n",x2);
+            fprintf(fp,"\tmov\tr1,#%d\n",x2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
+
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",x2);
             printf("\tldr\tr1,=%s\n",arr2);
             fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
@@ -4380,14 +4391,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             sprintf(arr2+2,"%0x",x2);
             printf("\tldr\tr0,=%s\n",arr1);
             fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+
             printf("\tldr\tr1,=%s\n",arr2);
             fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }
-
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -4402,8 +4415,10 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
+
             printf("\tvcvt.f32.s32\ts0,s0\n");
             fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+
             printf("\tvmov\tr%d,s0\n",dest_reg_abs);
             fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
             if(dest_reg>0){
@@ -4436,10 +4451,13 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         if(imm_is_valid(x1)){
             printf("\tmov\tr1,#%d\n",x1);
             fprintf(fp,"\tmov\tr1,#%d\n",x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
+
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
+
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
             sprintf(arr2+2,"%0x",*xx2);
@@ -5758,11 +5776,11 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 int x= get_value_offset_sp(hashMap,value1);
                 printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
                 fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
-                printf("\tmov\tr1,r%d\n",left_reg-100);
+                printf("\tmov\tr0,r%d\n",left_reg-100);
                 fprintf(fp,"\tmov\tr1,r%d\n",left_reg-100);
             } else{
-                printf("\tmov\tr1,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr1,r%d\n",left_reg);
+                printf("\tmov\tr0,r%d\n",left_reg);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
             }
         }
         printf("\tbl\t__aeabi_idivmod\n");
@@ -7619,11 +7637,11 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //    数组好像只有第一条GEP指令的value1类型是对的，之后的GEP指令对应的都是address,全局比那辆也是一样的，所以说可以利用value1的类型来判断是不是第一条GEP
 
 
-//    现在计算GEP需要多添加一钟情况。就是该数组是通过数组传参过来的数组，和之前的也是一样的，只有计算第一条GEP的时候方式不同，剩下的GEP是一样的计算步骤
+//    现在计算GEP需要多添加一种情况。就是该数组是通过数组传参过来的数组，和之前的也是一样的，只有计算第一条GEP的时候方式不同，剩下的GEP是一样的计算步骤
 //    之后是使用isParam（）函数判断该GEP是不是计算的数组传参的GEP，第一个参数是传GEP的数组首地址value1，第二个参数是传该函数的参数个数，这个只在FuncBegin的value里面存有
 //    参数数组的第一条GEP
 
-    if(value1->name[0]=='%'&&isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
+    if(value1->name[0]=='%' && isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
 //        printf("isParam\n");
         int x= get_value_offset_sp(hashMap,value1);
         printf("\tldr\tr0,[r11,#%d]\n",x);
@@ -7667,6 +7685,44 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //                int x1= get_value_offset_sp(hashMap,value1);//数组首地址的偏移量,这里可以直接r11加上数组首地址的偏移量就可以了
 //                printf("\tadd\tr1,r11,#%d\n",x1);
 //                fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                }else if(right_reg!=0){
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                }
+                else{
+                    printf("\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    fprintf(fp, "\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                }
+            }else if(left_reg>100){
+                printf("\tmov\tr%d,r0\n",left_reg-100);
+                fprintf(fp,"\tmov\tr%d,r0\n",left_reg-100);
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+                }else if(right_reg!=0){
+                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                }
+                else{
+                    printf("\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    fprintf(fp, "\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                }
+            }else{
+                printf("\tmov\tr%d,r0\n",left_reg);
+                fprintf(fp,"\tmov\tr%d,r0\n",left_reg);
                 if(right_reg>100){
                     int x2= get_value_offset_sp(hashMap,value2);
                     printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);

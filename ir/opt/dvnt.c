@@ -31,6 +31,8 @@ bool DVNT(Function *currentFunction){
 
 // 需要lhsValueNumber和rhsValueNumber保持一个相对位置
 // 常数我们可以用负数直接代替，所以我们不希望我们产生的hashValueNumber是一个负数
+
+//TODO ERROR
 unsigned long getHashValueNumber(Opcode opcode,unsigned int lhsValueNumber, unsigned int rhsValueNumber){
     unsigned long long hash_value = (unsigned long long)(opcode << 32 | lhsValueNumber << 16 | rhsValueNumber);
     unsigned int hash = 5381;

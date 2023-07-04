@@ -79,7 +79,7 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
             if(!isGlobalVar(loadPlace)){
                 Instruction *gepInstruction = (Instruction*)loadPlace;
                 if(gepInstruction->Opcode == bitcast){
-
+                    assert(false);
                 }
                 Vector *indexVector = VectorInit(10);
                 //lhs 是位置 rhs是偏移量
@@ -303,11 +303,4 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
             currNode = get_next_inst(currNode);
         }
     }
-}
-
-
-//delete store only alloca and its stores
-void remove_store_only(Function *function){
-
-
 }
