@@ -1564,8 +1564,8 @@ int handle_and_or(past root,bool flag,bool last_or)
 
                 //直接成功,生成br_i1_true
                 if(root->right->iVal!=0 && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0) {
-                    InstNode *ins_true= true_location_handler(br_i1_true,NULL,t_index++);
-                    insnode_push(&S_or,ins_true);
+                    InstNode *ins_true= true_location_handler(br,NULL,t_index++);
+                    //insnode_push(&S_or,ins_true);
                 }
             }
 
@@ -3704,6 +3704,19 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                         fprintf(fptr," %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                     }
                 }
+                else if(instruction->user.use_list->Val->VTy->ID==Float)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        printf(" %s = icmp ne i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        fprintf(fptr," %s = icmp ne i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        printf(" %s = icmp ne i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                        fprintf(fptr," %s = icmp ne i32 %f,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
                 else
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
@@ -4547,6 +4560,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                     printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 else if(instruction->user.use_list->Val->VTy->ID==Float)
                     printf("give param %f,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
+                else
+                    printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
                 break;
             case FunEnd:
                 printf("}\n\n");
