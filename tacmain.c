@@ -109,26 +109,25 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        sideEffect(currentFunction);
-        ConstFolding(currentFunction);
+//        sideEffect(currentFunction);
+//        ConstFolding(currentFunction);
         commonSubexpressionElimination(currentFunction);
-        memlvn(currentFunction);
+//        memlvn(currentFunction);
 
-
-        ConstFolding(currentFunction);
-        DVNT(currentFunction);
-
-        //loop
-        loop(currentFunction);
-        LICM(currentFunction);
-
-
-        //dce
-        Mark(currentFunction);
-        Sweep(currentFunction);
-
-        //CfgSimplify
-        Clean(currentFunction);
+//
+        //DVNT(currentFunction);
+//
+//        //loop
+//        loop(currentFunction);
+//        LICM(currentFunction);
+//
+//
+//        //dce
+//        Mark(currentFunction);
+//        Sweep(currentFunction);
+//
+//        //CfgSimplify
+//        Clean(currentFunction);
         renameVariables(currentFunction);
     }
 
@@ -184,7 +183,7 @@ int main(int argc, char* argv[]){
     //lsy_end
 
     //ljw_begin
-    //reg_control(instruction_list,temp);
+    reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
@@ -194,9 +193,9 @@ int main(int argc, char* argv[]){
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 //
-    //arm_open_file(argv[3]);
-    //arm_translate_ins(instruction_list,argv[3]);
-    //arm_close_file(argv[3]);
+    arm_open_file(argv[3]);
+    arm_translate_ins(instruction_list,argv[3]);
+    arm_close_file(argv[3]);
     //    ljf_end
 
     return 0;

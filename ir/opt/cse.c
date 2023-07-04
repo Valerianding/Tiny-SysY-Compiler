@@ -84,10 +84,13 @@ uint32_t hash_expr(int Opcode, Value* lhs, Value* rhs) {
     uint32_t h2 = (uint32_t)p2;
     uint32_t r = Opcode;
 
-    h1 *= 15485863u;
-    h2 *= 949417133u;
-    r *= 87701971u;
-    h1 ^= h2 ^ r;
+    for(int i = 0; i < 32; i++){
+        h1 *= 15485863u;
+        h2 *= 949417133u;
+        r *= 87701971u;
+        h1 ^= h2 ^ r;
+    }
+
 
     h1 ^= h1 >> 16;
     h1 *= 73244475u;
