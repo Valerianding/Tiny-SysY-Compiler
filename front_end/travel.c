@@ -193,6 +193,31 @@ struct _Value *create_call_func(past root,int block)
                 v->pdata->symtab_func_pdata.return_type.ID=Var_FLOAT;
             else
                 v->pdata->symtab_func_pdata.return_type.ID=Unknown;
+
+            //加下库函数的参数信息
+            if(strcmp(v->name,"getint") == 0 || strcmp(v->name,"getch") == 0 || strcmp(v->name,"getfloat") == 0)
+                v->pdata->symtab_func_pdata.param_num=0;
+            else if(strcmp(v->name,"getarray") == 0 || strcmp(v->name,"getfarray") == 0)           //TODO 不知如何做float类型数组和int类型数组的区分
+            {
+                v->pdata->symtab_func_pdata.param_num=1;
+                v->pdata->symtab_func_pdata.param_type_lists[0].ID=AddressTyID;
+            }
+            else if(strcmp(v->name,"putint") == 0 || strcmp(v->name,"putch") == 0)
+            {
+                v->pdata->symtab_func_pdata.param_num=1;
+                v->pdata->symtab_func_pdata.param_type_lists[0].ID=Var_INT;
+            }
+            else if(strcmp(v->name,"putarray") == 0 || strcmp(v->name,"putfarray") == 0)
+            {
+                v->pdata->symtab_func_pdata.param_num=2;
+                v->pdata->symtab_func_pdata.param_type_lists[0].ID=Var_INT;
+                v->pdata->symtab_func_pdata.param_type_lists[1].ID=AddressTyID;
+            }
+            else if(strcmp(v->name,"putfloat") == 0)
+            {
+                v->pdata->symtab_func_pdata.param_num=1;
+                v->pdata->symtab_func_pdata.param_type_lists[0].ID=Var_FLOAT;
+            }
         }
     }
 
@@ -4690,16 +4715,18 @@ void fix_array(struct _InstNode *instruction_node)
     int offset=0;
 
     bool after_ = false;
+    Value *v_array=NULL;
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
         int dimension;
-        Value *v_array=NULL;
 
         switch (instruction_node->inst->Opcode)
         {
             case GEP:
                 /** 1. 先取出第一个操作数的value的iVal，是当前累积量
                 * 2. 算出左值的累积量，替换左值的iVal*/
+                if(v_array!=NULL && (v_array!=instruction->user.value.alias || v_array->pdata->symtab_array_pdata.dimention_figure==1))
+                    after_ = false;
                 v_array=instruction->user.value.alias;
                 dimension=instruction->user.value.pdata->var_pdata.iVal;
                 if(instruction->user.use_list[1].Val->VTy->ID!=Int)
@@ -4761,7 +4788,7 @@ void fix_array2(struct _InstNode *instruction_node)
 
         //这两条可以合并了(在不是一维数组的情况下)
         if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && instruction->user.value.alias==get_next_inst(instruction_node)->inst->user.value.alias
-              && instruction->user.value.pdata->symtab_array_pdata.dimention_figure!=1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1))
+              && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure!=1 && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==1))
         {
             //对第一条的左值进行处理
             if(instruction->user.value.use_list!=NULL)
@@ -4857,7 +4884,7 @@ void fix_array2(struct _InstNode *instruction_node)
             //拿到上一条GEP的维度+1
             int pre_dimen=0;
             //拿到上一条GEP的维度+1
-            if(get_prev_inst(instruction_node)->inst->Opcode==GEP)
+            if(get_prev_inst(instruction_node)->inst->Opcode==GEP && get_prev_inst(instruction_node)->inst->user.value.alias == instruction_node->inst->user.value.alias && instruction_node->inst->user.value.alias->pdata->symtab_array_pdata.dimention_figure!=1)
             {
                 pre_dimen= get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal;
                 instruction->user.value.pdata->var_pdata.iVal=pre_dimen+1;

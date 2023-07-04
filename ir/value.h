@@ -39,7 +39,7 @@ struct _PData{
 
     struct {
         Type return_type;            //返回类型
-        Type param_type_lists[1000];   //参数类型数组
+        Type param_type_lists[1000];   //参数类型数组,如Var_Int,Var_Float,AddressTyID
         int param_num;
         unsigned int flag_inline:1;    //标记是否能内联，初始都不能，就为0
     }symtab_func_pdata;            //目前只在符号表里用的func的结构，最终func结构还未完全确定
