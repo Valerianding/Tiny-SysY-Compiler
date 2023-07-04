@@ -1136,7 +1136,7 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
-                if(instruction->user.use_list->Val->VTy->ID==Int)
+                if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float)
                     printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 else
                     printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
@@ -2577,7 +2577,7 @@ void travel_ir(InstNode *instruction_node)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
-                if(instruction->user.use_list->Val->VTy->ID==Int) ;
+                if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float) ;
                     // printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 else
                 {
@@ -2806,8 +2806,8 @@ void bian_init(BasicBlock * this_block)
             addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use);
         }
     }
-    // printf("tacid:%d\n",this_block->id);
-    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    printf("tacid:%d\n",this_block->id);
+    for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
     addtoin(this_block);
     addtoout(this_block);
     for(int i=0;i<var_num;i++)
@@ -2838,7 +2838,7 @@ void bian_init(BasicBlock * this_block)
                 create_bian(i,j);
         }
     }
-    // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
+    for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
 }
 
