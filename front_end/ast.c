@@ -701,6 +701,36 @@ float cal_easy_expr_f(past expr)
             stackPop(S);
             stackTop(S, (void*)&x1);
             stackPop(S);
+
+            //ConstFloat
+            if(strcmp(bstr2cstr(x1->nodeType, '\0'),"ID") == 0)
+            {
+                Value *v_x1= symtab_dynamic_lookup_first(this,bstr2cstr(x1->sVal, '\0'));
+                if(v_x1->VTy->ID==Const_FLOAT)
+                {
+                    x1->fVal=v_x1->pdata->var_pdata.fVal;
+                    x1->nodeType=bfromcstr("num_float");
+                }
+                else
+                {
+                    x1->iVal=v_x1->pdata->var_pdata.iVal;
+                    x1->nodeType=bfromcstr("num_int");
+                }
+            }
+            if(strcmp(bstr2cstr(x2->nodeType, '\0'),"ID") == 0)
+            {
+                Value *v_x2= symtab_dynamic_lookup_first(this,bstr2cstr(x2->sVal, '\0'));
+                if(v_x2->VTy->ID==Const_FLOAT)
+                {
+                    x2->fVal=v_x2->pdata->var_pdata.fVal;
+                    x2->nodeType=bfromcstr("num_float");
+                }
+                else
+                {
+                    x2->iVal=v_x2->pdata->var_pdata.iVal;
+                    x2->nodeType=bfromcstr("num_int");
+                }
+            }
             float *result= malloc(4);
             switch((*p)->iVal)
             {
