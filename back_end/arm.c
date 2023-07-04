@@ -7629,7 +7629,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //现在就是说在GEP的时候，如果是局部数组，直接将结果加上r11，这样直接就给出绝对地址
 //如果说是全局数组的话，就不用加，计算出来的自然就是绝对地址了
     Value *value0,*value1,*value2;
-    int dest_reg,dest_reg_abs,left_reg,right_reg;
+    int dest_reg,dest_reg_abs,left_reg,right_reg,left_reg_abs;
     value0=&ins->inst->user.value;
     value1= user_get_operand_use(&ins->inst->user,0)->Val;
     value2= user_get_operand_use(&ins->inst->user,1)->Val;
@@ -7646,22 +7646,29 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 
     if(value1->name[0]=='%' && isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
 //        printf("isParam\n");
-        int x= get_value_offset_sp(hashMap,value1);
-        printf("\tldr\tr0,[r11,#%d]\n",x);
-        fprintf(fp,"\tldr\tr0,[r11,#%d]\n",x);// r0里面存放的是数组首地址的绝对地址
+        int x;
+        if(left_reg>100){
+            x= get_value_offset_sp(hashMap,value1);
+            printf("\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);
+            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",left_reg-100,x);// left_reg_abs里面存放的是数组首地址的绝对地址
+            left_reg_abs=left_reg-100;
+        }else{
+            left_reg_abs=left_reg;
+        }
+
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
             int y=value2->pdata->var_pdata.iVal*4;
             if(imm_is_valid(y)){
-                printf("\tadd\tr%d,r0,#%d\n",dest_reg_abs,y);
-                fprintf(fp,"\tadd\tr%d,r0,#%d\n",dest_reg_abs,y);
+                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
             }else{
                 char arr1[12]="0x";
                 sprintf(arr1+2,"%0x",y);
                 printf("\tldr\tr1,=%s\n",arr1);
                 fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-                printf("\tadd\tr%d,r0,r1\n",dest_reg_abs);
-                fprintf(fp,"\tadd\tr%d,r0,r1\n",dest_reg_abs);
+                printf("\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
+                printf(fp,"\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
@@ -7670,71 +7677,48 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",dest_reg_abs,x);
             }
         }else{
-//            被乘的常数放在r2,r2与 right_reg相乘，再加上数组首地址的绝对地址r0
             int which_dimension=value0->pdata->var_pdata.iVal;
             int result= array_suffix(value1->alias,which_dimension);
-            if(imm_is_valid(result)){
-                printf("\tmov\tr2,#%d\n",result);
-                fprintf(fp,"\tmov\tr2,#%d\n",result);
-            }else{
-                char arr1[12]="0x";
-                sprintf(arr1+2,"%0x",result);
-                printf("\tldr\tr2,=%s\n",arr1);
-                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
-            }
-//          计算数组传参的第一条GEP，数组首地址是没有进行寄存器分配的
-            if(left_reg==0){
-                // 上面计算得到的r0就是参数数组首地址的绝对偏移量
-//                int x1= get_value_offset_sp(hashMap,value1);//数组首地址的偏移量,这里可以直接r11加上数组首地址的偏移量就可以了
-//                printf("\tadd\tr1,r11,#%d\n",x1);
-//                fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
-                if(right_reg>100){
-                    int x2= get_value_offset_sp(hashMap,value2);
-                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
-                }else if(right_reg!=0){
-                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
-                }
-                else{
-                    printf("\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
-                    fprintf(fp, "\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
-                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                }
-            }else if(left_reg>100){
-                printf("\tmov\tr%d,r0\n",left_reg-100);
-                fprintf(fp,"\tmov\tr%d,r0\n",left_reg-100);
-                if(right_reg>100){
-                    int x2= get_value_offset_sp(hashMap,value2);
-                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
-                }else if(right_reg!=0){
-                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
-                }
-                else{
-                    printf("\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
-                    fprintf(fp, "\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
-                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                }
-            }else{
-                printf("\tmov\tr%d,r0\n",left_reg);
-                fprintf(fp,"\tmov\tr%d,r0\n",left_reg);
-                if(right_reg>100){
-                    int x2= get_value_offset_sp(hashMap,value2);
-                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
-                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
+//            被乘的常数放在r2,r2与 right_reg相乘，再加上数组首地址的绝对地址left_reg_abs
+
+            if(right_reg==0){ //right==0表示为立即数，没有进行寄存器分配
+                int y=value2->pdata->var_pdata.iVal;
+                y*=result;
+                if(imm_is_valid(y)){
+                    printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                    fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
                 }else{
-                    printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                    char arr1[12]="0x";
+                    sprintf(arr1+2,"%0x",y);
+                    printf("\tldr\tr2,=%s\n",arr1);
+                    fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                    printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
+                    fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
+                }
+            }
+            else{
+                if(imm_is_valid(result)){
+                    printf("\tmov\tr2,#%d\n",result);
+                    fprintf(fp,"\tmov\tr2,#%d\n",result);
+                }else{
+                    char arr1[12]="0x";
+                    sprintf(arr1+2,"%0x",result);
+                    printf("\tldr\tr2,=%s\n",arr1);
+                    fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                }
+//          计算数组传参的第一条GEP，数组首地址是没有进行寄存器分配的
+//          计算数组传参的第一条GEP，数组首地址是参数，所以说是进行了寄存器分配的left_reg不可能是0
+//
+
+                if(right_reg>100){
+                    int x2= get_value_offset_sp(hashMap,value2);
+                    printf("\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
+                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg_abs);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg_abs);
+                }else{  //right > 0 && right < 100
+                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg_abs);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg_abs);
                 }
             }
 
