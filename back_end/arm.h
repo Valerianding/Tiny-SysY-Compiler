@@ -20,6 +20,8 @@
  * @return
  */
 bool imm_is_valid(unsigned value);
+bool imm_is_valid2(int value);
+void handle_illegal_imm(int dest_reg ,int x,int flag);
 
 void arm_open_file(char argv[]);
 void arm_close_file();

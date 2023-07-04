@@ -561,6 +561,9 @@ void arm_translate_ins(InstNode *ins,char argv[]){
                     k++;
                 }
             }
+            if(func_call_func>0){
+                k++;
+            }
             hashMap=offset_init(ins,&local_var_num,k);
             int hashsize= HashMapSize(hashMap)*4;
 //            printf("hashsize=%d\n",hashsize);
