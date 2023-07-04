@@ -8259,8 +8259,16 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
             fprintf(fp,"\tldr\tr1,=%s\n",arr);
         }
         x= get_array_total_occupy(value1->alias,0);
-        printf("\tmov\tr2,#%d\n",x);
-        fprintf(fp,"\tmov\tr2,#%d\n",x);
+        if(imm_is_valid(x)){
+            printf("\tmov\tr2,#%d\n",x);
+            fprintf(fp,"\tmov\tr2,#%d\n",x);
+        }else{
+            char arr[12]="0x";
+            sprintf(arr+2,"%0x",x);
+            printf("\tldr\tr2,=%s\n",arr);
+            fprintf(fp,"\tldr\tr2,=%s\n",arr);
+        }
+
         printf("\tbl\tmemset\n");
 
         fprintf(fp,"\tbl\tmemset\n");
