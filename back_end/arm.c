@@ -2256,6 +2256,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
                 ;
+                printf("\tmov\tr1,#%d\n",x1);
+                fprintf(fp,"\tmov\tr1,#%d\n",x1);
                 printf("\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
                 fprintf(fp,"\tsub\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
             }
@@ -7695,8 +7697,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
                     fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
                 }
-            }
-            else{
+            }else{
                 if(imm_is_valid(result)){
                     printf("\tmov\tr2,#%d\n",result);
                     fprintf(fp,"\tmov\tr2,#%d\n",result);
