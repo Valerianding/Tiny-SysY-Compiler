@@ -7691,9 +7691,15 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
                     printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
                     fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
-                }else{
+                }else if(right_reg!=0){
                     printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
                     fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                }
+                else{
+                    printf("\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    fprintf(fp, "\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
                 }
             }else if(left_reg>100){
                 printf("\tmov\tr%d,r0\n",left_reg-100);
@@ -7704,9 +7710,15 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",right_reg-100,x2);
                     printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
                     fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg-100);
-                }else{
+                }else if(right_reg!=0){
                     printf("\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
                     fprintf(fp,"\tmla\tr%d,r%d,r2,r0\n",dest_reg_abs,right_reg);
+                }
+                else{
+                    printf("\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    fprintf(fp, "\tmov\tr1,%d\n",value2->pdata->var_pdata.iVal);
+                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
                 }
             }else{
                 printf("\tmov\tr%d,r0\n",left_reg);
