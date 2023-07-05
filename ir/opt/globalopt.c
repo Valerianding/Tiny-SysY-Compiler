@@ -78,29 +78,38 @@ void CheckGlobalVariable(InstNode *list){
             User *user = uses->Parent;
             //mark the instruction to be useless
             //TODO remember thar true is useless
-            Instruction *ins = (Instruction *)user;
+            Instruction *curIns = (Instruction *)user;
+
+            //it means that these are all loads
             ins->isCritical = true;
 
 
             //change the dest value type and it's pdata
-            Value *globalDest = ins_get_dest(ins);
+            Value *insDest = ins_get_dest(curIns);
 
             //init Value for this global variable
-            Value *initValue = ins_get_rhs(ins);
-            switch (globalDest->VTy->ID) {
-                case GlobalVarInt:{
-                    printf("case int : initValue : %d",initValue->pdata->var_pdata.iVal);
 
-                    globalDest->VTy->ID = Int;
-                    globalDest->pdata->var_pdata.iVal = initValue->pdata->var_pdata.iVal;
+            Instruction *originalGlobal = (Instruction *)val;
+            Value *initValue = ins_get_rhs(originalGlobal);
+            switch (val->VTy->ID) {
+                case GlobalVarInt:{
+                    printf("case int initValue : %d",initValue->pdata->var_pdata.iVal);
+
+                    insDest->VTy->ID = Int;
+                    insDest->pdata->var_pdata.iVal = initValue->pdata->var_pdata.iVal;
                     break;
                 }
                 case GlobalVarFloat:{
+                    printf("case float initValue : %lf",initValue->pdata->var_pdata.fVal);
 
+                    insDest->VTy->ID = Float;
+                    insDest->pdata->var_pdata.fVal = initValue->pdata->var_pdata.fVal;
                     break;
                 }
+                default:{
+                    assert(false);
+                }
             }
-
             uses = uses->Next;
         }
     }

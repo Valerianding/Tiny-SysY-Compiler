@@ -1,62 +1,81 @@
-//int number1;
-//float number2;
-//int number3 = 1;
-//int number4 = 3;
-//int test01(int number){
-//    number = number + 1;
-//}
-//
-//int test00(){
-//    number3 = number3 + 1;
-//    test01(number4);
-//    return number1;
-//}
-//
+const int INF = 65535;
+int e[16][16];
+int book[16];
+int dis[16];
+int n, m;
+int v1, v2, w;
 
-
-int func(int a, int b[][59], int c, int d[], int e, int f, int g[], int h, int i)
+void Dijkstra()
 {
-    int index = 0;
-    while (index < 10) {
-        putint(b[a][index]);
-        index = index + 1;
-    }
-    putch(10);
+    int i, j;
 
-    putint(d[c]);
-    putch(10);
-
-    while (i < 10) {
-        g[i] = h * 128875 % 3724;
+    i = 1;
+    while (i <= n) {
+        dis[i] = e[1][i];
+        book[i] = 0;
         i = i + 1;
-        h = h + 7;
     }
+    book[1] = 1;
 
-    return e + f;
+    i = 1;
+    while (i <= n - 1) {
+        int min_num = INF;
+        int min_index = 0;
+        int k = 1;
+        while (k <= n) {
+            if (min_num > dis[k] && book[k] == 0) {
+                min_num = dis[k];
+                min_index = k;
+            }
+            k = k + 1;
+        }
+        book[min_index] = 1;
+        int j = 1;
+        while (j <= n) {
+            if (e[min_index][j] < INF) {
+                if (dis[j] > dis[min_index] + e[min_index][j]) {
+                    dis[j] = dis[min_index] + e[min_index][j];
+                }
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
 }
 
 int main()
 {
-    int a[61][67] = {};
-    int b[53][59] = {};
+    int i;
+    n = getint();
+    m = getint();
 
-    a[17][1] = 6;
-    a[17][3] = 7;
-    a[17][4] = 4;
-    a[17][7] = 9;
-    a[17][11] = 11;
+    i = 1;
+    while (i <= n) {
+        int j = 1;
+        while (j <= n) {
+            if (i == j)
+                e[i][j] = 0;
+            else
+                e[i][j] = INF;
+            j = j + 1;
+        }
+        i = i + 1;
+    }
 
-    b[6][1] = 1;
-    b[6][2] = 2;
-    b[6][3] = 3;
-    b[6][9] = 9;
+    i = 1;
+    while (i <= m) {
+        int u = getint(), v = getint();
+        e[u][v] = getint();
+        i = i + 1;
+    }
 
-    int ret;
-    ret = func(a[17][1], b, a[17][3], a[17], b[6][3], b[6][0], b[6], b[34][4], b[51][18]) * 3;
+    Dijkstra();
 
-    while (ret >= 0) {
-        putint(b[6][ret]); putch(32);
-        ret = ret - 1;
+    i = 1;
+    while (i <= n) {
+        putint(dis[i]);
+        putch(32);
+        i = i + 1;
     }
     putch(10);
     return 0;
