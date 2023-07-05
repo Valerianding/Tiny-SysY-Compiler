@@ -2682,42 +2682,38 @@ void travel_ir(InstNode *instruction_node)
 
 void addtolive(char * name,int tacid,int ifuse)
 {
-    // for(int i=0;i<var_num;i++)
-    //     if(strcmp(name,live[i].name)==0)
-    //     {
-    //         live[i].last=tacid;
-    //         return ;
-    //     }
-    // live[var_num].name=name;
-    // live[var_num].last=tacid;
-    // live[var_num++].first=tacid;
-    // return ;
     if(ifuse)
     {
         for(int i=0;i<var_num;i++)
-            if(strcmp(name,live[i].name)==0)
-            {
-                live[i].last=tacid;
-                return ;
-            }
+        if(strcmp(name,live[i].name)==0)
+        {
+            live[i].last=tacid;
+            live[i].last_is_use=1;
+            return ;
+        }
         live[var_num].name=name;
         live[var_num].last=tacid;
-        live[var_num].first=tacid;    
+        live[var_num].first=tacid;   
+        live[var_num].first_is_use=1; 
+        live[var_num].last_is_use=1;
         live[var_num++].first_use=tacid;
         return ;
     }
     else
     {
         for(int i=0;i<var_num;i++)
-            if(strcmp(name,live[i].name)==0)
-            {
-                live[i].last_def=tacid;
-                live[i].last=tacid;
-                return ;
-            }
+        if(strcmp(name,live[i].name)==0)
+        {
+            live[i].last_def=tacid;
+            live[i].last_is_use=0;
+            live[i].last=tacid;
+            return ;
+        }
         live[var_num].last=tacid;
         live[var_num].name=name;
         live[var_num].first=tacid;  
+        live[var_num].first_is_use=0;
+        live[var_num].last_is_use=0;
         live[var_num++].last_def=tacid;
         return ;
     }
@@ -2725,9 +2721,9 @@ void addtolive(char * name,int tacid,int ifuse)
 
 void create_bian(int i,int j)
 {
-    for(int i=0;i<edge_num;i++)
+    for(int tie=0;tie<edge_num;tie++)
     {
-        if((_bian[i].a==i&&_bian[i].b==j)||(_bian[i].a==j&&_bian[i].b==i))
+        if((_bian[tie].a==i&&_bian[tie].b==j)||(_bian[tie].a==j&&_bian[tie].b==i))
         {
             return ;
         }
@@ -2834,12 +2830,26 @@ void bian_init(BasicBlock * this_block)
     {
         for(int j=i+1;j<var_num;j++)
         {
-            if(!(live[i].last<live[j].first||live[i].first>live[j].last))
+            // printf("now %s %s\n",live[i].name,live[j].name);
+            if((live[i].last<live[j].first||live[i].first>live[j].last)||
+                (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
+                (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
+            {
+                // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
+                // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
+                // if(live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)  printf("from2\n");
+                // if(live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1)  printf("from3\n");
+            }
+            else
+            {
+                // printf("%s %s在一起了\n",live[i].name,live[j].name);
                 create_bian(i,j);
+            }
         }
     }
     // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
+    // for(int i=0;i<edge_num;i++) printf("%d %d:%s %d:%s\n",i,_bian[i].a,live[_bian[i].a].name,_bian[i].b,live[_bian[i].b].name);
 }
 
 void bian_init_test()

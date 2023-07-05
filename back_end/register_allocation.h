@@ -51,6 +51,8 @@ struct name_num
     int first;
     int last;
     int last_def;
+    int first_is_use;
+    int last_is_use;
     int isin;
     int isout;
 };
