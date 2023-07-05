@@ -28,6 +28,7 @@ int save_r11;
 int global_flag=0;
 int give_param_num;
 Value *func_param_type=NULL;
+int ltorg_num=0;
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 void printf_stmfd_rlist(){
@@ -5994,24 +5995,24 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
-    printf("\t.align\t2\n"
-           "\t.global\t%s\n"
-           "\t.arch armv7-a\n"
-           "\t.syntax unified\n"
-           "\t.arm\n"
-           "\t.fpu vfp\n"
-           "\t.type\t%s, %%function\n"
-           ,user_get_operand_use(&ins->inst->user,0)->Val->name
-           ,user_get_operand_use(&ins->inst->user,0)->Val->name);
-    fprintf(fp,"\t.align\t2\n"
-            "\t.global\t%s\n"
-            "\t.arch armv7-a\n"
-            "\t.syntax unified\n"
-            "\t.arm\n"
-            "\t.fpu vfp\n"
-            "\t.type\t%s, %%function\n"
-        ,user_get_operand_use(&ins->inst->user,0)->Val->name
-        ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+//    printf("\t.align\t2\n"
+//           "\t.global\t%s\n"
+//           "\t.arch armv7-a\n"
+//           "\t.syntax unified\n"
+//           "\t.arm\n"
+//           "\t.fpu vfp\n"
+//           "\t.type\t%s, %%function\n"
+//           ,user_get_operand_use(&ins->inst->user,0)->Val->name
+//           ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+//    fprintf(fp,"\t.align\t2\n"
+//            "\t.global\t%s\n"
+//            "\t.arch armv7-a\n"
+//            "\t.syntax unified\n"
+//            "\t.arm\n"
+//            "\t.fpu vfp\n"
+//            "\t.type\t%s, %%function\n"
+//        ,user_get_operand_use(&ins->inst->user,0)->Val->name
+//        ,user_get_operand_use(&ins->inst->user,0)->Val->name);
 
     memset(reg_save,0, sizeof(reg_save));
 
@@ -6559,11 +6560,17 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
     fprintf(fp,"\tbx\tlr\n");
 
 //    这里先加入一个固定的文字池
+    printf("\tb\t.ROG_%d\n",ltorg_num);
+    fprintf(fp,"\tb\t.ROG_%d\n",ltorg_num);
     printf("\t.ltorg\n\t.space 600\n");
     fprintf(fp,"\t.ltorg\n\t.space 600\n");
+    printf(".ROG_%d:\n",ltorg_num);
+    ltorg_num++;
+    if(strcmp(funcName,"main")==0){
+        printf("\t.size\t%s, .-%s\n\n",funcName,funcName);
+        fprintf(fp,"\t.size\t%s, .-%s\n\n",funcName,funcName);
+    }
 
-    printf("\t.size\t%s, .-%s\n\n",funcName,funcName);
-    fprintf(fp,"\t.size\t%s, .-%s\n\n",funcName,funcName);
     return ins;
 }
 
@@ -6901,8 +6908,18 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //            "\t.eabi_attribute 18, 4\n"
 //           "\t.file\t\"%s\"\n"
 //           "\t.text\n",fileName);
-    printf("\t.text\n");
-    fprintf(fp,"\t.text\n");
+    printf("\t.text\n"
+           "\t.align\t2\n"
+           "\t.global\tmain\n"
+           "\t.fpu\tvfp\n"
+           "\t.type\tmain, %%function\n"
+           "\t.code\t32\n");
+    fprintf(fp,"\t.text\n"
+           "\t.align\t2\n"
+           "\t.global\tmain\n"
+           "\t.fpu\tvfp\n"
+           "\t.type\tmain, %%function\n"
+           "\t.code\t32\n");
     return ins;
 }
 
