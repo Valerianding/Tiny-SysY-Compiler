@@ -93,14 +93,14 @@ void CheckGlobalVariable(InstNode *list){
             Value *initValue = ins_get_rhs(originalGlobal);
             switch (val->VTy->ID) {
                 case GlobalVarInt:{
-                    printf("case int initValue : %d",initValue->pdata->var_pdata.iVal);
+                    printf("case int initValue : %d\n",initValue->pdata->var_pdata.iVal);
 
                     insDest->VTy->ID = Int;
                     insDest->pdata->var_pdata.iVal = initValue->pdata->var_pdata.iVal;
                     break;
                 }
                 case GlobalVarFloat:{
-                    printf("case float initValue : %lf",initValue->pdata->var_pdata.fVal);
+                    printf("case float initValue : %lf\n",initValue->pdata->var_pdata.fVal);
 
                     insDest->VTy->ID = Float;
                     insDest->pdata->var_pdata.fVal = initValue->pdata->var_pdata.fVal;
@@ -114,5 +114,7 @@ void CheckGlobalVariable(InstNode *list){
         }
     }
 
+
+    //OK now we can delete all the isCritical == True
 
 }
