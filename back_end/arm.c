@@ -26,7 +26,10 @@ char fileName[256];
 char funcName[256];
 int save_r11;
 int global_flag=0;
-int givae_param_num;
+int give_param_num;
+Value *func_param_type=NULL;
+#define AND_LOW 65535
+#define MOVE_RIGHT 16
 void printf_stmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
@@ -291,42 +294,53 @@ bool imm_is_valid2(int value){
         return false;
     }
 }
+void handle_illegal_imm1(int dest_reg,int x){
+    if(x>=0&&x<=AND_LOW){//16位bit即可表示下，则只需要用到movw
+        char arr1[12]="#0x";
+        sprintf(arr1+3,"%0x",x&AND_LOW);
+        printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
+        fprintf(fp,"\tmovw\tr%d,%s\n",dest_reg,arr1);
+    }else{
+        char arr1[12]="#0x";
+        sprintf(arr1+3,"%0x",x&AND_LOW);
+        printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
+        fprintf(fp,"\tmovw\tr%d,%s\n",dest_reg,arr1);
+        char arr2[12]="#0x";
+        sprintf(arr2+3,"%0x",x>>MOVE_RIGHT);
+        printf("\tmovt\tr%d,%s\n",dest_reg,arr2);
+        fprintf(fp,"\tmovt\tr%d,%s\n",dest_reg,arr2);
+    }
+}
 void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
     if(flag==0){ //str dest_reg_abs
         if(imm_is_valid2(x)){
             printf("\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
             fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
         }else {
-            char arr[12] = "0x";
-            sprintf(arr + 2, "%0x", x);
-            printf("\tldr\tr2,=%s\n", arr);
-            fprintf(fp, "\tldr\tr2,=%s\n", arr);
-            printf("\tstr\tr%d,[r11,r2]\n", handle_dest_reg);
-            fprintf(fp, "\tstr\tr%d,[r11,r2]\n", handle_dest_reg);
+            handle_illegal_imm1(3,x);
+
+            printf("\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
+            fprintf(fp, "\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
         }
     }else if(flag==1){ //ldr left_reg-100
         if(imm_is_valid2(x)){
             printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
         } else{
-            char arr[12] = "0x";
-            sprintf(arr + 2, "%0x", x);
-            printf("\tldr\tr2,=%s\n", arr);
-            fprintf(fp, "\tldr\tr2,=%s\n", arr);
-            printf("\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100);
-            fprintf(fp,"\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100);
+            handle_illegal_imm1(3,x);
+
+            printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
+            fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
         }
     }else{ //ldr right_reg-100
         if(imm_is_valid2(x)){
             printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
         } else{
-            char arr[12] = "0x";
-            sprintf(arr + 2, "%0x", x);
-            printf("\tldr\tr2,=%s\n", arr);
-            fprintf(fp, "\tldr\tr2,=%s\n", arr);
-            printf("\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100,x);
-            fprintf(fp,"\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100,x);
+            handle_illegal_imm1(3,x);
+
+            printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100,x);
+            fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100,x);
         }
     }
 
@@ -337,6 +351,7 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 
 
 }
+
 void arm_open_file(char filename[]){
 //    int len= strlen(argv);
 //    char filepath[256];
@@ -661,10 +676,8 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
     }
     if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
         int x=value1->pdata->var_pdata.iVal;
-        char arr1[12]="0x";
-        sprintf(arr1+2,"%0x",x);
-        printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-        fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+        handle_illegal_imm1(dest_reg_abs,x);
+
         if(dest_reg<0){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
@@ -803,18 +816,14 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
 //            printf("    add r%d,#%d,#%d\n",result_regri,x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
             fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
 //            printf("    add r%d,r1,#%d\n",result_regri,x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             printf("\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
             fprintf(fp,"\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
 //            printf("    add r%d,r2,#%d\n",result_regri,x1);
@@ -892,14 +901,12 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,rs\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,rs\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -978,15 +985,12 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
+            handle_illegal_imm1(2,x2);
 
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,rs\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,rs\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
 
         }
         printf("\tvadd.f32\ts0,s1,s2\n");
@@ -1111,10 +1115,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             }
 
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -1189,10 +1191,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             printf("\tvcvt.f32.s32\ts1,s1\n");
@@ -1393,10 +1393,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x2);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -1523,8 +1521,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -1536,14 +1534,12 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -1997,20 +1993,17 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
 //            printf("    sub r%d,#%d,#%d\n",result_regri,x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
             fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
 //            printf("    sub r%d,r1,#%d\n",result_regri,x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
+            handle_illegal_imm1(2,x2);
+
             printf("\tmov\tr1,#%d\n",x1);
             fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+
             printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
             fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    sub r%d,r2,#%d\n",result_regri,x1);
@@ -2088,14 +2081,12 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,rs\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,rs\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -2174,15 +2165,12 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
+            handle_illegal_imm1(2,x2);
 
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,rs\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,rs\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
 
         }
         printf("\tvsub.f32\ts0,s1,s2\n");
@@ -2312,10 +2300,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             }
 
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -2391,10 +2377,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             printf("\tvcvt.f32.s32\ts1,s1\n");
@@ -2595,10 +2579,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tsub\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x2);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -2725,8 +2707,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -2738,14 +2720,12 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -3201,10 +3181,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    mul r%d,#%d,#%d\n",result_regri,x1,x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tmov\tr2,#%d\n",x2);
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
@@ -3213,10 +3191,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             printf("\tmov\tr1,#%d\n",x1);
             fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
             fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    mul r%d,r2,#%d\n",result_regri,x1);
@@ -3294,14 +3270,12 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,s1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -3380,11 +3354,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
+            handle_illegal_imm1(2,x2);
 
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
             printf("\tvcvt.f32.s32\ts2,s2\n");
@@ -3515,10 +3486,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             }
 
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -3594,10 +3563,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             printf("\tvcvt.f32.s32\ts1,s1\n");
@@ -3800,10 +3767,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -3929,8 +3894,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -3942,14 +3907,12 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -4409,10 +4372,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr0,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+            handle_illegal_imm1(0,x1);
+
 
             //mov to r1
             printf("\tmov\tr1,#%d\n",x2);
@@ -4426,11 +4387,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
+            handle_illegal_imm1(1,x2);
 
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
 
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
@@ -4518,14 +4476,12 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,s1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -4605,11 +4561,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
+            handle_illegal_imm1(2,x2);
 
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
             printf("\tvcvt.f32.s32\ts2,s2\n");
@@ -4744,10 +4697,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             }
 
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr0,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+            handle_illegal_imm1(0,x1);
+
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -4828,10 +4779,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             printf("\tvcvt.f32.s32\ts1,s1\n");
@@ -5038,10 +4987,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr0,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr2);
+            handle_illegal_imm1(0,x2);
+
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -5172,8 +5119,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -5185,14 +5132,12 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,x2);
+
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -5658,19 +5603,15 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr0,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+            handle_illegal_imm1(0,x1);
+
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+            handle_illegal_imm1(1,x2);
+
         }else{
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
@@ -5743,10 +5684,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
             }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr0,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+            handle_illegal_imm1(0,x1);
+
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -5819,10 +5758,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
             }
         }else{
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+            handle_illegal_imm1(1,x2);
+
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -5972,6 +5909,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    将相当于使void没有返回值，这个时候是不需要进行将r0移到左值里
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    func_param_type=value1;
     int param_num_=value1->pdata->symtab_func_pdata.param_num;
     get_param_list(value1,&give_count);
 //    for(int i=0;i<param_num_;i++){
@@ -6145,7 +6083,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    printf("    sub sp,sp,#%d\n",4*x);
     //    在函数开始的时候要进行参数传递的str的处理
     int param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
-    givae_param_num=param_num;
+    give_param_num=param_num;
     char name[20];
     sprintf(name, "%c", '%');
     sprintf(name + 1, "%d", param_num);
@@ -6491,10 +6429,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             printf("\tsub\tsp,sp,#%d\n",*stakc_size);
             fprintf(fp,"\tsub\tsp,sp,#%d\n",*stakc_size);
         }else{
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",*stakc_size);
-            printf("\tldr\tr2,=%s\n",arr);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr);
+            handle_illegal_imm1(2,*stakc_size);
+
             printf("\tsub\tsp,sp,r2\n");
             fprintf(fp,"\tsub\tsp,sp,r2\n");
         }
@@ -6514,8 +6450,15 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //            fprintf(fp,"\tstr\tr%d,[sp,#%d]\n",j,local_stack+j*4);
             if(param_off[j]!=-1){
 //                如果传递过来的参数没有被用到的话，就不需要存了
-                printf("\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
-                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                if(imm_is_valid2(param_off[j])){
+                    printf("\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                    fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                }else{
+                    handle_illegal_imm1(2,param_off[j]);
+                    printf("\tstr\tr%d,[r11,r2]\n",j);
+                    fprintf(fp,"\tstr\tr%d,[r11,r2]\n",j);
+                }
+
             }
         }
     } else{
@@ -6557,10 +6500,8 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                 fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
             } else{
                 int x=value1->pdata->var_pdata.iVal;
-                char arr[12]="0x";
-                sprintf(arr+2,"%0x",x);
-                printf("\tldr\tr0,=%s\n",arr);
-                fprintf(fp,"\tldr\tr0,=%s\n",arr);
+                handle_illegal_imm1(0,x);
+
             }
         } else if(isImmFloatType(value1->VTy)){
             float  x=value1->pdata->var_pdata.fVal;
@@ -6600,10 +6541,8 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
             printf("\tadd\tsp,sp,#%d\n",x1);
             fprintf(fp,"\tadd\tsp,sp,#%d\n",x1);
         }else{
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",x1);
-            printf("\tldr\tr2,=%s\n",arr);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr);
+            handle_illegal_imm1(2,x1);
+
             printf("\tadd\tsp,sp,r2\n");
             fprintf(fp,"\tadd\tsp,sp,r2\n");
         }
@@ -6651,17 +6590,21 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
+
+//  这边需要修改的就是，在call的时候将function对应的Value*存放在了func_param_type这个全局变量里面
+//  在翻译give_param语句的时候，需要知道当前正在翻译的是第几个参数，这个和tmp=one_param[i]的i是一致的
+//  在传递第i个参数的时候，需要将give_param的value的类型和func_param_type的参数列表的类型进行对应，如果不是的话则需要进行类型转换
+
+
 //  现在需要做的就是数组传参的处理，有可能是全局数组传参，也有可能是局部数组传参
 //  如果是数组传参的话，前面肯定是有一条GEP指令计算出起数组首地址，一边是常数偏移量为0
 //  然后give_param的数组首地址类型被标为address
 //  还有就是因为数组传参之前的GEP已经计算出了数组首地址的绝对地址（将r11加上了）这里就不用加了，直接mov
 
 
-
 //  现在需要处理的操作就是有可能参数传的是全局变量的情况
 //  但是全局变量要进行传参的话，跟局部变量是一致的，全局变量会先被load，giveparam里面是不会出现globel类型的参数的
 //  所以说这个应该不需要改
-
 
 
 //  这个是用来标定参数传递的，这个可不仅仅是一个标定作用，
@@ -6671,7 +6614,6 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
 //    计算参数的传递个数
-
 
 
 //     注意现在的参数传递的逻辑是从params[0]~param[param_num-1]为有序的参数
@@ -6685,16 +6627,18 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+//            判断传递参数时的give_param的类型和被调用函数期望的类型是否一致？
+//            if(value1->VTy->ID==func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID){
+//
+//            }
             // 对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递，但是也是会出现那全局变量来传参的情况，但是不影响
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                     fprintf(fp,"\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    char arr[12]="0x";
-                    sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("\tldr\tr%d,=%s\n",i,arr);
-                    fprintf(fp,"\tldr\tr%d,=%s\n",i,arr);
+                    handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
+
                 } else if(isImmFloatType(value1->VTy)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
@@ -6750,10 +6694,8 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                     fprintf(fp,"\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    char arr[12]="0x";
-                    sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("\tldr\tr%d,=%s\n",i,arr);
-                    fprintf(fp,"\tldr\tr%d,=%s\n",i,arr);
+                    handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
+
                 } else if(isImmFloatType(value1->VTy)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
@@ -6805,10 +6747,8 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
                     fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    char arr[12]="0x";
-                    sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                    printf("\tldr\tr0,=%s\n",arr);
-                    fprintf(fp,"\tldr\tr0,=%s\n",arr);
+                    handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
+
                 } else if(isImmFloatType(value1->VTy)){
                     char arr[12]="0x";
                     sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
@@ -6886,10 +6826,8 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
                 fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
             } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-                char arr[12]="0x";
-                sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-                printf("\tldr\tr0,=%s\n",arr);
-                fprintf(fp,"\tldr\tr0,=%s\n",arr);
+                handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
+
             } else if(isImmFloatType(value1->VTy)){
                 char arr[12]="0x";
                 sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
@@ -6930,46 +6868,41 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
     }
 
 
-//    tmp=ins;
-//    while (get_next_inst(tmp)->inst->Opcode==GIVE_PARAM){
-//        tmp= get_next_inst(tmp);
-//    }
-//    ins=tmp;
 
-//    int x=get_value_offset_sp(hashMap,value1);
-//    printf("hello world!\n")
     return NULL;
 }
 
 InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //    int i=ins->inst->i;
 //    printf("**********ALLBEGIN**************\n");
-    printf("\t.arch armv7-a\n"
-           "\t.eabi_attribute 28, 1\n"
-           "\t.eabi_attribute 20, 1\n"
-           "\t.eabi_attribute 21, 1\n"
-           "\t.eabi_attribute 23, 3\n"
-           "\t.eabi_attribute 24, 1\n"
-           "\t.eabi_attribute 25, 1\n"
-           "\t.eabi_attribute 26, 2\n"
-           "\t.eabi_attribute 30, 6\n"
-           "\t.eabi_attribute 34, 1\n"
-           "\t.eabi_attribute 18, 4\n"
-           "\t.file\t\"%s\"\n"
-           "\t.text\n",fileName);
-    fprintf(fp,"\t.arch armv7-a\n"
-            "\t.eabi_attribute 28, 1\n"
-            "\t.eabi_attribute 20, 1\n"
-            "\t.eabi_attribute 21, 1\n"
-            "\t.eabi_attribute 23, 3\n"
-            "\t.eabi_attribute 24, 1\n"
-            "\t.eabi_attribute 25, 1\n"
-            "\t.eabi_attribute 26, 2\n"
-            "\t.eabi_attribute 30, 6\n"
-            "\t.eabi_attribute 34, 1\n"
-            "\t.eabi_attribute 18, 4\n"
-           "\t.file\t\"%s\"\n"
-           "\t.text\n",fileName);
+//    printf("\t.arch armv7-a\n"
+//           "\t.eabi_attribute 28, 1\n"
+//           "\t.eabi_attribute 20, 1\n"
+//           "\t.eabi_attribute 21, 1\n"
+//           "\t.eabi_attribute 23, 3\n"
+//           "\t.eabi_attribute 24, 1\n"
+//           "\t.eabi_attribute 25, 1\n"
+//           "\t.eabi_attribute 26, 2\n"
+//           "\t.eabi_attribute 30, 6\n"
+//           "\t.eabi_attribute 34, 1\n"
+//           "\t.eabi_attribute 18, 4\n"
+//           "\t.file\t\"%s\"\n"
+//           "\t.text\n",fileName);
+//    fprintf(fp,"\t.arch armv7-a\n"
+//            "\t.eabi_attribute 28, 1\n"
+//            "\t.eabi_attribute 20, 1\n"
+//            "\t.eabi_attribute 21, 1\n"
+//            "\t.eabi_attribute 23, 3\n"
+//            "\t.eabi_attribute 24, 1\n"
+//            "\t.eabi_attribute 25, 1\n"
+//            "\t.eabi_attribute 26, 2\n"
+//            "\t.eabi_attribute 30, 6\n"
+//            "\t.eabi_attribute 34, 1\n"
+//            "\t.eabi_attribute 18, 4\n"
+//           "\t.file\t\"%s\"\n"
+//           "\t.text\n",fileName);
+    printf("\t.text\n");
+    fprintf(fp,"\t.text\n");
     return ins;
 }
 
@@ -6988,19 +6921,13 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             printf("\tcmp\tr1,#%d\n",x2);
             fprintf(fp,"\tcmp\tr1,#%d\n",x2);
         }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr);
+            handle_illegal_imm1(1,x1);
+
             printf("\tcmp\tr1,#%d\n",x2);
             fprintf(fp,"\tcmp\tr1,#%d\n",x2);
         } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr);
-            // printf("\tcmp\tr2,#%d\n",x1);
-            // fprintf(fp,"\tcmp\tr2,#%d\n",x1);
+            handle_illegal_imm1(2,x2);
+
             printf("\tmov\tr1,#%d\n",x1);
             fprintf(fp,"\tmov\tr1,#%d\n",x1);
             printf("\tcmp\tr1,r2\n");
@@ -7038,10 +6965,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             printf("\tvcvt.f32.s32\ts1,s1\n");
@@ -7075,8 +7000,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,r2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
         }else{
@@ -7087,15 +7012,12 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
+            handle_illegal_imm1(2,x2);
 
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,r2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
         }
@@ -7140,10 +7062,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             }
 
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -7177,10 +7097,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,x1);
+
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             printf("\tvcvt.f32.s32 s1,s1\n");
@@ -7218,8 +7136,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("\tfcvt.f32.s32\ts2,rs\n");
-        fprintf(fp,"\tfcvt.f32.s32\ts2,rs\n");
+        printf("\tvcvt.f32.s32\ts2,s2\n");
+        fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
     }
@@ -7263,10 +7181,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             }
 
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            handle_illegal_imm1(2,x2);
+
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -7323,10 +7239,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
             }
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x2);
-            printf("\tldr\tr2,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+            handle_illegal_imm1(2,x2);
+
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
             printf("\tvcvt.f32.s32\ts2,s2\n");
@@ -7714,7 +7628,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //    之后是使用isParam（）函数判断该GEP是不是计算的数组传参的GEP，第一个参数是传GEP的数组首地址value1，第二个参数是传该函数的参数个数，这个只在FuncBegin的value里面存有
 //    参数数组的第一条GEP
 
-    if(value1->name[0]=='%' && isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
+    if(value1->name[0]=='%' && isParam(value1,give_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
 //        printf("isParam\n");
         int x;
         if(left_reg>100){
@@ -7733,10 +7647,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
                 fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
             }else{
-                char arr1[12]="0x";
-                sprintf(arr1+2,"%0x",y);
-                printf("\tldr\tr1,=%s\n",arr1);
-                fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+                handle_illegal_imm1(1,y);
+
                 printf("\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
                 fprintf(fp,"\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
             }
@@ -7758,10 +7670,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
                     fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
                 }else{
-                    char arr1[12]="0x";
-                    sprintf(arr1+2,"%0x",y);
-                    printf("\tldr\tr2,=%s\n",arr1);
-                    fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                    handle_illegal_imm1(2,y);
+
                     printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
                     fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
                 }
@@ -7770,10 +7680,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     printf("\tmov\tr2,#%d\n",result);
                     fprintf(fp,"\tmov\tr2,#%d\n",result);
                 }else{
-                    char arr1[12]="0x";
-                    sprintf(arr1+2,"%0x",result);
-                    printf("\tldr\tr2,=%s\n",arr1);
-                    fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                    handle_illegal_imm1(2,result);
+
                 }
 //          计算数组传参的第一条GEP，数组首地址是没有进行寄存器分配的
 //          计算数组传参的第一条GEP，数组首地址是参数，所以说是进行了寄存器分配的left_reg不可能是0
@@ -7805,17 +7713,12 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             int x=value2->pdata->var_pdata.iVal*4;
             x+=off;
             if(imm_is_valid(x)){
-//                printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
-//                fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
+
                 printf("\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
                 fprintf(fp,"\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
             }else{
-                char arr1[12]="0x";
-                sprintf(arr1+2,"%0x",x);
-//                printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-//                fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-                printf("\tldr\tr0,=%s\n",arr1);
-                fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+                handle_illegal_imm1(0,x);
+
                 printf("\tadd\tr%d,r11,r0\n",dest_reg_abs);
                 fprintf(fp,"\tadd\tr%d,r11,r0\n",dest_reg_abs);
             }
@@ -7841,10 +7744,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tmov\tr2,#%d\n",result);
                 fprintf(fp,"\tmov\tr2,#%d\n",result);
             }else{
-                char arr1[12]="0x";
-                sprintf(arr1+2,"%0x",result);
-                printf("\tldr\tr2,=%s\n",arr1);
-                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                handle_illegal_imm1(2,result);
+
             }
 //            计算数组的第一条GEP，基于数组首地址进行偏移，还需要加上r11
             if(left_reg==0){
@@ -7854,10 +7755,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     printf("\tadd\tr1,r11,#%d\n",x1);
                     fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
                 }else{
-                    char arr[12]="0x";
-                    sprintf(arr+2,"%0x",x1);
-                    printf("\tldr\tr2,=%s\n",arr);
-                    fprintf(fp,"\tldr\tr2,=%s\n",arr);
+                    handle_illegal_imm1(2,x1);
+
                     printf("\tadd\tr1,r11,r2\n");
                     fprintf(fp,"\tadd\tr1,r11,r2\n");
                 }
@@ -7912,10 +7811,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tmov\tr2,#%d\n",result);
                 fprintf(fp,"\tmov\tr2,#%d\n",result);
             }else{
-                char arr1[12]="0x";
-                sprintf(arr1+2,"%0x",result);
-                printf("\tldr\tr2,=%s\n",arr1);
-                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                handle_illegal_imm1(2,result);
+
             }
             if(left_reg==0){
                 int x;
@@ -7995,10 +7892,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tmov\tr2,#%d\n",result);
                 fprintf(fp,"\tmov\tr2,#%d\n",result);
             }else{
-                char arr1[12]="0x";
-                sprintf(arr1+2,"%0x",result);
-                printf("\tldr\tr2,=%s\n",arr1);
-                fprintf(fp,"\tldr\tr2,=%s\n",arr1);
+                handle_illegal_imm1(2,result);
+
             }
             if(left_reg>100&&right_reg>100){
                 int x1= get_value_offset_sp(hashMap,value1);
@@ -8241,10 +8136,8 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
             printf("\tadd\tr0,r11,#%d\n",x);
             fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
         }else{
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",x);
-            printf("\tldr\tr2,=%s\n",arr);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr);
+            handle_illegal_imm1(2,x);
+
             printf("\tadd\tr0,r11,r2\n");
             fprintf(fp,"\tadd\tr0,r11,r2\n");
         }
@@ -8253,20 +8146,16 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
             printf("\tmov\tr1,#%d\n",memset_value);
             fprintf(fp,"\tmov\tr1,#%d\n",memset_value);
         }else{
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",memset_value);
-            printf("\tldr\tr1,=%s\n",arr);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr);
+            handle_illegal_imm1(1,memset_value);
+
         }
         x= get_array_total_occupy(value1->alias,0);
         if(imm_is_valid(x)){
             printf("\tmov\tr2,#%d\n",x);
             fprintf(fp,"\tmov\tr2,#%d\n",x);
         }else{
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",x);
-            printf("\tldr\tr2,=%s\n",arr);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr);
+            handle_illegal_imm1(2,x);
+
         }
 
         printf("\tbl\tmemset\n");
@@ -8339,10 +8228,8 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             printf("\tstr\tr1,[r%d]\n",right_reg_end);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",value1->pdata->var_pdata.iVal);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,value1->pdata->var_pdata.iVal);
+
             printf("\tstr\tr1,[r%d]\n",right_reg_end);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmFloatType(value1->VTy)){
@@ -8416,11 +8303,9 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         fprintf(fp,"\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
         left_int_float=0;
     }else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-        char arr[12]="0x";
         int xx=value1->pdata->var_pdata.iVal;
-        sprintf(arr+2,"%0x",xx);
-        printf("\tldr\tr1,=%s\n",arr);
-        fprintf(fp,"\tldr\tr1,=%s\n",arr);
+        handle_illegal_imm1(1,xx);
+
         left_int_float=0;
 
     }else if(isImmFloatType(value1->VTy)){
