@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
-    printf_llvm_ir(instruction_list,argv[4],1);
+ //   printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -106,32 +106,32 @@ int main(int argc, char* argv[]){
     }
 
     //mem2reg之后，优化前
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        sideEffect(currentFunction);
-        ConstFolding(currentFunction);
-        commonSubexpressionElimination(currentFunction);
-        memlvn(currentFunction);
-
+//        sideEffect(currentFunction);
+//        ConstFolding(currentFunction);
+//        commonSubexpressionElimination(currentFunction);
+//        memlvn(currentFunction);
 //
-        DVNT(currentFunction);
-//
-//        //loop
-        loop(currentFunction);
-        LICM(currentFunction);
-//
-//
-//        //dce
-        Mark(currentFunction);
-        Sweep(currentFunction);
-//
-//        //CfgSimplify
-        Clean(currentFunction);
-        renameVariables(currentFunction);
+////
+//        DVNT(currentFunction);
+////
+////        //loop
+//        loop(currentFunction);
+//        LICM(currentFunction);
+////
+////
+////        //dce
+//        Mark(currentFunction);
+//        Sweep(currentFunction);
+////
+////        //CfgSimplify
+//        Clean(currentFunction);
+//        renameVariables(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //基本块内inscomb ok，基本块间ing
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]){
 
 
 //    CheckGlobalVariable(instruction_list);
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     //TODO 目前函数内联放在这里了，暂时的
 //    printf("=======func inline=========\n");
@@ -180,7 +180,7 @@ int main(int argc, char* argv[]){
 
     //lsy_begin
     fix_array(instruction_list);
- //   printf_llvm_ir(instruction_list,argv[4],0);
+    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
