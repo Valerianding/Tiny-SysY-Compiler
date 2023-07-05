@@ -6565,6 +6565,7 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
     printf("\t.ltorg\n\t.space 200\n");
     fprintf(fp,"\t.ltorg\n\t.space 200\n");
     printf(".ROG_%d:\n",ltorg_num);
+    fprintf(fp,".ROG_%d:\n",ltorg_num);
     ltorg_num++;
 //    if(strcmp(funcName,"main")==0){
         printf("\t.size\t%s, .-%s\n\n",funcName,funcName);
@@ -6597,6 +6598,7 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
+//只有int和float相互转换的时候需要强制转换，其他的是不需要的。函数定义参数的类型只有三种var_int,var_float和address
 
 //  这边需要修改的就是，在call的时候将function对应的Value*存放在了func_param_type这个全局变量里面
 //  在翻译give_param语句的时候，需要知道当前正在翻译的是第几个参数，这个和tmp=one_param[i]的i是一致的
@@ -6640,6 +6642,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //            }
             // 对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递，但是也是会出现那全局变量来传参的情况，但是不影响
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
+                assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                     fprintf(fp,"\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
