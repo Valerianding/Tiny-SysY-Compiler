@@ -1,7 +1,11 @@
-//test div
-int main(){
-    int a, b;
+int main() {
+    int a;
     a = 10;
-    b = 5;
-    return a / b;
+    if (+-!!!a) {
+        a = - - -1;
+    }
+    else {
+        a = 0;
+    }
+    return a;
 }
