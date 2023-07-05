@@ -80,11 +80,9 @@ void CheckGlobalVariable(InstNode *list){
             //TODO remember thar true is useless
             Instruction *curIns = (Instruction *)user;
 
-            //it means that these are all loads
-            ins->isCritical = true;
+         curIns->isCritical = true;
 
-
-            //change the dest value type and it's pdata
+            //change the dest value type and it's pdata of load
             Value *insDest = ins_get_dest(curIns);
 
             //init Value for this global variable
@@ -116,5 +114,15 @@ void CheckGlobalVariable(InstNode *list){
 
 
     //OK now we can delete all the isCritical == True
-
+    InstNode *tempNode = instruction_list;
+    printf("here\n");
+    while(tempNode != NULL){
+        if(tempNode->inst->isCritical == true){
+            InstNode *nextNode = get_next_inst(tempNode);
+            deleteIns(tempNode);
+            tempNode = nextNode;
+        }else{
+            tempNode = get_next_inst(tempNode);
+        }
+    }
 }

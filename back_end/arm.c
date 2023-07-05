@@ -302,12 +302,14 @@ void handle_illegal_imm1(int dest_reg,int x){
         printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
         fprintf(fp,"\tmovw\tr%d,%s\n",dest_reg,arr1);
     }else{
+        //负数
         char arr1[12]="#0x";
         sprintf(arr1+3,"%0x",x&AND_LOW);
         printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
         fprintf(fp,"\tmovw\tr%d,%s\n",dest_reg,arr1);
+
         char arr2[12]="#0x";
-        sprintf(arr2+3,"%0x",x>>MOVE_RIGHT);
+        sprintf(arr2+3,"%0x",(unsigned)x >> MOVE_RIGHT);
         printf("\tmovt\tr%d,%s\n",dest_reg,arr2);
         fprintf(fp,"\tmovt\tr%d,%s\n",dest_reg,arr2);
     }
