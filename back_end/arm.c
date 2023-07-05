@@ -7644,7 +7644,6 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //    现在计算GEP需要多添加一种情况。就是该数组是通过数组传参过来的数组，和之前的也是一样的，只有计算第一条GEP的时候方式不同，剩下的GEP是一样的计算步骤
 //    之后是使用isParam（）函数判断该GEP是不是计算的数组传参的GEP，第一个参数是传GEP的数组首地址value1，第二个参数是传该函数的参数个数，这个只在FuncBegin的value里面存有
 //    参数数组的第一条GEP
-
     if(value1->name[0]=='%' && isParam(value1,give_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
 //        printf("isParam\n");
         int x;
@@ -7726,7 +7725,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
         int flag=value0->pdata->var_pdata.iVal;
         int off= get_value_offset_sp(hashMap,value1);
-        if(flag<0){
+        if(flag<0){ //常数
             int x=value2->pdata->var_pdata.iVal*4;
             x+=off;
             if(imm_is_valid(x)){
@@ -7745,7 +7744,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm(dest_reg_abs,x,0);
 
             }
-        }else{
+        }else{ //非常数
 //        flag大于零，需要使用乘加指令,
 //        但是这里好像没有处理%1偏移一个a的情况,这个目前有效的处理方法是判断value1是否为address就可以了
 //        如果是address，说明这不是基于数组首地址的，不然就说明这是基于数组首地址的
@@ -7764,32 +7763,46 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm1(2,result);
 
             }
-//            计算数组的第一条GEP，基于数组首地址进行偏移，还需要加上r11
-            if(left_reg==0){
-                int x1= get_value_offset_sp(hashMap,value1);//数组首地址的偏移量,这里可以直接r11加上数组首地址的偏移量就可以了
+            if(right_reg==0){ //非常数，但是其实给的是常数，只是lsy那里标错了
+                assert(false);
+                int y=value2->pdata->var_pdata.iVal;
+                y*=result;
+                y+=off;
+                if(imm_is_valid(y)){
+                    printf("\tadd\tr%d,r11,#%d\n",dest_reg_abs,y);
+                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",dest_reg_abs,y);
+                }else{
+                    handle_illegal_imm1(2,y);
+
+                    printf("\tadd\tr%d,r11,r2\n",dest_reg_abs);
+                    fprintf(fp,"\tadd\tr%d,r11,r2\n",dest_reg_abs);
+                }
+            }else{
+                //            计算数组的第一条GEP，基于数组首地址进行偏移，还需要加上r11
+                if(left_reg==0){
+                    int x1= get_value_offset_sp(hashMap,value1);//数组首地址的偏移量,这里可以直接r11加上数组首地址的偏移量就可以了
 //                这里面也是需要判断x1是否为合法立即数的
-                if(imm_is_valid(x1)){
-                    printf("\tadd\tr1,r11,#%d\n",x1);
-                    fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
-                }else{
-                    handle_illegal_imm1(2,x1);
+                    if(imm_is_valid(x1)){
+                        printf("\tadd\tr1,r11,#%d\n",x1);
+                        fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
+                    }else{
+                        handle_illegal_imm1(2,x1);
 
-                    printf("\tadd\tr1,r11,r2\n");
-                    fprintf(fp,"\tadd\tr1,r11,r2\n");
-                }
+                        printf("\tadd\tr1,r11,r2\n");
+                        fprintf(fp,"\tadd\tr1,r11,r2\n");
+                    }
 
-                if(right_reg>100){
-                    int x2= get_value_offset_sp(hashMap,value2);
-                    handle_illegal_imm(right_reg,x2,2);
-                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
-                }else{
-                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    if(right_reg>100){
+                        int x2= get_value_offset_sp(hashMap,value2);
+                        handle_illegal_imm(right_reg,x2,2);
+                        printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                        fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                    }else{
+                        printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                        fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    }
                 }
-//                printf("\tadd\tr%d,r11,r%d\n",dest_reg_abs,dest_reg_abs);
             }
-
 
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -7831,7 +7844,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm1(2,result);
 
             }
-            if(left_reg==0){
+            if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
+                assert(false);
                 int x;
                 LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
                 if(lcptLabel==NULL){
@@ -7839,15 +7853,36 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 }
                 printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
                 fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-                if(right_reg>100){
-                    int x2= get_value_offset_sp(hashMap,value2);
-                    handle_illegal_imm(right_reg,x2,2);
-
-                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                int y=value2->pdata->var_pdata.iVal;
+                y*=result;
+                if(imm_is_valid(y)){
+                    printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
+                    fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
                 }else{
-                    printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                    fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    handle_illegal_imm1(2,y);
+
+                    printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
+                    fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
+                }
+            } else{
+                if(left_reg==0){
+                    int x;
+                    LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
+                    if(lcptLabel==NULL){
+                        printf("GEP Global error\n");
+                    }
+                    printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
+                    fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+                    if(right_reg>100){
+                        int x2= get_value_offset_sp(hashMap,value2);
+                        handle_illegal_imm(right_reg,x2,2);
+
+                        printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                        fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
+                    }else{
+                        printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                        fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
+                    }
                 }
             }
             if(dest_reg<0){
