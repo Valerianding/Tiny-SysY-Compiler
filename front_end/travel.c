@@ -809,14 +809,14 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                 num=(Value*) malloc(sizeof (Value));
                 value_init_float(num,p->fVal);
             }
-            else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
-            {
-                num= cal_expr(p,Unknown,0);
-                if(num->VTy->ID==Int)
-                    value_init_int(num,num->pdata->var_pdata.iVal);
-                else
-                    value_init_float(num,num->pdata->var_pdata.fVal);
-            }
+//            else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
+//            {
+//                num= cal_expr(p,Unknown,0);
+//                if(num->VTy->ID==Int)
+//                    value_init_int(num,num->pdata->var_pdata.iVal);
+//                else
+//                    value_init_float(num,num->pdata->var_pdata.fVal);
+//            }
             //!如果是0就不处理
             //p->iVal是0,直接将位置+1
             if(num!=NULL && strcmp(bstr2cstr(p->nodeType, '\0'), "num_int") == 0 && num->pdata->var_pdata.iVal==0)
@@ -876,6 +876,17 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
                         num= create_call_func(p,0);
+                    else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
+                    {
+                        if(isLocalArrayIntType(v_array->VTy) || isGlobalVarIntType(v_array->VTy))
+                             num= cal_expr(p,Var_INT,0);
+                        else
+                            num= cal_expr(p,Var_FLOAT,0);
+                        if(num->VTy->ID==Int)
+                            value_init_int(num,num->pdata->var_pdata.iVal);
+                        else if(num->VTy->ID == Float)
+                            value_init_float(num,num->pdata->var_pdata.fVal);
+                    }
                     create_store_stmt(num,v_gmp);
 
                 }
@@ -942,6 +953,17 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                         num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
                         num= create_call_func(p,0);
+                    else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
+                    {
+                        if(isLocalArrayIntType(v_array->VTy) || isGlobalVarIntType(v_array->VTy))
+                            num= cal_expr(p,Var_INT,0);
+                        else
+                            num= cal_expr(p,Var_FLOAT,0);
+                        if(num->VTy->ID==Int)
+                            value_init_int(num,num->pdata->var_pdata.iVal);
+                        else if(num->VTy->ID == Float)
+                            value_init_float(num,num->pdata->var_pdata.fVal);
+                    }
                     create_store_stmt(num,record[v_array->pdata->symtab_array_pdata.dimention_figure-1]);
 
                     //再做一次进位，到下一次的初始地址
