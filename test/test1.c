@@ -1,13 +1,7 @@
-int a;
-int b = 1;
-int c = 2;
-int test(int d){
-    a = a + 1;
-    return c + 1;
-}
-
+//test div
 int main(){
-    a = a + 1;
-    return a;
+    int a, b;
+    a = 10;
+    b = 5;
+    return a / b;
 }
-

@@ -108,6 +108,16 @@ int main(int argc, char* argv[]){
     //mem2reg之后，优化前
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
+
+//    CheckGlobalVariable(instruction_list);
+
+    //need to put it into CheckGlobalVariable
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        renameVariables(currentFunction);
+    }
+
+
+
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
 //        sideEffect(currentFunction);
 //        ConstFolding(currentFunction);
@@ -169,8 +179,8 @@ int main(int argc, char* argv[]){
     //printf_llvm_ir(instruction_list,argv[4],1);
 
 
-    CheckGlobalVariable(instruction_list);
-    printf_llvm_ir(instruction_list,argv[4],1);
+
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     //TODO 目前函数内联放在这里了，暂时的
 //    printf("=======func inline=========\n");
@@ -179,7 +189,7 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-//    fix_array(instruction_list);
+    fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
@@ -194,9 +204,9 @@ int main(int argc, char* argv[]){
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 //
-//    arm_open_file(argv[3]);
-//    arm_translate_ins(instruction_list,argv[3]);
-//    arm_close_file(argv[3]);
+    arm_open_file(argv[3]);
+    arm_translate_ins(instruction_list,argv[3]);
+    arm_close_file(argv[3]);
     //    ljf_end
 
     return 0;

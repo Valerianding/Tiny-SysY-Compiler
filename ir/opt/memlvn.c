@@ -267,6 +267,7 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
 
 
             //case 2:
+            //TODO 由于bitcast 可能产生别名影响原来的数组，但是bitcast只有可能是在最前面memset所以应该没有影响
             int calledParamNum = functionValue->pdata->symtab_func_pdata.param_num;
             InstNode *paramNode = currNode;
             Value *paramValue = NULL;
