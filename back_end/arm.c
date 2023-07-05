@@ -26,7 +26,8 @@ char fileName[256];
 char funcName[256];
 int save_r11;
 int global_flag=0;
-int givae_param_num;
+int give_param_num;
+Value *func_param_type=NULL;
 void printf_stmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
@@ -5972,6 +5973,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    将相当于使void没有返回值，这个时候是不需要进行将r0移到左值里
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    func_param_type=value1;
     int param_num_=value1->pdata->symtab_func_pdata.param_num;
     get_param_list(value1,&give_count);
 //    for(int i=0;i<param_num_;i++){
@@ -6145,7 +6147,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    printf("    sub sp,sp,#%d\n",4*x);
     //    在函数开始的时候要进行参数传递的str的处理
     int param_num=user_get_operand_use(&ins->inst->user,0)->Val->pdata->symtab_func_pdata.param_num;
-    givae_param_num=param_num;
+    give_param_num=param_num;
     char name[20];
     sprintf(name, "%c", '%');
     sprintf(name + 1, "%d", param_num);
@@ -6651,6 +6653,12 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
+
+//  这边需要修改的就是，在call的时候将function对应的Value*存放在了func_param_type这个全局变量里面
+//  在翻译give_param语句的时候，需要知道当前正在翻译的是第几个参数，这个和tmp=one_param[i]的i是一致的
+//  在传递第i个参数的时候，需要将give_param的value的类型和func_param_type的参数列表的类型进行对应，如果不是的话则需要进行类型转换
+
+
 //  现在需要做的就是数组传参的处理，有可能是全局数组传参，也有可能是局部数组传参
 //  如果是数组传参的话，前面肯定是有一条GEP指令计算出起数组首地址，一边是常数偏移量为0
 //  然后give_param的数组首地址类型被标为address
@@ -6685,6 +6693,10 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+//            判断传递参数时的give_param的类型和被调用函数期望的类型是否一致？
+//            if(value1->VTy->ID==func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID){
+//
+//            }
             // 对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递，但是也是会出现那全局变量来传参的情况，但是不影响
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
@@ -7714,7 +7726,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //    之后是使用isParam（）函数判断该GEP是不是计算的数组传参的GEP，第一个参数是传GEP的数组首地址value1，第二个参数是传该函数的参数个数，这个只在FuncBegin的value里面存有
 //    参数数组的第一条GEP
 
-    if(value1->name[0]=='%' && isParam(value1,givae_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
+    if(value1->name[0]=='%' && isParam(value1,give_param_num)){ //这个isParam的实现很简单，就是判断%i是不是参数就可以了 i<param_num就代表其为参数
 //        printf("isParam\n");
         int x;
         if(left_reg>100){
