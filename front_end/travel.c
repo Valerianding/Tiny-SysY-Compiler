@@ -3745,6 +3745,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                         printf(" %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s = icmp ne i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s = icmp ne i32 %d,%f\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                    }
                     else
                     {
                         printf(" %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -3770,6 +3775,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                     {
                         printf(" %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         fprintf(fptr," %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else if(instruction->user.use_list[1].Val->VTy->ID==Float)
+                    {
+                        printf(" %s = icmp ne i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
+                        fprintf(fptr," %s = icmp ne i32 %s,%f\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.fVal);
                     }
                     else
                     {
@@ -4751,6 +4761,24 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     fclose(fptr);
 }
 
+bool need_to_clear(Value* v_user)
+{
+    Use* use=v_user->use_list;
+    while(use!=NULL)
+    {
+        Value *left_user=&use->Parent->value;
+        Instruction *instruction=(Instruction*)left_user;
+        //看用到的use有没有正的偏移值，如果没有就不能噶掉这条，如果有就噶
+        //没有
+        if(instruction->Opcode==GEP && left_user->pdata->var_pdata.is_offset==0)
+        {
+            return true;
+        }
+        use=use->Next;
+    }
+    return false;
+}
+
 void fix_array(struct _InstNode *instruction_node)
 {
     //将offset值全部清0
@@ -4898,6 +4926,7 @@ void fix_array2(struct _InstNode *instruction_node)
             }
         }
             //定义不会出现这种情况，只可能在赋值时出现，赋值一次都是多条，不存在复用
+            //TODO 考虑一下隔着load的情况
         else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.use_list[1].Val!=NULL && get_next_inst(instruction_node)->inst->user.use_list[1].Val->pdata->var_pdata.is_offset==1))
         {
             //直接找到gep的最后一条,其他的全噶了
@@ -4918,6 +4947,7 @@ void fix_array2(struct _InstNode *instruction_node)
             instruction_node->inst->user.value.pdata->var_pdata.iVal=-2;
         }
             //上一种情况，比如d[b][3],但是下一条不是GEP了，或者下条是GEP,但是无法简化
+            //不能用下条是不是GEP简单判断了，要看use有没有gep，比如中间可能隔着load什么的
             //将iVal还原回原本维度
         else if(instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
         {
@@ -4931,7 +4961,9 @@ void fix_array2(struct _InstNode *instruction_node)
             else
                 instruction->user.value.pdata->var_pdata.iVal=pre_dimen;
         }
-        else if(instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==0)
+        //b[3][k]
+        else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==0) ||
+                need_to_clear(&instruction->user.value))
         {
             //拿到上一条GEP的维度+1
             int pre_dimen=0;
