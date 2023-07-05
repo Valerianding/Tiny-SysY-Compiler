@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
-    printf_llvm_ir(instruction_list,argv[4],1);
+ //   printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -106,32 +106,32 @@ int main(int argc, char* argv[]){
     }
 
     //mem2reg之后，优化前
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
 //        sideEffect(currentFunction);
 //        ConstFolding(currentFunction);
-        commonSubexpressionElimination(currentFunction);
+//        commonSubexpressionElimination(currentFunction);
 //        memlvn(currentFunction);
-
 //
-        //DVNT(currentFunction);
-//
-//        //loop
+////
+//        DVNT(currentFunction);
+////
+////        //loop
 //        loop(currentFunction);
 //        LICM(currentFunction);
-//
-//
-//        //dce
+////
+////
+////        //dce
 //        Mark(currentFunction);
 //        Sweep(currentFunction);
-//
-//        //CfgSimplify
+////
+////        //CfgSimplify
 //        Clean(currentFunction);
-        renameVariables(currentFunction);
+//        renameVariables(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //基本块内inscomb ok，基本块间ing
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]){
     }
 
     //请注释掉我跑llvm脚本 phi函数消除
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -166,10 +166,11 @@ int main(int argc, char* argv[]){
 
 
     // Liveness 计算之后请注释掉我跑llvm
+    //printf_llvm_ir(instruction_list,argv[4],1);
+
+
+    CheckGlobalVariable(instruction_list);
     printf_llvm_ir(instruction_list,argv[4],1);
-
-
-    //CheckGlobalVariable(instruction_list);
 
     //TODO 目前函数内联放在这里了，暂时的
 //    printf("=======func inline=========\n");
@@ -178,8 +179,8 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-    fix_array(instruction_list);
-    //printf_llvm_ir(instruction_list,argv[4],0);
+//    fix_array(instruction_list);
+//    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
@@ -193,9 +194,9 @@ int main(int argc, char* argv[]){
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 //
-    arm_open_file(argv[3]);
-    arm_translate_ins(instruction_list,argv[3]);
-    arm_close_file(argv[3]);
+//    arm_open_file(argv[3]);
+//    arm_translate_ins(instruction_list,argv[3]);
+//    arm_close_file(argv[3]);
     //    ljf_end
 
     return 0;
