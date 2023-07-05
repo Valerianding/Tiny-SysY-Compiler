@@ -6562,8 +6562,8 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 //    这里先加入一个固定的文字池
     printf("\tb\t.ROG_%d\n",ltorg_num);
     fprintf(fp,"\tb\t.ROG_%d\n",ltorg_num);
-    printf("\t.ltorg\n\t.space 600\n");
-    fprintf(fp,"\t.ltorg\n\t.space 600\n");
+    printf("\t.ltorg\n\t.space 200\n");
+    fprintf(fp,"\t.ltorg\n\t.space 200\n");
     printf(".ROG_%d:\n",ltorg_num);
     ltorg_num++;
     if(strcmp(funcName,"main")==0){
@@ -7764,7 +7764,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 
             }
             if(right_reg==0){ //非常数，但是其实给的是常数，只是lsy那里标错了
-                assert(false);
+//                assert(false);
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 y+=off;
@@ -7845,7 +7845,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 
             }
             if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
-                assert(false);
+//                assert(false);
                 int x;
                 LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
                 if(lcptLabel==NULL){
