@@ -906,8 +906,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,rs\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,rs\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -990,8 +990,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,rs\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,rs\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
 
         }
         printf("\tvadd.f32\ts0,s1,s2\n");
@@ -1522,8 +1522,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -1539,8 +1539,8 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -2086,8 +2086,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,rs\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,rs\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -2170,8 +2170,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,rs\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,rs\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
 
         }
         printf("\tvsub.f32\ts0,s1,s2\n");
@@ -2708,8 +2708,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -2725,8 +2725,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -3275,8 +3275,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,s1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -3895,8 +3895,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -3912,8 +3912,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -4481,8 +4481,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tfcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts1,s1\n");
+            printf("\tvcvt.f32.s32\ts1,s1\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
             char arr2[12]="0x";
@@ -5120,8 +5120,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -5137,8 +5137,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,s2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
@@ -7002,8 +7002,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr2,#%d\n",x2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,r2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
         }else{
@@ -7018,8 +7018,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tfcvt.f32.s32\ts2,r2\n");
-            fprintf(fp,"\tfcvt.f32.s32\ts2,r2\n");
+            printf("\tvcvt.f32.s32\ts2,s2\n");
+            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
         }
@@ -7138,8 +7138,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts2,r%d\n",right_reg);
             fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
         }
-        printf("\tfcvt.f32.s32\ts2,rs\n");
-        fprintf(fp,"\tfcvt.f32.s32\ts2,rs\n");
+        printf("\tvcvt.f32.s32\ts2,s2\n");
+        fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
     }
