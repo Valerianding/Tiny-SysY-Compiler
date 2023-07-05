@@ -4963,7 +4963,7 @@ void fix_array2(struct _InstNode *instruction_node)
         }
         //b[3][k]
         else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==0) ||
-                need_to_clear(&instruction->user.value))
+                (instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && need_to_clear(&instruction->user.value)))
         {
             //拿到上一条GEP的维度+1
             int pre_dimen=0;
