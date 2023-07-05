@@ -310,7 +310,6 @@ void handle_illegal_imm1(int dest_reg,int x){
         printf("\tmovt\tr%d,%s\n",dest_reg,arr2);
         fprintf(fp,"\tmovt\tr%d,%s\n",dest_reg,arr2);
     }
-
 }
 void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
     if(flag==0){ //str dest_reg_abs
@@ -318,30 +317,30 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
             printf("\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
             fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
         }else {
-            handle_illegal_imm1(2,x);
+            handle_illegal_imm1(3,x);
 
-            printf("\tstr\tr%d,[r11,r2]\n", handle_dest_reg);
-            fprintf(fp, "\tstr\tr%d,[r11,r2]\n", handle_dest_reg);
+            printf("\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
+            fprintf(fp, "\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
         }
     }else if(flag==1){ //ldr left_reg-100
         if(imm_is_valid2(x)){
             printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
         } else{
-            handle_illegal_imm1(2,x);
+            handle_illegal_imm1(3,x);
 
-            printf("\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100);
-            fprintf(fp,"\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100);
+            printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
+            fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
         }
     }else{ //ldr right_reg-100
         if(imm_is_valid2(x)){
             printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
             fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
         } else{
-            handle_illegal_imm1(2,x);
+            handle_illegal_imm1(3,x);
 
-            printf("\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100,x);
-            fprintf(fp,"\tldr\tr%d,[r11,r2]\n",handle_dest_reg-100,x);
+            printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100,x);
+            fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100,x);
         }
     }
 
@@ -6451,8 +6450,15 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //            fprintf(fp,"\tstr\tr%d,[sp,#%d]\n",j,local_stack+j*4);
             if(param_off[j]!=-1){
 //                如果传递过来的参数没有被用到的话，就不需要存了
-                printf("\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
-                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                if(imm_is_valid2(param_off[j])){
+                    printf("\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                    fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                }else{
+                    handle_illegal_imm1(2,param_off[j]);
+                    printf("\tstr\tr%d,[r11,r2]\n",j);
+                    fprintf(fp,"\tstr\tr%d,[r11,r2]\n",j);
+                }
+
             }
         }
     } else{
@@ -6596,11 +6602,9 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //  还有就是因为数组传参之前的GEP已经计算出了数组首地址的绝对地址（将r11加上了）这里就不用加了，直接mov
 
 
-
 //  现在需要处理的操作就是有可能参数传的是全局变量的情况
 //  但是全局变量要进行传参的话，跟局部变量是一致的，全局变量会先被load，giveparam里面是不会出现globel类型的参数的
 //  所以说这个应该不需要改
-
 
 
 //  这个是用来标定参数传递的，这个可不仅仅是一个标定作用，
@@ -6610,7 +6614,6 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
 //    计算参数的传递个数
-
 
 
 //     注意现在的参数传递的逻辑是从params[0]~param[param_num-1]为有序的参数
@@ -6865,46 +6868,41 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
     }
 
 
-//    tmp=ins;
-//    while (get_next_inst(tmp)->inst->Opcode==GIVE_PARAM){
-//        tmp= get_next_inst(tmp);
-//    }
-//    ins=tmp;
 
-//    int x=get_value_offset_sp(hashMap,value1);
-//    printf("hello world!\n")
     return NULL;
 }
 
 InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //    int i=ins->inst->i;
 //    printf("**********ALLBEGIN**************\n");
-    printf("\t.arch armv7-a\n"
-           "\t.eabi_attribute 28, 1\n"
-           "\t.eabi_attribute 20, 1\n"
-           "\t.eabi_attribute 21, 1\n"
-           "\t.eabi_attribute 23, 3\n"
-           "\t.eabi_attribute 24, 1\n"
-           "\t.eabi_attribute 25, 1\n"
-           "\t.eabi_attribute 26, 2\n"
-           "\t.eabi_attribute 30, 6\n"
-           "\t.eabi_attribute 34, 1\n"
-           "\t.eabi_attribute 18, 4\n"
-           "\t.file\t\"%s\"\n"
-           "\t.text\n",fileName);
-    fprintf(fp,"\t.arch armv7-a\n"
-            "\t.eabi_attribute 28, 1\n"
-            "\t.eabi_attribute 20, 1\n"
-            "\t.eabi_attribute 21, 1\n"
-            "\t.eabi_attribute 23, 3\n"
-            "\t.eabi_attribute 24, 1\n"
-            "\t.eabi_attribute 25, 1\n"
-            "\t.eabi_attribute 26, 2\n"
-            "\t.eabi_attribute 30, 6\n"
-            "\t.eabi_attribute 34, 1\n"
-            "\t.eabi_attribute 18, 4\n"
-           "\t.file\t\"%s\"\n"
-           "\t.text\n",fileName);
+//    printf("\t.arch armv7-a\n"
+//           "\t.eabi_attribute 28, 1\n"
+//           "\t.eabi_attribute 20, 1\n"
+//           "\t.eabi_attribute 21, 1\n"
+//           "\t.eabi_attribute 23, 3\n"
+//           "\t.eabi_attribute 24, 1\n"
+//           "\t.eabi_attribute 25, 1\n"
+//           "\t.eabi_attribute 26, 2\n"
+//           "\t.eabi_attribute 30, 6\n"
+//           "\t.eabi_attribute 34, 1\n"
+//           "\t.eabi_attribute 18, 4\n"
+//           "\t.file\t\"%s\"\n"
+//           "\t.text\n",fileName);
+//    fprintf(fp,"\t.arch armv7-a\n"
+//            "\t.eabi_attribute 28, 1\n"
+//            "\t.eabi_attribute 20, 1\n"
+//            "\t.eabi_attribute 21, 1\n"
+//            "\t.eabi_attribute 23, 3\n"
+//            "\t.eabi_attribute 24, 1\n"
+//            "\t.eabi_attribute 25, 1\n"
+//            "\t.eabi_attribute 26, 2\n"
+//            "\t.eabi_attribute 30, 6\n"
+//            "\t.eabi_attribute 34, 1\n"
+//            "\t.eabi_attribute 18, 4\n"
+//           "\t.file\t\"%s\"\n"
+//           "\t.text\n",fileName);
+    printf("\t.text\n");
+    fprintf(fp,"\t.text\n");
     return ins;
 }
 
