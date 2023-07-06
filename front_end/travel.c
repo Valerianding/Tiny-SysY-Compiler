@@ -62,7 +62,7 @@ void create_instruction_list(past root,Value* v_return,int block)
             //  create_instruction_list(root->next,v_return);
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
         {
-            create_call_func(root,block);
+            create_call_func(root,block,-1);
             if (root->next != NULL)
                 create_instruction_list(root->next,v_return,block);
         }
@@ -148,7 +148,7 @@ void reduce_break_solo(int location)
     }
 }
 
-struct _Value *create_call_func(past root,int block)
+struct _Value *create_call_func(past root,int block,int return_type)
 {
     Instruction *instruction;
     Value *v=NULL;
@@ -233,7 +233,10 @@ struct _Value *create_call_func(past root,int block)
     if(v->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
     {
         v_result= ins_get_value_with_name(instruction);
-        v_result->VTy->ID=v->pdata->symtab_func_pdata.return_type.ID;
+        if(return_type == -1)
+            v_result->VTy->ID=v->pdata->symtab_func_pdata.return_type.ID;
+        else
+            v_result->VTy->ID = return_type;
     }
 
     //将这个instruction加入总list
@@ -337,7 +340,7 @@ void create_assign_stmt(past root,Value* v_return,int block) {
     }
         //等于函数
     else
-        v1= create_call_func(root->right,block);
+        v1= create_call_func(root->right,block,v->VTy->ID);
 
     create_store_stmt(v1,v);
     if (root->next != NULL)
@@ -393,7 +396,7 @@ void create_return_stmt(past root,Value* v_return,int block) {
         }
             //返回函数结果,Call_Func
         else
-            v=create_call_func(root->left,block);
+            v=create_call_func(root->left,block,-1);
 
         //有多返回语句
         if(v_return!=NULL && v_return->VTy->ID!=MAIN_INT && v_return->VTy->ID!=MAIN_FLOAT)
@@ -875,7 +878,12 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
                         num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
-                        num= create_call_func(p,0);
+                    {
+                        if(isLocalArrayInt(v_array) || isGlobalArrayInt(v_array))
+                            num= create_call_func(p,0,Var_INT);
+                        else
+                            num= create_call_func(p,0,Var_FLOAT);
+                    }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
                     {
                         if(isLocalArrayIntType(v_array->VTy) || isGlobalVarIntType(v_array->VTy))
@@ -952,7 +960,12 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "ID") == 0)
                         num= create_load_stmt(bstr2cstr(p->sVal, '\0'));
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "Call_Func") == 0)
-                        num= create_call_func(p,0);
+                    {
+                        if (isGlobalArrayInt(v_array) || isLocalArrayInt(v_array))
+                            num = create_call_func(p, 0, Var_INT);
+                        else
+                            num = create_call_func(p, 0, Var_FLOAT);
+                    }
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
                     {
                         if(isLocalArrayIntType(v_array->VTy) || isGlobalVarIntType(v_array->VTy))
@@ -1017,7 +1030,7 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
                 v_num= handle_assign_array(root->right->left,array_exp,1,-1,0);
         }
         else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
-            v_num= create_call_func(root,0);
+            v_num= create_call_func(root,0,-1);
 
 
         if(i==0)
@@ -1138,7 +1151,10 @@ void create_var_decl(past root,Value* v_return,bool is_global,int block) {
                 v1 = cal_expr(vars->right,v->VTy->ID,&convert);
             }
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "Call_Func") == 0)
-                v1= create_call_func(vars->right,block);
+            {
+                Value *vv=symtab_dynamic_lookup(this,bstr2cstr(vars->left->sVal, '\0'));
+                v1= create_call_func(vars->right,block,vv->VTy->ID);
+            }
             else if(strcmp(bstr2cstr(vars->right->nodeType, '\0'), "LValArray") == 0)
             {
                 Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(vars->right->left->sVal, '\0'));
@@ -1369,7 +1385,7 @@ int handle_and_or(past root,bool flag,bool last_or)
         }
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "Call_Func") == 0)
         {
-            Value *v_load= create_call_func(root->left,0);
+            Value *v_load= create_call_func(root->left,0,-1);
             //生成一条icmp ne
             //包装0
             Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -1449,7 +1465,7 @@ int handle_and_or(past root,bool flag,bool last_or)
         }
         else if(strcmp(bstr2cstr(root->left->right->nodeType, '\0'), "Call_Func") == 0)
         {
-            Value *v_load= create_call_func(root->left->right,0);
+            Value *v_load= create_call_func(root->left->right,0,-1);
             //生成一条icmp ne
             //包装0
             Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -1575,7 +1591,7 @@ int handle_and_or(past root,bool flag,bool last_or)
             }
             else if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "Call_Func") == 0)
             {
-                Value *v_load= create_call_func(root->right,0);
+                Value *v_load= create_call_func(root->right,0,-1);
                 //生成一条icmp ne
                 //包装0
                 Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -1789,7 +1805,7 @@ void create_if_stmt(past root,Value* v_return,int block) {
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
             v_load= cal_expr(root->left,Unknown,&convert);
         else
-            v_load= create_call_func(root->left,0);
+            v_load= create_call_func(root->left,0,-1);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
@@ -1958,7 +1974,7 @@ void create_if_else_stmt(past root,Value* v_return,int block) {
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
             v_load= cal_expr(root->left,Unknown,&convert);
         else
-            v_load=create_call_func(root->left,0);
+            v_load=create_call_func(root->left,0,-1);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
@@ -2173,7 +2189,7 @@ void create_while_stmt(past root,Value* v_return,int block)
         else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "expr") == 0)
             v_load= cal_expr(root->left,Unknown,&convert);
         else
-            v_load=create_call_func(root->left,0);
+            v_load=create_call_func(root->left,0,-1);
 
         if(get_last_inst(instruction_list)->inst->Opcode!=XOR)
         {
@@ -2747,7 +2763,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                         pop(&PSC,&call);
                     else
                         call=call1;
-                    v1= create_call_func(call,0);
+                    v1= create_call_func(call,0,-1);
                 }
                 else if(x1->VTy->ID==Int || x1->VTy->ID==Float)
                     v1=x1;
@@ -2794,7 +2810,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                         pop(&PSC,&call);
                     else
                         call=call2;
-                    v2= create_call_func(call,0);
+                    v2= create_call_func(call,0,-1);
                 }
                 else if(x2->VTy->ID==Int || x2->VTy->ID==Float)
                     v2=x2;
@@ -2992,7 +3008,7 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "Call_Func") == 0)
     {
-        v1= create_call_func(logic_expr->left,0);
+        v1= create_call_func(logic_expr->left,0,-1);
     }
     else if(strcmp(bstr2cstr(logic_expr->left->nodeType, '\0'), "logic_expr") == 0)
     {
@@ -3067,7 +3083,7 @@ struct _Value* cal_logic_expr(past logic_expr)
     }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "Call_Func") == 0)
     {
-        v2= create_call_func(logic_expr->right,0);
+        v2= create_call_func(logic_expr->right,0,-1);
     }
     else if(strcmp(bstr2cstr(logic_expr->right->nodeType, '\0'), "logic_expr") == 0)
     {
@@ -3284,7 +3300,7 @@ void create_params_stmt(past func_params,Value * v_func)
             value_init_float(v,paramss->fVal);
         }
         else if(strcmp(bstr2cstr(paramss->nodeType, '\0'), "Call_Func") == 0)
-            v= create_call_func(paramss,0);
+            v= create_call_func(paramss,0,-1);
         else if(strcmp(bstr2cstr(paramss->nodeType, '\0'), "LValArray") == 0)
         {
             Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(paramss->left->sVal, '\0'));
@@ -4756,17 +4772,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-//        Value *v,*vl,*vr;
-//        v= ins_get_dest(instruction_node->inst);
-//        vl= ins_get_lhs(instruction_node->inst);
-//        vr= ins_get_rhs(instruction_node->inst);
-//        if(v!=NULL)
-//            printf("left:%s,\t",type_str[v->VTy->ID]);
-//        if(vl!=NULL)
-//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-//        if(vr!=NULL)
-//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n\n");
+        Value *v,*vl,*vr;
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+        printf("\n\n");
 
         if(instruction->isCritical){
             printf("isCritical\n\n");

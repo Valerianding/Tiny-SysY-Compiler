@@ -21,7 +21,7 @@ void create_var_decl(past root,Value* v_return,bool is_global,int block);
 void create_if_stmt(past root,Value* v_return,int block);
 void create_if_else_stmt(past root,Value* v_return,int block);
 void create_func_def(past root);
-struct _Value *create_call_func(past root,int block);
+struct _Value *create_call_func(past root,int block,int return_type);
 struct _Value *cal_expr(past expr,int type,int* real);   //type是左值
 struct _Value* cal_logic_expr(past logic_expr);
 struct _Value *create_param_value();
