@@ -2875,9 +2875,10 @@ void bian_init(BasicBlock * this_block)
         for(int j=i+1;j<var_num;j++)
         {
             // printf("now %s %s\n",live[i].name,live[j].name);
-            if((live[i].last<live[j].first||live[i].first>live[j].last)||
-                (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
-                (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
+            // if((live[i].last<live[j].first||live[i].first>live[j].last)||
+            //     (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
+            //     (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
+            if(live[i].last<live[j].first||live[i].first>live[j].last)
             {
                 // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
                 // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
