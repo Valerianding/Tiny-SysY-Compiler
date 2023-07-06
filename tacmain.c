@@ -106,10 +106,12 @@ int main(int argc, char* argv[]){
     }
 
     //mem2reg之后，优化前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
 //    CheckGlobalVariable(instruction_list);
+    JudgeXor(instruction_list);
+    combineZext(instruction_list);
 
     //need to put it into CheckGlobalVariable
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -133,12 +135,12 @@ int main(int argc, char* argv[]){
 ////
 ////
 ////        //dce
-//        Mark(currentFunction);
-//        Sweep(currentFunction);
+        Mark(currentFunction);
+        Sweep(currentFunction);
 ////
 ////        //CfgSimplify
-//        Clean(currentFunction);
-//        renameVariables(currentFunction);
+        Clean(currentFunction);
+        renameVariables(currentFunction);
     }
 
 //    printf_llvm_ir(instruction_list,argv[4],1);
@@ -176,7 +178,7 @@ int main(int argc, char* argv[]){
 
 
     // Liveness 计算之后请注释掉我跑llvm
-    //printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
 

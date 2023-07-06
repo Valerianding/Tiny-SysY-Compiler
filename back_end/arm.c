@@ -7579,9 +7579,31 @@ InstNode * arm_trans_tmp(InstNode *ins){
 }
 
 InstNode * arm_trans_XOR(InstNode *ins){
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs= abs(dest_reg);
+    int left_reg=ins->inst->_reg_[1];
+    int right_reg=ins->inst->_reg_[2];
     assert(false);
-    printf("arm_trans_XOR\n");
-    fprintf(fp,"arm_trans_XOR\n");
+//    InstNode *prevIns = get_prev_inst(ins);
+//    if(prevIns->inst->Opcode == EQ){
+//        printf("\tmoveq\tr%d, #0\n",dest_reg_abs);
+//        fprintf(fp,"\tmoveq\tr%d, #0\n",dest_reg_abs);
+//        printf("\tmovne\tr%d, #1\n",dest_reg_abs);
+//        fprintf(fp,"\tmovne\tr%d, #1\n",dest_reg_abs);
+//    }else if(prevIns->inst->Opcode == NOTEQ){
+//        printf("\tmoveq\tr%d, #1\n",dest_reg_abs);
+//        fprintf(fp,"\tmoveq\tr%d, #1\n",dest_reg_abs);
+//        printf("\tmovne\tr%d, #0\n",dest_reg_abs);
+//        fprintf(fp,"\tmovne\tr%d, #0\n",dest_reg_abs);
+//    }else{
+//        assert(false);
+//    }
+//
+//    if(dest_reg < 0){
+//        //means we need to store back
+//        assert(false);
+//    }
+
     return ins;
 }
 

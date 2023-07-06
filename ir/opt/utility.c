@@ -453,3 +453,55 @@ bool isOutputFunction(Value *function){
     }
     return false;
 }
+
+
+//must satisfy the form:
+//a   =  icmp ... ...
+//b =  a xor treu
+//c = zext b
+bool JudgeXor(InstNode *insList){
+    InstNode *tempNode = insList;
+    while(tempNode != NULL){
+        if(tempNode->inst->Opcode == XOR){
+            Value *curLhs  = ins_get_lhs(tempNode->inst);
+            Value *curDest = ins_get_dest(tempNode->inst);
+
+            //see if satisfy the case
+            InstNode *prevNode = get_prev_inst(tempNode);
+            Value *prevDest = ins_get_dest(prevNode->inst);
+            //前面这个要是0
+
+            //
+            Value *prevRhs = ins_get_rhs(prevNode->inst);
+            assert(prevRhs->VTy->ID == Int && prevRhs->pdata->var_pdata.iVal == 0);
+            assert(prevNode->inst->Opcode == NOTEQ || prevNode->inst->Opcode == EQ);
+            assert(prevDest == curLhs);
+
+            InstNode *nextNode = get_next_inst(tempNode);
+            Value *nextLhs = ins_get_lhs(nextNode->inst);
+            assert(nextNode->inst->Opcode == zext);
+            assert(nextLhs == curDest);
+        }
+        tempNode = get_next_inst(tempNode);
+    }
+}
+
+void combineZext(InstNode *insList){
+    InstNode *tempNode = insList;
+    while(tempNode != NULL){
+        if(tempNode->inst->Opcode == zext){
+            Value *tempDest = ins_get_dest(tempNode->inst);
+            Value *tempLhs = ins_get_lhs(tempNode->inst);
+
+            //TODO may occur in Phi???
+            value_replaceAll(tempDest,tempLhs);
+
+            //delete curNode
+            InstNode *nextNode = get_next_inst(tempNode);
+            deleteIns(tempNode);
+            tempNode = nextNode;
+        }else{
+            tempNode = get_next_inst(tempNode);
+        }
+    }
+}

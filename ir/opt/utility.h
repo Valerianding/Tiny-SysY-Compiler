@@ -31,4 +31,6 @@ unsigned long int hash_values(Vector *valueVector);
 bool isSySYFunction(Value *function);
 bool isInputFunction(Value *function);
 bool isOutputFunction(Value *function);
+bool JudgeXor(InstNode *insList);
+void combineZext(InstNode *insList);
 #endif //C22V1_UTILITY_H
