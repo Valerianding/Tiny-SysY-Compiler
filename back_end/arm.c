@@ -27,7 +27,8 @@ char funcName[256];
 int save_r11;
 int global_flag=0;
 int give_param_num;
-Value *func_param_type=NULL;
+Value *func_return_type=NULL; //用来进行函数return返回值类型转换
+Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
 int ltorg_num=0;
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
@@ -653,6 +654,9 @@ void arm_translate_ins(InstNode *ins,char argv[]){
             hashMap=offset_init(ins,&local_var_num,k);
             int hashsize= HashMapSize(hashMap)*4;
 //            printf("hashsize=%d\n",hashsize);
+
+            func_return_type= user_get_operand_use(&ins->inst->user,0)->Val;
+
             ins= get_next_inst(ins);
         }
         ins=_arm_translate_ins(ins,head,hashMap,stack_size);
@@ -6540,51 +6544,161 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 //        printf("    bx lr\n");
 //        return ins;
 //    }
+
+//还需要对返回值进行处理
     int operandNum=ins->inst->user.value.NumUserOperands;
-    if(operandNum!=0){
+    if(operandNum!=0){ //返回值非void,value1为进行返回得值
         Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
         int left_reg= ins->inst->_reg_[1];
-        if(isImmIntType(value1->VTy)){
-            if(imm_is_valid(value1->pdata->var_pdata.iVal)){
-                printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-                fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-            } else{
-                int x=value1->pdata->var_pdata.iVal;
-                handle_illegal_imm1(0,x);
 
-            }
-        } else if(isImmFloatType(value1->VTy)){
-            float  x=value1->pdata->var_pdata.fVal;
-            int xx=*(int*)&x;
-            char arr[12]="0x";
-            sprintf(arr+2,"%0x",xx);
-            printf("\tldr\tr0,=%s\n",arr);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr);
-        } else if(isLocalVarIntType(value1->VTy)){
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+//        返回值为int型，通过r0返回
+        if(func_return_type->pdata->symtab_func_pdata.return_type.ID==Var_INT){
+            if(isImmIntType(value1->VTy)){
+                if(imm_is_valid(value1->pdata->var_pdata.iVal)){
+                    printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+                    fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+                } else{
+                    int x=value1->pdata->var_pdata.iVal;
+                    handle_illegal_imm1(0,x);
 
-                printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-            }else{
-                printf("\tmov\tr0,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-            }
-        } else if(isLocalVarFloatType(value1->VTy)){
-            ;
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+                }
+            } else if(isImmFloatType(value1->VTy)){ //将浮点数转化为int存入r0
+                float  x=value1->pdata->var_pdata.fVal;
+                int xx=*(int*)&x;
+                char arr[12]="0x";
+                sprintf(arr+2,"%0x",xx);
+                printf("\tldr\tr0,=%s\n",arr);
+                fprintf(fp,"\tldr\tr0,=%s\n",arr);
+                float_to_int(0,0);
 
-                printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-            }else{
-                printf("\tmov\tr0,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+            } else if(isLocalVarIntType(value1->VTy)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                }else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                }
+            } else if(isLocalVarFloatType(value1->VTy)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1); //已经将浮点数加载到了left_reg-100
+                    printf("\tvmov\ts0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tvmov\ts0,r%d\n",left_reg-100);
+                    printf("\tvcvt.s32.f32\ts0,s0\n");
+                    fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
+                    printf("\tvmov\tr0,s0\n");
+                    fprintf(fp,"\tvmov\tr0,s0\n");
+                }else{
+                    printf("\tvmov\ts0,r%d\n",left_reg);
+                    fprintf(fp,"\tvmov\ts0,r%d\n",left_reg);
+                    printf("\tvcvt.s32.f32\ts0,s0\n");
+                    fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
+                    printf("\tvmov\tr0,s0\n");
+                    fprintf(fp,"\tvmov\tr0,s0\n");
+                }
+
             }
         }
+//        返回类型为float，需要将返回值放入s0
+        else if(func_return_type->pdata->symtab_func_pdata.return_type.ID==Var_FLOAT){
+            if(isImmIntType(value1->VTy)){
+                if(imm_is_valid(value1->pdata->var_pdata.iVal)){
+                    printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+                    fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+                } else{
+                    int x=value1->pdata->var_pdata.iVal;
+                    handle_illegal_imm1(0,x);
+                }
+                printf("\tvmov\ts0,r0\n");
+                fprintf(fp,"\tvmov\ts0,r0\n");
+                printf("\tvcvt.f32.s32\ts0,s0\n");
+                fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+            } else if(isImmFloatType(value1->VTy)){
+                float  x=value1->pdata->var_pdata.fVal;
+                int xx=*(int*)&x;
+                char arr[12]="0x";
+                sprintf(arr+2,"%0x",xx);
+                printf("\tldr\tr0,=%s\n",arr);
+                fprintf(fp,"\tldr\tr0,=%s\n",arr);
+                printf("\tvmov\ts0,r0\n");
+                fprintf(fp,"\tvmov\ts0,r0\n");
+            } else if(isLocalVarIntType(value1->VTy)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                }else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                }
+                printf("\tvmov\ts0,r0\n");
+                fprintf(fp,"\tvmov\ts0,r0\n");
+                printf("\tvcvt.f32.s32\ts0,s0\n");
+                fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+            } else if(isLocalVarFloatType(value1->VTy)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                }else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                }
+                printf("\tvmov\ts0,r0\n");
+                fprintf(fp,"\tvmov\ts0,r0\n");
+            }
+        }
+
+
+
+//        if(isImmIntType(value1->VTy)){
+//            if(imm_is_valid(value1->pdata->var_pdata.iVal)){
+//                printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+//                fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+//            } else{
+//                int x=value1->pdata->var_pdata.iVal;
+//                handle_illegal_imm1(0,x);
+//
+//            }
+//        } else if(isImmFloatType(value1->VTy)){
+//            float  x=value1->pdata->var_pdata.fVal;
+//            int xx=*(int*)&x;
+//            char arr[12]="0x";
+//            sprintf(arr+2,"%0x",xx);
+//            printf("\tldr\tr0,=%s\n",arr);
+//            fprintf(fp,"\tldr\tr0,=%s\n",arr);
+//        } else if(isLocalVarIntType(value1->VTy)){
+//            if(left_reg>100){
+//                int x= get_value_offset_sp(hashMap,value1);
+//                handle_illegal_imm(left_reg,x,1);
+//
+//                printf("\tmov\tr0,r%d\n",left_reg-100);
+//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+//            }else{
+//                printf("\tmov\tr0,r%d\n",left_reg);
+//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+//            }
+//        } else if(isLocalVarFloatType(value1->VTy)){
+//            ;
+//            if(left_reg>100){
+//                int x= get_value_offset_sp(hashMap,value1);
+//                handle_illegal_imm(left_reg,x,1);
+//
+//                printf("\tmov\tr0,r%d\n",left_reg-100);
+//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+//            }else{
+//                printf("\tmov\tr0,r%d\n",left_reg);
+//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+//            }
+//        }
     }
+
     int x1= stack_size;
     if(x1!=0){
         if(imm_is_valid(x1)){
