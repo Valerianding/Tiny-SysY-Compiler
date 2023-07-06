@@ -32,13 +32,15 @@ bool DVNT(Function *currentFunction){
 // 需要lhsValueNumber和rhsValueNumber保持一个相对位置
 // 常数我们可以用负数直接代替，所以我们不希望我们产生的hashValueNumber是一个负数
 
-//TODO ERROR
+//TODO ERROR !!!!
 unsigned long getHashValueNumber(Opcode opcode,unsigned int lhsValueNumber, unsigned int rhsValueNumber){
-    unsigned long long hash_value = (unsigned long long)(opcode << 32 | lhsValueNumber << 16 | rhsValueNumber);
-    unsigned int hash = 5381;
-    for(int i = 0; i < 8; i ++){
-        hash = ((hash << 5) + hash) + ((unsigned char *)&hash_value)[i];
-    }
+    int size = sizeof(Opcode) + sizeof(unsigned int) * 2;
+    HashExpression *tempExpression = (HashExpression *)malloc(sizeof(HashExpression));
+    tempExpression->rhsValueNumber = rhsValueNumber;
+    tempExpression->lhsValueNumber = lhsValueNumber;
+    tempExpression->op = opcode;
+    unsigned long hash = HashMurMur32(tempExpression,size);
+    free(tempExpression);
     return hash;
 }
 
@@ -244,7 +246,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     Value *dest = ins_get_dest(currNode->inst);
                     HashMapFirst(table);
                     for (Pair *pair = HashMapNext(table); pair != NULL; pair = HashMapNext(table)) {
-                        Expression *expression = pair->value;
+                        HashExpression *expression = pair->value;
                         //go through all the choices to find if we have the same expression
                         switch (currNode->inst->Opcode) {
                             case Add:{
@@ -333,7 +335,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     }else{
 
                         //不存在，我们需要new hash
-                        Expression *newExpression =  (Expression *)malloc(sizeof(Expression));
+                        HashExpression *newExpression =  (HashExpression *)malloc(sizeof(HashExpression));
                         unsigned int hashValueNumber = getHashValueNumber(currNode->inst->Opcode,LhsNumber,RhsNumber);
                         unsigned int *pHashValueNumber = (unsigned int *)malloc(sizeof(unsigned int));
                         *pHashValueNumber = hashValueNumber;
@@ -381,7 +383,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
     HashSetFirst(newScope);
     for(Value *pushed = HashSetNext(newScope); pushed != NULL; pushed = HashSetNext(newScope)){
         //先释放内存再清空
-        Expression *expression = HashMapGet(table,pushed);
+        HashExpression *expression = HashMapGet(table, pushed);
         free(expression);
         expression = NULL;
         HashMapRemove(table,pushed);

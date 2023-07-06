@@ -70,6 +70,8 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
     InstNode *tail = block->tail_node;
 
     InstNode *currNode = head;
+
+    int cout = 0;
     while(currNode != tail){
         if(currNode->inst->Opcode == Load){
             printf("case load!\n");
@@ -81,13 +83,17 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 if(gepInstruction->Opcode == bitcast){
                     assert(false);
                 }
+                cout++;
+                printf("load : %d\n",cout);
                 Vector *indexVector = VectorInit(10);
                 //lhs 是位置 rhs是偏移量
-                Value *gepValue = ins_get_lhs(gepInstruction);
-                Value *gepIndex = ins_get_rhs(gepInstruction);
-                printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
-                //倒序压入栈当中
-                VectorPushBack(indexVector,gepIndex);
+                Value *gepValue = loadPlace;
+                Value *gepIndex = NULL;
+//                Value *gepValue = ins_get_lhs(gepInstruction);
+//                Value *gepIndex = ins_get_rhs(gepInstruction);
+//                printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
+//                //倒序压入栈当中
+//                VectorPushBack(indexVector,gepIndex);
 
                 //TODO 这里是第一个gepValue
                 while(!HashSetFind(arrays,gepValue) && !isGlobalArray(gepValue) && !isParam(gepValue,paramNum)){
