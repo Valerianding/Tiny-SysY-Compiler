@@ -26,6 +26,8 @@ void handle_illegal_imm1(int dest_reg,int x);//处理mov的非法立即数
 void arm_open_file(char argv[]);
 void arm_close_file();
 bool param_type_is_int();
+void int_to_float(int si,int ri);
+void float_to_int(int si,int ri);
 /**
  * @details 获取哈希表的大小
  * @param hashMap
