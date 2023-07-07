@@ -18,7 +18,7 @@ typedef struct StoreInfo{
     Value *storedValue;
 }StoreInfo;
 
-void memlvn(Function *current);
-void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction);
+bool memlvn(Function *current);
+bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction);
 Array *arrayCreate(Value *array, unsigned int index);
 #endif //C22V1_MEMLVN_H

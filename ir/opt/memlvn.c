@@ -20,7 +20,8 @@ StoreInfo *storeInfoCreate(InstNode *instNode, Value *stored){
     return storeInfo;
 }
 
-void memlvn(Function *current){
+bool memlvn(Function *current){
+    bool changed = false;
     BasicBlock *entry = current->entry;
 
     HashSet *arrays = HashSetInit();
@@ -49,7 +50,7 @@ void memlvn(Function *current){
         nextBlock->visited = true;
 
         //
-        mem_lvn(nextBlock,arrays,current);
+        changed |= mem_lvn(nextBlock,arrays,current);
         if(nextBlock->true_block && nextBlock->true_block->visited == false){
             HashSetAdd(workList,nextBlock->true_block);
         }
@@ -59,7 +60,8 @@ void memlvn(Function *current){
     }
 }
 
-void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
+bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
+    bool changed = false;
     InstNode *funcHead = currentFunction->entry->head_node;
     assert(funcHead->inst->Opcode == FunBegin);
     int paramNum = funcHead->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
@@ -130,6 +132,7 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                     }
                 }
                 if(exist){
+                    changed = true;
                     InstNode *nextNode = get_next_inst(currNode);
                     deleteIns(currNode);
                     currNode = nextNode;
@@ -147,6 +150,7 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                     if(array->array == loadPlace && array->index == 0){
                         //存在load
                         //取出store
+                        changed = true;
                         exist = true;
                         StoreInfo *storeInfo = pair->value;
                         Value *replace = storeInfo->storedValue;
@@ -205,6 +209,7 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                     Array *array = pair->key;
                     if(array->array == fromArray && array->index == hash_value){
                         //之前存在
+                        changed = true;
                         exist = true;
                         //remove
                         StoreInfo *storeInfo = pair->value;
@@ -230,6 +235,7 @@ void mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                     Array *array = pair->key;
                     if(array->array == storePlace && array->index == 0){
                         exist = true;
+                        changed = true;
                         StoreInfo *storeInfo = pair->value;
                         deleteIns(storeInfo->storeInstruction);
 
