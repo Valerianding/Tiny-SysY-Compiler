@@ -8,6 +8,8 @@
 #include "bstrlib.h"
 #include "../ir/symtab.h"
 #include "stack.h"
+#include "hash_map.h"
+
 //#include "travel.h"
 typedef struct _ast ast;
 typedef struct _ast *past;
