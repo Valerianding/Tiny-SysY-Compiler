@@ -35,14 +35,32 @@ bool removeOneLoop(Loop *loop){
     Value *rhs = ins_get_rhs(icmp);
     Value *compare = (lhs == initValue ? rhs : lhs);
 
+    bool useless = false;
     // 0 > 10
+    //TODO :全部转换成float进行比较是否正确呢？
     if(isImm(compare) && isImm(initValue)){
+        float init = 0;
+        float cmp = 0;
         switch (compare->VTy->ID) {
             case Int:{
 
                 break;
             }
             case Float:{
+                break;
+            }
+            default:
+                assert(false);
+        }
+
+        switch (initValue->VTy->ID) {
+
+        }
+        switch (icmp->Opcode) {
+            case LESS:{
+                break;
+            }
+            case LESSEQ:{
 
                 break;
             }

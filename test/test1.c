@@ -45,12 +45,19 @@
 //    return j;
 //}
 
-int main(){
-    int a = getint();
-    int b = getfloat();
-    while(a < b){
 
-        a = a + 1;
+//test float
+int g = 0;
 
-    }
+float func(int n) {
+    g = g + n;
+    putint(g);
+    return g;
+}
+
+int main() {
+    int i;
+    i = getint();
+    if (!func(99) && func(100)) i = 1; else i = 0;
+    return 0;
 }

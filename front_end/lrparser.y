@@ -11,6 +11,7 @@ extern Symtab *this;
 extern FILE* yyin;
 extern int return_index;
 extern int return_stmt_num[20];
+extern HashMap *tokenMap;
 
 %}
 
@@ -40,18 +41,29 @@ extern int return_stmt_num[20];
 %left OR AND NOT
 
 %%
+
 CompUnits
-    : CompUnit                       {$$ = newFollowNode("CompUnit", $1, NULL); TRoot = $$;}
-    | CompUnits CompUnit             {$$ = newFollowNode("CompUnit", $1, $2); TRoot = $$;}
+    : CompUnit                       {if($1 != NULL) $$ = newFollowNode("CompUnit", $1, NULL);
+                                       else $$ = NULL;
+                                       TRoot = $$;}
+    | CompUnits CompUnit             {if($1 != NULL && $2 != NULL)
+                                           $$ = newFollowNode("CompUnit", $1, $2);
+                                      else if($1 != NULL && $2 == NULL);
+                                      else if($1 == NULL && $2 != NULL)
+                                           $$ = newFollowNode("CompUnit", $2, NULL);
+                                      else $$ = NULL;
+                                      TRoot = $$;}
 	;
 CompUnit
-      : Decl                        {$$ = $1;}
+      : Decl                        {if($1 == NULL)  $$ = NULL;
+                                     else  $$ = $1;}
       | FuncDef                     {$$ = $1;}
       ;
 
 Decl
     : ConstDecl                                     {$$ = $1;}
-    | VarDecl                                      {$$ = $1;}
+    | VarDecl                                      {if($1 == NULL)  $$ = NULL;
+                                                    else  $$ = $1;}
     ;
 
 
@@ -94,20 +106,35 @@ ConstInitVal
 
 
 VarDecl
-    : BType VarDefList SEMICOLON                    {$$ = newAnotherNode("VarDecl",$1,$2);
-                                                      insert_var_into_symtab($1,$2->left);}
+    : BType VarDefList SEMICOLON                    {if($2 == NULL)  $$ = NULL;
+                                                     else {
+                                                           $$ = newAnotherNode("VarDecl",$1,$2);
+                                                           insert_var_into_symtab($1,$2->left);
+                                                       }
+                                                     }
     ;
 
 /*新加的，形如VarDef,VarDef,VarDef*/
 VarDefList
-    : VarDef                                          {$$ = newFollowNode("VarDefList",$1,NULL);}
-    | VarDefList COMMA VarDef                       {$$ = newFollowNode("VarDefList",$1,$3);}
+    : VarDef                                          {if($1 == NULL)  $$ = NULL;
+                                                       else $$ = newFollowNode("VarDefList",$1,NULL);}
+    | VarDefList COMMA VarDef                       { if ($1 == NULL && $3 == NULL)  $$ = NULL;
+                                                      else if($1 !=NULL && $3 == NULL);
+                                                      else if($1 == NULL && $3 !=NULL)
+                                                          $$ = newFollowNode("VarDefList",$3,NULL);
+                                                      else $$ = newFollowNode("VarDefList",$1,$3);}
 
 
 VarDef
-    : IDent                                            {$$ = newIdent($1);}
+    : IDent                                            {unsigned int key = HashKey(bstr2cstr($1,"\0"));
+                                                         int* cnt = HashMapGet(tokenMap, (void*)key);
+                                                            if(*cnt == 0) {$$ = NULL;}
+                                                            else  $$ = newIdent($1);}
     | IdentArray                                      {$$ = $1;}
-    | IDent ASSIGN InitVal                           {$$ = newAnotherNode("VarDef_init",newIdent($1),$3);}
+    | IDent ASSIGN InitVal                           {   unsigned int key = HashKey(bstr2cstr($1,"\0"));
+                                                         int* cnt = HashMapGet(tokenMap, (void*)key);
+                                                         if(*cnt == 0) $$ = NULL;
+                                                         else  $$ = newAnotherNode("VarDef_init",newIdent($1),$3);}
     | IdentArray ASSIGN InitVal                     {$$ = newAnotherNode("VarDef_array_init",$1,$3);}
     ;
 
@@ -175,18 +202,27 @@ ScopeEnd
 
 Block
     : LPAR RPAR                                    {$$ = newAnotherNode("Block_EMPTY",NULL,NULL);}
-    | ScopeStart BlockItemList ScopeEnd                       {$$ = $2;}
+    | ScopeStart BlockItemList ScopeEnd                       {if($2 == NULL) $$ = newAnotherNode("Block_EMPTY",NULL,NULL);
+                                                                else $$ = $2;}
     ;
 
 BlockItem
-    : Decl                                              {$$ = $1;}
+    : Decl                                              {if($1 == NULL) $$ =NULL;
+                                                          else $$ = $1;}
     | Stmt                                              {$$ = $1;}
     ;
 
 /*新加的,形如BlockItem BlockItem BlockItem*/
 BlockItemList
-    : BlockItem                                          {$$ = newAnotherNode("BlockItemList",$1,NULL);}
-    | BlockItemList BlockItem                            {$$ = newFollowNode("BlockItemList",$1,$2);}
+    : BlockItem                                          {if($1 == NULL) $$ = NULL;
+                                                          else $$ = newAnotherNode("BlockItemList",$1,NULL);}
+    | BlockItemList BlockItem                            {if($1 != NULL && $2 != NULL)
+                                                             $$ = newFollowNode("BlockItemList",$1,$2);
+                                                           else if($1 != NULL && $2 == NULL);
+                                                           else if($1 == NULL && $2 != NULL)
+                                                             $$ = newAnotherNode("BlockItemList",$2,NULL);
+                                                           else $$ = NULL;
+                                                           }
     ;
 
 Stmt

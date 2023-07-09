@@ -7,6 +7,9 @@
     #include <stdlib.h>
     #include "lrparser.tab.h"
     extern FILE* yyin;
+    extern HashMap* tokenMap;
+
+    extern int lexOnly;
 
     //将单个字符转为十六进制数字
     int __my_digit(char ch)
@@ -315,6 +318,17 @@ BlockComment "/*"([^\*]|(\*)+[^/])*"*/"
 
 {IDent} {
     yylval.sVal = bfromcstr(yytext);
+    if(lexOnly)
+    {
+        unsigned int key = HashKey(yytext);
+        int* cnt = malloc(sizeof(int));
+        if(HashMapContain(tokenMap,(void*)key))
+            *cnt = 1;
+        else
+            *cnt = 0;
+        HashMapPut(tokenMap,(void*)key,cnt);
+    }
+
     return IDent;
 }
 
