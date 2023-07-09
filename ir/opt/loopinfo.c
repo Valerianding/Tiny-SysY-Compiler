@@ -133,7 +133,7 @@ Loop *constructLoop(BasicBlock *head,BasicBlock *tail){
     printf("\n");
 
 
-    printf("loop ");
+    printf("loop exit:");
     HashSetFirst(exit);
     for(BasicBlock *block = HashSetNext(exit); block != NULL; block = HashSetNext(exit)){
         printf("b%d",block->id);

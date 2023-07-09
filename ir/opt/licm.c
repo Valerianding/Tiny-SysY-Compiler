@@ -62,7 +62,7 @@ bool LICM_EACH(Loop *loop){
             // 我们需要
             InstNode *currNode = block->head_node;
             while(currNode != block->tail_node){
-                // TODO 解决所有Operator的情况 请仔细思考
+                // TODO 解决所有Operator的情况 请仔细思考 !!!
                 if(isCalculationOperator(currNode)){
                     Value *lhs = ins_get_lhs(currNode->inst);
                     Value *rhs = ins_get_rhs(currNode->inst);
@@ -119,8 +119,27 @@ bool LICM_EACH(Loop *loop){
             //必须满足两个条件
             //1 A 在循环L中的其他地方没有定值语句 SSA ！！
 
-            //2 循环L中对A的使用只有S中对于A的定值能够到 SSA应该也满足！！
-
+            //2 循环L中对A的使用只有S中对于A的定值能够到 SSA应该也满足！！  ——》 除了Phi函数的情况
+            bool cond0 = true;
+            HashSetFirst(loop->loopBody);
+            for(BasicBlock *bodyBlock = HashSetNext(loop->loopBody); bodyBlock != NULL; bodyBlock = HashSetNext(loop->loopBody)){
+                InstNode *phiNode = bodyBlock->head_node;
+                InstNode *tailNode = bodyBlock->tail_node;
+                while(phiNode != tailNode){
+                    if(phiNode->inst->Opcode == Phi){
+                        //see if phi operand contain this Var;
+                        HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
+                        HashSetFirst(phiSet);
+                        for(pair *phiPair = HashSetNext(phiSet); phiPair != NULL; phiPair = HashSetNext(phiSet)){
+                            Value *define = phiPair->define;
+                            if(define == var){
+                                cond0 = false;
+                            }
+                        }
+                    }
+                    phiNode = get_next_inst(phiNode);
+                }
+            }
             //所以就两个条件
             bool cond1 = true;
             bool cond2 = true;
@@ -136,10 +155,22 @@ bool LICM_EACH(Loop *loop){
                 }
             }
 
-            if(cond1 || cond2){
+            if((cond1 || cond2) && cond0){
                 removeOne = true;
                 printf("remove!\n");
                 HashSetRemove(loopInvariantVariable,var);
+
+
+                //we need to see if the loop can perform at least once
+                Value *cond = loop->end_cond;
+                Value *initValue = loop->initValue;
+
+                //see if the initValue is constant??
+                //maybe we'd better perform this pass
+                //after remove useless loops
+
+                //so
+
                 BasicBlock *head = loop->head;
                 HashSet *newBlockPrev = HashSetInit();
                 HashSetFirst(head->preBlocks);
