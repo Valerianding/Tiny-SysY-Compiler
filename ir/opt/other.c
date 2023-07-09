@@ -16,14 +16,14 @@ void RemoveUselessFunction(InstNode *insHead){
 
 //case2
 //remove those useless loop
-void removeUselessLoop(Function* currentFunction){
-    //从外层循环开始
-    HashSet *loops = currentFunction->loops;
-    HashSetFirst(loops);
-    for(Loop *root = HashSetNext(loops); root != NULL; root = HashSetNext(loops)){
-        remove
-    }
-}
+//void removeUselessLoop(Function* currentFunction){
+//    //从外层循环开始
+//    HashSet *loops = currentFunction->loops;
+//    HashSetFirst(loops);
+//    for(Loop *root = HashSetNext(loops); root != NULL; root = HashSetNext(loops)){
+//        remove
+//    }
+//}
 
 //bool removeOneLoop(Loop *loop){
 //    Value *initValue = loop ->initValue;
