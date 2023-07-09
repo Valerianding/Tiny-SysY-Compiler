@@ -713,10 +713,11 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)){
         float y=value1->pdata->var_pdata.fVal;
         int x=*(int*)&y;
-        char arr1[12]="0x";
-        sprintf(arr1+2,"%0x",x);
-        printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
-        fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+        handle_illegal_imm1(dest_reg_abs,x);
+//        char arr1[12]="0x";
+//        sprintf(arr1+2,"%0x",x);
+//        printf("\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
+//        fprintf(fp,"\tldr\tr%d,=%s\n",dest_reg_abs,arr1);
         if(dest_reg<0){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
@@ -916,10 +917,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             int *xx2=(int*)&x2;
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",*xx2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,*xx2);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",*xx2);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
         }else{
@@ -985,10 +987,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x2)){
             int *xx1=(int*)&x1;
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",*xx1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,*xx1);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",*xx1);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
 
@@ -1062,18 +1065,20 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         float x1=value1->pdata->var_pdata.fVal;
         float x2=value2->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
-        char arr1[12]="0x";
-        sprintf(arr1+2,"%0x",*xx1);
-        printf("\tldr\tr1,=%s\n",arr1);
-        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+        handle_illegal_imm1(1,*xx1);
+//        char arr1[12]="0x";
+//        sprintf(arr1+2,"%0x",*xx1);
+//        printf("\tldr\tr1,=%s\n",arr1);
+//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
         printf("\tvmov\ts1,r1\n");
         fprintf(fp,"\tvmov\ts1,r1\n");
 
         int *xx2=(int*)&x2;
-        char arr2[12]="0x";
-        sprintf(arr2+2,"%0x",*xx2);
-        printf("\tldr\tr2,=%s\n",arr2);
-        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+        handle_illegal_imm1(2,*xx2);
+//        char arr2[12]="0x";
+//        sprintf(arr2+2,"%0x",*xx2);
+//        printf("\tldr\tr2,=%s\n",arr2);
+//        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
         printf("\tvmov\ts2,r2\n");
         fprintf(fp,"\tvmov\ts2,r2\n");
 
@@ -1275,10 +1280,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
-        char arr1[12]="0x";
-        sprintf(arr1+2,"%0x",*xx1);
-        printf("\tldr\tr1,=%s\n",arr1);
-        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+        handle_illegal_imm1(1,*xx1);
+//        char arr1[12]="0x";
+//        sprintf(arr1+2,"%0x",*xx1);
+//        printf("\tldr\tr1,=%s\n",arr1);
+//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
         printf("\tvmov\ts1,r1\n");
         fprintf(fp,"\tvmov\ts1,r1\n");
         if(right_reg>100){
@@ -1341,10 +1347,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
-        char arr1[12]="0x";
-        sprintf(arr1+2,"%0x",*xx1);
-        printf("\tldr\tr1,=%s\n",arr1);
-        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+        handle_illegal_imm1(1,*xx1);
+//        char arr1[12]="0x";
+//        sprintf(arr1+2,"%0x",*xx1);
+//        printf("\tldr\tr1,=%s\n",arr1);
+//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
         printf("\tvmov\ts1,r1\n");
         fprintf(fp,"\tvmov\ts1,r1\n");
         if(right_reg>100){
