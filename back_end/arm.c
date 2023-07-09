@@ -7225,15 +7225,17 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             printf("\tcmp\tr1,r2\n");
             fprintf(fp,"\tcmp\tr1,r2\n");
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tcmp\tr1,r2\n");
+            handle_illegal_imm1(1,x1);
+            handle_illegal_imm1(2,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+//            printf("\tcmp\tr1,r2\n");
             fprintf(fp,"\tcmp\tr1,r2\n");
         }
     }
