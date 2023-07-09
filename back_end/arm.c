@@ -7455,19 +7455,20 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
+//        第二操作数是立即数，可以不需要移到寄存器，存储方式和mov的合法立即数是一样的
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x2)){
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
+//            printf("\tmov\tr2,#%d\n",x2);
+//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
 
-                printf("\tcmp\tr%d,r2\n",left_reg-100);
-                fprintf(fp,"\tcmp\tr%d,r2\n",left_reg-100);
+                printf("\tcmp\tr%d,#%d\n",left_reg-100,x2);
+                fprintf(fp,"\tcmp\tr%d,#%d\n",left_reg-100,x2);
             }else{
-                printf("\tcmp\tr%d,r2\n",left_reg);
-                fprintf(fp,"\tcmp\tr%d,r2\n",left_reg);
+                printf("\tcmp\tr%d,#%d\n",left_reg,x2);
+                fprintf(fp,"\tcmp\tr%d,#%d\n",left_reg,x2);
             }
 
         }else{
@@ -7783,15 +7784,31 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
     } else if(ins->inst->Opcode==NOTEQ){
         InstNode *temp= get_next_inst(ins);
-        if(temp->inst->Opcode == br_i1){
-            ins= temp;
-            int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
-            printf("\tbeq\t%sLABEL%d\n",funcName,x);
-            fprintf(fp,"\tbeq\t%sLABEL%d\n",funcName,x);
-            x= get_value_pdata_inspdata_true(&ins->inst->user.value);
-            printf("\tb\t%sLABEL%d\n",funcName,x);
-            fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
+        if(temp->inst->Opcode==XOR){
+            ins=temp;
+            int dest_reg=temp->inst->_reg_[0];
+            int left_reg=temp->inst->_reg_[1];
+            int dest_reg_abs=abs(dest_reg);
+            printf("\tmovne\tr%d,#0\n",dest_reg_abs);
+            fprintf(fp,"\tmovne\tr%d,#0\n",dest_reg_abs);
+            printf("\tmoveq\tr%d,#1\n",dest_reg_abs);
+            fprintf(fp,"\tmoveq\tr%d,#1\n",dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,&temp->inst->user.value);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }else{
+            if(temp->inst->Opcode == br_i1){
+                ins= temp;
+                int x= get_value_pdata_inspdata_false(&ins->inst->user.value);
+                printf("\tbeq\t%sLABEL%d\n",funcName,x);
+                fprintf(fp,"\tbeq\t%sLABEL%d\n",funcName,x);
+                x= get_value_pdata_inspdata_true(&ins->inst->user.value);
+                printf("\tb\t%sLABEL%d\n",funcName,x);
+                fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
+            }
         }
+
     }
     return ins;
 
@@ -7847,10 +7864,10 @@ InstNode * arm_trans_tmp(InstNode *ins){
 }
 
 InstNode * arm_trans_XOR(InstNode *ins){
-    int dest_reg=ins->inst->_reg_[0];
-    int dest_reg_abs= abs(dest_reg);
-    int left_reg=ins->inst->_reg_[1];
-    int right_reg=ins->inst->_reg_[2];
+//    int dest_reg=ins->inst->_reg_[0];
+//    int dest_reg_abs= abs(dest_reg);
+//    int left_reg=ins->inst->_reg_[1];
+//    int right_reg=ins->inst->_reg_[2];
     assert(false);
 //    InstNode *prevIns = get_prev_inst(ins);
 //    if(prevIns->inst->Opcode == EQ){
