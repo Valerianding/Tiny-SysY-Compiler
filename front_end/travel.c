@@ -235,8 +235,10 @@ struct _Value *create_call_func(past root,int block,int return_type)
         v_result= ins_get_value_with_name(instruction);
         if(return_type == -1 || return_type == AddressTyID)
             v_result->VTy->ID=v->pdata->symtab_func_pdata.return_type.ID;
+        else if(return_type == Var_INT || return_type == GlobalVarInt || return_type == GlobalArrayConstINT ||return_type == GlobalArrayInt || return_type ==Const_INT )
+            v_result->VTy->ID = Var_INT;
         else
-            v_result->VTy->ID = return_type;
+            v_result->VTy->ID = Var_FLOAT;
     }
 
     //将这个instruction加入总list
