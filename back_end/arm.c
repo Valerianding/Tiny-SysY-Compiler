@@ -4671,7 +4671,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         float x1=value1->pdata->var_pdata.fVal;
         float x2=value2->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
-        handle_illegal_imm1(1,&xx1);
+        handle_illegal_imm1(1,*xx1);
 //        char arr1[12]="0x";
 //        sprintf(arr1+2,"%0x",*xx1);
 //        printf("\tldr\tr1,=%s\n",arr1);
