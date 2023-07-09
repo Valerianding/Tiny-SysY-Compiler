@@ -233,7 +233,7 @@ struct _Value *create_call_func(past root,int block,int return_type)
     if(v->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
     {
         v_result= ins_get_value_with_name(instruction);
-        if(return_type == -1)
+        if(return_type == -1 || return_type == AddressTyID)
             v_result->VTy->ID=v->pdata->symtab_func_pdata.return_type.ID;
         else
             v_result->VTy->ID = return_type;
