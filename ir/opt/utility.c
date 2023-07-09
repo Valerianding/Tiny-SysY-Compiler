@@ -508,3 +508,17 @@ void combineZext(InstNode *insList){
         }
     }
 }
+
+bool JudgeIcmp(InstNode *icmp){
+    Value *icmpDest = ins_get_dest(icmp->inst);
+    Use *uses = icmpDest->use_list;
+    while(uses != NULL){
+        User *user = uses->Parent;
+        Instruction *ins = (Instruction *)user;
+        if(ins->Opcode != br && ins->Opcode != br_i1){
+            return true;
+        }
+        uses = uses->Next;
+    }
+    return false;
+}

@@ -33,4 +33,7 @@ bool isInputFunction(Value *function);
 bool isOutputFunction(Value *function);
 bool JudgeXor(InstNode *insList);
 void combineZext(InstNode *insList);
+//true -> 会被其他用到
+//false -> 不会被其他用到
+bool JudgeIcmp(InstNode *icmp);
 #endif //C22V1_UTILITY_H
