@@ -663,7 +663,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
         if(ins->inst->Opcode==Return){
             offset_free(hashMap);
 //            将全局变量的使用打印
-            usage_of_global_variables();
+//            usage_of_global_variables();
             HashMapDeinit(global_hashmap);
             global_hashmap=NULL;
             hashMap=NULL;
@@ -8248,12 +8248,16 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         if(flag<0){
 //            常数的计算
             int x=value2->pdata->var_pdata.iVal*4;
-            LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
-            if(lcptLabel==NULL){
-                printf("GEP Global error\n");
-            }
-            printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-            fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+//            LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
+//            if(lcptLabel==NULL){
+//                printf("GEP Global error\n");
+//            }
+//            printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+//            fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+            printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
             if(imm_is_valid(x)){
                 printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
                 fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
@@ -8285,12 +8289,16 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
 //                assert(false);
                 int x;
-                LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
-                if(lcptLabel==NULL){
-                    printf("GEP Global error\n");
-                }
-                printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
-                fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+//                LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
+//                if(lcptLabel==NULL){
+//                    printf("GEP Global error\n");
+//                }
+//                printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
+//                fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+                printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 if(imm_is_valid(y)){
@@ -8305,12 +8313,16 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             } else{
                 if(left_reg==0){
                     int x;
-                    LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
-                    if(lcptLabel==NULL){
-                        printf("GEP Global error\n");
-                    }
-                    printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
-                    fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+//                    LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
+//                    if(lcptLabel==NULL){
+//                        printf("GEP Global error\n");
+//                    }
+//                    printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
+//                    fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+                    printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
                     if(right_reg>100){
                         int x2= get_value_offset_sp(hashMap,value2);
                         handle_illegal_imm(right_reg,x2,2);
@@ -8779,24 +8791,32 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 //  表示将一个值存放到全局变量中
     int left_int_float=-1;
     if(isGlobalVarIntType(value1->VTy)){
-        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-        if(lcptLabel==NULL){
-            printf("HashMapGet(global_hashmap,value1); error\n");
-//            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-        }
-        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+//        if(lcptLabel==NULL){
+//            printf("HashMapGet(global_hashmap,value1); error\n");
+////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
+//        }
+//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
         printf("\tldr\tr1,[r1]\n");
         fprintf(fp,"\tldr\tr1,[r1]\n");
         left_int_float=0;
     } else if(isGlobalVarFloatType(value1->VTy)){
-        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-        if(lcptLabel==NULL){
-            printf("HashMapGet(global_hashmap,value1); error\n");
-//            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-        }
-        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+//        if(lcptLabel==NULL){
+//            printf("HashMapGet(global_hashmap,value1); error\n");
+////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
+//        }
+//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
         printf("\tldr\tr1,[r1]\n");
         fprintf(fp,"\tldr\tr1,[r1]\n");
         left_int_float=1;
@@ -8852,13 +8872,17 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 
 //    value2
     if(isGlobalVarIntType(value2->VTy)){
-        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
-        if(lcptLabel==NULL){
-            printf("HashMapGet(global_hashmap,value1); error\n");
-//            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-        }
-        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
-        fprintf(fp,"\tldr\tr2,%s\n",lcptLabel->LCPI);
+//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
+//        if(lcptLabel==NULL){
+//            printf("HashMapGet(global_hashmap,value1); error\n");
+////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
+//        }
+//        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
+//        fprintf(fp,"\tldr\tr2,%s\n",lcptLabel->LCPI);
+        printf("\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+        fprintf(fp,"\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+        printf("\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+        fprintf(fp,"\tmovt\tr2,#:upper16:%s\n",value2->name+1);
         if(left_int_float==0){
             printf("\tstr\tr1,[r2]\n");
             fprintf(fp,"\tstr\tr1,[r2]\n");
@@ -8874,13 +8898,17 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         }
 
     } else if(isGlobalVarFloatType(value2->VTy)){
-        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
-        if(lcptLabel==NULL){
-            printf("HashMapGet(global_hashmap,value1); error\n");
-//            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-        }
-        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
-        fprintf(fp,"\tldr\tr2,%s\n",lcptLabel->LCPI);
+//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
+//        if(lcptLabel==NULL){
+//            printf("HashMapGet(global_hashmap,value1); error\n");
+////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
+//        }
+//        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
+//        fprintf(fp,"\tldr\tr2,%s\n",lcptLabel->LCPI);
+        printf("\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+        fprintf(fp,"\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+        printf("\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+        fprintf(fp,"\tmovt\tr2,#:upper16:%s\n",value2->name+1);
         if(left_int_float==1){
             printf("\tstr\tr1,[r2]\n");
             fprintf(fp,"\tstr\tr1,[r2]\n");
@@ -8938,13 +8966,17 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 
 //    处理普通全局变量
     if(isGlobalVarIntType(value1->VTy)){
-        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-        if(lcptLabel==NULL){
-            printf("HashMapGet(global_hashmap,value1); error\n");
-//            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-        }
-        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+//        if(lcptLabel==NULL){
+//            printf("HashMapGet(global_hashmap,value1); error\n");
+////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
+//        }
+//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
         if(dest_reg<0){
             printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
             fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
@@ -8958,14 +8990,17 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 
 
     } else if(isGlobalVarFloatType(value1->VTy)){
-        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-        if(lcptLabel==NULL){
-            printf("HashMapGet(global_hashmap,value1); error\n");
-//            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-        }
-        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-
+//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
+//        if(lcptLabel==NULL){
+//            printf("HashMapGet(global_hashmap,value1); error\n");
+////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
+//        }
+//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
+//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
         if(dest_reg<0){
             printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
             fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
