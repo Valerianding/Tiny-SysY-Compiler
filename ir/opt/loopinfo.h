@@ -28,6 +28,7 @@ typedef struct Loop{
     //for example %3 if %3 = %ind_var + c
     Value *modifier;
     //the end condition of loop
+    //the dest of a icmp
     Value *end_cond;
 
     //block to jump when leaving loop entry

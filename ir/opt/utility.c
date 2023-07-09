@@ -481,6 +481,9 @@ bool JudgeXor(InstNode *insList){
             Value *nextLhs = ins_get_lhs(nextNode->inst);
             assert(nextNode->inst->Opcode == zext);
             assert(nextLhs == curDest);
+
+            //also we need to adjust the dest to be var_int
+            curDest->VTy->ID = Var_INT;
         }
         tempNode = get_next_inst(tempNode);
     }
