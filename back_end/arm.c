@@ -7197,9 +7197,11 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 }
 
 InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
-
+    Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int dest_reg_abs=abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int right_reg=ins->inst->_reg_[2];
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -7728,6 +7730,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
     }
 
     if(ins->inst->Opcode==LESS){
+        if(JudgeIcmp(ins)){ //true表示需要保存到dest_reg里面
+            printf("\tmovlt\tr%d,#1\n",dest_reg_abs);
+            fprintf(fp,"\tmovlt\tr%d,#1\n",dest_reg_abs);
+            printf("\tmovge\tr%d,#0\n",dest_reg_abs);
+            fprintf(fp,"\tmovge\tr%d,#0\n",dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
@@ -7739,6 +7751,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==GREAT){
+        if(JudgeIcmp(ins)){ //true表示需要保存到dest_reg里面
+            printf("\tmovgt\tr%d,#1\n",dest_reg_abs);
+            fprintf(fp,"\tmovgt\tr%d,#1\n",dest_reg_abs);
+            printf("\tmovle\tr%d,#0\n",dest_reg_abs);
+            fprintf(fp,"\tmovle\tr%d,#0\n",dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
@@ -7750,6 +7772,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==LESSEQ){
+        if(JudgeIcmp(ins)){ //true表示需要保存到dest_reg里面
+            printf("\tmovle\tr%d,#1\n",dest_reg_abs);
+            fprintf(fp,"\tmovle\tr%d,#1\n",dest_reg_abs);
+            printf("\tmovgt\tr%d,#0\n",dest_reg_abs);
+            fprintf(fp,"\tmovgt\tr%d,#0\n",dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
@@ -7761,6 +7793,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==GREATEQ){
+        if(JudgeIcmp(ins)){ //true表示需要保存到dest_reg里面
+            printf("\tmovge\tr%d,#1\n",dest_reg_abs);
+            fprintf(fp,"\tmovge\tr%d,#1\n",dest_reg_abs);
+            printf("\tmovlt\tr%d,#0\n",dest_reg_abs);
+            fprintf(fp,"\tmovlt\tr%d,#0\n",dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
@@ -7772,6 +7814,16 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==EQ){
+        if(JudgeIcmp(ins)){ //true表示需要保存到dest_reg里面
+            printf("\tmoveq\tr%d,#1\n",dest_reg_abs);
+            fprintf(fp,"\tmoveq\tr%d,#1\n",dest_reg_abs);
+            printf("\tmovne\tr%d,#0\n",dest_reg_abs);
+            fprintf(fp,"\tmovne\tr%d,#0\n",dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode == br_i1){
             ins= temp;
@@ -7783,12 +7835,22 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tb\t%sLABEL%d\n",funcName,x);
         }
     } else if(ins->inst->Opcode==NOTEQ){
+        if(JudgeIcmp(ins)){ //true表示需要保存到dest_reg里面
+            printf("\tmovne\tr%d,#1\n",dest_reg_abs);
+            fprintf(fp,"\tmovne\tr%d,#1\n",dest_reg_abs);
+            printf("\tmoveq\tr%d,#0\n",dest_reg_abs);
+            fprintf(fp,"\tmoveq\tr%d,#0\n",dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
         InstNode *temp= get_next_inst(ins);
         if(temp->inst->Opcode==XOR){
             ins=temp;
-            int dest_reg=temp->inst->_reg_[0];
-            int left_reg=temp->inst->_reg_[1];
-            int dest_reg_abs=abs(dest_reg);
+            dest_reg=temp->inst->_reg_[0];
+            left_reg=temp->inst->_reg_[1];
+            dest_reg_abs=abs(dest_reg);
             printf("\tmovne\tr%d,#0\n",dest_reg_abs);
             fprintf(fp,"\tmovne\tr%d,#0\n",dest_reg_abs);
             printf("\tmoveq\tr%d,#1\n",dest_reg_abs);
