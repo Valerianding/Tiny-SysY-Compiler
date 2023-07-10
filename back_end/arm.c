@@ -7306,6 +7306,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts2,r2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }else{
             handle_illegal_imm1(1,x1);
 
@@ -7325,7 +7327,10 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }
+
     }
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
@@ -7348,6 +7353,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }else{
             int *xx1=(int*)&x1;
             handle_illegal_imm1(1,*xx1);
@@ -7365,6 +7372,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -7389,6 +7398,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvmov\ts2,r2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
 
@@ -7463,6 +7474,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
@@ -7488,6 +7501,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
@@ -7511,6 +7526,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -7569,6 +7586,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
@@ -7609,6 +7628,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
         if(left_reg>100){
@@ -7632,6 +7653,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvmov\ts2,r2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
@@ -7704,6 +7727,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         if(left_reg>100&&right_reg>100){
@@ -7749,6 +7774,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         if(left_reg>100&&right_reg>100){
@@ -7786,6 +7813,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
     if(ins->inst->Opcode==LESS){
