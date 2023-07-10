@@ -5690,6 +5690,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             handle_illegal_imm1(1,x2);
 
         }else{
+            //TODO
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
@@ -5708,8 +5709,6 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
 
-            }else{
-                ;
             }
         } else if(isLocalVarFloatType(value0->VTy)){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
@@ -5727,13 +5726,15 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 
             }
         }else if(isLocalArrayIntType(value0->VTy)){
-            ;
+            assert(false);
         }else if(isGlobalVarIntType(value0->VTy)){
 //            ;这些都是需要补充完整的，不对，
 //            全局变量会有相应的load和store指令，结果不应该在这里处理
 //            这里只需要转换为相应的格式就可以了
+            assert(false);
         }else if(isGlobalVarFloatType(value0->VTy)){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
+            assert(false);
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
             printf("\tvcvt.f32.s32\ts0,s0\n");
@@ -5741,11 +5742,12 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\tr%d,s0\n",dest_reg_abs);
             fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
         }else if(isGlobalArrayIntType(value0->VTy)){
-            ;
+            assert(false);
         }
-
     }
-    if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
+
+
+    if(isImmIntType(value1->VTy) && isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
             printf("\tmov\tr0,#%d\n",x1);
@@ -5819,12 +5821,13 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if((imm_is_valid(x2))){
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
-            if(left_reg>100){
+            if(left_reg > 100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
 
@@ -5842,7 +5845,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm(left_reg,x,1);
 
                 printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr1,r%d\n",left_reg-100);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
             } else{
                 printf("\tmov\tr0,r%d\n",left_reg);
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
@@ -5893,6 +5896,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
