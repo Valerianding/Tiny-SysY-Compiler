@@ -127,14 +127,14 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 
-//    CheckGlobalVariable(instruction_list);
-    // JudgeXor(instruction_list);
-    // combineZext(instruction_list);
+   CheckGlobalVariable(instruction_list);
+    JudgeXor(instruction_list);
+    combineZext(instruction_list);
 
-    // //need to put it into CheckGlobalVariable
-    // for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-    //     renameVariables(currentFunction);
-    // }
+    //need to put it into CheckGlobalVariable
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        renameVariables(currentFunction);
+    }
 
 
 
