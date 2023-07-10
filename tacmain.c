@@ -86,9 +86,9 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL,0);
     travel_finish_type(instruction_list);
     move_give_param(instruction_list);
-    // printf_llvm_ir(instruction_list,argv[4],1);
+//  printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
-    // showAst(TRoot,0);
+//  showAst(TRoot,0);
 
     bblock_divide(instruction_list);
 
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 
-   CheckGlobalVariable(instruction_list);
+    CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
 
@@ -139,18 +139,18 @@ int main(int argc, char* argv[]){
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        // sideEffect(currentFunction);
-        // ConstFolding(currentFunction);
-        // commonSubexpressionElimination(currentFunction);
-        // DVNT(currentFunction);
-        // memlvn(currentFunction);
-        // ConstFolding(currentFunction);
-        // commonSubexpressionElimination(currentFunction);
-        // loop(currentFunction);
-        // Mark(currentFunction);
-        // Sweep(currentFunction);
-        // Clean(currentFunction);
-        // renameVariables(currentFunction);
+//         sideEffect(currentFunction);
+//         ConstFolding(currentFunction);
+//         commonSubexpressionElimination(currentFunction);
+//         DVNT(currentFunction);
+//         memlvn(currentFunction);
+//         ConstFolding(currentFunction);
+//         commonSubexpressionElimination(currentFunction);
+//         loop(currentFunction);
+//         Mark(currentFunction);
+//         Sweep(currentFunction);
+//         Clean(currentFunction);
+//         renameVariables(currentFunction);
     }
 
     //  printf_llvm_ir(instruction_list,argv[4],1);
@@ -163,7 +163,7 @@ int main(int argc, char* argv[]){
 //    }
 
     //phi上的优化
-    //printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -224,3 +224,4 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
+

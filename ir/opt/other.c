@@ -9,9 +9,9 @@
 
 //case1
 //remove the function
-void RemoveUselessFunction(InstNode *insHead){
-    //first go through all the function we have
-}
+//void RemoveUselessFunction(InstNode *insHead){
+//    //first go through all the function we have
+//}
 
 
 //case2
@@ -21,10 +21,11 @@ void RemoveUselessFunction(InstNode *insHead){
 //    HashSet *loops = currentFunction->loops;
 //    HashSetFirst(loops);
 //    for(Loop *root = HashSetNext(loops); root != NULL; root = HashSetNext(loops)){
-//        remove
+//        removeOneLoop()
 //    }
 //}
 
+////
 //bool removeOneLoop(Loop *loop){
 //    Value *initValue = loop ->initValue;
 //    Value *endCondition = loop->end_cond;
@@ -35,6 +36,8 @@ void RemoveUselessFunction(InstNode *insHead){
 //    Value *rhs = ins_get_rhs(icmp);
 //    Value *compare = (lhs == initValue ? rhs : lhs);
 //
+//
+//    printf("initValue: %s compare: %s")
 //    bool useless = false;
 //    // 0 > 10
 //    //TODO :全部转换成float进行比较是否正确呢？
@@ -56,14 +59,43 @@ void RemoveUselessFunction(InstNode *insHead){
 //
 //        switch (initValue->VTy->ID) {
 //            case Int:{
-//
+//                init = (float)initValue->pdata->var_pdata.iVal;
+//                break;
 //            }
+//            case Float:{
+//                init= initValue->pdata->var_pdata.fVal;
+//                break;
+//            }
+//            default:
+//                assert(false);
 //        }
+//
 //        switch (icmp->Opcode) {
 //            case LESS:{
+//                if()
 //                break;
 //            }
 //            case LESSEQ:{
+//
+//                break;
+//            }
+//
+//            case GREAT:{
+//
+//                break;
+//            }
+//
+//            case GREATEQ:{
+//
+//                break;
+//            }
+//
+//            case EQ:{
+//
+//                break;
+//            }
+//
+//            case NOTEQ:{
 //
 //                break;
 //            }
