@@ -24,7 +24,8 @@
 //        removeOneLoop()
 //    }
 //}
-//
+
+////
 //bool removeOneLoop(Loop *loop){
 //    Value *initValue = loop ->initValue;
 //    Value *endCondition = loop->end_cond;
@@ -35,6 +36,8 @@
 //    Value *rhs = ins_get_rhs(icmp);
 //    Value *compare = (lhs == initValue ? rhs : lhs);
 //
+//
+//    printf("initValue: %s compare: %s")
 //    bool useless = false;
 //    // 0 > 10
 //    //TODO :全部转换成float进行比较是否正确呢？
@@ -56,11 +59,11 @@
 //
 //        switch (initValue->VTy->ID) {
 //            case Int:{
-//
+//                init = (float)initValue->pdata->var_pdata.iVal;
 //                break;
 //            }
 //            case Float:{
-//
+//                init= initValue->pdata->var_pdata.fVal;
 //                break;
 //            }
 //            default:
@@ -69,9 +72,30 @@
 //
 //        switch (icmp->Opcode) {
 //            case LESS:{
+//                if()
 //                break;
 //            }
 //            case LESSEQ:{
+//
+//                break;
+//            }
+//
+//            case GREAT:{
+//
+//                break;
+//            }
+//
+//            case GREATEQ:{
+//
+//                break;
+//            }
+//
+//            case EQ:{
+//
+//                break;
+//            }
+//
+//            case NOTEQ:{
 //
 //                break;
 //            }
