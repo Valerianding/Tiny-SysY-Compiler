@@ -4541,7 +4541,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             case GEP:
                 if(instruction->user.value.alias!=NULL)
                     v_cur_array=instruction->user.value.alias;
-                //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
                 printf(" %s=getelementptr inbounds ",instruction->user.value.name);
                 fprintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
                 if(instruction->user.value.pdata->var_pdata.iVal<0)
@@ -4774,21 +4773,21 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
-        if(instruction->isCritical){
-            printf("isCritical\n\n");
-        }
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
@@ -4821,7 +4820,6 @@ bool need_to_clear(Value* v_user)
     {
         Value *left_user=&use->Parent->value;
         Instruction *instruction=(Instruction*)left_user;
-        //看用到的use有没有正的偏移值，如果没有就不能噶掉这条，如果有就噶
         //没有
         if(instruction->Opcode==GEP && left_user->pdata->var_pdata.is_offset==0)
         {
@@ -5004,9 +5002,12 @@ void fix_array2(struct _InstNode *instruction_node)
             //将iVal还原回原本维度
         else if(instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal>=0 && instruction->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
         {
+            Value *v_array = instruction->user.value.alias;
             int pre_dimen=0;
             //拿到上一条GEP的维度+1
-            if(get_prev_inst(instruction_node)->inst->Opcode==GEP)
+            //TODO 第二行有没有-2的情况没考虑,-1+1刚好是0也符合
+            if(get_prev_inst(instruction_node)->inst->Opcode==GEP && get_prev_inst(instruction_node)->inst->user.value.alias == v_array &&
+                    get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal<v_array->pdata->symtab_array_pdata.dimention_figure-1)
             {
                 pre_dimen= get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal;
                 instruction->user.value.pdata->var_pdata.iVal=pre_dimen+1;
@@ -5018,10 +5019,12 @@ void fix_array2(struct _InstNode *instruction_node)
         else if((instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && get_next_inst(instruction_node)->inst->Opcode==GEP && get_next_inst(instruction_node)->inst->user.value.pdata->var_pdata.is_offset==0) ||
                 (instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.is_offset==1 && need_to_clear(&instruction->user.value)))
         {
+            Value *v_array = instruction->user.value.alias;
             //拿到上一条GEP的维度+1
             int pre_dimen=0;
             //拿到上一条GEP的维度+1
-            if(get_prev_inst(instruction_node)->inst->Opcode==GEP && get_prev_inst(instruction_node)->inst->user.value.alias == instruction_node->inst->user.value.alias && instruction_node->inst->user.value.alias->pdata->symtab_array_pdata.dimention_figure!=1)
+            if(get_prev_inst(instruction_node)->inst->Opcode==GEP && get_prev_inst(instruction_node)->inst->user.value.alias == instruction_node->inst->user.value.alias && instruction_node->inst->user.value.alias->pdata->symtab_array_pdata.dimention_figure!=1
+               && get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal<v_array->pdata->symtab_array_pdata.dimention_figure-1)
             {
                 pre_dimen= get_prev_inst(instruction_node)->inst->user.value.pdata->var_pdata.iVal;
                 instruction->user.value.pdata->var_pdata.iVal=pre_dimen+1;

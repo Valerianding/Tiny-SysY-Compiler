@@ -353,6 +353,17 @@ void HashMapSetCleanValue(HashMap* self, HashMapCleanValue func)
     self->data->func_clean_val_ = func;
 }
 
+void HashMapClean(HashMap *self){
+    if(self == NULL){
+        return;
+    }
+    assert(self != NULL);
+    HashMapFirst(self);
+    for(Pair* pair = HashMapNext(self); pair!=NULL ;  pair = HashMapNext(self)){
+        HashMapRemove(self,pair->key);
+    }
+}
+
 
 /*===========================================================================*
  *               Implementation for internal operations                      *

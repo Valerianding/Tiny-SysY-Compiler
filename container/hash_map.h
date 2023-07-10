@@ -238,6 +238,8 @@ void HashMapSetCleanKey(HashMap* self, HashMapCleanKey func);
  */
 void HashMapSetCleanValue(HashMap* self, HashMapCleanValue func);
 
+void HashMapClean(HashMap *self);
+
 #ifdef __cplusplus
 }
 #endif

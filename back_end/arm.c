@@ -297,13 +297,15 @@ bool imm_is_valid2(int value){
     }
 }
 void handle_illegal_imm1(int dest_reg,int x){
-    if(x>=0&&x<=AND_LOW){//16位bit即可表示下，则只需要用到movw
+    if(x>=0&&x<=AND_LOW){//16位bit即可表示下，则只需要用到movw,但是一样需要用到movt,因为寄存器如果本来高16位如果为零的或就错了
         char arr1[12]="#0x";
         sprintf(arr1+3,"%0x",x&AND_LOW);
         printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
         fprintf(fp,"\tmovw\tr%d,%s\n",dest_reg,arr1);
+        printf("\tmovt\tr%d,#0x0\n",dest_reg);
+        fprintf(fp,"\tmovt\tr%d,#0x0\n",dest_reg);
     }else{
-        //负数
+        //负数,大于16位
         char arr1[12]="#0x";
         sprintf(arr1+3,"%0x",x&AND_LOW);
         printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
@@ -660,7 +662,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
             ins= get_next_inst(ins);
         }
         ins=_arm_translate_ins(ins,head,hashMap,stack_size);
-        if(ins->inst->Opcode==Return){
+        if(ins->inst->Opcode==FunEnd){ //这里应该FunEnd再销毁hashMap,而不是RETURN,因为RETURN之后有可能还有语句
             offset_free(hashMap);
 //            将全局变量的使用打印
 //            usage_of_global_variables();
@@ -7201,31 +7203,31 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //    int i=ins->inst->i;
 //    printf("**********ALLBEGIN**************\n");
     printf("\t.arch armv7-a\n"
-           "\t.eabi_attribute 28, 1\n"
-           "\t.eabi_attribute 20, 1\n"
-           "\t.eabi_attribute 21, 1\n"
-           "\t.eabi_attribute 23, 3\n"
-           "\t.eabi_attribute 24, 1\n"
-           "\t.eabi_attribute 25, 1\n"
-           "\t.eabi_attribute 26, 2\n"
-           "\t.eabi_attribute 30, 6\n"
-           "\t.eabi_attribute 34, 1\n"
-           "\t.eabi_attribute 18, 4\n"
-           "\t.file\t\"%s\"\n"
-           "\t.text\n",fileName);
+//           "\t.eabi_attribute 28, 1\n"
+//           "\t.eabi_attribute 20, 1\n"
+//           "\t.eabi_attribute 21, 1\n"
+//           "\t.eabi_attribute 23, 3\n"
+//           "\t.eabi_attribute 24, 1\n"
+//           "\t.eabi_attribute 25, 1\n"
+//           "\t.eabi_attribute 26, 2\n"
+//           "\t.eabi_attribute 30, 6\n"
+//           "\t.eabi_attribute 34, 1\n"
+//           "\t.eabi_attribute 18, 4\n"
+//           "\t.file\t\"%s\"\n"
+           "\t.text\n");
     fprintf(fp,"\t.arch armv7-a\n"
-            "\t.eabi_attribute 28, 1\n"
-            "\t.eabi_attribute 20, 1\n"
-            "\t.eabi_attribute 21, 1\n"
-            "\t.eabi_attribute 23, 3\n"
-            "\t.eabi_attribute 24, 1\n"
-            "\t.eabi_attribute 25, 1\n"
-            "\t.eabi_attribute 26, 2\n"
-            "\t.eabi_attribute 30, 6\n"
-            "\t.eabi_attribute 34, 1\n"
-            "\t.eabi_attribute 18, 4\n"
-           "\t.file\t\"%s\"\n"
-           "\t.text\n",fileName);
+//            "\t.eabi_attribute 28, 1\n"
+//            "\t.eabi_attribute 20, 1\n"
+//            "\t.eabi_attribute 21, 1\n"
+//            "\t.eabi_attribute 23, 3\n"
+//            "\t.eabi_attribute 24, 1\n"
+//            "\t.eabi_attribute 25, 1\n"
+//            "\t.eabi_attribute 26, 2\n"
+//            "\t.eabi_attribute 30, 6\n"
+//            "\t.eabi_attribute 34, 1\n"
+//            "\t.eabi_attribute 18, 4\n"
+//           "\t.file\t\"%s\"\n"
+           "\t.text\n");
 //    printf("\t.text\n"
 //           "\t.align\t2\n"
 //           "\t.global\tmain\n"
@@ -7304,6 +7306,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts2,r2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }else{
             handle_illegal_imm1(1,x1);
 
@@ -7323,7 +7327,10 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }
+
     }
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
@@ -7346,6 +7353,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }else{
             int *xx1=(int*)&x1;
             handle_illegal_imm1(1,*xx1);
@@ -7363,6 +7372,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
             printf("\tvcmp.f32\ts1,s2\n");
             fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+            printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+            fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
         }
     }
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
@@ -7387,6 +7398,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvmov\ts2,r2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
 
@@ -7461,6 +7474,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
@@ -7486,6 +7501,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isImmFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
@@ -7509,6 +7526,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -7567,6 +7586,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
@@ -7607,6 +7628,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
         if(left_reg>100){
@@ -7630,6 +7653,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tvmov\ts2,r2\n");
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
@@ -7702,6 +7727,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         if(left_reg>100&&right_reg>100){
@@ -7747,6 +7774,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
     if(isLocalVarFloatType(value1->VTy)&&isLocalVarFloatType(value2->VTy)){
         if(left_reg>100&&right_reg>100){
@@ -7784,6 +7813,8 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }
         printf("\tvcmp.f32\ts1,s2\n");
         fprintf(fp,"\tvcmp.f32\ts1,s2\n");
+        printf("\tvmrs\tAPSR_nzcv,fpscr\n");
+        fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
 
     if(ins->inst->Opcode==LESS){
@@ -8279,13 +8310,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
             int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
             int result= array_suffix(value1->alias,which_dimension);
-            if(imm_is_valid(result)){
-                printf("\tmov\tr2,#%d\n",result);
-                fprintf(fp,"\tmov\tr2,#%d\n",result);
-            }else{
-                handle_illegal_imm1(2,result);
-
-            }
+//            if(imm_is_valid(result)){
+//                printf("\tmov\tr2,#%d\n",result);
+//                fprintf(fp,"\tmov\tr2,#%d\n",result);
+//            }else{
+//                handle_illegal_imm1(2,result);
+//
+//            }
             if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
 //                assert(false);
                 int x;
@@ -8311,6 +8342,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
                 }
             } else{
+                if(imm_is_valid(result)){
+                    printf("\tmov\tr2,#%d\n",result);
+                    fprintf(fp,"\tmov\tr2,#%d\n",result);
+                }else{
+                    handle_illegal_imm1(2,result);
+
+                }
                 if(left_reg==0){
                     int x;
 //                    LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
@@ -8750,7 +8788,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             printf("\tstr\tr1,[r%d]\n",right_reg_end);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmFloatType(value1->VTy)){
-            float x2=value2->pdata->var_pdata.fVal;
+            float x2=value1->pdata->var_pdata.fVal;
             int *xx2=(int*)&x2;
             handle_illegal_imm1(1,*xx2);
 //            char arr1[12]="0x";
