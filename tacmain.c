@@ -128,29 +128,29 @@ int main(int argc, char* argv[]){
 
 
 //    CheckGlobalVariable(instruction_list);
-    JudgeXor(instruction_list);
-    combineZext(instruction_list);
+    // JudgeXor(instruction_list);
+    // combineZext(instruction_list);
 
-    //need to put it into CheckGlobalVariable
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        renameVariables(currentFunction);
-    }
+    // //need to put it into CheckGlobalVariable
+    // for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+    //     renameVariables(currentFunction);
+    // }
 
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        sideEffect(currentFunction);
-        ConstFolding(currentFunction);
-        commonSubexpressionElimination(currentFunction);
-        DVNT(currentFunction);
-        memlvn(currentFunction);
-        ConstFolding(currentFunction);
-        commonSubexpressionElimination(currentFunction);
-        loop(currentFunction);
-        Mark(currentFunction);
-        Sweep(currentFunction);
-        Clean(currentFunction);
-        renameVariables(currentFunction);
+        // sideEffect(currentFunction);
+        // ConstFolding(currentFunction);
+        // commonSubexpressionElimination(currentFunction);
+        // DVNT(currentFunction);
+        // memlvn(currentFunction);
+        // ConstFolding(currentFunction);
+        // commonSubexpressionElimination(currentFunction);
+        // loop(currentFunction);
+        // Mark(currentFunction);
+        // Sweep(currentFunction);
+        // Clean(currentFunction);
+        // renameVariables(currentFunction);
     }
 
     //  printf_llvm_ir(instruction_list,argv[4],1);
