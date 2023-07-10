@@ -375,16 +375,23 @@ void float_to_int(int si,int ri){
 }
 bool is_int_array(Value *value){
     Value *value_alias=value->alias;
-    if(value_alias->pdata->symtab_array_pdata.address_type==0 ){
+    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type==0){
+        return true;
+    }
+    else if( (value_alias->VTy->ID==ArrayTy_INT) || (value_alias->VTy->ID==ArrayTyID_ConstINT) || (value_alias->VTy->ID==GlobalArrayConstINT) || (value_alias->VTy->ID==GlobalArrayInt) ){
         return true;
     }
     return  false;
 }
 bool is_float_array(Value *value){
     Value *value_alias=value->alias;
-    if(value_alias->pdata->symtab_array_pdata.address_type==1 ){
+    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type==1 ){
         return true;
     }
+    else if( (value_alias->VTy->ID==ArrayTy_FLOAT) || (value_alias->VTy->ID==ArrayTyID_ConstFLOAT) || (value_alias->VTy->ID==GlobalArrayConstFLOAT) || (value_alias->VTy->ID==GlobalArrayFloat) ){
+        return true;
+    }
+
     return  false;
 }
 void arm_open_file(char filename[]){
