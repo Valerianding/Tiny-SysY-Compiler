@@ -7214,7 +7214,8 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //           "\t.eabi_attribute 34, 1\n"
 //           "\t.eabi_attribute 18, 4\n"
 //           "\t.file\t\"%s\"\n"
-           "\t.text\n");
+           "\t.text\n"
+           "\t.code32\n");
     fprintf(fp,"\t.arch armv7-a\n"
 //            "\t.eabi_attribute 28, 1\n"
 //            "\t.eabi_attribute 20, 1\n"
@@ -7227,7 +7228,8 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //            "\t.eabi_attribute 34, 1\n"
 //            "\t.eabi_attribute 18, 4\n"
 //           "\t.file\t\"%s\"\n"
-           "\t.text\n");
+           "\t.text\n"
+           "\t.code32\n");
 //    printf("\t.text\n"
 //           "\t.align\t2\n"
 //           "\t.global\tmain\n"
