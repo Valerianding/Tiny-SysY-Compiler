@@ -28,6 +28,8 @@ void arm_close_file();
 bool param_type_is_int();
 void int_to_float(int si,int ri);
 void float_to_int(int si,int ri);
+bool is_int_array(Value *value);
+bool is_float_array(Value *value);
 /**
  * @details 获取哈希表的大小
  * @param hashMap
