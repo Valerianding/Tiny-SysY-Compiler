@@ -297,13 +297,15 @@ bool imm_is_valid2(int value){
     }
 }
 void handle_illegal_imm1(int dest_reg,int x){
-    if(x>=0&&x<=AND_LOW){//16位bit即可表示下，则只需要用到movw
+    if(x>=0&&x<=AND_LOW){//16位bit即可表示下，则只需要用到movw,但是一样需要用到movt,因为寄存器如果本来高16位如果为零的或就错了
         char arr1[12]="#0x";
         sprintf(arr1+3,"%0x",x&AND_LOW);
         printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
         fprintf(fp,"\tmovw\tr%d,%s\n",dest_reg,arr1);
+        printf("\tmovt\tr%d,#0x0\n",dest_reg);
+        fprintf(fp,"\tmovt\tr%d,#0x0\n",dest_reg);
     }else{
-        //负数
+        //负数,大于16位
         char arr1[12]="#0x";
         sprintf(arr1+3,"%0x",x&AND_LOW);
         printf("\tmovw\tr%d,%s\n",dest_reg,arr1);
@@ -660,7 +662,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
             ins= get_next_inst(ins);
         }
         ins=_arm_translate_ins(ins,head,hashMap,stack_size);
-        if(ins->inst->Opcode==Return){
+        if(ins->inst->Opcode==FunEnd){ //这里应该FunEnd再销毁hashMap,而不是RETURN,因为RETURN之后有可能还有语句
             offset_free(hashMap);
 //            将全局变量的使用打印
 //            usage_of_global_variables();
@@ -8279,13 +8281,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
             int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
             int result= array_suffix(value1->alias,which_dimension);
-            if(imm_is_valid(result)){
-                printf("\tmov\tr2,#%d\n",result);
-                fprintf(fp,"\tmov\tr2,#%d\n",result);
-            }else{
-                handle_illegal_imm1(2,result);
-
-            }
+//            if(imm_is_valid(result)){
+//                printf("\tmov\tr2,#%d\n",result);
+//                fprintf(fp,"\tmov\tr2,#%d\n",result);
+//            }else{
+//                handle_illegal_imm1(2,result);
+//
+//            }
             if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
 //                assert(false);
                 int x;
@@ -8311,6 +8313,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
                 }
             } else{
+                if(imm_is_valid(result)){
+                    printf("\tmov\tr2,#%d\n",result);
+                    fprintf(fp,"\tmov\tr2,#%d\n",result);
+                }else{
+                    handle_illegal_imm1(2,result);
+
+                }
                 if(left_reg==0){
                     int x;
 //                    LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
@@ -8750,7 +8759,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             printf("\tstr\tr1,[r%d]\n",right_reg_end);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmFloatType(value1->VTy)){
-            float x2=value2->pdata->var_pdata.fVal;
+            float x2=value1->pdata->var_pdata.fVal;
             int *xx2=(int*)&x2;
             handle_illegal_imm1(1,*xx2);
 //            char arr1[12]="0x";
