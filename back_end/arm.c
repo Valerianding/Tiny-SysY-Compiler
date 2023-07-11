@@ -6108,7 +6108,9 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    printf("CALL\n");
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+
     memset(give_param_flag,0, sizeof(give_param_flag));
+
 //    if(strcmp(user_get_operand_use(&ins->inst->user,0)->Val->name,"getfloat")==0){
 //        printf("\tvmov\tr0,s0\n");
 //        fprintf(fp,"\tvmov\tr0,s0\n");
@@ -6957,7 +6959,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
     InstNode *tmp=NULL;
     if(num<=4){
         for(int i=0;i<num;i++){
-            give_param_flag[i]=1;
+
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
@@ -7041,14 +7043,14 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 }
             }
 //            直接在这个地方判断类型，然后加上add ri,sp,#%d好像就可以了
-
+            give_param_flag[i]=1;
         }
     }else{
         int i;
         int k=num-1;
         int temp=k;
         for(i=1;i<4;++i){
-            give_param_flag[i]=1;
+
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
@@ -7125,6 +7127,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     }
                 }
             }
+            give_param_flag[i]=1;
         }
         for (int j = num-4; j > 0; j--) {
 //            原因好像是在这里，应该逆序压栈，所以之前的tmp=one_param[i++]是有问题的，
