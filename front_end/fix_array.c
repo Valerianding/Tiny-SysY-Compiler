@@ -306,8 +306,8 @@ void fix_array2(struct _InstNode *instruction_node)
         }
 
         //第一维特判，是常数直接给-1
-        if(instruction->Opcode==GEP && get_dimension(&instruction->user.value) == 0 && instruction->user.value.pdata->var_pdata.is_offset==1)
-            instruction->user.value.pdata->var_pdata.iVal=-1;
+//        if(instruction->Opcode==GEP && get_dimension(&instruction->user.value) == 0 && instruction->user.value.pdata->var_pdata.is_offset==1)
+//            instruction->user.value.pdata->var_pdata.iVal=-1;
         instruction_node= get_next_inst(instruction_node);
     }
 }
