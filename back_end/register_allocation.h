@@ -78,6 +78,7 @@ struct  reg_now
     int dest_use;//0为def，1为use
     int left_use;
     int right_use;
+    int give_param;
 };
 
 

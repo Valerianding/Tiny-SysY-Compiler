@@ -1358,6 +1358,7 @@ void travel_ir(InstNode *instruction_node)
             echo_tac[i].left_use=-1;
             echo_tac[i].right_use=-1;
             echo_tac[i].irnode=NULL;
+            echo_tac[i].give_param=0;
         }
         int p=0;
         int if_br_ir=0;
@@ -2620,6 +2621,7 @@ void travel_ir(InstNode *instruction_node)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
+                echo_tac[tac_cnt].give_param=1;
                 if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float) ;
                     // printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 else
@@ -3175,7 +3177,7 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=7;
+                else    reg_uid+=6;
                 // if(echo_tac[i].dest_use==0)
                 // {
                 //     if(i==live[var_uid].last) 
@@ -3218,20 +3220,41 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=7;
-                if(echo_tac[i].left_use==0)
+                else    reg_uid+=6;
+                if(echo_tac[i].give_param)
                 {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
+                        else
+                            echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    }
                     else
-                        echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            // echo_tac[i].irnode->_reg_[1]=reg_uid+100;
+                             echo_tac[i].irnode->_reg_[1]=104;
+                        else
+                            echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    }
                 }
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].irnode->_reg_[1]=reg_uid+100;
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
+                        else
+                            echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    }
                     else
-                        echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].irnode->_reg_[1]=reg_uid+100;
+                        else
+                            echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    }
                 }
             }
         }
@@ -3246,7 +3269,7 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=7;
+                else    reg_uid+=6;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)
