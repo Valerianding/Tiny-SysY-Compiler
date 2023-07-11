@@ -391,6 +391,22 @@ void float_to_int(int si,int ri){
     printf("\tvmov\tr%d,s%d\n",ri,si);
     fprintf(fp,"\tvmov\tr%d,s%d\n",ri,si);
 }
+void int_to_float2(int si,int srcri,int destri){
+    printf("\tvmov\ts%d,r%d\n",si,srcri);
+    fprintf(fp,"\tvmov\ts%d,r%d\n",si,srcri);
+    printf("\tvcvt.f32.s32\ts%d,s%d\n",si,si);
+    fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",si,si);
+    printf("\tvmov\tr%d,s%d\n",destri,si);
+    fprintf(fp,"\tvmov\tr%d,s%d\n",destri,si);
+}
+void float_to_int2(int si,int srcri,int destri){
+    printf("\tvmov\ts%d,r%d\n",si,srcri);
+    fprintf(fp,"\tvmov\ts%d,r%d\n",si,srcri);
+    printf("\tvcvt.s32.f32\ts%d,s%d\n",si,si);
+    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",si,si);
+    printf("\tvmov\tr%d,s%d\n",destri,si);
+    fprintf(fp,"\tvmov\tr%d,s%d\n",destri,si);
+}
 bool is_int_array(Value *value){
     Value *value_alias = value->alias;
     if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type == 0){
@@ -8819,25 +8835,25 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    int_to_float(left_reg-100,left_reg-100);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    int_to_float2(0,left_reg-100,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }else{
-                    int_to_float(left_reg,left_reg);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    int_to_float2(0,left_reg,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }
             }else if(is_float_array(value1)&& is_int_array(value2)){
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    float_to_int(left_reg-100,left_reg-100);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    float_to_int2(0,left_reg-100,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }else{
-                    float_to_int(left_reg,left_reg);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    float_to_int2(0,left_reg,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }
             }
 
@@ -8855,17 +8871,27 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             printf("\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
             fprintf(fp,"\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
             if(is_float_array(value2)){
-                int_to_float(1,1);
+//                int_to_float(1,1);
+                int_to_float2(0,1,0);
+                printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
+            }else{
+
+                printf("\tstr\tr1,[r%d]\n",right_reg_end);
+                fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
             }
-            printf("\tstr\tr1,[r%d]\n",right_reg_end);
-            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
+
         }else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
             handle_illegal_imm1(1,value1->pdata->var_pdata.iVal);
             if(is_float_array(value2)){
-                int_to_float(1,1);
+                int_to_float2(0,1,0);
+                printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
+            }else{
+                printf("\tstr\tr1,[r%d]\n",right_reg_end);
+                fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
             }
-            printf("\tstr\tr1,[r%d]\n",right_reg_end);
-            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
+
         }else if(isImmFloatType(value1->VTy)){
             float x2=value1->pdata->var_pdata.fVal;
             int *xx2=(int*)&x2;
@@ -8875,22 +8901,29 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 //            printf("\tldr\tr1,=%s\n",arr1);
 //            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             if(is_int_array(value2)){
-                float_to_int(1,1);
+//                float_to_int(1,1);
+                float_to_int2(0,1,0);
+                printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
+            }else{
+                printf("\tstr\tr1,[r%d]\n",right_reg_end);
+                fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
             }
-            printf("\tstr\tr1,[r%d]\n",right_reg_end);
-            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
+
         }else if(isLocalVarIntType(value1->VTy)){
             if(is_float_array(value2)){
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    int_to_float(left_reg-100,left_reg-100);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+//                    int_to_float(left_reg-100,left_reg-100);
+                    int_to_float2(0,left_reg-100,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }else{
-                    int_to_float(left_reg,left_reg);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+//                    int_to_float(left_reg,left_reg);
+                    int_to_float2(0,left_reg,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }
             }else if(is_int_array(value2)){
                 if(left_reg>100){
@@ -8922,13 +8955,15 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    float_to_int(left_reg-100,left_reg-100);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+//                    float_to_int(left_reg-100,left_reg-100);
+                    float_to_int2(0,left_reg-100,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }else{
-                    float_to_int(left_reg,left_reg);
-                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
-                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+//                    float_to_int(left_reg,left_reg);
+                    float_to_int2(0,left_reg,0);
+                    printf("\tstr\tr0,[r%d]\n",right_reg_end);
+                    fprintf(fp,"\tstr\tr0,[r%d]\n",right_reg_end);
                 }
             }
 
