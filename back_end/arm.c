@@ -281,12 +281,22 @@ int array_suffix(Value*array,int which_dimension){
     return result * 4;
 }
 
-bool imm_is_valid(unsigned int imm){
-    int i;
-    for (i = 0; i <= 30; i += 2) {
-        unsigned int rotated = (imm >> i) | (imm << (32 - i));
-        if (rotated <= 255 && (rotated & ~0xff) == 0)
+//bool imm_is_valid(unsigned int imm){
+//    int i;
+//    for (i = 0; i <= 30; i += 2) {
+//        unsigned int rotated = (imm >> i) | (imm << (32 - i));
+//        if (rotated <= 255 && (rotated & ~0xff) == 0)
+//            return true;
+//    }
+//    return false;
+//}
+bool imm_is_valid(int x) { //int版本
+    for (int i = 0; i < 32; i += 2) {
+        int rotated = x;
+        rotated = (rotated << i) | (rotated >> (32 - i));  // Left rotation by i bits.
+        if (rotated >= -128 && rotated <= 127) {  // Can the value be represented with 8 bits?
             return true;
+        }
     }
     return false;
 }
@@ -314,7 +324,7 @@ void handle_illegal_imm1(int dest_reg,int x){
         fprintf(fp,"\tmovw\tr%d,%s\n",dest_reg,arr1);
 
         char arr2[12]="#0x";
-        sprintf(arr2+3,"%0x",(unsigned)x >> MOVE_RIGHT);
+        sprintf(arr2+3,"%0x",(x >> MOVE_RIGHT)&0xffff); //修改过，将unsigned去掉
         printf("\tmovt\tr%d,%s\n",dest_reg,arr2);
         fprintf(fp,"\tmovt\tr%d,%s\n",dest_reg,arr2);
     }
@@ -370,11 +380,10 @@ void float_to_int(int si,int ri){
     fprintf(fp,"\tvmov\tr%d,s%d\n",ri,si);
 }
 bool is_int_array(Value *value){
-    Value *value_alias=value->alias;
-    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type==0){
+    Value *value_alias = value->alias;
+    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type == 0){
         return true;
-    }
-    else if( (value_alias->VTy->ID==ArrayTy_INT) || (value_alias->VTy->ID==ArrayTyID_ConstINT) || (value_alias->VTy->ID==GlobalArrayConstINT) || (value_alias->VTy->ID==GlobalArrayInt) ){
+    }else if( (value_alias->VTy->ID==ArrayTy_INT) || (value_alias->VTy->ID==ArrayTyID_ConstINT) || (value_alias->VTy->ID==GlobalArrayConstINT) || (value_alias->VTy->ID==GlobalArrayInt) ){
         return true;
     }
     return  false;
