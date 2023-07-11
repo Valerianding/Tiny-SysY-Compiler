@@ -19,7 +19,7 @@
  * @param value
  * @return
  */
-bool imm_is_valid(unsigned value);
+bool imm_is_valid(int value);
 bool imm_is_valid2(int value);
 void handle_illegal_imm(int dest_reg ,int x,int flag);//处理ldr的非法立即数
 void handle_illegal_imm1(int dest_reg,int x);//处理mov的非法立即数
@@ -27,7 +27,12 @@ void arm_open_file(char argv[]);
 void arm_close_file();
 bool param_type_is_int();
 void int_to_float(int si,int ri);
+void int_to_float2(int si,int srcri,int destri);
 void float_to_int(int si,int ri);
+void float_to_int2(int si,int srcri,int destri);
+bool is_int_array(Value *value);
+bool is_float_array(Value *value);
+
 /**
  * @details 获取哈希表的大小
  * @param hashMap

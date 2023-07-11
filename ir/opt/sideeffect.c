@@ -37,9 +37,13 @@ void sideEffect(Function *currentFunction){
             //if is the same as its self
             if(calledFunction == function){
                 //do nothing
+
+            }else if(isSySYFunction(calledFunction)) {
+                //如果是库函数
+
+
             }else{
-                //如果是库函数是否需要额外考虑 -> 懒得考虑了
-                //if is not SySY function call do follows
+                //如果不是库函数
                 HashSetFirst(calledFunction->visitedObjects);
                 for(Value *visitedObject = HashSetNext(calledFunction->visitedObjects); visitedObject != NULL; visitedObject = HashSetNext(calledFunction->visitedObjects)){
                     //copy visited objects
@@ -55,10 +59,13 @@ void sideEffect(Function *currentFunction){
     }
 
     //
-    printf("visited object contain: ");
+    printf("\33[1;31mvisited object contain:\33[0m ");
     HashSetFirst(function->visitedObjects);
     for(Value *visitedObject = HashSetNext(function->visitedObjects); visitedObject != NULL; visitedObject = HashSetNext(function->visitedObjects)){
         printf("%s ",visitedObject->name);
     }
     printf("\n");
+
+    printf("function contain input: %d",function->containInput);
+    printf(" contain output: %d\n",function->containOutput);
 }
