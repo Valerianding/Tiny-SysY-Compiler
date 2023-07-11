@@ -292,7 +292,7 @@ bool imm_is_valid(unsigned int imm){
 }
 
 bool imm_is_valid2(int value){
-    if(value>=-255&&value<=4095){
+    if(value>=-255 && value<=4095){
         return true;
     }else{
         return false;

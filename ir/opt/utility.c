@@ -428,24 +428,25 @@ unsigned long int hash_values(Vector *valueVector) {
 }
 
 bool isSySYFunction(Value *function){
-    if(strcmp(function->name,"getint") == 0){
-        return true;
-    }else if(strcmp(function->name,"getfloat") == 0){
-        return true;
-    }else if(strcmp(function->name,"putint") == 0){
-        return true;
-    }else if(strcmp(function->name,"getchar"))
-    return false;
 }
 
 bool isInputFunction(Value *function){
-
+    int n = sizeof(InputSySYFunctions) / sizeof(char *);
+    for(int i = 0; i < n; i++){
+        if(strcmp(function->name,InputSySYFunctions[i]) == 0){
+            return true;
+        }
+    }
     return false;
 }
 
 bool isOutputFunction(Value *function){
-    int n = sizeof(OutputSySYFunctions) / sizeof(char);
-
+    int n = sizeof(OutputSySYFunctions) / sizeof(char *);
+    for(int i = 0; i < n; i++){
+        if(strcmp(function->name,OutputSySYFunctions[i]) == 0){
+            return true;
+        }
+    }
     return false;
 }
 
