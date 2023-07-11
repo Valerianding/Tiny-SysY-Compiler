@@ -2754,6 +2754,7 @@ void addtolive(char * name,int tacid,int ifuse,int paramid)
             {
                 live[i].last=paramid;
                 live[i].last_is_use=1;
+                return ;
             }
         }
         if(paramid==0)
@@ -2880,7 +2881,7 @@ void bian_init(BasicBlock * this_block)
         }
     }
     // printf("tacid:%d\n",this_block->id);
-    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
     addtoin(this_block);
     addtoout(this_block);
     for(int i=0;i<var_num;i++)
@@ -3080,7 +3081,7 @@ void reg_control_block(BasicBlock *cur)
         return ;
 
     #else
-        // printf("this blcok start at %d\n",cur->head_node->inst->i);
+        printf("this blcok start at %d\n",cur->head_node->inst->i);
         travel_ir(cur->head_node);
         live_init_block();
         bian_init(cur);
