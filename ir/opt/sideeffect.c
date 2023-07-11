@@ -55,10 +55,12 @@ void sideEffect(Function *currentFunction){
     }
 
     //
-    printf("visited object contain: ");
+    printf("\33[1;31mvisited object contain:\33[0m ");
     HashSetFirst(function->visitedObjects);
     for(Value *visitedObject = HashSetNext(function->visitedObjects); visitedObject != NULL; visitedObject = HashSetNext(function->visitedObjects)){
         printf("%s ",visitedObject->name);
     }
     printf("\n");
+
+//    printf("function contain input: %d",)
 }

@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(c22v1)
 
-# set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)

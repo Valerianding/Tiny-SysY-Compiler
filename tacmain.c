@@ -45,6 +45,7 @@ void yyerror(char *s)
 
 
 int main(int argc, char* argv[]){
+    assert(sizeof(unsigned int) == 4);
     srand(time(NULL));
     //lsy
     if(argc < 2 ){
@@ -139,7 +140,7 @@ int main(int argc, char* argv[]){
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//         sideEffect(currentFunction);
+         sideEffect(currentFunction);
 //         ConstFolding(currentFunction);
 //         commonSubexpressionElimination(currentFunction);
 //         DVNT(currentFunction);
@@ -147,13 +148,14 @@ int main(int argc, char* argv[]){
 //         ConstFolding(currentFunction);
 //         commonSubexpressionElimination(currentFunction);
 //         loop(currentFunction);
+//         LICM(currentFunction);
 //         Mark(currentFunction);
 //         Sweep(currentFunction);
 //         Clean(currentFunction);
 //         renameVariables(currentFunction);
     }
 
-    //  printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //基本块内inscomb ok，基本块间ing
@@ -201,7 +203,7 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-    printf("=================fix===================\n");
+//    printf("=================fix===================\n");
     fix_array(instruction_list);
     // printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end

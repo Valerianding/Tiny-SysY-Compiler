@@ -10,6 +10,8 @@ const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
 const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label,GIVE_PARAM};
 const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET};
 const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
+const char* InputSySYFunctions[] = {"getint","getfloat","getch","getarray","getfarray"};
+const char* OutputSySYFunctions[] = {"putint","putch","putarray","putfloat","putfarray","putf"};
 bool isValidOperator(InstNode *insNode){
     for (int i = 0; i < sizeof(invalidOpcodes) / sizeof(Opcode); i++) {
         if (insNode->inst->Opcode == invalidOpcodes[i]) {
@@ -432,25 +434,18 @@ bool isSySYFunction(Value *function){
         return true;
     }else if(strcmp(function->name,"putint") == 0){
         return true;
-    }
+    }else if(strcmp(function->name,"getchar"))
     return false;
 }
 
 bool isInputFunction(Value *function){
-    if(strcmp(function->name,"getint") == 0){
-        return true;
-    }else if(strcmp(function->name,"getfloat") == 0){
-        return true;
-    }
+
     return false;
 }
 
 bool isOutputFunction(Value *function){
-    if(strcmp(function->name,"putint") == 0){
-        return true;
-    }else if(strcmp(function->name,"putfloat") == 0){
-        return true;
-    }
+    int n = sizeof(OutputSySYFunctions) / sizeof(char);
+
     return false;
 }
 
