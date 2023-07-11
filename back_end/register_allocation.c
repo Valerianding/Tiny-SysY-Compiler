@@ -3175,7 +3175,7 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
+                else    reg_uid+=7;
                 // if(echo_tac[i].dest_use==0)
                 // {
                 //     if(i==live[var_uid].last) 
@@ -3218,7 +3218,7 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
+                else    reg_uid+=7;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)
@@ -3246,7 +3246,7 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
+                else    reg_uid+=7;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)
