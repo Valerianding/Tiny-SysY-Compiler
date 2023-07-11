@@ -69,12 +69,14 @@ struct _Value{
     unsigned NumUserOperands : NumUserOperandsBits;
     unsigned HasHungOffUses : 1;
     unsigned HasName : 1;
+
     bool Useless : 1;
     bool IsPhi : 1;
 
-    HashSet *visitedObjects; //访问过的变量和数组
+    HashSet *visitedObjects; //本次函数内访问的全局变量
     bool containInput : 1; //是否含有输入
     bool containOutput : 1; //是否含有输出
+    bool containMemoryOperations : 1;
 
     char *name;
     struct _Value *alias;

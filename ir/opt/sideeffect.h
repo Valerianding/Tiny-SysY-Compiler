@@ -9,5 +9,6 @@
 
 #include "function.h"
 #include "utility.h"
+typedef
 void sideEffect(Function *currentFunction);
 #endif //C22V1_SIDEEFFECT_H
