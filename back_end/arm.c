@@ -30,6 +30,7 @@ int give_param_num;
 Value *func_return_type=NULL; //用来进行函数return返回值类型转换
 Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
 int ltorg_num=0;
+int give_param_flag[4];
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 void printf_stmfd_rlist(){
@@ -320,6 +321,18 @@ bool imm_is_valid2(int value){
         return false;
     }
 }
+int get_free_reg(){
+    if(give_param_flag[0]==0){
+        return 0;
+    }
+    for(int i=0;i<=3;i++){
+        if(give_param_flag[i]==0){
+            return i;
+        }
+    }
+    assert(false);
+//    如果都占用了，那没办法
+}
 void handle_illegal_imm1(int dest_reg,int x){
     if(x>=0&&x<=AND_LOW){//16位bit即可表示下，则只需要用到movw,但是一样需要用到movt,因为寄存器如果本来高16位如果为零的或就错了
         char arr1[12]="#0x";
@@ -342,37 +355,74 @@ void handle_illegal_imm1(int dest_reg,int x){
     }
 }
 void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
-    if(flag==0){ //str dest_reg_abs
-        if(imm_is_valid2(x)){
-            printf("\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
-            fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
-        }else {
-            handle_illegal_imm1(3,x);
+    if(give_param_flag[3]==0){
+        if(flag==0){ //str dest_reg_abs
+            if(imm_is_valid2(x)){
+                printf("\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
+            }else {
+                handle_illegal_imm1(3,x);
 
-            printf("\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
-            fprintf(fp, "\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
+                printf("\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
+                fprintf(fp, "\tstr\tr%d,[r11,r3]\n", handle_dest_reg);
+            }
+        }else if(flag==1){ //ldr left_reg-100
+            if(imm_is_valid2(x)){
+                printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
+            } else{
+                handle_illegal_imm1(3,x);
+
+                printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
+                fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
+            }
+        }else { //ldr right_reg-100
+            if (imm_is_valid2(x)) {
+                printf("\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+                fprintf(fp, "\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+            } else {
+                handle_illegal_imm1(3, x);
+
+                printf("\tldr\tr%d,[r11,r3]\n", handle_dest_reg - 100);
+                fprintf(fp, "\tldr\tr%d,[r11,r3]\n", handle_dest_reg - 100);
+            }
         }
-    }else if(flag==1){ //ldr left_reg-100
-        if(imm_is_valid2(x)){
-            printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
-        } else{
-            handle_illegal_imm1(3,x);
+    }else{
+//        r3寄存器用于传参，并且已经被占用,获取一个可用寄存器
+        int tmp_reg=get_free_reg();
+        if(flag==0){ //str dest_reg_abs
+            if(imm_is_valid2(x)){
+                printf("\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
+                fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",handle_dest_reg,x);
+            }else {
+                handle_illegal_imm1(tmp_reg,x);
 
-            printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
-            fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
-        }
-    }else { //ldr right_reg-100
-        if (imm_is_valid2(x)) {
-            printf("\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
-            fprintf(fp, "\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
-        } else {
-            handle_illegal_imm1(3, x);
+                printf("\tstr\tr%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
+                fprintf(fp, "\tstr\tr%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
+            }
+        }else if(flag==1){ //ldr left_reg-100
+            if(imm_is_valid2(x)){
+                printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
+                fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
+            } else{
+                handle_illegal_imm1(tmp_reg,x);
 
-            printf("\tldr\tr%d,[r11,r3]\n", handle_dest_reg - 100, x);
-            fprintf(fp, "\tldr\tr%d,[r11,r3]\n", handle_dest_reg - 100, x);
+                printf("\tldr\tr%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
+                fprintf(fp,"\tldr\tr%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
+            }
+        }else { //ldr right_reg-100
+            if (imm_is_valid2(x)) {
+                printf("\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+                fprintf(fp, "\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+            } else {
+                handle_illegal_imm1(tmp_reg, x);
+
+                printf("\tldr\tr%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
+                fprintf(fp, "\tldr\tr%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
+            }
         }
     }
+
 }
 
 void int_to_float(int si,int ri){
@@ -2095,18 +2145,18 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    sub r%d,r2,#%d\n",result_regri,x1);
         }else{
-            //TODO 需要修改
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(1,x1);
+            handle_illegal_imm1(2,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
             fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//            printf("    sub r%d,r1,r2\n",result_regri);
         }
 
         if(isLocalVarIntType(value0->VTy)){
@@ -5732,15 +5782,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             handle_illegal_imm1(1,x2);
 
         }else{
-            //TODO
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr0,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-            printf("\tldr\tr1,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+            handle_illegal_imm1(0,x1);
+            handle_illegal_imm1(1,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr0,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+//            printf("\tldr\tr1,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
         }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
@@ -6027,7 +6078,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 
 //    现在的话，参数传递是在call指令bl之前来处理的，
 //    所以说现在是先调用一下get_param_list(),传入call的value1，和give_count这个变量的地址，然后就可以使用0ne_param里面的ir了
-
+    memset(give_param_flag,0, sizeof(give_param_flag));
     int operandNum=ins->inst->user.value.NumUserOperands;
 
 //    现在这个call简单修复了一下，就是返回值为Unkonwn的话，
@@ -6049,7 +6100,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    printf("CALL\n");
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
-
+    memset(give_param_flag,0, sizeof(give_param_flag));
 //    if(strcmp(user_get_operand_use(&ins->inst->user,0)->Val->name,"getfloat")==0){
 //        printf("\tvmov\tr0,s0\n");
 //        fprintf(fp,"\tvmov\tr0,s0\n");
@@ -6894,11 +6945,11 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //     注意现在的参数传递的逻辑是从params[0]~param[param_num-1]为有序的参数
 //     而且这个时候还需要调整正确参数的传递的顺序，对于立即数型的参数传递还需要mov r0等的这样的操作
 //     因为之后的话，应该是会考虑到把那个立即数型的变量不会加到栈帧的开辟里面的
-
     int num=param_num;
     InstNode *tmp=NULL;
     if(num<=4){
         for(int i=0;i<num;i++){
+            give_param_flag[i]=1;
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
@@ -6989,6 +7040,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         int k=num-1;
         int temp=k;
         for(i=1;i<4;++i){
+            give_param_flag[i]=1;
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
@@ -8278,6 +8330,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        所以说，如arr[a][b][c]生成多条GEP，但是只需要再其中一条GEP加上一个r11就可以了，就是第一条GEP的时候
             int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
             int result= array_suffix(value1->alias,which_dimension);
+
+//            下面这个其实可以注释掉
             if(imm_is_valid(result)){
                 printf("\tmov\tr2,#%d\n",result);
                 fprintf(fp,"\tmov\tr2,#%d\n",result);

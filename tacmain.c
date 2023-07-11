@@ -14,6 +14,7 @@
 #include "PassManager.h"
 #include "mem2reg.h"
 #include "sideeffect.h"
+#include "fix_array.h"
 
 extern int yylex();
 extern int yyparse();
@@ -115,7 +116,7 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
- //   printf_llvm_ir(instruction_list,argv[4],1);
+    //   printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -140,7 +141,7 @@ int main(int argc, char* argv[]){
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-         sideEffect(currentFunction);
+        sideEffect(currentFunction);
 //         ConstFolding(currentFunction);
 //         commonSubexpressionElimination(currentFunction);
 //         DVNT(currentFunction);
@@ -226,4 +227,3 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
-
