@@ -12,5 +12,5 @@
 
 //but we should make sure no memory operation and in / out put is needed
 bool removeUseless(Function *currentFunction){
-
+    BasicBlock *entry;
 }

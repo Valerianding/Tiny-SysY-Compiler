@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
+
 project(c22v1)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_COMPILER clang-10)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
 
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
@@ -33,7 +37,7 @@ include_directories(front_end)
 include_directories(back_end)
 include_directories(container)
 #debug必备
-add_compile_options(-g -O0)
+add_compile_options(-g -O2)
 #生成可以执行文件
 add_executable(compiler
         ${FLEX_mc_lexer_OUTPUTS}
@@ -47,7 +51,7 @@ add_executable(compiler
         ${DIR_BACK}
         tacmain.c)
 
-set(CMAKE_BUILD_TYPE Debug)
+
 #aux_source_directory(. DIR_SRC)
 
 # file(GLOB_RECURSE DIR_LIB_SRC "third_party/*.cpp")

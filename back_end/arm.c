@@ -314,7 +314,7 @@ bool imm_is_valid(int x)
 //}
 
 bool imm_is_valid2(int value){
-    if(value>=-255&&value<=4095){
+    if(value>=-255 && value<=4095){
         return true;
     }else{
         return false;

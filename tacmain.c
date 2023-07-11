@@ -203,9 +203,9 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-//    printf("=================fix===================\n");
+    printf("=================fix===================\n");
     fix_array(instruction_list);
-    // printf_llvm_ir(instruction_list,argv[4],0);
+//    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
