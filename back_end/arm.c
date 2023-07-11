@@ -957,14 +957,16 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
 //            printf("    add r%d,r2,#%d\n",result_regri,x1);
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(1,x1);
+            handle_illegal_imm1(2,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
             fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    add r%d,r1,r2\n",result_regri);
@@ -1039,10 +1041,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",*xx2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,*xx2);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",*xx2);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
         }
@@ -1110,10 +1113,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
         }else{
             int *xx1=(int*)&x1;
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",*xx1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,*xx1);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",*xx1);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             handle_illegal_imm1(2,x2);
@@ -3346,14 +3350,16 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    mul r%d,r2,#%d\n",result_regri,x1);
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(1,x1);
+            handle_illegal_imm1(2,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
             fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    mul r%d,r1,r2\n",result_regri);
@@ -4554,15 +4560,17 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr0,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-
-            printf("\tldr\tr1,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+            handle_illegal_imm1(0,x1);
+            handle_illegal_imm1(1,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr0,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+//
+//            printf("\tldr\tr1,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
 
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
