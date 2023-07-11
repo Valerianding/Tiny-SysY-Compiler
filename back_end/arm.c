@@ -957,14 +957,16 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
 //            printf("    add r%d,r2,#%d\n",result_regri,x1);
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(1,x1);
+            handle_illegal_imm1(2,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
             fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    add r%d,r1,r2\n",result_regri);
@@ -1039,10 +1041,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
 
             int *xx2=(int*)&x2;
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",*xx2);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(2,*xx2);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",*xx2);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
         }
@@ -1110,10 +1113,11 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
         }else{
             int *xx1=(int*)&x1;
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",*xx1);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            handle_illegal_imm1(1,*xx1);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",*xx1);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
             handle_illegal_imm1(2,x2);
@@ -3346,14 +3350,16 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    mul r%d,r2,#%d\n",result_regri,x1);
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr1,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tldr\tr2,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+            handle_illegal_imm1(1,x1);
+            handle_illegal_imm1(2,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr1,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+//            printf("\tldr\tr2,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
             fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    mul r%d,r1,r2\n",result_regri);
@@ -4554,15 +4560,17 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }else{
-            char arr1[12]="0x";
-            sprintf(arr1+2,"%0x",x1);
-            char arr2[12]="0x";
-            sprintf(arr2+2,"%0x",x2);
-            printf("\tldr\tr0,=%s\n",arr1);
-            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-
-            printf("\tldr\tr1,=%s\n",arr2);
-            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+            handle_illegal_imm1(0,x1);
+            handle_illegal_imm1(1,x2);
+//            char arr1[12]="0x";
+//            sprintf(arr1+2,"%0x",x1);
+//            char arr2[12]="0x";
+//            sprintf(arr2+2,"%0x",x2);
+//            printf("\tldr\tr0,=%s\n",arr1);
+//            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+//
+//            printf("\tldr\tr1,=%s\n",arr2);
+//            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
 
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
@@ -6100,7 +6108,9 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    printf("CALL\n");
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+
     memset(give_param_flag,0, sizeof(give_param_flag));
+
 //    if(strcmp(user_get_operand_use(&ins->inst->user,0)->Val->name,"getfloat")==0){
 //        printf("\tvmov\tr0,s0\n");
 //        fprintf(fp,"\tvmov\tr0,s0\n");
@@ -6949,7 +6959,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
     InstNode *tmp=NULL;
     if(num<=4){
         for(int i=0;i<num;i++){
-            give_param_flag[i]=1;
+
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
@@ -7033,14 +7043,14 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 }
             }
 //            直接在这个地方判断类型，然后加上add ri,sp,#%d好像就可以了
-
+            give_param_flag[i]=1;
         }
     }else{
         int i;
         int k=num-1;
         int temp=k;
         for(i=1;i<4;++i){
-            give_param_flag[i]=1;
+
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
@@ -7117,6 +7127,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     }
                 }
             }
+            give_param_flag[i]=1;
         }
         for (int j = num-4; j > 0; j--) {
 //            原因好像是在这里，应该逆序压栈，所以之前的tmp=one_param[i++]是有问题的，
