@@ -278,8 +278,9 @@ int array_suffix(Value*array,int which_dimension){
     for(int i=which_dimension+1;i<sum_dimension;i++){
         result*= array->pdata->symtab_array_pdata.dimentions[i];
     }
-    return result*4;
+    return result * 4;
 }
+
 bool imm_is_valid(unsigned int imm){
     int i;
     for (i = 0; i <= 30; i += 2) {
@@ -289,6 +290,7 @@ bool imm_is_valid(unsigned int imm){
     }
     return false;
 }
+
 bool imm_is_valid2(int value){
     if(value>=-255&&value<=4095){
         return true;
@@ -338,25 +340,19 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
             printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
             fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100);
         }
-    }else{ //ldr right_reg-100
-        if(imm_is_valid2(x)){
-            printf("\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
-            fprintf(fp,"\tldr\tr%d,[r11,#%d]\n",handle_dest_reg-100,x);
-        } else{
-            handle_illegal_imm1(3,x);
+    }else { //ldr right_reg-100
+        if (imm_is_valid2(x)) {
+            printf("\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+            fprintf(fp, "\tldr\tr%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+        } else {
+            handle_illegal_imm1(3, x);
 
-            printf("\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100,x);
-            fprintf(fp,"\tldr\tr%d,[r11,r3]\n",handle_dest_reg-100,x);
+            printf("\tldr\tr%d,[r11,r3]\n", handle_dest_reg - 100, x);
+            fprintf(fp, "\tldr\tr%d,[r11,r3]\n", handle_dest_reg - 100, x);
         }
     }
-
-
-
-
-
-
-
 }
+
 void int_to_float(int si,int ri){
     printf("\tvmov\ts%d,r%d\n",si,ri);
     fprintf(fp,"\tvmov\ts%d,r%d\n",si,ri);
@@ -2041,6 +2037,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
 //            printf("    sub r%d,r2,#%d\n",result_regri,x1);
         }else{
+            //TODO 需要修改
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
@@ -2096,7 +2093,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         }
 
     }
-    if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
+
+    if(isImmIntType(value1->VTy) && isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
         if(imm_is_valid(x1)){

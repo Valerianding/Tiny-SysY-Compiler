@@ -1,9 +1,22 @@
-int test(int arr[][100]){
-    return arr[1][2];
-}
+// ???  // ????
+// ?????
+/*
 
-int main(){
-    int arr[10][10][100];
-    test(arr[1][10]);
-    return 1;
+int main() {
+  int arr[100], i = 0, sum = 0;
+  while (getint()) {
+  	arr[i] = getint();
+    i = i + 1;
+  }*/
+int main() {
+    int arr[100], i = 0, sum = 0;
+    while (getint()) {
+        arr[i] = getint();
+        i = i + 1;
+    }
+    while (i) {
+        i = i - 1;
+        sum = sum + arr[i];
+    }
+    return sum % 79;
 }
