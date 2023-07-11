@@ -374,11 +374,10 @@ void float_to_int(int si,int ri){
     fprintf(fp,"\tvmov\tr%d,s%d\n",ri,si);
 }
 bool is_int_array(Value *value){
-    Value *value_alias=value->alias;
-    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type==0){
+    Value *value_alias = value->alias;
+    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type == 0){
         return true;
-    }
-    else if( (value_alias->VTy->ID==ArrayTy_INT) || (value_alias->VTy->ID==ArrayTyID_ConstINT) || (value_alias->VTy->ID==GlobalArrayConstINT) || (value_alias->VTy->ID==GlobalArrayInt) ){
+    }else if( (value_alias->VTy->ID==ArrayTy_INT) || (value_alias->VTy->ID==ArrayTyID_ConstINT) || (value_alias->VTy->ID==GlobalArrayConstINT) || (value_alias->VTy->ID==GlobalArrayInt) ){
         return true;
     }
     return  false;
