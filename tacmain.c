@@ -14,6 +14,7 @@
 #include "PassManager.h"
 #include "mem2reg.h"
 #include "sideeffect.h"
+#include "fix_array.h"
 
 extern int yylex();
 extern int yyparse();
@@ -45,6 +46,7 @@ void yyerror(char *s)
 
 
 int main(int argc, char* argv[]){
+    assert(sizeof(unsigned int) == 4);
     srand(time(NULL));
     //lsy
     if(argc < 2 ){
@@ -86,9 +88,9 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL,0);
     travel_finish_type(instruction_list);
     move_give_param(instruction_list);
-    // printf_llvm_ir(instruction_list,argv[4],1);
+//  printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
-    // showAst(TRoot,0);
+//  showAst(TRoot,0);
 
     bblock_divide(instruction_list);
 
@@ -114,7 +116,7 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
- //   printf_llvm_ir(instruction_list,argv[4],1);
+    //   printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -127,33 +129,34 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 
-//    CheckGlobalVariable(instruction_list);
-    // JudgeXor(instruction_list);
-    // combineZext(instruction_list);
+    CheckGlobalVariable(instruction_list);
+    JudgeXor(instruction_list);
+    combineZext(instruction_list);
 
-    // //need to put it into CheckGlobalVariable
-    // for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-    //     renameVariables(currentFunction);
-    // }
+    //need to put it into CheckGlobalVariable
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        renameVariables(currentFunction);
+    }
 
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        // sideEffect(currentFunction);
-        // ConstFolding(currentFunction);
-        // commonSubexpressionElimination(currentFunction);
-        // DVNT(currentFunction);
-        // memlvn(currentFunction);
-        // ConstFolding(currentFunction);
-        // commonSubexpressionElimination(currentFunction);
-        // loop(currentFunction);
-        // Mark(currentFunction);
-        // Sweep(currentFunction);
-        // Clean(currentFunction);
-        // renameVariables(currentFunction);
+        sideEffect(currentFunction);
+//         ConstFolding(currentFunction);
+//         commonSubexpressionElimination(currentFunction);
+//         DVNT(currentFunction);
+//         memlvn(currentFunction);
+//         ConstFolding(currentFunction);
+//         commonSubexpressionElimination(currentFunction);
+//         loop(currentFunction);
+//         LICM(currentFunction);
+//         Mark(currentFunction);
+//         Sweep(currentFunction);
+//         Clean(currentFunction);
+//         renameVariables(currentFunction);
     }
 
-    //  printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //基本块内inscomb ok，基本块间ing
@@ -163,7 +166,7 @@ int main(int argc, char* argv[]){
 //    }
 
     //phi上的优化
-    //printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -203,7 +206,7 @@ int main(int argc, char* argv[]){
     //lsy_begin
     printf("=================fix===================\n");
     fix_array(instruction_list);
-    // printf_llvm_ir(instruction_list,argv[4],0);
+//    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
