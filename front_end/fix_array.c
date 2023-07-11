@@ -130,7 +130,7 @@ void fix_array(struct _InstNode *instruction_node)
                 dimension=instruction->user.value.pdata->var_pdata.iVal;
                 //这里的v_array是上一条的v_array
                 //dimension==0，即新的起点重置after_
-                if(v_array!=NULL && v_array!=instruction->user.value.alias && dimension==0)
+                if(v_array!=NULL && dimension==0)
                     after_ = false;
                 v_array=instruction->user.value.alias;
                 if(instruction->user.use_list[1].Val->VTy->ID!=Int)
@@ -186,8 +186,8 @@ void fix_array2(struct _InstNode *instruction_node)
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
 
-        if(instruction->Opcode == GEP)
-            printf("hehr\n");
+//        if(instruction->Opcode == GEP)
+//            printf("hehr\n");
 
         //这两条可以合并了(在不是一维数组的情况下)
         //如果没噶掉的话，当前instruction的偏移没改
