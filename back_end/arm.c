@@ -369,6 +369,27 @@ void float_to_int(int si,int ri){
     printf("\tvmov\tr%d,s%d\n",ri,si);
     fprintf(fp,"\tvmov\tr%d,s%d\n",ri,si);
 }
+bool is_int_array(Value *value){
+    Value *value_alias=value->alias;
+    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type==0){
+        return true;
+    }
+    else if( (value_alias->VTy->ID==ArrayTy_INT) || (value_alias->VTy->ID==ArrayTyID_ConstINT) || (value_alias->VTy->ID==GlobalArrayConstINT) || (value_alias->VTy->ID==GlobalArrayInt) ){
+        return true;
+    }
+    return  false;
+}
+bool is_float_array(Value *value){
+    Value *value_alias=value->alias;
+    if(value_alias->VTy->ID==AddressTyID && value_alias->pdata->symtab_array_pdata.address_type==1 ){
+        return true;
+    }
+    else if( (value_alias->VTy->ID==ArrayTy_FLOAT) || (value_alias->VTy->ID==ArrayTyID_ConstFLOAT) || (value_alias->VTy->ID==GlobalArrayConstFLOAT) || (value_alias->VTy->ID==GlobalArrayFloat) ){
+        return true;
+    }
+
+    return  false;
+}
 void arm_open_file(char filename[]){
 //    int len= strlen(argv);
 //    char filepath[256];
@@ -5674,6 +5695,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             handle_illegal_imm1(1,x2);
 
         }else{
+            //TODO
             char arr1[12]="0x";
             sprintf(arr1+2,"%0x",x1);
             char arr2[12]="0x";
@@ -5692,8 +5714,6 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
 
-            }else{
-                ;
             }
         } else if(isLocalVarFloatType(value0->VTy)){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
@@ -5711,13 +5731,15 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 
             }
         }else if(isLocalArrayIntType(value0->VTy)){
-            ;
+            assert(false);
         }else if(isGlobalVarIntType(value0->VTy)){
 //            ;这些都是需要补充完整的，不对，
 //            全局变量会有相应的load和store指令，结果不应该在这里处理
 //            这里只需要转换为相应的格式就可以了
+            assert(false);
         }else if(isGlobalVarFloatType(value0->VTy)){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
+            assert(false);
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
             printf("\tvcvt.f32.s32\ts0,s0\n");
@@ -5725,11 +5747,12 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\tr%d,s0\n",dest_reg_abs);
             fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
         }else if(isGlobalArrayIntType(value0->VTy)){
-            ;
+            assert(false);
         }
-
     }
-    if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
+
+
+    if(isImmIntType(value1->VTy) && isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)){
             printf("\tmov\tr0,#%d\n",x1);
@@ -5803,12 +5826,13 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
         if((imm_is_valid(x2))){
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
-            if(left_reg>100){
+            if(left_reg > 100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
 
@@ -5826,7 +5850,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm(left_reg,x,1);
 
                 printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr1,r%d\n",left_reg-100);
+                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
             } else{
                 printf("\tmov\tr0,r%d\n",left_reg);
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
@@ -5877,6 +5901,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         if(left_reg>100&&right_reg>100){
             int x1= get_value_offset_sp(hashMap,value1);
@@ -8718,6 +8743,9 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
     return ins;
 }
 InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
+//    直接寻找value2的alias的pdata的array_pdata 0表示int，1表示float
+
+
 //    value1是要保存的东西，一般通运算之后保存的，是保存在add等指令的左值，
 //    所以是应该在add指令的左值判断该变量是否为全局变量，而不是在store指令里面执行吧
 //    不对，在全局变量的add之后，会有一条store %i @a这样的指令
@@ -8729,7 +8757,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
     int left_reg=ins->inst->_reg_[1];//需要存的值，能是变量，也可能是立即数
     int right_reg=ins->inst->_reg_[2];
-
+    assert(value2->alias!=NULL);
 //    表示将某个值存放到数组中，这个数组可能是全局数组也可能是局部数组，这个数组给定直接就是绝对地址
     if(value2->VTy->ID==AddressTyID){
 //        这个value2->VTy==AddressTyID是不是标识局部数组store的唯一标识这个还需要确认和处理
@@ -8743,11 +8771,9 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         }else{
             right_reg_end=right_reg;
         }
-
 //      这里计算完成之后就是就是right_reg_end里面存放的就是需要保存到的绝对的地址
 
 
-//        printf("reg0:%d,reg1:%d,reg2:%d\n",dest_reg,left_reg,right_reg);
 
         int left_int_float=-1;
 //        所以说使用的寄存器应该是value1和value2对应的寄存器,这个寄存器的分配结果好像是有点问题的，
@@ -8755,17 +8781,46 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 
 //        还有一种就是将数组的值存回给数组，就是说left是address,right也是address
         if(value1->VTy->ID==AddressTyID){
-//            局部数组address存到address
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
-
-                printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-            }else{
-                printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+//            局部数组address存到address,理论上应该不存在这种情况的
+//            assert(false);
+            assert(value1->alias!=NULL);
+            if((is_int_array(value1)&& is_int_array(value2))||(is_float_array(value1)&& is_float_array(value2))){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                }
+            }else if(is_int_array(value1)&& is_float_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    int_to_float(left_reg-100,left_reg-100);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    int_to_float(left_reg,left_reg);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                }
+            }else if(is_float_array(value1)&& is_int_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    float_to_int(left_reg-100,left_reg-100);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    float_to_int(left_reg,left_reg);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                }
             }
+
+
         }
         else if(isGlobalVarIntType(value1->VTy)){
 
@@ -8778,11 +8833,16 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         } else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
             printf("\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
             fprintf(fp,"\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
+            if(is_float_array(value2)){
+                int_to_float(1,1);
+            }
             printf("\tstr\tr1,[r%d]\n",right_reg_end);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
             handle_illegal_imm1(1,value1->pdata->var_pdata.iVal);
-
+            if(is_float_array(value2)){
+                int_to_float(1,1);
+            }
             printf("\tstr\tr1,[r%d]\n",right_reg_end);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isImmFloatType(value1->VTy)){
@@ -8793,36 +8853,71 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 //            sprintf(arr1+2,"%0x",*xx2);
 //            printf("\tldr\tr1,=%s\n",arr1);
 //            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+            if(is_int_array(value2)){
+                float_to_int(1,1);
+            }
             printf("\tstr\tr1,[r%d]\n",right_reg_end);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_end);
         }else if(isLocalVarIntType(value1->VTy)){
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+            if(is_float_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    int_to_float(left_reg-100,left_reg-100);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    int_to_float(left_reg,left_reg);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                }
+            }else if(is_int_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
 
-                printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-            }else{
-                printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                }
             }
+
+
         }else if(isLocalVarFloatType(value1->VTy)){
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+            if(is_float_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
 
-                printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
-            }else{
-                printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
-                fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                }
+            } else if(is_int_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    float_to_int(left_reg-100,left_reg-100);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    float_to_int(left_reg,left_reg);
+                    printf("\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tstr\tr%d,[r%d]\n",left_reg,right_reg_end);
+                }
             }
+
         }else if(isLocalArrayIntType(value1->VTy)){
 
         }else if(isLocalVarFloatType(value1->VTy)){
 
         }
         return ins;
+
     }
 //  表示将一个值存放到全局变量中
     int left_int_float=-1;
@@ -8967,6 +9062,9 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
     return ins;
 }
 InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
+//    load和store是需要修改的，现在的情况就是float arr[3]={1,2,3}这个时候，往该地址里面存的值为int，这样取出来的还是int直接vmov到s1进性
+//    计算会导致错误，这里理想的情况是往数组里面存对应类型的数据，类型不符合就需要进行类型转换之后才能回存，load和store都是会有同样的问题。
+
 //在GEP中已经算出了变量的绝对地址，局部变量已经加上r11,全局变量不需要加上r11，所以说这里的load和store就是直接处理就可以了
 //还有就是涉及到数组的（包括局部数组和全局数组），value1的类型都是AddressTyID，这里是并不能判断他是局部数组还是全局数组的
 
@@ -8975,23 +9073,71 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
     int dest_reg=ins->inst->_reg_[0];
     int dest_reg_abs=abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
+    assert(value1->alias!=NULL);
     if(value1->VTy->ID==AddressTyID){
 //        这个是跟store差不多的，处理局部数组的和全局数组load问题
 //        所以说这里面再去判断value1的类型是没有什么意义的
-        if(left_reg>100){
+//         这里把值存到数组里面，数组有int和float，值本身也有int和float两种类型
+//         load的左值为Var_int,Var_float，address三种情况，address的话就先不进行类型转换
+        if(is_int_array(value1)){
+            if(left_reg>100){
 //            这里说明GEP计算好的偏移量被放置如栈内存中
-            int x= get_value_offset_sp(hashMap,value1);
-            handle_illegal_imm(left_reg,x,1);
+                int x= get_value_offset_sp(hashMap,value1);
+                handle_illegal_imm(left_reg,x,1);
 
-            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
-            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
 
 
-        }else{
-            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
-            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+            }else{
+                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+
+            }
+            if(value0->VTy->ID==Var_INT){
+                ;
+            }else if(value0->VTy->ID==Var_FLOAT){
+                int_to_float(dest_reg_abs,dest_reg_abs);
+            }else{ //address
+                ;
+            }
+        }else if(is_float_array(value1)){
+            if(left_reg>100){
+//            这里说明GEP计算好的偏移量被放置如栈内存中
+                int x= get_value_offset_sp(hashMap,value1);
+                handle_illegal_imm(left_reg,x,1);
+
+                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+            }else{
+                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+
+            }
+            if(value0->VTy->ID==Var_INT){
+                float_to_int(dest_reg_abs,dest_reg_abs);
+            }else if(value0->VTy->ID==Var_FLOAT){
+                ;
+            }else{ //address
+                ;
+            }
 
         }
+
+//        if(left_reg>100){
+////            这里说明GEP计算好的偏移量被放置如栈内存中
+//            int x= get_value_offset_sp(hashMap,value1);
+//            handle_illegal_imm(left_reg,x,1);
+//
+//            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+//            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+//
+//
+//        }else{
+//            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+//            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+//
+//        }
         if(dest_reg<0){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
@@ -9000,15 +9146,9 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
         return ins;
     }
 
-//    处理普通全局变量
+//    处理普通全局变量,处理全局变量的类型问题先不改
     if(isGlobalVarIntType(value1->VTy)){
-//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-//        if(lcptLabel==NULL){
-//            printf("HashMapGet(global_hashmap,value1); error\n");
-////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-//        }
-//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+
         printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
         fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
         printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
@@ -9026,13 +9166,7 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 
 
     } else if(isGlobalVarFloatType(value1->VTy)){
-//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-//        if(lcptLabel==NULL){
-//            printf("HashMapGet(global_hashmap,value1); error\n");
-////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-//        }
-//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
+
         printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
         fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
         printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
@@ -9047,10 +9181,6 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
             printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
             fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
         }
-    } else if(isGlobalArrayIntType(value1->VTy)){
-        ;
-    } else if(isGlobalArrayFloatType(value1->VTy)){
-        ;
     }
     return ins;
 }
