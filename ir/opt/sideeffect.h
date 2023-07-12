@@ -9,5 +9,14 @@
 
 #include "function.h"
 #include "utility.h"
+typedef struct CallGraphNode{
+    HashSet *parents; // CallGraphNode *
+    Value *function;
+    bool visited;
+    HashSet *children; // CallGraphNode * -> can contain itself
+}CallGraphNode;
+
+
+void buildCallGraphNode(Function *currentFunction);
 void sideEffect(Function *currentFunction);
 #endif //C22V1_SIDEEFFECT_H

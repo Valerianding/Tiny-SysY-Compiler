@@ -12,5 +12,15 @@
 
 //but we should make sure no memory operation and in / out put is needed
 bool removeUseless(Function *currentFunction){
-    BasicBlock *entry;
+    BasicBlock *entry = currentFunction->entry;
+
+    //找到function的value
+    InstNode *funcHead = entry->head_node;
+    Value *function = funcHead->inst->user.use_list[0].Val;
+
+    //
+    assert(function != NULL);
+
+    //判断前提条件
+
 }

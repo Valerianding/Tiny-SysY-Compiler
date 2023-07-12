@@ -258,7 +258,11 @@ void mem2reg(Function *currentFunction){
 
 // 针对的是需要拷贝回原来的
 void insertCopies(BasicBlock *block,Value *dest,Value *src){
+    //有可能是最后一个基本块我们需要判断是branch语句或者jump语句前面
     InstNode *tailIns = block->tail_node;
+    while(tailIns->inst->Opcode != br && tailIns->inst->Opcode != br_i1){
+        tailIns = get_prev_inst(tailIns);
+    }
     assert(tailIns != NULL);
     InstNode *copyIns = newCopyOperation(src);
     assert(copyIns != NULL);

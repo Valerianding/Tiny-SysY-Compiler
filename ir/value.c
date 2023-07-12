@@ -14,6 +14,7 @@ void value_init(Value* this){
     this->visitedObjects = HashSetInit();
     this->containInput = false;
     this->containOutput = false;
+    this->containMemoryOperations = false;
     this->use_list = NULL;
 }
 

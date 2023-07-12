@@ -12,6 +12,7 @@ const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET}
 const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
 const char* InputSySYFunctions[] = {"getint","getfloat","getch","getarray","getfarray"};
 const char* OutputSySYFunctions[] = {"putint","putch","putarray","putfloat","putfarray","putf"};
+const char* TimeSySYFunctions[] = {"_sysy_stoptime","_sysy_starttime"};
 bool isValidOperator(InstNode *insNode){
     for (int i = 0; i < sizeof(invalidOpcodes) / sizeof(Opcode); i++) {
         if (insNode->inst->Opcode == invalidOpcodes[i]) {
@@ -428,6 +429,20 @@ unsigned long int hash_values(Vector *valueVector) {
 }
 
 bool isSySYFunction(Value *function){
+    if(isInputFunction(function) || isOutputFunction(function) || isTimeFunction(function)){
+        return true;
+    }
+    return false;
+}
+
+bool isTimeFunction(Value *function){
+    int n = sizeof(TimeSySYFunctions) / sizeof(char *);
+    for(int i = 0; i < n; i++){
+        if(strcmp(function->name,TimeSySYFunctions[i]) == 0){
+            return true;
+        }
+    }
+    return false;
 }
 
 bool isInputFunction(Value *function){

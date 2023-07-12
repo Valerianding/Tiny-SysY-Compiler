@@ -16,11 +16,13 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
+
+extern FILE *yyin;
+extern HashMap *callGraph;
 extern int yylex();
 extern int yyparse();
 //extern past TRoot;
 Symtab *this;
-extern FILE *yyin;
 
 int return_index=0;
 int return_stmt_num[20]={0};
@@ -92,6 +94,9 @@ int main(int argc, char* argv[]){
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
+//init CallGraph
+    callGraph = HashMapInit();
+
     bblock_divide(instruction_list);
 
 
@@ -123,6 +128,9 @@ int main(int argc, char* argv[]){
         mem2reg(currentFunction);
         calculateLiveness(currentFunction);
         printLiveness(currentFunction);
+
+        //这里build CallGraphNode
+        buildCallGraphNode(currentFunction);
     }
 
     //mem2reg之后，优化前
@@ -167,7 +175,7 @@ int main(int argc, char* argv[]){
 
     //phi上的优化
 //    printf_llvm_ir(instruction_list,argv[4],1);
-
+//
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
@@ -178,7 +186,7 @@ int main(int argc, char* argv[]){
     //请注释掉我跑llvm脚本 phi函数消除
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
-
+//
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
         clear_visited_flag(currentFunction->entry);
@@ -191,7 +199,7 @@ int main(int argc, char* argv[]){
 
 
     // Liveness 计算之后请注释掉我跑llvm
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
 
@@ -204,7 +212,7 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-    printf("=================fix===================\n");
+//    printf("=================fix===================\n");
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
