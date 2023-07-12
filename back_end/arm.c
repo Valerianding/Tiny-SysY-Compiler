@@ -3005,8 +3005,8 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("\tvadd.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+        printf("\tvsub.f32\ts0,s1,s2\n");
+        fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -4204,8 +4204,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("\tvadd.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+        printf("\tvmul.f32\ts0,s1,s2\n");
+        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -5445,8 +5445,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("\tvadd.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+        printf("\tvmul.f32\ts0,s1,s2\n");
+        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -9088,6 +9088,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 
         }else if(isImmFloatType(value1->VTy)){
             float x2=value1->pdata->var_pdata.fVal;
+//            printf("%d\n",value1->pdata->var_pdata.iVal);
             int *xx2=(int*)&x2;
             handle_illegal_imm1(1,*xx2);
 //            char arr1[12]="0x";
