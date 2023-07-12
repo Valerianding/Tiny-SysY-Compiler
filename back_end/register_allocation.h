@@ -78,6 +78,7 @@ struct  reg_now
     int dest_use;//0为def，1为use
     int left_use;
     int right_use;
+    int give_param;
 };
 
 
@@ -116,7 +117,7 @@ int is_Immediate(int type_id);
 void end_reg();//未实现
 void test_ans();
 void travel_ir(InstNode *instruction_node);//部分ir浮点数未考虑
-void addtolive(char * name,int tacid,int ifuse);
+void addtolive(char * name,int tacid,int ifuse,int paramid);
 void addtoin(BasicBlock *this_block);
 void addtoout(BasicBlock *this_block);
 void create_bian(int i,int j);

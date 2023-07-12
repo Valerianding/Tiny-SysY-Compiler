@@ -1302,6 +1302,10 @@ void travel_ir(InstNode *instruction_node)
     bool flag_func=false;
     int temp_cnt=0;
     tac_cnt=0;
+    int give_param_ir[1000];
+    int give_param_ir_num;
+    for(int i=0;i<1000;i++) give_param_ir[i]=0;
+    give_param_ir_num=0;
     InstNode * temp_instruction_node= get_next_inst(instruction_node);
     #if  reg_alloc_test
         while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=FunEnd)
@@ -1358,6 +1362,7 @@ void travel_ir(InstNode *instruction_node)
             echo_tac[i].left_use=-1;
             echo_tac[i].right_use=-1;
             echo_tac[i].irnode=NULL;
+            echo_tac[i].give_param=0;
         }
         int p=0;
         int if_br_ir=0;
@@ -1852,6 +1857,12 @@ void travel_ir(InstNode *instruction_node)
 //                //fpintf(fptr,"}\n\n");
                 break;
             case Call:
+                for(int i=0;i<give_param_ir_num;i++)
+                {
+                    echo_tac[give_param_ir[i]].give_param=tac_cnt;
+                    give_param_ir[i]=0;
+                }
+                give_param_ir_num=0;
                 get_param_list(instruction->user.use_list->Val,&give_count);
                 if(instruction->user.use_list->Val->pdata->symtab_func_pdata.return_type.ID!=VoidTyID)
                 {
@@ -2620,6 +2631,9 @@ void travel_ir(InstNode *instruction_node)
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
+                // echo_tac[tac_cnt].give_param=1;
+                give_param_ir[give_param_ir_num++]=tac_cnt;
+
                 if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float) ;
                     // printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
                 else
@@ -2723,23 +2737,44 @@ void travel_ir(InstNode *instruction_node)
     return ;
 }
 
-void addtolive(char * name,int tacid,int ifuse)
+void addtolive(char * name,int tacid,int ifuse,int paramid)
 {
     if(ifuse)
     {
         for(int i=0;i<var_num;i++)
         if(strcmp(name,live[i].name)==0)
         {
-            live[i].last=tacid;
-            live[i].last_is_use=1;
-            return ;
+            if(paramid==0)
+            {
+                live[i].last=tacid;
+                live[i].last_is_use=1;
+                return ;
+            }
+            else
+            {
+                live[i].last=paramid;
+                live[i].last_is_use=1;
+                return ;
+            }
         }
-        live[var_num].name=name;
-        live[var_num].last=tacid;
-        live[var_num].first=tacid;   
-        live[var_num].first_is_use=1; 
-        live[var_num].last_is_use=1;
-        live[var_num++].first_use=tacid;
+        if(paramid==0)
+        {
+            live[var_num].name=name;
+            live[var_num].last=tacid;
+            live[var_num].first=tacid;   
+            live[var_num].first_is_use=1; 
+            live[var_num].last_is_use=1;
+            live[var_num++].first_use=tacid;
+        }
+        else
+        {
+            live[var_num].name=name;
+            live[var_num].last=paramid;
+            live[var_num].first=tacid;   
+            live[var_num].first_is_use=1; 
+            live[var_num].last_is_use=1;
+            live[var_num++].first_use=tacid;
+        }
         return ;
     }
     else
@@ -2834,19 +2869,19 @@ void bian_init(BasicBlock * this_block)
     {
         if(echo_tac[i].dest_use>=0)
         {
-            addtolive(echo_tac[i].dest_name,i,echo_tac[i].dest_use);
+            addtolive(echo_tac[i].dest_name,i,echo_tac[i].dest_use,echo_tac[i].give_param);
         }
         if(echo_tac[i].left_use>=0)
         {
-            addtolive(echo_tac[i].left_name,i,echo_tac[i].left_use);
+            addtolive(echo_tac[i].left_name,i,echo_tac[i].left_use,echo_tac[i].give_param);
         }
         if(echo_tac[i].right_use>=0)
         {
-            addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use);
+            addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use,echo_tac[i].give_param);
         }
     }
     // printf("tacid:%d\n",this_block->id);
-    // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
     addtoin(this_block);
     addtoout(this_block);
     for(int i=0;i<var_num;i++)
@@ -2904,15 +2939,15 @@ void bian_init_test()
     {
         if(echo_tac[i].dest_use>=0)
         {
-            addtolive(echo_tac[i].dest_name,i,echo_tac[i].dest_use);
+            addtolive(echo_tac[i].dest_name,i,echo_tac[i].dest_use,echo_tac[i].give_param);
         }
         if(echo_tac[i].left_use>=0)
         {
-            addtolive(echo_tac[i].left_name,i,echo_tac[i].left_use);
+            addtolive(echo_tac[i].left_name,i,echo_tac[i].left_use,echo_tac[i].give_param);
         }
         if(echo_tac[i].right_use>=0)
         {
-            addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use);
+            addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use,echo_tac[i].give_param);
         }
     }
     // printf("tacid:%d\n",this_block->id);
@@ -3046,7 +3081,7 @@ void reg_control_block(BasicBlock *cur)
         return ;
 
     #else
-        // printf("this blcok start at %d\n",cur->head_node->inst->i);
+        printf("this blcok start at %d\n",cur->head_node->inst->i);
         travel_ir(cur->head_node);
         live_init_block();
         bian_init(cur);
@@ -3175,7 +3210,7 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=7;
+                else    reg_uid+=6;
                 // if(echo_tac[i].dest_use==0)
                 // {
                 //     if(i==live[var_uid].last) 
@@ -3218,7 +3253,8 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=7;
+                else    reg_uid+=6;
+               
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)
@@ -3233,6 +3269,7 @@ void add_to_ir()
                     else
                         echo_tac[i].irnode->_reg_[1]=reg_uid;
                 }
+                
             }
         }
         else
@@ -3246,7 +3283,7 @@ void add_to_ir()
             else
             {
                 if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=7;
+                else    reg_uid+=6;
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)

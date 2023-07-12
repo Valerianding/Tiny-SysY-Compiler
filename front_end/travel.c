@@ -3317,7 +3317,35 @@ void create_params_stmt(past func_params,Value * v_func)
                 v_load->VTy->ID=AddressTyID;
                 v_load->pdata->var_pdata.is_offset=1;
                 v_load->pdata->symtab_array_pdata.dimention_figure=v_array->pdata->symtab_array_pdata.dimention_figure;
-                v= handle_assign_array(paramss->right->left,v_load,1,-1,0);
+                //TODO 要看要call的函数是要int (a[3]是int还是a[3]还是数组) 2023.7.11乱写一版
+                if(v_func->pdata->symtab_func_pdata.param_type_lists[p_num].ID == AddressTyID)
+                {
+                    //先计数，看看传进去的是几维(同array了这里)
+                    past var=paramss->right->left;
+                    int dimension_count=0;
+                    while(var!=NULL)
+                    {
+                        dimension_count++;
+                        var=var->next;
+                    }
+
+                    //1.传n维度，走n+1个gmp,这里先走n
+                    Value *v_f= handle_assign_array(paramss->right->left,v_load,1,dimension_count,1);
+                    //2.最后一维，要自己补0
+                    Value *v_z=(Value*) malloc(sizeof (Value));
+                    value_init_int(v_z,0);
+                    Instruction *instruction1= ins_new_binary_operator(GEP, v_f, v_z);
+                    v= ins_get_value_with_name(instruction1);
+                    v->pdata->var_pdata.iVal=dimension_count+1;  //到时候以dimension_count的态度打印
+                    v->pdata->var_pdata.is_offset=1;
+                    v->VTy->ID=AddressTyID;
+                    v->alias=v_array;
+                    //将这个instruction加入总list
+                    InstNode *node_bu = new_inst_node(instruction1);
+                    ins_node_add(instruction_list,node_bu);
+                }
+                else
+                    v= handle_assign_array(paramss->right->left,v_load,1,-1,0);
             }
             else
             {

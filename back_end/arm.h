@@ -96,8 +96,8 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
+InstNode *arm_trans_FuncEnd(InstNode*ins);
 
-//load和store指令已经被删除掉，对于数组是会有的,对于全局变量也是会有的，全局变量在用之前都是会被load的。
 InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
 
@@ -122,6 +122,8 @@ InstNode * arm_trans_zeroinitializer(InstNode *ins);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode *arm_trans_Phi(InstNode *ins);
 InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
+
+
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack);
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
