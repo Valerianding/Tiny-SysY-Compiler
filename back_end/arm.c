@@ -31,6 +31,7 @@ Value *func_return_type=NULL; //用来进行函数return返回值类型转换
 Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
 int ltorg_num=0;
 int give_param_flag[4];
+char return_message[100000];
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 void printf_stmfd_rlist(){
@@ -145,6 +146,10 @@ void printf_stmfd_rlist(){
 void printf_ldmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
+//    char ldmfd_rlist_mesg[50];
+//    int len=0;
+
+
     int k=0,n=0;
     for(int i=4;i<13;i++){
         if(reg_save[i]==1){
@@ -160,6 +165,7 @@ void printf_ldmfd_rlist(){
 //        只需要恢复lr
         printf("\tldr\tlr,[sp],#4\n");
         fprintf(fp,"\tldr\tlr,[sp],#4\n");
+//        strcat(return_message,"\tldr\tlr,[sp],#4\n");
         return;
     }
     if(k!=0&&func_call_func==0){
@@ -167,6 +173,8 @@ void printf_ldmfd_rlist(){
         if(k==1){
             printf("\tldr\tr%d,[sp],#4\n",n);
             fprintf(fp,"\tldr\tr%d,[sp],#4\n",n);
+//            sprintf(ldmfd_rlist_mesg,"\tldr\tr%d,[sp],#4\n",n);
+//            strcat(return_message,ldmfd_rlist_mesg);
             return;
         }
         int start = -1;
@@ -174,6 +182,8 @@ void printf_ldmfd_rlist(){
 
         printf("\tldmfd\tsp!,{");
         fprintf(fp,"\tldmfd\tsp!,{");
+//        sprintf(ldmfd_rlist_mesg+len,"\tldmfd\tsp!,{");
+//        len+= strlen("\tldmfd\tsp!,{");
         for (int i = 4; i < 13; i++) {
             if (reg_save[i] == 1) {
                 if (start == -1) {
@@ -185,9 +195,18 @@ void printf_ldmfd_rlist(){
                     if (start == end) {
                         printf("r%d,", start);
                         fprintf(fp,"r%d,", start);
+//                        sprintf(ldmfd_rlist_mesg+len,"r%d,", start);
+//                        char tmp[10];
+//                        sprintf(tmp,"r%d,", start);
+//                        len+= strlen(tmp);
                     } else {
                         printf("r%d-r%d,", start, end);
                         fprintf(fp,"r%d-r%d,", start, end);
+//                        sprintf(ldmfd_rlist_mesg+len,"r%d-r%d,", start, end);
+//                        char tmp[10];
+//                        sprintf(tmp,"r%d-r%d,", start, end);
+//                        len+= strlen(tmp);
+
                     }
                     start = i;
                     end = i;
@@ -199,13 +218,23 @@ void printf_ldmfd_rlist(){
             if (start == end) {
                 printf("r%d", start);
                 fprintf(fp,"r%d", start);
+//                sprintf(ldmfd_rlist_mesg+len,"r%d", start);
+//                char tmp[10];
+//                sprintf(tmp,"r%d", start);
+//                len+=strlen(tmp);
             } else {
                 printf("r%d-r%d", start, end);
                 fprintf(fp,"r%d-r%d", start, end);
+//                sprintf(ldmfd_rlist_mesg+len,"r%d-r%d", start, end);
+//                char tmp[10];
+//                sprintf(tmp,"r%d-r%d", start, end);
+//                len+=strlen(tmp);
             }
         }
         printf("}\n");
         fprintf(fp,"}\n");
+//        sprintf(ldmfd_rlist_mesg+len,"}\n");
+//        strcat(return_message,ldmfd_rlist_mesg);
         return;
     }
 //    既要保存现场，又要保存lr
@@ -214,6 +243,7 @@ void printf_ldmfd_rlist(){
 
     printf("\tldmfd\tsp!,{");
     fprintf(fp,"\tldmfd\tsp!,{");
+//    strcat(return_message,"\tldmfd\tsp!,{");
     for (int i = 4; i < 13; i++) {
         if (reg_save[i] == 1) {
             if (start == -1) {
@@ -225,9 +255,19 @@ void printf_ldmfd_rlist(){
                 if (start == end) {
                     printf("r%d,", start);
                     fprintf(fp,"r%d,", start);
+
+//                    sprintf(ldmfd_rlist_mesg+len,"r%d,", start);
+//                    char tmp[10];
+//                    sprintf(tmp,"r%d,", start);
+//                    len+= strlen(tmp);
                 } else {
                     printf("r%d-r%d,", start, end);
                     fprintf(fp,"r%d-r%d,", start, end);
+
+//                    sprintf(ldmfd_rlist_mesg+len,"r%d-r%d,", start, end);
+//                    char tmp[10];
+//                    sprintf(tmp,"r%d-r%d,", start, end);
+//                    len+= strlen(tmp);
                 }
                 start = i;
                 end = i;
@@ -239,13 +279,25 @@ void printf_ldmfd_rlist(){
         if (start == end) {
             printf("r%d", start);
             fprintf(fp,"r%d", start);
+
+//            sprintf(ldmfd_rlist_mesg+len,"r%d", start);
+//            char tmp[10];
+//            sprintf(tmp,"r%d", start);
+//            len+= strlen(tmp);
         } else {
             printf("r%d-r%d", start, end);
             fprintf(fp,"r%d-r%d", start, end);
+//
+//            sprintf(ldmfd_rlist_mesg+len,"r%d-r%d", start, end);
+//            char tmp[10];
+//            sprintf(tmp,"r%d-r%d", start, end);
+//            len+= strlen(tmp);
         }
     }
     printf(",lr}\n");
     fprintf(fp,",lr}\n");
+//    sprintf(ldmfd_rlist_mesg+len,",lr}\n");
+//    strcat(return_message,ldmfd_rlist_mesg);
     return;
 }
 void handle_reg_save(int reg){
@@ -6210,6 +6262,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
+    memset(return_message,0, sizeof(return_message));
     printf("\t.align\t2\n"
            "\t.global\t%s\n"
            "\t.arch armv7-a\n"
@@ -6868,11 +6921,34 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
         if(imm_is_valid(x1)){
             printf("\tadd\tsp,sp,#%d\n",x1);
             fprintf(fp,"\tadd\tsp,sp,#%d\n",x1);
+//            char mesg[30];
+//            sprintf(mesg,"\tadd\tsp,sp,#%d\n",x1);
+//            strcat(return_message,mesg);
         }else{
             handle_illegal_imm1(2,x1);
 
+//            char arr1[12]="#0x";
+//            sprintf(arr1+3,"%0x",x1&AND_LOW);
+//            printf("\tmovw\tr%d,%s\n",2,arr1);
+//            fprintf(fp,"\tmovw\tr%d,%s\n",2,arr1);
+//            strcat(return_message,"\tmovw\tr2,");
+//            strcat(return_message,arr1);
+//            strcat(return_message,"\n");
+
+//            char arr2[12]="#0x";
+//            sprintf(arr2+3,"%0x",(x1 >> MOVE_RIGHT)&0xffff);
+//            printf("\tmovt\tr%d,%s\n",2,arr2);
+//            fprintf(fp,"\tmovt\tr%d,%s\n",2,arr2);
+
+//            strcat(return_message,"\tmovt\tr2,");
+//            strcat(return_message,arr2);
+//            strcat(return_message,"\n");
+
             printf("\tadd\tsp,sp,r2\n");
             fprintf(fp,"\tadd\tsp,sp,r2\n");
+
+//            strcat(return_message,"\tadd\tsp,sp,r2\n");
+
         }
 
     }
@@ -6885,23 +6961,47 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 //    }
     printf("\tbx\tlr\n");
     fprintf(fp,"\tbx\tlr\n");
+//    strcat(return_message,"\tbx\tlr\n");
 
 //    这里先加入一个固定的文字池
-    printf("\tb\t.ROG_%d\n",ltorg_num);
-    fprintf(fp,"\tb\t.ROG_%d\n",ltorg_num);
-    printf("\t.ltorg\n\t.space 200\n");
-    fprintf(fp,"\t.ltorg\n\t.space 200\n");
-    printf(".ROG_%d:\n",ltorg_num);
-    fprintf(fp,".ROG_%d:\n",ltorg_num);
+//    printf("\tb\t.ROG_%d\n",ltorg_num);
+//    fprintf(fp,"\tb\t.ROG_%d\n",ltorg_num);
+    char mesg[30];
+    sprintf(mesg,"\tb\t.ROG_%d\n",ltorg_num);
+    strcat(return_message,mesg);
+
+//    printf("\t.ltorg\n\t.space 200\n");
+//    fprintf(fp,"\t.ltorg\n\t.space 200\n");
+    strcat(return_message,"\t.ltorg\n\t.space 200\n");
+
+//    printf(".ROG_%d:\n",ltorg_num);
+//    fprintf(fp,".ROG_%d:\n",ltorg_num);
+    memset(mesg,0, sizeof(mesg));
+    sprintf(mesg,".ROG_%d:\n",ltorg_num);
+    strcat(return_message,mesg);
     ltorg_num++;
 //    if(strcmp(funcName,"main")==0){
-        printf("\t.size\t%s, .-%s\n\n",funcName,funcName);
-        fprintf(fp,"\t.size\t%s, .-%s\n\n",funcName,funcName);
+//        printf("\t.size\t%s, .-%s\n\n",funcName,funcName);
+//        fprintf(fp,"\t.size\t%s, .-%s\n\n",funcName,funcName);
 //    }
+    char mesg2[1000];
+    sprintf(mesg2,"\t.size\t%s, .-%s\n\n",funcName,funcName);
+    strcat(return_message,mesg2);
 
     return ins;
 }
-
+InstNode *arm_trans_FuncEnd(InstNode*ins){
+//    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    printf("here is FuncEnd\n");
+    printf("%s",return_message);
+    fprintf(fp,"%s",return_message);
+    memset(return_message,0, sizeof(return_message));
+//    printf("funcEnd\n");
+//    printf("hello\n");
+//    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
+    return ins;
+}
 InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 //    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
 // 这个现在暂定是用来进行数组的初始话操作。bl memset来进行处理，就不需要调用多次store
@@ -9385,6 +9485,8 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_MEMSET(hashMap,ins);
         case CopyOperation:
             return arm_trans_CopyOperation(ins,hashMap);
+        case FunEnd:
+            return arm_trans_FuncEnd(ins);
         default:
             return ins;
     }
