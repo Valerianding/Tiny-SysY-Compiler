@@ -34,6 +34,7 @@ int give_param_flag[4];
 char return_message[100000];
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
+//eabi不会保存r12
 void printf_stmfd_rlist(){
 //    printf();
 //    fprintf(fp,);
@@ -4563,6 +4564,10 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
+    if(reg_save[12]==1){
+        printf("\tstr\tr12,[sp,#-4]!\n");
+        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+    }
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
@@ -5806,6 +5811,10 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+    if(reg_save[12]==1){
+        printf("\tldr\tr12,[sp],#4\n");
+        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+    }
     return  ins;
 }
 
@@ -5816,6 +5825,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //    这个比较简单，只会存在两种情况，就是int=int1 % int2和float=int1 % int2,右边出现非int都是错误的
 // 1 ****************************************
 // 将int1放在r0，将int2放在r1，然后执行bl	__aeabi_idivmod(PLT)
+    if(reg_save[12]==1){
+        printf("\tstr\tr12,[sp,#-4]!\n");
+        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+    }
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
@@ -6128,7 +6141,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
-
+    if(reg_save[12]==1){
+        printf("\tldr\tr12,[sp],#4\n");
+        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+    }
 //    printf("arm_trans_Module\n");
     return ins;
 }
@@ -6139,12 +6155,19 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    现在的话，参数传递是在call指令bl之前来处理的，
 //    所以说现在是先调用一下get_param_list(),传入call的value1，和give_count这个变量的地址，然后就可以使用0ne_param里面的ir了
     memset(give_param_flag,0, sizeof(give_param_flag));
+
     int operandNum=ins->inst->user.value.NumUserOperands;
 
 //    现在这个call简单修复了一下，就是返回值为Unkonwn的话，
 //    将相当于使void没有返回值，这个时候是不需要进行将r0移到左值里
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    if(reg_save[12]==1 && isSySYFunction(value1)){
+        printf("\tstr\tr12,[sp,#-4]!\n");
+        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+    }
+
+
     func_param_type=value1;
     int param_num_=value1->pdata->symtab_func_pdata.param_num;
     get_param_list(value1,&give_count);
@@ -6256,7 +6279,10 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    }else if(isGlobalArrayIntType(value0->VTy)){
 //        ;
 //    }
-
+    if(reg_save[12]==1 && isSySYFunction(value1)){
+        printf("\tldr\tr12,[sp],#4\n");
+        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+    }
 
     return ins;
 }
