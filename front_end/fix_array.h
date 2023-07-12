@@ -6,6 +6,7 @@
 #define C22V1_FIX_ARRAY_H
 
 #include "travel.h"
+#include "inliner.h"
 
 int get_dimension(Value* value);
 void fix_array(struct _InstNode *instruction_node);

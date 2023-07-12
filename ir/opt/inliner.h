@@ -18,7 +18,7 @@
 
 void func_inline(struct _InstNode* instruction_node);
 InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name);
-void renameV(Function *currentFunction);
 void label_func_inline(struct _InstNode* instNode_list);
+int get_name_index(Value* v);
 
 #endif //C22V1_INLINER_H

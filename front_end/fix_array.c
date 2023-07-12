@@ -15,6 +15,21 @@ int get_dimension(Value* value)
     return dimension;
 }
 
+Value *get_source_value(Value* value)
+{
+    Instruction *instruction = (Instruction*)value;
+    Value *v_source = NULL;
+    //第一条一定是GEP，循环一定被执行至少一次
+    while(instruction->Opcode == GEP)
+    {
+        //1.找到value1
+        v_source = ins_get_lhs(instruction);
+        //2.将instruction换为v的instruction
+        instruction = (Instruction*)v_source;
+    }
+    return v_source;
+}
+
 //专门的一维不处理
 bool can_cut(Instruction* instruction)
 {
@@ -99,19 +114,32 @@ bool use_not_gep(Instruction* instruction)
     return true;
 }
 
-
-
 void fix_array(struct _InstNode *instruction_node)
 {
-    //将offset值全部清0
+    InstNode *start = instruction_node;
+    //将offset值全部清0,并更新传参数组的alias
+    HashMap* aliasMap = HashMapInit();
+    instruction_node = get_next_inst(instruction_node);
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
         instruction->user.value.pdata->var_pdata.is_offset=0;
+
+        //更新传参数组的alias
+        if(instruction->Opcode == GEP)
+        {
+            Value *v_array = ins_get_dest(instruction)->alias;
+            if(v_array->VTy->ID == AddressTyID && !HashMapContain(aliasMap,v_array))
+            {
+                v_array->alias = get_source_value(ins_get_dest(instruction));
+                HashMapPut(aliasMap,v_array,v_array->alias);
+            }
+        }
         instruction_node= get_next_inst(instruction_node);
     }
+    HashMapDeinit(aliasMap);
 
     //fix array
-    InstNode *start=instruction_node;
+    instruction_node = start;
     instruction_node= get_next_inst(instruction_node);
     int offset=0;
 
