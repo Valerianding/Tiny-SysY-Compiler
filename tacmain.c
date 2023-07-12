@@ -199,7 +199,7 @@ int main(int argc, char* argv[]){
 
 
     // Liveness 计算之后请注释掉我跑llvm
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
 
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-//    printf("=================fix===================\n");
+    printf("=================fix===================\n");
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end

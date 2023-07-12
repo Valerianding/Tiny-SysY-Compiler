@@ -1,69 +1,98 @@
-const int maxn = 18;
-const int mod = 1000000007;
-int dp[maxn][maxn][maxn][maxn][maxn][7];
-int list[200];
+// float global constants
+const float RADIUS = 5.5, PI = 03.141592653589793, EPS = 1e-6;
 
-int equal(int a, int b) {
-    if (a == b)
-        return 1;
+// hexadecimal float constant
+const float PI_HEX = 0x1.921fb6p+1, HEX2 = 0x.AP-3;
+
+// float constant evaluation
+const float FACT = -.33E+5, EVAL1 = PI * RADIUS * RADIUS, EVAL2 = 2 * PI_HEX * RADIUS, EVAL3 = PI * 2 * RADIUS;
+
+// float constant implicit conversion
+const float CONV1 = 233, CONV2 = 0xfff;
+const int MAX = 1e9, TWO = 2.9, THREE = 3.2, FIVE = TWO + THREE;
+
+// float -> float function
+float float_abs(float x) {
+    if (x < 0) return -x;
+    return x;
+}
+
+// int -> float function & float/int expression
+float circle_area(int radius) {
+    return (PI * radius * radius + (radius * radius) * PI) / 2;
+}
+
+// float -> float -> int function & float/int expression
+int float_eq(float a, float b) {
+    if (float_abs(a - b) < EPS) {
+        return 1 * 2. / 2;
+    } else {
+        return 0;
+    }
+}
+
+void error() {
+    putch(101);
+    putch(114);
+    putch(114);
+    putch(111);
+    putch(114);
+    putch(10);
+}
+
+void ok() {
+    putch(111);
+    putch(107);
+    putch(10);
+}
+
+void assert(int cond) {
+    if (!cond) {
+        error();
+    } else {
+        ok();
+    }
+}
+
+void assert_not(int cond) {
+    if (cond) {
+        error();
+    } else {
+        ok();
+    }
+}
+
+int main() {
+    assert_not(float_eq(HEX2, FACT));
+    assert_not(float_eq(EVAL1, EVAL2));
+    assert(float_eq(EVAL2, EVAL3));
+    assert(float_eq(circle_area(RADIUS) /* f->i implicit conversion */,
+                    circle_area(FIVE)));
+    assert_not(float_eq(CONV1, CONV2) /* i->f implicit conversion */);
+
+    // float conditional expressions
+    if (1.5) ok();
+    if (!!3.3) ok();
+    if (.0 && 3) error();
+    if (0 || 0.3) ok();
+
+    // float array & I/O functions
+    int i = 1, p = 0;
+    float arr[10] = {1., 2};
+    int len = getfarray(arr);
+    while (i < MAX) {
+        float input = getfloat();
+        float area = PI * input * input, area_trunc = circle_area(input);
+        arr[p] = arr[p] + input;
+
+        putfloat(area);
+        putch(32);
+        putint(area_trunc); // f->i implicit conversion
+        putch(10);
+
+        i = i * - -1e1;
+        p = p + 1;
+    }
+    putfarray(len, arr);
     return 0;
-}
-
-int dfs(int a, int b, int c, int d, int e, int last){
-    if(dp[a][b][c][d][e][last] != -1)
-        return dp[a][b][c][d][e][last];
-    if(a + b + c + d + e == 0)
-        return 1;
-    int ans = 0;
-    if (a) ans = (ans + (a - equal(last, 2)) * dfs(a - 1, b, c, d, e, 1)) % mod;
-    if (b) ans = (ans + (b - equal(last, 3)) * dfs(a + 1, b - 1, c, d, e, 2)) % mod;
-    if (c) ans = (ans + (c - equal(last, 4)) * dfs(a, b + 1, c - 1, d, e, 3)) % mod;
-    if (d) ans = (ans + (d - equal(last, 5)) * dfs(a, b, c + 1, d - 1, e, 4)) % mod;
-    if (e) ans = (ans + e * dfs(a, b, c, d + 1, e - 1, 5)) % mod;
-    dp[a][b][c][d][e][last] = ans % mod;
-    return dp[a][b][c][d][e][last];
-}
-
-int cns[20];
-
-int main(){
-    int n = getint();
-    int i = 0;
-    while (i < maxn) {
-        int j = 0;
-        while(j < maxn) {
-            int k = 0;
-            while(k < maxn) {
-                int l = 0;
-                while (l < maxn) {
-                    int m = 0;
-                    while (m < maxn) {
-                        int h = 0;
-                        while (h < 7) {
-                            dp[i][j][k][l][m][h] = -1;
-                            h = h + 1;
-                        }
-                        m = m + 1;
-                    }
-                    l = l + 1;
-                }
-                k = k + 1;
-            }
-            j = j + 1;
-        }
-        i = i + 1;
-    }
-
-    i = 0;
-    while (i < n) {
-        list[i] = getint();
-        cns[list[i]] = cns[list[i]] + 1;
-        i = i + 1;
-    }
-
-    int ans = dfs(cns[1], cns[2], cns[3], cns[4], cns[5], 0);
-
-    putint(ans);
-
-    return ans;
 }
