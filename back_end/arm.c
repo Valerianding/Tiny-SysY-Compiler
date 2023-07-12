@@ -8366,6 +8366,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         }else{
             left_reg_abs=left_reg;
         }
+        assert(left_reg_abs!=0);
 
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
@@ -8634,6 +8635,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 
     // 非第一条GEP，局部数组和全局数组都是一样的处理
     else{
+        int left_reg_flag=ins->inst->_reg_[1];
+        assert(left_reg_flag!=0);
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
 //            printf("GEP next1\n");
