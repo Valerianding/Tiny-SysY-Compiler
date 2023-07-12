@@ -3,13 +3,18 @@
 //
 
 #include "sideeffect.h"
+
+//需要构建调用关系图
+//一个全局的map Value* -> GraphNode*
+//理论上来说应该是一个树的结构
+HashMap *callGraph;
+
+
+
 //当全局数组传递参数的时候存在问题
 //那我们默认如果传递了数组 并且使用了那就是算对内存有写操作不能优化
-
 //修改visitedObject语意是我们 在本次函数以及子函数里面访问的全局变量
-
 //意味着我们将不考虑参数的情况
-
 //通过contain memoryOperations来进行判断
 void sideEffect(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
@@ -47,11 +52,21 @@ void sideEffect(Function *currentFunction){
                 HashSetAdd(function->visitedObjects,gepValue);
             }
         }else if(funcHead->inst->Opcode == Call){
+            //同时我们构建callGraphNode
+
+
+
             //看看call的是哪个function
             Value *calledFunction = ins_get_lhs(funcHead->inst);
             //if is the same as its self
             if(calledFunction == function){
                 //do nothing
+
+                //递归函数
+                //child是自己 parent是否需要是自己呢？
+//                CallGraphNode *callGraphNode = HashMapGet(callGraph,function);
+//                HashSetAdd(callGraphNode->children,callGraphNode);
+
             }else if(isInputFunction(calledFunction)) {
                 //如果是库函数
                 function->containInput = true;
@@ -65,6 +80,14 @@ void sideEffect(Function *currentFunction){
                 }
                 function->containOutput |= calledFunction->containOutput;
                 function->containInput |= calledFunction->containInput;
+
+
+                //callGraph
+//                CallGraphNode *callGraphNode = HashMapGet(callGraph,function);
+//                CallGraphNode *calledGraphNode = HashMapGet(callGraph,calledFunction);
+//
+//                HashSetAdd(callGraphNode->children,calledGraphNode);
+//                HashSetAdd(calledGraphNode->parents,callGraphNode);
             }
         }
         funcHead = get_next_inst(funcHead);
@@ -88,6 +111,28 @@ void sideEffect(Function *currentFunction){
     printf(" contain memoryOperations: %d\n",function->containMemoryOperations);
 }
 
-//需要构建调用关系图
-//理论上来说应该是一个树的结构
-void build()
+
+
+CallGraphNode* createCallGraph(Value *function){
+    CallGraphNode *callGraphNode = (CallGraphNode *)malloc(sizeof(CallGraphNode));
+    callGraphNode->function = function;
+    callGraphNode->visited = false;
+    callGraphNode->children = HashSetInit();
+    callGraphNode->parents = HashSetInit();
+}
+
+void buildCallGraphNode(Function *currentFunction){
+    //找到function 的Value *然后去构建CallGraphNode
+    BasicBlock *entry = currentFunction->entry;
+
+    InstNode *funcHead = entry->head_node;
+    Value *function = funcHead->inst->user.use_list[0].Val;
+    CallGraphNode *callGraphNode = createCallGraph(function);
+
+    HashMapPut(callGraph,function,callGraphNode);
+}
+
+
+void traversal(CallGraphNode *root){
+
+}

@@ -1,14 +1,24 @@
-int test(int a){
-    a = a + 1;
-    return a;
-}
+/*
+ * Max flow EK with DFS.
+ */
+const int INF = 0x70000000;
 
-int test1(int b){
-    int result = test(b);
-    return result + 1;
-}
+int size[10];
+int to[10][10];
+int cap[10][10];
+int rev[10][10];
+int used[10];
 
-int main(){
-    int i = test(1);
-    return 1;
+int max_flow(int s, int t)
+{
+    int flow = 0;
+
+    while (1) {
+        my_memset(used, 0, 10);
+
+        int f = dfs(s, t, INF);
+        if (f == 0)
+            return flow;
+        flow = flow + f;
+    }
 }

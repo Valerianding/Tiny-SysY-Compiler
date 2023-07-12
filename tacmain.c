@@ -16,11 +16,13 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
+
+extern FILE *yyin;
+extern HashMap *callGraph;
 extern int yylex();
 extern int yyparse();
 //extern past TRoot;
 Symtab *this;
-extern FILE *yyin;
 
 int return_index=0;
 int return_stmt_num[20]={0};
@@ -92,6 +94,9 @@ int main(int argc, char* argv[]){
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
+//init CallGraph
+    callGraph = HashMapInit();
+
     bblock_divide(instruction_list);
 
 
@@ -123,6 +128,9 @@ int main(int argc, char* argv[]){
         mem2reg(currentFunction);
         calculateLiveness(currentFunction);
         printLiveness(currentFunction);
+
+        //这里build CallGraphNode
+        buildCallGraphNode(currentFunction);
     }
 
     //mem2reg之后，优化前
@@ -168,30 +176,30 @@ int main(int argc, char* argv[]){
     //phi上的优化
 //    printf_llvm_ir(instruction_list,argv[4],1);
 //
-//    block = temp->inst->Parent;
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        SSADeconstruction(currentFunction);
-//        renameVariables(currentFunction);
-//        cleanLiveSet(currentFunction);
-//    }
+    block = temp->inst->Parent;
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        SSADeconstruction(currentFunction);
+        renameVariables(currentFunction);
+        cleanLiveSet(currentFunction);
+    }
 
     //请注释掉我跑llvm脚本 phi函数消除
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 //
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
-//        clear_visited_flag(currentFunction->entry);
-//        printf("after out of SSA!\n");
-//        calculateLiveness(currentFunction);
-//        printLiveness(currentFunction);
-//    }
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
+        clear_visited_flag(currentFunction->entry);
+        printf("after out of SSA!\n");
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction);
+    }
 
 
 
 
     // Liveness 计算之后请注释掉我跑llvm
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
 
@@ -205,12 +213,12 @@ int main(int argc, char* argv[]){
 
     //lsy_begin
 //    printf("=================fix===================\n");
-//    fix_array(instruction_list);
+    fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
-//    reg_control(instruction_list,temp);
+    reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
@@ -220,9 +228,9 @@ int main(int argc, char* argv[]){
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 //
-//    arm_open_file(argv[3]);
-//    arm_translate_ins(instruction_list,argv[3]);
-//    arm_close_file(argv[3]);
+    arm_open_file(argv[3]);
+    arm_translate_ins(instruction_list,argv[3]);
+    arm_close_file(argv[3]);
     //    ljf_end
 
     return 0;
