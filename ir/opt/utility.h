@@ -31,6 +31,7 @@ unsigned long int hash_values(Vector *valueVector);
 bool isSySYFunction(Value *function);
 bool isInputFunction(Value *function);
 bool isOutputFunction(Value *function);
+bool isTimeFunction(Value *function);
 bool JudgeXor(InstNode *insList);
 void combineZext(InstNode *insList);
 //true -> 会被其他用到
