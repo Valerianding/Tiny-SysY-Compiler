@@ -8470,13 +8470,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             int result= array_suffix(value1->alias,which_dimension);
 
 //            下面这个其实可以注释掉
-            if(imm_is_valid(result)){
-                printf("\tmov\tr2,#%d\n",result);
-                fprintf(fp,"\tmov\tr2,#%d\n",result);
-            }else{
-                handle_illegal_imm1(2,result);
 
-            }
             if(right_reg==0){ //非常数，但是其实给的是常数，只是lsy那里标错了
 //                assert(false);
                 int y=value2->pdata->var_pdata.iVal;
@@ -8505,7 +8499,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                         printf("\tadd\tr1,r11,r2\n");
                         fprintf(fp,"\tadd\tr1,r11,r2\n");
                     }
+                    if(imm_is_valid(result)){
+                        printf("\tmov\tr2,#%d\n",result);
+                        fprintf(fp,"\tmov\tr2,#%d\n",result);
+                    }else{
+                        handle_illegal_imm1(2,result);
 
+                    }
                     if(right_reg>100){
                         int x2= get_value_offset_sp(hashMap,value2);
                         handle_illegal_imm(right_reg,x2,2);
