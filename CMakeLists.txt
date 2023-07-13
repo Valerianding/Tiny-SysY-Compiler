@@ -37,7 +37,7 @@ include_directories(front_end)
 include_directories(back_end)
 include_directories(container)
 #debug必备
-add_compile_options(-g -O2)
+add_compile_options(-g -O0)
 #生成可以执行文件
 add_executable(compiler
         ${FLEX_mc_lexer_OUTPUTS}

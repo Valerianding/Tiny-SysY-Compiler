@@ -19,6 +19,7 @@
 
 extern FILE *yyin;
 extern HashMap *callGraph;
+extern HashSet *visitedCall;
 extern int yylex();
 extern int yyparse();
 //extern past TRoot;
@@ -55,8 +56,13 @@ int main(int argc, char* argv[]){
         printf("ERROR: input file name is needed. \n");
         exit(0);
     }
-    yyin=fopen(argv[4], "r");
+    bool Optimize = false;
+    //看看是否开启优化
+    if(argc == 6){
+        Optimize = true;
+    }
 
+    yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
 
@@ -94,8 +100,9 @@ int main(int argc, char* argv[]){
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
-//init CallGraph
+    //init CallGraph
     callGraph = HashMapInit();
+    visitedCall = HashSetInit();
 
     bblock_divide(instruction_list);
 
@@ -163,9 +170,10 @@ int main(int argc, char* argv[]){
 //         Clean(currentFunction);
 //         renameVariables(currentFunction);
     }
+//    travel();
+
 
 //    printf_llvm_ir(instruction_list,argv[4],1);
-
 
     //基本块内inscomb ok，基本块间ing
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -175,7 +183,7 @@ int main(int argc, char* argv[]){
 
     //phi上的优化
 //    printf_llvm_ir(instruction_list,argv[4],1);
-//
+
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
@@ -212,7 +220,7 @@ int main(int argc, char* argv[]){
 //    printf("=======func inline end=======\n");
 
     //lsy_begin
-    printf("=================fix===================\n");
+//    printf("=================fix===================\n");
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
