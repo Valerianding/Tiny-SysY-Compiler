@@ -8,8 +8,13 @@
     #include "lrparser.tab.h"
     extern FILE* yyin;
     extern HashMap* tokenMap;
+    extern int START_LINE;
+    extern int STOP_LINE;
 
     extern int lexOnly;
+
+    int flag_start = 0;
+    int flag_stop = 0;
 
     //将单个字符转为十六进制数字
     int __my_digit(char ch)
@@ -193,12 +198,17 @@ RSQUARE "]"
 COMMA ","
 SEMICOLON ";"
 
-WhiteSpace    [ \t\n\r]*
+WhiteSpace    [ \t\r]*
+Skip          [\n]
 LineComment (\/\/.*)
 BlockComment "/*"([^\*]|(\*)+[^/])*"*/"
 
 %%
 {WhiteSpace} {}
+{Skip}       {if(lexOnly){
+                  if(!flag_start) START_LINE++;
+                  if(!flag_stop) STOP_LINE++;
+               }}
 {LineComment} {}
 {BlockComment} {}
 
@@ -327,6 +337,11 @@ BlockComment "/*"([^\*]|(\*)+[^/])*"*/"
         else
             *cnt = 0;
         HashMapPut(tokenMap,(void*)key,cnt);
+
+        if(strcmp(yytext,"starttime")==0)
+            flag_start = 1;
+        if(strcmp(yytext,"stoptime")==0)
+            flag_stop = 1;
     }
 
     return IDent;

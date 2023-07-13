@@ -15,6 +15,8 @@ extern insnode_stack S_break;
 extern insnode_stack S_return;
 extern insnode_stack S_and;
 extern insnode_stack S_or;
+extern int START_LINE;
+extern int STOP_LINE;
 //记录有没有需要continue和break的语句
 
 extern char t_num[7];
@@ -218,12 +220,21 @@ struct _Value *create_call_func(past root,int block,int return_type)
                 v->pdata->symtab_func_pdata.param_num=1;
                 v->pdata->symtab_func_pdata.param_type_lists[0].ID=Var_FLOAT;
             }
+            else if(strcmp(v->name,"starttime") == 0 || strcmp(v->name,"stoptime") == 0)
+            {
+                v->pdata->symtab_func_pdata.param_num=1;
+                v->pdata->symtab_func_pdata.param_type_lists[0].ID=Int;
+            }
         }
     }
 
     //参数传递
     if(root->right!=NULL)
         create_params_stmt(root->right,v);
+    else if(strcmp(v->name,"starttime") == 0)
+        create_line_param(v,true);
+    else if(strcmp(v->name,"stoptime") == 0)
+        create_line_param(v,false);
 
     instruction= ins_new_unary_operator(Call,v);
 
@@ -5042,4 +5053,17 @@ void get_param_list(Value* v_func,int* give_count)
         }
         (*give_count)-=v_func->pdata->symtab_func_pdata.param_num;
     }
+}
+
+void create_line_param(Value* v_func,bool start_stop)
+{
+    Value *value=(Value*) malloc(sizeof (Value));
+    if(start_stop)
+        value_init_int(value,START_LINE);
+    else
+        value_init_int(value,STOP_LINE);
+    Instruction *instruction= ins_new_binary_operator(GIVE_PARAM,value,v_func);
+    //将这个instruction加入总list
+    InstNode *node = new_inst_node(instruction);
+    ins_node_add(instruction_list,node);
 }
