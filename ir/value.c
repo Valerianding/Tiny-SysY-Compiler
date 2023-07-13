@@ -15,6 +15,7 @@ void value_init(Value* this){
     this->containInput = false;
     this->containOutput = false;
     this->containMemoryOperations = false;
+    this->containTime = false;
     this->use_list = NULL;
 }
 

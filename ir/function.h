@@ -23,4 +23,6 @@ void func_set(Function *this,BasicBlock *head,BasicBlock *tail);
 InstNode *get_func_start(InstNode *cur);
 
 void print_function_info(Function *this);
+
+char *getName(Function *this);
 #endif //C22V1_FUNCTION_H

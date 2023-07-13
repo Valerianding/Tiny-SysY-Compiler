@@ -49,3 +49,9 @@ void print_function_info(Function *this){
     printf("function : %s entry : b%d tail : b%d\n", function->name, this->entry->id, this->tail->id);
     printf("------------------------\n");
 }
+
+char *getName(Function *this){
+    InstNode *funcHead = this->entry->head_node;
+    Value *function = funcHead->inst->user.use_list[0].Val;
+    return function->name;
+}
