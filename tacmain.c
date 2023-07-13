@@ -38,6 +38,7 @@ char t_num[7] = {0};
 int flag_blocklist;
 HashMap *tokenMap;
 int lexOnly;
+int def_call;
 
 int START_LINE = 1;
 int STOP_LINE = 1;
@@ -76,6 +77,7 @@ int main(int argc, char* argv[]){
     symtab_init(this);
     //先跑一遍词法分析
     lexOnly = 1;
+    def_call = 0;
     int token;
     while(token = yylex());
     //重置输入流
