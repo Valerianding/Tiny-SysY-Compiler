@@ -184,8 +184,19 @@ struct _Value *create_call_func(past root,int block,int return_type)
             v->pdata->symtab_func_pdata.param_num=params_count;
             v->pdata->map_list=this->value_maps->next->next;
 
-            v->name=(char*) malloc(sizeof(bstr2cstr(root->left->sVal,0)));
-            strcpy(v->name,bstr2cstr(root->left->sVal,0));
+            if(strcmp(bstr2cstr(root->left->sVal,0),"starttime") == 0)
+            {
+                v->name=(char*) malloc(sizeof("_sysy_starttime"));
+                strcpy(v->name,"_sysy_starttime");
+            }
+            else if(strcmp(bstr2cstr(root->left->sVal,0),"stoptime") == 0)
+            {
+                v->name=(char*) malloc(sizeof("_sysy_stoptime"));
+                strcpy(v->name,"_sysy_stoptime");
+            } else{
+                v->name=(char*) malloc(sizeof(bstr2cstr(root->left->sVal,0)));
+                strcpy(v->name,bstr2cstr(root->left->sVal,0));
+            }
             symtab_insert_withmap(this,&this->value_maps->next->next->map,v->name,v);
 
             //赋个type
@@ -220,7 +231,7 @@ struct _Value *create_call_func(past root,int block,int return_type)
                 v->pdata->symtab_func_pdata.param_num=1;
                 v->pdata->symtab_func_pdata.param_type_lists[0].ID=Var_FLOAT;
             }
-            else if(strcmp(v->name,"starttime") == 0 || strcmp(v->name,"stoptime") == 0)
+            else if(strcmp(v->name,"_sysy_starttime") == 0 || strcmp(v->name,"_sysy_stoptime") == 0)
             {
                 v->pdata->symtab_func_pdata.param_num=1;
                 v->pdata->symtab_func_pdata.param_type_lists[0].ID=Int;
@@ -231,9 +242,9 @@ struct _Value *create_call_func(past root,int block,int return_type)
     //参数传递
     if(root->right!=NULL)
         create_params_stmt(root->right,v);
-    else if(strcmp(v->name,"starttime") == 0)
+    else if(strcmp(v->name,"_sysy_starttime") == 0)
         create_line_param(v,true);
-    else if(strcmp(v->name,"stoptime") == 0)
+    else if(strcmp(v->name,"_sysy_stoptime") == 0)
         create_line_param(v,false);
 
     instruction= ins_new_unary_operator(Call,v);
