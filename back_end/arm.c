@@ -5536,8 +5536,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("\tvmul.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
