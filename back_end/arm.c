@@ -4564,10 +4564,10 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
-    if(reg_save[12]==1){
-        printf("\tstr\tr12,[sp,#-4]!\n");
-        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-    }
+//    if(reg_save[12]==1){
+//        printf("\tstr\tr12,[sp,#-4]!\n");
+//        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//    }
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
@@ -4587,9 +4587,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
-
+            if(reg_save[12]==1){
+                printf("\tstr\tr12,[sp,#-4]!\n");
+                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+            }
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+            if(reg_save[12]==1){
+                printf("\tldr\tr12,[sp],#4\n");
+                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+            }
 
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
@@ -4600,9 +4607,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             //mov to r1
             printf("\tmov\tr1,#%d\n",x2);
             fprintf(fp,"\tmov\tr1,#%d\n",x2);
-
+            if(reg_save[12]==1){
+                printf("\tstr\tr12,[sp,#-4]!\n");
+                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+            }
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+            if(reg_save[12]==1){
+                printf("\tldr\tr12,[sp],#4\n");
+                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+            }
 
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
@@ -4610,10 +4624,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
             handle_illegal_imm1(1,x2);
-
-
+            if(reg_save[12]==1){
+                printf("\tstr\tr12,[sp,#-4]!\n");
+                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+            }
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+            if(reg_save[12]==1){
+                printf("\tldr\tr12,[sp],#4\n");
+                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+            }
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         }else{
@@ -4628,9 +4648,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 //
 //            printf("\tldr\tr1,=%s\n",arr2);
 //            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
-
+            if(reg_save[12]==1){
+                printf("\tstr\tr12,[sp,#-4]!\n");
+                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+            }
             printf("\tbl __aeabi_idiv\n");
             fprintf(fp,"\tbl __aeabi_idiv\n");
+            if(reg_save[12]==1){
+                printf("\tldr\tr12,[sp],#4\n");
+                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+            }
 
             printf("\tmov\tr%d,r0\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
@@ -4916,14 +4943,30 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
                 printf("\tmov\tr1,r%d\n",right_reg-100);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }else{
                 ;
                 printf("\tmov\tr1,r%d\n",right_reg);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }
 
         }else{
@@ -4935,13 +4978,29 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
                 printf("\tmov\tr1,r%d\n",right_reg-100);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }else{
                 printf("\tmov\tr1,r%d\n",right_reg);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }
 
         }
@@ -5210,13 +5269,29 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
                 printf("\tmov\tr0,r%d\n",left_reg-100);
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }else{
                 printf("\tmov\tr0,r%d\n",left_reg);
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }
         }else{
             handle_illegal_imm1(0,x2);
@@ -5227,13 +5302,29 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
                 printf("\tmov\tr0,r%d\n",left_reg-100);
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }else{
                 printf("\tmov\tr0,r%d\n",left_reg);
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                if(reg_save[12]==1){
+                    printf("\tstr\tr12,[sp,#-4]!\n");
+                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                }
                 printf("\tbl\t__aeabi_idiv\n");
                 fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                if(reg_save[12]==1){
+                    printf("\tldr\tr12,[sp],#4\n");
+                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                }
             }
         }
 
@@ -5445,8 +5536,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts1,r%d\n",left_reg);
             fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
         }
-        printf("\tvmul.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
+        printf("\tvdiv.f32\ts0,s1,s2\n");
+        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -5521,8 +5612,16 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr1,r%d\n",right_reg);
             fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
         }
+        if(reg_save[12]==1){
+            printf("\tstr\tr12,[sp,#-4]!\n");
+            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+        }
         printf("\tbl\t__aeabi_idiv\n");
         fprintf(fp,"\tbl\t__aeabi_idiv\n");
+        if(reg_save[12]==1){
+            printf("\tldr\tr12,[sp],#4\n");
+            fprintf(fp,"\tldr\tr12,[sp],#4\n");
+        }
         printf("\tmov\tr%d,r0\n",dest_reg_abs);
         fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
@@ -5811,10 +5910,10 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
-    if(reg_save[12]==1){
-        printf("\tldr\tr12,[sp],#4\n");
-        fprintf(fp,"\tldr\tr12,[sp],#4\n");
-    }
+//    if(reg_save[12]==1){
+//        printf("\tldr\tr12,[sp],#4\n");
+//        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//    }
     return  ins;
 }
 
@@ -5825,10 +5924,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //    这个比较简单，只会存在两种情况，就是int=int1 % int2和float=int1 % int2,右边出现非int都是错误的
 // 1 ****************************************
 // 将int1放在r0，将int2放在r1，然后执行bl	__aeabi_idivmod(PLT)
-    if(reg_save[12]==1){
-        printf("\tstr\tr12,[sp,#-4]!\n");
-        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-    }
+//    if(reg_save[12]==1){
+//        printf("\tstr\tr12,[sp,#-4]!\n");
+//        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//    }
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
@@ -5866,8 +5965,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //            printf("\tldr\tr1,=%s\n",arr2);
 //            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
         }
+        if(reg_save[12]==1){
+            printf("\tstr\tr12,[sp,#-4]!\n");
+            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+        }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+        if(reg_save[12]==1){
+            printf("\tldr\tr12,[sp],#4\n");
+            fprintf(fp,"\tldr\tr12,[sp],#4\n");
+        }
         printf("\tmov\tr%d,r1\n",dest_reg_abs);
         fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
@@ -5942,8 +6049,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
             }
         }
+        if(reg_save[12]==1){
+            printf("\tstr\tr12,[sp,#-4]!\n");
+            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+        }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+        if(reg_save[12]==1){
+            printf("\tldr\tr12,[sp],#4\n");
+            fprintf(fp,"\tldr\tr12,[sp],#4\n");
+        }
         printf("\tmov\tr%d,r1\n",dest_reg_abs);
         fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
@@ -6017,8 +6132,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
             }
         }
+        if(reg_save[12]==1){
+            printf("\tstr\tr12,[sp,#-4]!\n");
+            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+        }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+        if(reg_save[12]==1){
+            printf("\tldr\tr12,[sp],#4\n");
+            fprintf(fp,"\tldr\tr12,[sp],#4\n");
+        }
         printf("\tmov\tr%d,r1\n",dest_reg_abs);
         fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
@@ -6096,8 +6219,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr1,r%d\n",right_reg);
             fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
         }
+        if(reg_save[12]==1){
+            printf("\tstr\tr12,[sp,#-4]!\n");
+            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+        }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+        if(reg_save[12]==1){
+            printf("\tldr\tr12,[sp],#4\n");
+            fprintf(fp,"\tldr\tr12,[sp],#4\n");
+        }
         printf("\tmov\tr%d,r1\n",dest_reg_abs);
         fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
@@ -6141,10 +6272,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
-    if(reg_save[12]==1){
-        printf("\tldr\tr12,[sp],#4\n");
-        fprintf(fp,"\tldr\tr12,[sp],#4\n");
-    }
+//    if(reg_save[12]==1){
+//        printf("\tldr\tr12,[sp],#4\n");
+//        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//    }
 //    printf("arm_trans_Module\n");
     return ins;
 }
@@ -6162,10 +6293,10 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    将相当于使void没有返回值，这个时候是不需要进行将r0移到左值里
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-    if(reg_save[12]==1 && isSySYFunction(value1)){
-        printf("\tstr\tr12,[sp,#-4]!\n");
-        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-    }
+//    if(reg_save[12]==1 && isSySYFunction(value1)){
+//        printf("\tstr\tr12,[sp,#-4]!\n");
+//        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//    }
 
 
     func_param_type=value1;
@@ -6181,9 +6312,16 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //        fprintf(fp,"\tvmov\ts0,r0\n");
 //    }
 //    printf("CALL\n");
+    if(reg_save[12]==1 && isSySYFunction(value1)){
+        printf("\tstr\tr12,[sp,#-4]!\n");
+        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+    }
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
-
+    if(reg_save[12]==1 && isSySYFunction(value1)){
+        printf("\tldr\tr12,[sp],#4\n");
+        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+    }
     memset(give_param_flag,0, sizeof(give_param_flag));
 
 //    if(strcmp(user_get_operand_use(&ins->inst->user,0)->Val->name,"getfloat")==0){
@@ -6279,10 +6417,10 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    }else if(isGlobalArrayIntType(value0->VTy)){
 //        ;
 //    }
-    if(reg_save[12]==1 && isSySYFunction(value1)){
-        printf("\tldr\tr12,[sp],#4\n");
-        fprintf(fp,"\tldr\tr12,[sp],#4\n");
-    }
+//    if(reg_save[12]==1 && isSySYFunction(value1)){
+//        printf("\tldr\tr12,[sp],#4\n");
+//        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//    }
 
     return ins;
 }
@@ -8470,13 +8608,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             int result= array_suffix(value1->alias,which_dimension);
 
 //            下面这个其实可以注释掉
-            if(imm_is_valid(result)){
-                printf("\tmov\tr2,#%d\n",result);
-                fprintf(fp,"\tmov\tr2,#%d\n",result);
-            }else{
-                handle_illegal_imm1(2,result);
 
-            }
             if(right_reg==0){ //非常数，但是其实给的是常数，只是lsy那里标错了
 //                assert(false);
                 int y=value2->pdata->var_pdata.iVal;
@@ -8505,7 +8637,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                         printf("\tadd\tr1,r11,r2\n");
                         fprintf(fp,"\tadd\tr1,r11,r2\n");
                     }
+                    if(imm_is_valid(result)){
+                        printf("\tmov\tr2,#%d\n",result);
+                        fprintf(fp,"\tmov\tr2,#%d\n",result);
+                    }else{
+                        handle_illegal_imm1(2,result);
 
+                    }
                     if(right_reg>100){
                         int x2= get_value_offset_sp(hashMap,value2);
                         handle_illegal_imm(right_reg,x2,2);
