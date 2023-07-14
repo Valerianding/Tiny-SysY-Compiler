@@ -190,7 +190,7 @@ void fix_array(struct _InstNode *instruction_node)
                         //再打个alias,方便替换上前继value
                         //拿到前继ir
                         Instruction *prev = (Instruction*)instruction->user.use_list->Val;
-                        if(prev->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
+                        if(prev->Opcode==GEP && prev->user.use_list[1].Val->pdata->var_pdata.is_offset==1)
                             instruction->user.use_list[1].Val->alias=prev->user.use_list[1].Val->alias;
                         else
                             //它的上一维gep的左值
