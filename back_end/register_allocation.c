@@ -2456,6 +2456,10 @@ void travel_ir(InstNode *instruction_node)
                 //第一条bitcast
                 if(instruction->user.value.pdata->var_pdata.iVal==1)
                 {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
                     //v_cur_array=instruction->user.use_list->Val->alias;
                     // printf(" %s=bitcast ",instruction->user.value.name);
                     //fpintf(fptr," %s=bitcast ",instruction->user.value.name);

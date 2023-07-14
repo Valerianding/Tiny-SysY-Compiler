@@ -15,6 +15,7 @@ extern insnode_stack S_break;
 extern insnode_stack S_return;
 extern insnode_stack S_and;
 extern insnode_stack S_or;
+extern past_stack ps_logic;
 extern int START_LINE;
 extern int STOP_LINE;
 //记录有没有需要continue和break的语句
@@ -159,7 +160,6 @@ struct _Value *create_call_func(past root,int block,int return_type)
 
     //如果是库函数，则v==NULL
     //将库函数信息存放在全局表的next表中
-    //目前其实只存了参数个数
     if(v==NULL)
     {
         //可能已经存成库函数了
@@ -1332,6 +1332,319 @@ InstNode *false_location_handler(int type,Value *v_real,int false_goto_location)
     return node_false;
 }
 
+int handle_cond_stmt(past root,Value** v1)
+{
+    if(strcmp(bstr2cstr(root->nodeType, '\0'), "logic_expr") == 0)
+        *v1= cal_logic_expr(root);
+    else if(strcmp(bstr2cstr(root->nodeType, '\0'), "ID") == 0)
+    {
+        Value *v= symtab_dynamic_lookup(this,bstr2cstr(root->sVal, '\0'));
+        if(v->VTy->ID==Const_INT || v->VTy->ID==Const_FLOAT)
+        {
+            //直接失败短路
+            if(((v->VTy->ID==Const_INT && v->pdata->var_pdata.iVal==0) || (v->VTy->ID==Const_FLOAT && v->pdata->var_pdata.fVal==0)))
+                return 0;
+
+            //直接成功为1
+            if(((v->VTy->ID==Const_INT && v->pdata->var_pdata.iVal!=0) || (v->VTy->ID==Const_FLOAT && v->pdata->var_pdata.fVal!=0)))
+                return 1;
+        }
+        Value *v_load= create_load_stmt(bstr2cstr(root->sVal, '\0'));
+        //生成一条icmp ne
+        //包装0
+        Value *v_zero=(Value*) malloc(sizeof (Value));
+        value_init_int(v_zero,0);
+        Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+        //v_real
+        *v1= ins_get_value_with_name(ins_icmp);
+        //将这个instruction加入总list
+        InstNode *node = new_inst_node(ins_icmp);
+        ins_node_add(instruction_list,node);
+    }
+    else if(strcmp(bstr2cstr(root->nodeType, '\0'), "expr") == 0)
+    {
+        int convert=-1;
+        Value *v_load= cal_expr(root, Unknown,&convert);
+        //生成一条icmp ne
+        //包装0
+        Value *v_zero=(Value*) malloc(sizeof (Value));
+        value_init_int(v_zero,0);
+        Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+        //v_real
+        *v1= ins_get_value_with_name(ins_icmp);
+        //将这个instruction加入总list
+        InstNode *node = new_inst_node(ins_icmp);
+        ins_node_add(instruction_list,node);
+    }
+    else if(strcmp(bstr2cstr(root->nodeType, '\0'), "Call_Func") == 0)
+    {
+        Value *v_load= create_call_func(root,0,-1);
+        //生成一条icmp ne
+        //包装0
+        Value *v_zero=(Value*) malloc(sizeof (Value));
+        value_init_int(v_zero,0);
+        Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_load,v_zero);
+        //v_real
+        *v1= ins_get_value_with_name(ins_icmp);
+        //将这个instruction加入总list
+        InstNode *node = new_inst_node(ins_icmp);
+        ins_node_add(instruction_list,node);
+    }
+    else if(strcmp(bstr2cstr(root->nodeType, '\0'), "LValArray") == 0)
+    {
+        Value *v_array= symtab_dynamic_lookup(this,bstr2cstr(root->left->sVal, '\0'));
+        Value *v_get= NULL;
+        if(v_array->VTy->ID==AddressTyID)
+            v_get=handle_assign_array(root->right->left,v_array->alias,1,-1,0);
+        else
+            v_get=handle_assign_array(root->right->left,v_array,1,-1,0);
+        //生成一条icmp ne
+        //包装0
+        Value *v_zero=(Value*) malloc(sizeof (Value));
+        value_init_int(v_zero,0);
+        Instruction *ins_icmp= ins_new_binary_operator(NOTEQ,v_get,v_zero);
+        //v_real
+        *v1= ins_get_value_with_name(ins_icmp);
+        //将这个instruction加入总list
+        InstNode *node = new_inst_node(ins_icmp);
+        ins_node_add(instruction_list,node);
+    }
+        //num_int
+    else
+    {
+        //直接失败短路
+        if(((strcmp(bstr2cstr(root->nodeType, '\0'), "num_int") == 0 && root->iVal==0) || (strcmp(bstr2cstr(root->nodeType, '\0'), "num_float") == 0 && root->fVal==0)))
+            return 0;
+
+        //直接成功为1
+        if(((strcmp(bstr2cstr(root->nodeType, '\0'), "num_int") == 0 && root->iVal!=0) || (strcmp(bstr2cstr(root->nodeType, '\0'), "num_float") == 0 && root->fVal!=0)))
+            return 1;
+    }
+    return -1;
+}
+
+past get_near_node()
+{
+    past test1;
+    pop(&ps_logic,&test1);
+    past test2;
+    top(&ps_logic,&test2);
+    push(&ps_logic,test1);
+    return test2;
+}
+
+//测试两个节点是否为&&或||，如果都不是，就把这两个pop出来
+bool check_2_past_node()
+{
+    past test1;
+    pop(&ps_logic,&test1);
+    past test2;
+    if(!is_empty(ps_logic))
+    {
+        top(&ps_logic,&test2);
+        if(!(strcmp(bstr2cstr(test2->nodeType, '\0'), "logic_expr") == 0 && test2->sVal!=NULL && (strcmp(bstr2cstr(test2->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(test2->sVal, '\0'), "||") == 0)))
+        {
+            pop(&ps_logic,&test2);
+            return true;
+        }
+        else
+        {
+            //装回test1
+            push(&ps_logic,test1);
+            return false;
+        }
+    }
+    else
+    {
+        //装回test1
+        push(&ps_logic,test1);
+        return false;
+    }
+}
+
+bool check_past_stack()
+{
+    while(check_2_past_node())
+    {
+        //1.pop出一个&&或||
+        past logic;
+        pop(&ps_logic,&logic);
+        if(!is_empty(ps_logic))
+        {
+            //2.投入一个tmp
+            past past1 = newAstNode();
+            past1->nodeType = bfromcstr("tmp");
+            push(&ps_logic,past1);
+        }
+        else
+        {
+            //已经空了就把&&或||放回去
+            push(&ps_logic,logic);
+            return true;       //代表是右边
+        }
+    }
+    return false;  //代表子树在左边
+}
+
+int handle_and(past root, past prev)
+{
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        //将&&或||入栈
+        push(&ps_logic,root->left);
+        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0)
+            handle_and(root->left,root);
+        else
+            handle_or(root->left,root);
+    }
+    else
+    {
+        //左边
+        //将左边入栈
+        push(&ps_logic,root->left);
+        Value *v1=NULL;
+        int ret = handle_cond_stmt(root->left,&v1);
+        if(ret == 0)
+            return 0;
+        else
+        {
+            if(ret != 1)
+            {
+                InstNode *instNode = true_location_handler(br_i1,v1,t_index);
+                true_location_handler(Label,v1,t_index++);
+                insnode_push(&S_and,instNode);
+            }
+        }
+    }
+
+    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->right->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->right->sVal, '\0'), "||") == 0))
+    {
+        //将&&或||入栈
+        push(&ps_logic,root->right);
+        if(strcmp(bstr2cstr(root->right->sVal, '\0'), "&&") == 0)
+            handle_and(root->right,root);
+        else
+            handle_or(root->right,root);
+    }
+    else
+    {
+        //右边
+        push(&ps_logic,root->right);
+        bool flag = check_past_stack();
+        past test = newAstNode();
+        if(!is_empty(ps_logic))
+        {
+            top(&ps_logic,&test);
+        }
+        if(test->sVal == NULL)
+            test = get_near_node();
+        Value *v2=NULL;
+        int ret = handle_cond_stmt(root->right,&v2);
+        if(ret == 0)
+            return 0;
+        if(strcmp(bstr2cstr(test->sVal, '\0'), "&&") == 0 || flag==true)
+        {
+            InstNode *instNode = true_location_handler(br_i1,v2,t_index++);
+            insnode_push(&S_and,instNode);
+        } else
+        {
+            //从||过来的
+            InstNode *instNode = false_location_handler(br_i1,v2,t_index++);
+            insnode_push(&S_or,instNode);
+        }
+
+        if(prev !=NULL)
+            true_location_handler(Label,NULL,t_index-1);
+    }
+    return -1;
+}
+
+int handle_or(past root, past prev)
+{
+    if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
+    {
+        //将&&或||入栈
+        push(&ps_logic,root->left);
+        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0)
+        {
+            handle_and(root->left,root);
+            //生成一条tmp入栈
+            Instruction *ins_tmp= ins_new_zero_operator(tmp);
+            insnode_push(&S_and, new_inst_node(ins_tmp));
+            reduce_and(t_index-1);
+        }
+        else
+            handle_or(root->left,root);
+    }
+    else
+    {
+        //左边
+        //将左边入栈
+        push(&ps_logic,root->left);
+        Value *v1=NULL;
+        int ret = handle_cond_stmt(root->left,&v1);
+        if(ret == 1)
+            return 1;
+        else
+        {
+            if(ret != 0)
+            {
+                InstNode * instNode = false_location_handler(br_i1,v1,t_index++);
+                insnode_push(&S_or,instNode);
+                true_location_handler(Label,v1,t_index-1);
+            }
+        }
+    }
+
+    if(strcmp(bstr2cstr(root->right->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->right->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->right->sVal, '\0'), "||") == 0))
+    {
+        //将&&或||入栈
+        push(&ps_logic,root->right);
+        if(strcmp(bstr2cstr(root->right->sVal, '\0'), "&&") == 0)
+        {
+            handle_and(root->right,root);
+            if(prev!=NULL)
+            {
+                //生成一条tmp入栈
+                Instruction *ins_tmp= ins_new_zero_operator(tmp);
+                insnode_push(&S_and, new_inst_node(ins_tmp));
+                reduce_and(t_index-1);
+            }
+        }
+        else
+            handle_or(root->right,root);
+    }
+    else
+    {
+        //右边
+        Value *v2=NULL;
+        push(&ps_logic,root->right);
+        check_past_stack();
+        int ret = handle_cond_stmt(root->right,&v2);
+
+        if(ret == 1)
+            return 1;
+
+        InstNode *instNode=NULL;
+        if(prev != NULL)
+            instNode = false_location_handler(br_i1,v2,t_index++);
+        else
+        {
+            //把当前or中栈里有的弹出来
+            //生成一条tmp入栈
+            Instruction *ins_tmp= ins_new_zero_operator(tmp);
+            insnode_push(&S_or, new_inst_node(ins_tmp));
+            reduce_or(t_index,-2);      //TODO 应该消的全是false_location_handler吧
+            instNode = true_location_handler(br_i1,v2,t_index++);
+        }
+        insnode_push(&S_or,instNode);
+
+        if(prev != NULL)
+            true_location_handler(Label,NULL,t_index-1);
+    }
+    return -1;
+}
+
 //root是&&或||,flag为是不是root为||，root->left是&&
 //结果为0是恒为假，为1是恒为真；为-1则表示没有经过短路判断
 //TODO 如果是b==1 && 0 && a==1这种常数在中间的情况，目前没有做短路，有llvm方式一样
@@ -1857,7 +2170,21 @@ void create_if_stmt(past root,Value* v_return,int block) {
     }
     else if(strcmp(bstr2cstr(root->left->nodeType, '\0'), "logic_expr") == 0 && (strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0 || strcmp(bstr2cstr(root->left->sVal, '\0'), "||") == 0))
     {
-        result=handle_and_or(root->left,false,true);
+        if(strcmp(bstr2cstr(root->left->sVal, '\0'), "&&") == 0)
+        {
+            push(&ps_logic,root->left);
+            result= handle_and(root->left,NULL);
+            past test;
+            pop(&ps_logic,&test);
+        }
+        else
+        {
+            push(&ps_logic,root->left);
+            result = handle_or(root->left,NULL);
+            past test;
+            pop(&ps_logic,&test);
+        }
+        //result=handle_and_or(root->left,false,true);
         //一定为假，不用走了
         if(result==0)
         {
