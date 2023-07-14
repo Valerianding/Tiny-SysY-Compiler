@@ -145,6 +145,7 @@ bool isRemoveAble(Value *function){
 
 
 //logical wrong
+//only for specific test cases (sad)
 void traversal(CallGraphNode *node){
     //看看
     //判断里面是否存在useless call
@@ -182,7 +183,6 @@ void traversal(CallGraphNode *node){
 
                     Function *calledFunction = calledGraphNode->function;
 
-
                     //find the return value of function
 
                     BasicBlock *calledTail = calledFunction->tail;
@@ -200,17 +200,23 @@ void traversal(CallGraphNode *node){
                     Value *calledReturnValue = ins_get_lhs(calledTailNode->inst);
                     assert(calledReturnValue != NULL);
 
+                    //we don't want it to be a imm
+
                     //according to the test cases if calledReturnValue is produced by another call
                     //and this another call doesn't have time / input / output / memory operation
                     //we can remove this call and remove
+
+                    //TODO plz check this break
+                    if(isImm(calledReturnValue)){
+                        break;
+                    }
 
                     Instruction *ins = (Instruction *)calledReturnValue;
                     BasicBlock *block = ins->Parent; // this block belongs to the mid call
 
 
-
                     //并且不能存在于已经删除了的函数函数调用里面
-                    if(ins->Opcode == Call ){
+                    if(ins->Opcode == Call){
                         //only consider this situation
                         //remove this call and remove the function value's
                         Value *nextCall = ins_get_lhs(ins);
@@ -223,9 +229,6 @@ void traversal(CallGraphNode *node){
 
 
                         //ok we should make sure that all uses of mid is ignored
-
-
-
                         bool OK = true;
                         while(midUses != NULL){
                             User *midUsers = midUses->Parent;
@@ -246,23 +249,128 @@ void traversal(CallGraphNode *node){
 
                             InstNode *curCall = findNode(block,ins);
 
-                            //remove this curCall
-                            //change the return value to be 0
-                            deleteIns(curCall);
 
-                            printf("once !\n");
-                            //
-                            switch(calledReturnValue->VTy->ID){
-                                case Var_INT:
-                                    calledReturnValue->VTy->ID = Int;
-                                    calledReturnValue->pdata->var_pdata.iVal = 0;
+                            //and we should also make sure that this call is only used in return value
+                            Value *curCallDest = ins_get_dest(curCall->inst);
+
+
+                            bool onlyUsed = true;
+                            Use *curCallUses = curCallDest->use_list;
+                            while(curCallUses != NULL){
+                                User *user = curCallUses->Parent;
+
+                                Instruction *curCallUserIns = (Instruction *) user;
+
+                                if(curCallUserIns != calledTailNode->inst){
+                                    printf("other id %d\n",curCallUserIns->i);
+                                    //can be
+                                    onlyUsed = false;
                                     break;
-                                case Var_FLOAT:
-                                    calledReturnValue->VTy->ID = Float;
-                                    calledReturnValue->pdata->var_pdata.fVal = 0.0;
-                                    break;
-                                default:
-                                    assert(false);
+                                }
+                                curCallUses = curCallUses->Next;
+                            }
+
+                            if(onlyUsed){
+                                //remove this curCall
+                                //change the return value to be 0
+                                deleteIns(curCall);
+
+
+                                //remove GiveParams for the next call
+                                int paramNum = nextCall->pdata->symtab_func_pdata.param_num;
+
+                                //
+                                InstNode *giveParam = curCall;
+                                while(paramNum >= 0){
+                                    InstNode *tempNode = get_prev_inst(giveParam);
+                                    deleteIns(giveParam);
+                                    giveParam = tempNode;
+                                    paramNum--;
+                                }
+
+
+                                //remove Give Param Nodes
+
+                                //find all the give param
+                                printf("param num : %d\n",paramNum);
+
+                                printf("once !\n");
+
+                                //change the return value
+                                switch(calledReturnValue->VTy->ID){
+                                    case Var_INT:
+                                        calledReturnValue->VTy->ID = Int;
+                                        calledReturnValue->pdata->var_pdata.iVal = 0;
+                                        break;
+                                    case Var_FLOAT:
+                                        calledReturnValue->VTy->ID = Float;
+                                        calledReturnValue->pdata->var_pdata.fVal = 0.0;
+                                        break;
+                                    default:
+                                        assert(false);
+                                }
+                            }
+                        }
+                    }else{
+                        //TODO 我们还可以删除很多无用的return
+                        //我们只需要检查return 的 value 是不是也只被return use了 如果是并且这个midFunction的User同时也是被所有的ignored
+
+                        //ins->生成return value的ins
+                        //TODO 我们现在只要不是call并且only used in return value我们都可能可以把这个remove掉
+                        //TODO 我们也不需要visit twice
+                        printf("another case called function is %s\n",called->name);
+
+
+                        //check if all the called return value is ignored
+                        Use *calledUses = called->use_list;
+
+                        bool OK = true;
+                        while(calledUses != NULL){
+                            User *user = calledUses->Parent;
+                            Value *userValue = &user->value;
+                            if(userValue->use_list != NULL){
+                                OK = false;
+                            }
+                            calledUses = calledUses->Next;
+                        }
+                        if(OK && !HashSetFind(visitedCall,called)){
+                            HashSetAdd(visitedCall,called);
+
+                            Value *insDest = ins_get_dest(ins);
+
+                            Use *insDestUses = insDest->use_list;
+
+                            bool onlyUse = true;
+                            while(insDestUses != NULL){
+                                User *insDestUser = insDestUses->Parent;
+                                //only used by return
+                                if(calledTailNode->inst != (Instruction *)insDestUser){
+                                    onlyUse = false;
+                                }
+                                insDestUses = insDestUses->Next;
+                            }
+
+
+
+                            if(onlyUse){
+                                InstNode *insNode = findNode(block,ins);
+                                //if only used let's remove this node
+                                deleteIns(insNode);
+
+                                //let's modify the return value
+
+                                switch (calledReturnValue->VTy->ID) {
+                                    case Var_INT:
+                                        calledReturnValue->VTy->ID = Int;
+                                        calledReturnValue->pdata->var_pdata.iVal = 0;
+                                        break;
+                                    case Var_FLOAT:
+                                        calledReturnValue->VTy->ID = Float;
+                                        calledReturnValue->pdata->var_pdata.fVal = 0.0;
+                                        break;
+                                    default:
+                                        assert(false);
+                                }
                             }
                         }
                     }
@@ -272,7 +380,10 @@ void traversal(CallGraphNode *node){
         callNode = get_next_inst(callNode);
     }
 
-    //after this
+    //after this we‘d better call rename phrase
+
+    renameVariables(func);
+
     HashSetFirst(node->children);
     for(CallGraphNode *child = HashSetNext(node->children); child != NULL; child = HashSetNext(node->children)){
         traversal(child);
