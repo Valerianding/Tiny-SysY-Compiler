@@ -33,6 +33,7 @@ insnode_stack S_break;
 insnode_stack S_return;
 insnode_stack S_and;
 insnode_stack S_or;
+past_stack ps_logic;
 
 char t_num[7] = {0};
 int flag_blocklist;
@@ -73,6 +74,7 @@ int main(int argc, char* argv[]){
     init_insnode_stack(&S_return);
     init_insnode_stack(&S_and);
     init_insnode_stack(&S_or);
+    init_past_stack(&ps_logic);
     this=(Symtab*) malloc(sizeof(Symtab));
     symtab_init(this);
     //先跑一遍词法分析
