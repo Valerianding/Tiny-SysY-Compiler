@@ -13,6 +13,8 @@ extern int return_index;
 extern int return_stmt_num[20];
 extern HashMap *tokenMap;
 
+extern int def_call;
+
 %}
 
 %union{
@@ -131,10 +133,20 @@ VarDef
                                                             if(*cnt == 0) {$$ = NULL;}
                                                             else  $$ = newIdent($1);}
     | IdentArray                                      {$$ = $1;}
-    | IDent ASSIGN InitVal                           {   unsigned int key = HashKey(bstr2cstr($1,"\0"));
-                                                         int* cnt = HashMapGet(tokenMap, (void*)key);
-                                                         if(*cnt == 0) $$ = NULL;
-                                                         else  $$ = newAnotherNode("VarDef_init",newIdent($1),$3);}
+    | IDent ASSIGN InitVal                           {
+                                                         if(def_call == 0)
+                                                         {
+                                                             unsigned int key = HashKey(bstr2cstr($1,"\0"));
+                                                             int* cnt = HashMapGet(tokenMap, (void*)key);
+                                                             if(*cnt == 0) $$ = NULL;
+                                                              else  $$ = newAnotherNode("VarDef_init",newIdent($1),$3);
+                                                         }
+                                                         else
+                                                         {
+                                                             $$ = newAnotherNode("VarDef_init",newIdent($1),$3);
+                                                             def_call=0;
+                                                         }
+                                                    }
     | IdentArray ASSIGN InitVal                     {$$ = newAnotherNode("VarDef_array_init",$1,$3);}
     ;
 
@@ -189,8 +201,8 @@ FuncFParam
 
 /*形如[Exp][Exp]*/
 ExpArray
-    : LSQUARE Exp RSQUARE                           {$$ = newFollowNode("ExpArray",$2,NULL);}
-    | ExpArray LSQUARE Exp RSQUARE                  {$$ = newFollowNode("ExpArray",$1,$3);}
+    : LSQUARE Exp RSQUARE                           {$$ = newFollowNode("ExpArray",$2,NULL); def_call=0;}
+    | ExpArray LSQUARE Exp RSQUARE                  {$$ = newFollowNode("ExpArray",$1,$3); def_call=0;}
 
 ScopeStart
     : LPAR                                          {scope_start(this);}
@@ -226,9 +238,9 @@ BlockItemList
     ;
 
 Stmt
-    : LVal ASSIGN Exp SEMICOLON                      {$$ = newAnotherNode("Assign_Stmt",$1,$3);}
+    : LVal ASSIGN Exp SEMICOLON                      {$$ = newAnotherNode("Assign_Stmt",$1,$3); def_call=0;}
     | SEMICOLON                                        {$$ = newAnotherNode("Empty_Stmt",NULL,NULL);}
-    | Exp SEMICOLON                                    {$$ = $1;}
+    | Exp SEMICOLON                                    {$$ = $1; def_call=0;}
     | Block                                              {$$ = $1;}
     | IF LBRACKET Cond RBRACKET Stmt ELSE Stmt   {$$ = newAnotherNode("IfElse_Stmt",$3,newAnotherNode("If_Else",$5,$7));}
     | IF LBRACKET Cond RBRACKET Stmt               {$$ = newAnotherNode("IF_Stmt",$3,$5);}
@@ -238,7 +250,7 @@ Stmt
     | RETURN SEMICOLON                               {$$ = newAnotherNode("Return_Stmt",NULL,NULL);
                                                         return_stmt_num[return_index]++;}
     | RETURN Exp SEMICOLON                           {$$ = newAnotherNode("Return_Stmt",$2,NULL);
-                                                        return_stmt_num[return_index]++;}
+                                                        return_stmt_num[return_index]++; def_call=0;}
     ;
 
 Exp
@@ -258,7 +270,7 @@ LVal
 
 
 PrimaryExp
-    : LBRACKET Exp RBRACKET                         {$$ = $2;}
+    : LBRACKET Exp RBRACKET                         {$$ = $2; def_call=0;}
     | LVal                                              {$$ = $1;}
     | Number                                            {$$ = $1;}
     ;
@@ -270,16 +282,16 @@ Number
 
 UnaryExp
     : PrimaryExp                                        {$$ = $1;}
-    | IDent LBRACKET RBRACKET                        {$$ = newAnotherNode("Call_Func",newIdent($1),NULL);}
-    | IDent LBRACKET FuncRParams RBRACKET            {$$ = newAnotherNode("Call_Func",newIdent($1),$3);}
+    | IDent LBRACKET RBRACKET                        {$$ = newAnotherNode("Call_Func",newIdent($1),NULL); def_call=1;}
+    | IDent LBRACKET FuncRParams RBRACKET            {$$ = newAnotherNode("Call_Func",newIdent($1),$3); def_call=1;}
     | '+' UnaryExp                                  {$$ = newExpr(newNumInt(0),'+',$2);}
     | '-' UnaryExp                                  {$$ = newExpr(newNumInt(0),'-',$2);}
     | '!' UnaryExp                                  {$$ = newExpr(newNumInt(0),'!',$2);}
     ;
 
 FuncRParams
-    : Exp                                               {$$ = newFollowNode("FuncRParams",$1,NULL);}
-    | FuncRParams COMMA Exp                           {$$ = newFollowNode("FuncRParams",$1,$3);}
+    : Exp                                               {$$ = newFollowNode("FuncRParams",$1,NULL); def_call=0;}
+    | FuncRParams COMMA Exp                           {$$ = newFollowNode("FuncRParams",$1,$3); def_call=0;}
     ;
 
 
