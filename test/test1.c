@@ -23,6 +23,7 @@ float params_f40(float x0, float x1, float x2, float x3, float x4, float x5,
                           x36, x37, x38, x39, x0 + x1 + x2);
     }
 }
+
 //
 //float params_f40_i24(int i23, int i2, int i6, float x4, int i1, int i4, int i5,
 //                     float x8, float x15, float x7, int i22, float x3,
@@ -132,20 +133,21 @@ float params_f40(float x0, float x1, float x2, float x3, float x4, float x5,
 
 int main() {
     float arr[40][3];
-//    int arr2[24][3], i;
+//    int arr2[24][3];
 //
     k = getint();
-//    i = 0;
-//    while (i < 40) {
-//        getfarray(arr[i]);
-//        i = i + 1;
-//    }
-//    i = 0;
+    int i = 0;
+    while (i < 40) {
+        getfarray(arr[i]);
+        i = i + 1;
+    }
+
+    i = 0;
 //    while (i < 24) {
 //        getarray(arr2[i]);
 //        i = i + 1;
 //    }
-//
+
     float ret0 = params_f40(
             arr[0][k], arr[1][k], arr[2][k], arr[3][k], arr[4][k], arr[5][k],
             arr[6][k], arr[7][k], arr[8][k], arr[9][k], arr[10][k], arr[11][k],
@@ -154,6 +156,7 @@ int main() {
             arr[24][k], arr[25][k], arr[26][k], arr[27][k], arr[28][k], arr[29][k],
             arr[30][k], arr[31][k], arr[32][k], arr[33][k], arr[34][k], arr[35][k],
             arr[36][k], arr[37][k], arr[38][k], arr[39][k]);
+
 //    float ret1 = params_f40_i24(
 //            arr2[23][k], arr2[2][k], arr2[6][k], arr[4][k], arr2[1][k], arr2[4][k],
 //            arr2[5][k], arr[8][k], arr[15][k], arr[7][k], arr2[22][k], arr[3][k],
@@ -185,7 +188,7 @@ int main() {
 //            arr[34], arr[35][k], arr2[3][k]);
 //
     putfloat(ret0);
-//    putch(10);
+    putch(10);
 //    putfloat(ret1);
 //    putch(10);
 //    putfloat(ret2);

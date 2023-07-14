@@ -99,7 +99,7 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL,0);
     travel_finish_type(instruction_list);
     move_give_param(instruction_list);
-//   printf_llvm_ir(instruction_list,argv[4],1);
+//  printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
@@ -155,7 +155,6 @@ int main(int argc, char* argv[]){
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         renameVariables(currentFunction);
     }
-
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
