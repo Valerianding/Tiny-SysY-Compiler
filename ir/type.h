@@ -31,10 +31,13 @@ enum TypeID {
 
     ArrayTyID_ConstINT,
     ArrayTyID_ConstFLOAT,
+
     GlobalArrayConstINT,
     GlobalArrayConstFLOAT,
+
     ArrayTy_INT,
     ArrayTy_FLOAT,
+
     GlobalArrayInt, // 全局Int类型数组
     GlobalArrayFloat, // 全局float类型数组
 };
