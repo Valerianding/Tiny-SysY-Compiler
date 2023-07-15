@@ -74,9 +74,11 @@ struct _Value{
     bool IsPhi : 1;
 
     HashSet *visitedObjects; //本次函数内访问的全局变量
+
     bool containInput : 1; //是否含有输入
     bool containOutput : 1; //是否含有输出
-    bool containMemoryOperations : 1;
+    bool containMemoryOperations : 1; //是否对内存有操作 包括了对传入的数组 或者 全局变量、全局数组有内存操作
+    bool containTime : 1; //有SySY的Time函数
 
     char *name;
     struct _Value *alias;

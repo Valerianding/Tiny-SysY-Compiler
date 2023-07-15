@@ -5,6 +5,8 @@
 
 #include "other.h"
 
+
+
 //meaning less calculation
 //1. function return value is void
 //2. the return value is not used
@@ -24,3 +26,4 @@ bool removeUseless(Function *currentFunction){
     //判断前提条件
 
 }
+
