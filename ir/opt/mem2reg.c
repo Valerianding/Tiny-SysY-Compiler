@@ -37,8 +37,8 @@ void insert_phi(BasicBlock *block,Value *val){
     //设置当前phi函数的type
     Value *insValue = ins_get_dest(phiInstNode->inst);
     insValue->VTy->ID = val->VTy->ID;
-    printf("%d--------",val->VTy->ID);
-    printf("set PhiNode success !\n");
+    //printf("%d--------",val->VTy->ID);
+    //printf("set PhiNode success !\n");
 }
 
 void insertPhiInfo(InstNode *ins,pair *phiInfo){
@@ -113,11 +113,11 @@ void mem2reg(Function *currentFunction){
         Value *val = pair->key;
         HashSet *loadSet = pair->value;
         HashSetFirst(loadSet);
-        printf("value %s load in ",val->name);
+        //printf("value %s load in ",val->name);
         for(BasicBlock *loadBlock = HashSetNext(loadSet); loadBlock != NULL; loadBlock = HashSetNext(loadSet)){
-            printf("b%d ",loadBlock->id);
+            //printf("b%d ",loadBlock->id);
         }
-        printf("\n");
+        //printf("\n");
     }
     curNode = head;
     //做一些基本的优化
@@ -158,14 +158,14 @@ void mem2reg(Function *currentFunction){
         //先看一下我们的这个是否是正确的
         Value *val = pair->key;
         HashSet *storeSet = pair->value;  //这个value对应的所有defBlocks
-        printf("value : %s store(defBlocks) : ", val->name);
+        //printf("value : %s store(defBlocks) : ", val->name);
         // 只有non-Locals 我们才需要放置phi函数
         if(HashSetFind(nonLocals, val)){
             HashSetFirst(storeSet);
             for(BasicBlock *key = HashSetNext(storeSet); key != NULL; key = HashSetNext(storeSet)){
-                printf("b%d ",key->id);
+                //printf("b%d ",key->id);
             }
-            printf("\n");
+            //printf("\n");
 
             //place phi
             HashSet *phiBlocks = HashSetInit();
@@ -179,7 +179,7 @@ void mem2reg(Function *currentFunction){
                 for(BasicBlock *key = HashSetNext(df); key != nullptr; key = HashSetNext(df)) {
                     if (!HashSetFind(phiBlocks, key)) {
                         //在key上面放置phi函数
-                        printf("insert a phi at %d\n",key->id);
+                        //printf("insert a phi at %d\n",key->id);
                         insert_phi(key, val);
                         HashSetAdd(phiBlocks, key);
                         if (!HashSetFind(storeSet, key)) {
@@ -194,7 +194,7 @@ void mem2reg(Function *currentFunction){
 
 
 
-    printf("after insert phi function!\n");
+    //printf("after insert phi function!\n");
     //变量重新命名
     // DomTreeNode *root = currentFunction->root;
     assert(entry->domTreeNode == currentFunction->root);
@@ -215,21 +215,21 @@ void mem2reg(Function *currentFunction){
         curNode = get_next_inst(curNode);
     }
 
-    printf("in rename pass!\n");
+    //printf("in rename pass!\n");
 
     //变量重命名 如果都没有alloc那么就不需要了
     if(HashMapSize(IncomingVals) != 0){
-        printf("---------------------------------------------fuck--------------------------------------- \n");
+        //printf("---------------------------------------------fuck--------------------------------------- \n");
         dfsTravelDomTree(root,IncomingVals);
     }
 
-    printf("after rename !\n");
+    //printf("after rename !\n");
 
     prunePhi(currentFunction);
 
     correctPhiNode(currentFunction);
 
-    printf("after correct phiNode\n");
+    //printf("after correct phiNode\n");
 
     // delete load 和 store
     deleteLoadStore(currentFunction);
@@ -237,7 +237,7 @@ void mem2reg(Function *currentFunction){
 
 
 
-    printf("after delete alloca load store\n");
+    //printf("after delete alloca load store\n");
     // 让LLVM IR符合标准
     renameVariables(currentFunction);
 
@@ -282,7 +282,7 @@ void insertCopies(BasicBlock *block,Value *dest,Value *src){
 
 void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
-    printf("in rename phrase : block : %d\n", node->block->id);
+    //printf("in rename phrase : block : %d\n", node->block->id);
     assert(HashMapSize(IncomingVals) != 0);
     // 先根处理
     BasicBlock *block = node->block;
@@ -303,7 +303,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         HashMapPut(countDefine,alloc,defineTimes);
     }
 
-    printf("11111 \n");
+    //printf("11111 \n");
     // 变量重命名
     while(curr != get_next_inst(tail)){
         switch(curr->inst->Opcode) {
@@ -311,7 +311,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 Value *alloc = ins_get_lhs(curr->inst);
                 if(isLocalVar(alloc)){
                     // 对应的alloc
-                    printf("what name : %s\n",alloc->name);
+                    //printf("what name : %s\n",alloc->name);
                     // 需要被替换的
                     Value *value = ins_get_dest(curr->inst);
                     Value *replace = nullptr;
@@ -337,7 +337,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                     //可以直接这样更新
                     stack *allocStack = HashMapGet(IncomingVals, store);
                     assert(allocStack != nullptr);
-                    printf("store %s\n",data->name);
+                    //printf("store %s\n",data->name);
                     stackPush(allocStack, data);
                     //记录define的次数
                     int *defineTime = HashMapGet(countDefine,store);
@@ -374,7 +374,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
     if(tail->inst->Opcode == br){
         //label的编号是
         int labelId = tail->inst->user.value.pdata->instruction_pdata.true_goto_location;
-        printf("br %d\n",labelId);
+        //printf("br %d\n",labelId);
         //从function的头节点开始向后寻找
         InstNode *funcHead = ins_get_funcHead(tail);
         BasicBlock *nextBlock = search_ins_label(funcHead,labelId)->inst->Parent;
@@ -464,7 +464,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         }
     }
 
-    printf("333\n");
+    //printf("333\n");
     // 递归遍历
     HashSetFirst(node->children);
     for(DomTreeNode *key = HashSetNext(node->children); key != nullptr; key = HashSetNext(node->children)){
@@ -483,7 +483,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             assert(allocStack != NULL);
             int *defineTime = HashMapGet(countDefine,alloc);
             int actualTime = *(defineTime);
-            printf("block : %d alloc : %s defineTimes : %d\n",block->id,alloc->name,actualTime);
+           // printf("block : %d alloc : %s defineTimes : %d\n",block->id,alloc->name,actualTime);
             for(int i = 0; i < actualTime; i++){
                 stackPop(allocStack);
             }
@@ -668,12 +668,12 @@ void SSADeconstruction(Function *currentFunction){
                 for(BasicBlock *prevBlock = HashSetNext(block->preBlocks);
                      prevBlock != NULL; prevBlock = HashSetNext(block->preBlocks)) {
                     if (prevBlock->true_block && prevBlock->false_block) {// 是关键边
-                        printf("critical edge splitting!!!!!!!!!\n");
+                        //printf("critical edge splitting!!!!!!!!!\n");
                         // 分割当前关键边
                         BasicBlock *newBlock = bb_create();
 
 
-                        printf("prev block :%d \n",prevBlock->id);
+                        //printf("prev block :%d \n",prevBlock->id);
                         InstNode *prevTail = prevBlock->tail_node;
                         InstNode *prevTailNext = get_next_inst(prevBlock->tail_node);
 
@@ -801,14 +801,14 @@ void prunePhi(Function *currentFunction){
         HashSetFirst(domTreeNode->children);
         for(DomTreeNode *childNode = HashSetNext(domTreeNode->children); childNode != NULL; childNode = HashSetNext(domTreeNode->children)){
             BasicBlock *childBlock = childNode->block;
-            printf("push child %d\n",childBlock->id);
+            //printf("push child %d\n",childBlock->id);
             QueuePush(workList,childBlock);
         }
     }
     //
-    printf("second while!\n");
+    //printf("second while!\n");
 
-    printf("stack size : %d \n",HashSetSize(phiStack));
+    //printf("stack size : %d \n",HashSetSize(phiStack));
 
 
     while(HashSetSize(phiStack) != 0){
@@ -834,7 +834,7 @@ void prunePhi(Function *currentFunction){
             Value *phiValue = ins_get_dest(currNode->inst);
             if(phiValue->IsPhi == true && phiValue->Useless == true){
                 InstNode *nextNode = get_next_inst(currNode);
-                printf("delete a phiNode! -------\n");
+                //printf("delete a phiNode! -------\n");
                 deleteIns(currNode);
                 currNode = nextNode;
             }else{
@@ -861,7 +861,7 @@ void sequentialCopy(Function *currentFunction){
         assert(block != NULL);
         if(block->visited == false){
             block->visited = true;
-            printf("current block is %d\n",block->id);
+            //printf("current block is %d\n",block->id);
             HashSet *pCopy = HashSetInit(); // copyPair *
             Queue *seq = QueueInit();
 
@@ -884,25 +884,25 @@ void sequentialCopy(Function *currentFunction){
                 }
             }
 
-            printf("out !\n");
-            printf("pCopy size : %d\n", HashSetSize(pCopy));
+            //printf("out !\n");
+            //printf("pCopy size : %d\n", HashSetSize(pCopy));
             HashSetFirst(pCopy);
             for(CopyPair *copyPair = HashSetNext(pCopy); copyPair != NULL; copyPair = HashSetNext(pCopy)){
-                printf("%s <- %s ",copyPair->dest->name,copyPair->src->name);
+                //printf("%s <- %s ",copyPair->dest->name,copyPair->src->name);
             }
-            printf("\n");
+            //printf("\n");
 
             while(HashSetSize(pCopy) != 0){
                 bool exist = true;
                 while(exist && HashSetSize(pCopy) != 0) {
-                    printf("pCopy size : %d\n", HashSetSize(pCopy));
+                    //printf("pCopy size : %d\n", HashSetSize(pCopy));
                     HashSet *tempSet = HashSetInit();
                     HashSetCopyPair(tempSet,pCopy);
                     exist = false;
-                    printf("contain : ");
+                    //printf("contain : ");
                     HashSetFirst(pCopy);
                     for (CopyPair *copyPair = HashSetNext(pCopy); copyPair != NULL; copyPair = HashSetNext(pCopy)) {
-                        printf("%s <- %s",copyPair->dest->name,copyPair->src->name);
+                        //printf("%s <- %s",copyPair->dest->name,copyPair->src->name);
 
                         Value *dest = copyPair->dest;
                         bool usedByOther = false;
@@ -914,23 +914,23 @@ void sequentialCopy(Function *currentFunction){
                         }
 
                         if (usedByOther == false) {
-                            printf("pushed a copy %s <- %s!\n", copyPair->dest->name, copyPair->src->name);
+                            //printf("pushed a copy %s <- %s!\n", copyPair->dest->name, copyPair->src->name);
                             bool res = HashSetRemove(pCopy, copyPair);
                             QueuePush(seq, copyPair);
                             assert(res == true);
                             exist = true;
                         }
                     }
-                    printf("\n");
+                    //printf("\n");
                     HashSetDeinit(tempSet);
                 }
-                printf("out !\n");
+                //printf("out !\n");
 
                 HashSetFirst(pCopy);
                 CopyPair *copyPair = HashSetNext(pCopy);
 
                 if(copyPair != NULL) {
-                    printf("change %s <- %s\n", copyPair->dest->name,copyPair->src->name);
+                    //printf("change %s <- %s\n", copyPair->dest->name,copyPair->src->name);
                     // used by other
                     // createnewValue;
                     Value *src = copyPair->src;
@@ -965,7 +965,8 @@ void sequentialCopy(Function *currentFunction){
             if(block->false_block && block->false_block->visited == false) QueuePush(workList,block->false_block);
         }
     }
-    printf("after all!\n");
+    //
+    // printf("after all!\n");
 }
 
 CopyPair *createCopyPair(Value *src, Value *dest){

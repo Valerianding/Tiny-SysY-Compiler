@@ -25,5 +25,8 @@ void RunOptimizePasses(Function *currentFunction){
     loop(currentFunction);
     LICM(currentFunction);
 
+
+    Mark(currentFunction);
+    Sweep(currentFunction);
     renameVariables(currentFunction);
 }

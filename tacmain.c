@@ -52,6 +52,7 @@ void yyerror(char *s)
     printf("%s\n", s);
 }
 
+bool Optimize = false;
 
 int main(int argc, char* argv[]){
     assert(sizeof(unsigned int) == 4);
@@ -61,7 +62,6 @@ int main(int argc, char* argv[]){
         printf("ERROR: input file name is needed. \n");
         exit(0);
     }
-    bool Optimize = false;
     //看看是否开启优化
     if(argc == 6){
         Optimize = true;
@@ -135,7 +135,7 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]){
     }
 
     //mem2reg之后，优化前
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     CheckGlobalVariable(instruction_list);
@@ -179,35 +179,33 @@ int main(int argc, char* argv[]){
         //基本块内inscomb ok，基本块间ing
         for (Function *currentFunction = block->Parent;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunOptimizePasses(currentFunction);
+             RunOptimizePasses(currentFunction);
         }
 
         for (Function *currentFunction = block->Parent;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunBasicPasses(currentFunction);
+             RunBasicPasses(currentFunction);
         }
     }
 
 
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Mark(currentFunction);
-        Sweep(currentFunction);
         Clean(currentFunction);
     }
 
 
     //phi上的优化
 //    printf_llvm_ir(instruction_list,argv[4],1);
-
+//
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
         renameVariables(currentFunction);
         cleanLiveSet(currentFunction);
     }
-
-    //请注释掉我跑llvm脚本 phi函数消除
+//
+//    //请注释掉我跑llvm脚本 phi函数消除
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 //
@@ -220,7 +218,7 @@ int main(int argc, char* argv[]){
     }
 
     // Liveness 计算之后请注释掉我跑llvm
-//    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,arrrrgv[4],1);
 
 
     //lsy_begin

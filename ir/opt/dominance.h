@@ -10,6 +10,8 @@
 #include "utility.h"
 #include "function.h"
 #include "assert.h"
+extern bool Optimize;
+
 struct _DomNode{
     BasicBlock *parent;
     BasicBlock *block;

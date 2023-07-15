@@ -31,7 +31,7 @@ bool memlvn(Function *current){
     while(entryCurrNode != entryTailNode){
         if(entryCurrNode->inst->Opcode == Alloca){
             Value *dest = ins_get_dest(entryCurrNode->inst);
-            printf("arrays add %s\n",dest->name);
+            //printf("arrays add %s\n",dest->name);
             HashSetAdd(arrays,dest);
         }
         entryCurrNode = get_next_inst(entryCurrNode);
@@ -65,7 +65,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
     InstNode *funcHead = currentFunction->entry->head_node;
     assert(funcHead->inst->Opcode == FunBegin);
     int paramNum = funcHead->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
-    printf("paramNum is %d\n",paramNum);
+    //printf("paramNum is %d\n",paramNum);
     HashMap *memory = HashMapInit(); //Array -> StoreInfo
 
     InstNode *head = block->head_node;
@@ -76,7 +76,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
     int cout = 0;
     while(currNode != tail){
         if(currNode->inst->Opcode == Load){
-            printf("case load!\n");
+            //printf("case load!\n");
             //找到第二个value
             Value *loadPlace = ins_get_lhs(currNode->inst);
             //TODO 如果是数组就走这边 如果不是数组我们需要单独处理
@@ -86,7 +86,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                     assert(false);
                 }
                 cout++;
-                printf("load : %d\n",cout);
+                //printf("load : %d\n",cout);
                 Vector *indexVector = VectorInit(10);
                 //lhs 是位置 rhs是偏移量
                 Value *gepValue = loadPlace;
@@ -110,7 +110,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 }
 
                 unsigned long int hash_value = hash_values(indexVector);
-                printf("load %s index is %d\n",gepValue->name,hash_value);
+                //printf("load %s index is %d\n",gepValue->name,hash_value);
 
                 Value *fromArray = gepValue;
                 Value *loadValue = ins_get_dest(currNode->inst);
@@ -127,7 +127,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                         Value *replace = storeInfo->storedValue;
                         assert(replace != NULL);
                         valueReplaceAll(loadValue,replace,currentFunction);
-                        printf("replace !\n");
+                        //printf("replace !\n");
                         break;
                     }
                 }
@@ -156,7 +156,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                         Value *replace = storeInfo->storedValue;
                         assert(replace != NULL);
                         valueReplaceAll(loadValue,replace,currentFunction);
-                        printf("replace !\n");
+                        //printf("replace !\n");
                         break;
                     }
                 }
@@ -169,7 +169,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 }
             }
         }else if(currNode->inst->Opcode == Store){
-            printf("case store!\n");
+            //printf("case store!\n");
             Value *stored = ins_get_lhs(currNode->inst);
             Value *storePlace = ins_get_rhs(currNode->inst);
             if(!isGlobalVar(storePlace)){
@@ -179,7 +179,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 Value *gepIndex = ins_get_rhs(gepInstruction);
                 VectorPushBack(indexVector,gepIndex);
 
-                printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
+                //printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
                 while(!HashSetFind(arrays,gepValue) && !isGlobalArray(gepValue) && !isParam(gepValue,paramNum)){
                     gepInstruction = (Instruction*)gepValue;
                     //如果遇到了bitcast语句怎么办
@@ -191,13 +191,13 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                         gepValue = ins_get_lhs(gepInstruction);
                         gepIndex = ins_get_rhs(gepInstruction);
                         VectorPushBack(indexVector,gepIndex);
-                        printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
+                        //printf("gepValue %s gepIndex %s\n",gepValue->name,gepIndex->name);
                     }
                 }
 
-                printf("indexVectorSize is %d\n", VectorSize(indexVector));
+                //printf("indexVectorSize is %d\n", VectorSize(indexVector));
                 unsigned long int hash_value = hash_values(indexVector);
-                printf("store %s index is %d\n",gepValue->name,hash_value);
+               // printf("store %s index is %d\n",gepValue->name,hash_value);
                 VectorDeinit(indexVector);
 
 
@@ -263,7 +263,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
             //case 1:
             HashSetFirst(functionValue->visitedObjects);
             for(Value *visited = HashSetNext(functionValue->visitedObjects); visited != NULL; visited = HashSetNext(functionValue->visitedObjects)){
-                printf("remove %s info\n",visited->name);
+                //printf("remove %s info\n",visited->name);
                 HashMapFirst(memory);
                 for(Pair *pair = HashMapNext(memory); pair != NULL; pair = HashMapNext(memory)){
                     Array *array = pair->key;
@@ -298,7 +298,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                         paramValue = ins_get_lhs(ins);
                     }
 
-                    printf("find paramValue array %s",paramValue->name);
+                    //printf("find paramValue array %s",paramValue->name);
                     HashMapFirst(memory);
                     for(Pair *pair = HashMapNext(memory); pair != NULL; pair = HashMapNext(memory)){
                         Array *array = pair->key;

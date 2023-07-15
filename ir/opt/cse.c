@@ -115,9 +115,9 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
     InstNode *tailNode = block->tail_node;
     //反正block的结尾
     while(currNode != tailNode){
-        printf("currNode is %d\n",currNode->inst->i);
+        //printf("currNode is %d\n",currNode->inst->i);
         if(isSimpleOperator(currNode)) {
-            printf("simpleOperator %d\n", currNode->inst->i);
+            //printf("simpleOperator %d\n", currNode->inst->i);
             Value *lhs = ins_get_lhs(currNode->inst);
             Value *rhs = ins_get_rhs(currNode->inst);
             Value *dest = ins_get_dest(currNode->inst);
