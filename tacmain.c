@@ -180,20 +180,23 @@ int main(int argc, char* argv[]){
     }
 
 //IPO 暂时不开启
-    travel();
+//    travel();
 
     for (Function *currentFunction = block->Parent;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
         RunBasicPasses(currentFunction);
     }
 
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
+    if(Optimize){
+        for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+            Clean(currentFunction);
+        }
     }
 
 
+
     //phi上的优化
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 //
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){

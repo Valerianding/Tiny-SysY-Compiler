@@ -1,64 +1,201 @@
-int n;
-int meanless_calculation(int x, int y){
-    int i = 0;
-    int ret = 0;
-    while (i < x && i < y){
-        i = i + 1;
-        ret = ret + x + i;
-    }
-    return ret;
-}
+int __HELLO [
 
-int swap(int arr[], int l, int r){
-    int curr = arr[l];
-    arr[l] = arr[r];
-    arr[r] = curr;
-    return meanless_calculation(l, r);
-}
 
-int median(int arr[], int begin, int end, int pos){
-    int pivot = arr[begin];
+        100
+]
+        = {
+                87, 101, 108, 99,
+                111, 109, 101,
+                32, 116, 111,	32,
+                116,	 104,
+                101, 32, 	74,
+                97,
 
-    int l = begin;
-    int r = end + 1;
-    int xx = 0;
-    while (1 == 1){
-        while (l < r){
-            r = r - 1;
-            if(arr[r] < pivot){
-                break;
-            }
-            xx = xx + 1;
+                112, 97,
+
+                114, 	105,	32,	80, 97,
+
+
+
+
+                114, 107,	 33, 10 }; /* Names of
+kemono
+friends */ int	N4__mE___[6][50]		= { { 83, 97,	97, 98,
+                                                                                                        97,
+                                                                                                            114,
+                                                                                                                117  }, 	{	75, 97, 98,
+
+                                                                                              97,  110
+
+                                                                                      }, {
+
+
+                                                                                              72,
+
+                                                                                              97,
+                                                                                              115, 104, 105,
+                                                                                                            98, 105, 114, 111,
+
+
+
+
+
+
+                                                                                                                                    107,
+                                                                                                                                         111,
+
+
+                                                                                              117
+
+                                                                                      }, { 65, 114,
+
+                                                                                              97,
+
+                                                                                              105,
+                                                                                                        103,
+
+                                                                                                            117,
+                                                                                                                109,
+
+
+                                                                                                                     97 },
+        { 72, 117,
+                                                                                              110, 98, 111, 114,
+                                                                                                                117,
+
+                                                                                                                     116, 111,	  32, 80,
+                                                                                              101, 110,
+
+                                                                                              103, 105, 	110
+                                                                                      },
+        {	84, 97, 105, 114, 105, 107, 117, 32, 79,
+
+
+                                                                                                                                    111, 107,
+                                                                                              97,
+                                                                                                   109,
+
+
+
+
+
+
+                                                                                              105	} };
+int
+
+        saY_HeI10_To[40] = { 32,
+                             115, 97,  121,
+
+                             115,
+
+                             32,
+                             104,
+
+                             101, 108, 108,	111,
+
+                             32,
+
+
+                             116, 111,
+                             32 };	int
+        RET[5]
+        =
+        {10}; int putstr(
+        int str[	] )  {
+    int
+
+            iNd__1X ;	iNd__1X		= 0 ; while ( str
+    [	iNd__1X
+    ] ) {
+
+        putch (
+
+                str[ iNd__1X
+                ]
+        ) ; iNd__1X
+                    =
+                    iNd__1X
+
+                    + 1
+
+                ;	} return	iNd__1X
+            ; } int main( /* no param */ )	{
+    putstr(
+            __HELLO	)  ;	int i =
+            0 ; /* say
+
+ 
+	hello to
+ kemono friends 
+~ */ while (
+
+            1 ) {
+
+        int _
+                = i
+
+                  / 6
+
+        ; int __
+                =
+                i % 6
+
+        ;
+
+        if
+                (
+
+                _
+
+                !=
+
+
+                __ )
+        { putstr(
+
+                    N4__mE___
+
+                    [ 	_
+                    ] )
+                    ; putstr(
+                    saY_HeI10_To	) ;
+            putstr(
+                    N4__mE___ [
+
+
+
+                            __ ]	 )
+
+
+                    ;
+
+            putstr(
+                    RET
+            ) ;
         }
-        while (l < r){
-            l = l + 1;
-            if(arr[l] >= pivot){
-                break;
-            }
-            xx = xx - 1;
-        }
+/*
+	 do
+	
+	linear
+modulo 
+to find 	the 	 next pair of friends  */ i = ( i
+                                                    *
 
-        if (l == r) break;
-        else {
-            swap(arr, l, r);
-        }
-    }
-    arr[begin] = pivot;
-    swap(arr, begin, l);
 
-    if (l > pos) return median(arr, begin, l, pos);
-    if (l < pos) return median(arr, l + 1, end, pos);
+                                                    17
 
-    return xx;
-}
+                                                    +	 23
+                                                  )
+                                                  %
 
-int a[10000000];
 
-int main(){
-    n = getarray(a);
-    starttime();
-    median(a, 0, n-1, n/2);
-    stoptime();
-    putarray(n, a);
-    return a[n/2] % 256;
-}
+                                                  32
+
+
+                ;
+        if ( i
+             ==
+             0	) { break ;		}
+
+
+    } return 0; }

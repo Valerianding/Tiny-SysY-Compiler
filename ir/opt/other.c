@@ -14,6 +14,12 @@ bool checkValid(Value *lhs, Value *rhs, InstNode *instNode){
     Instruction *lhsIns = (Instruction *)lhs;
     Instruction *rhsIns = (Instruction *)rhs;
 
+    if(lhsIns->Opcode != rhsIns->Opcode) return false;
+
+    if(lhsIns->Parent != rhsIns->Parent || instNode->inst->Parent != lhsIns->Parent){
+        return false;
+    }
+
     //we need to prove them in the same block & only used here?
 
     //TODO 我们先让条件严格一点也就是说不仅要在一个block里面还需要满足只能使用
@@ -23,7 +29,7 @@ bool checkValid(Value *lhs, Value *rhs, InstNode *instNode){
 
     Use *lhsUses = lhs->use_list;
     while(lhsUses != NULL){
-        User *lhsUsers = lhsUses->Next;
+        User *lhsUsers = lhsUses->Parent;
         Instruction *lhsUserIns = (Instruction *)lhsUsers;
         if(lhsUserIns != instNode->inst){
             valid = false;
@@ -34,7 +40,7 @@ bool checkValid(Value *lhs, Value *rhs, InstNode *instNode){
 
     Use *rhsUses = rhs->use_list;
     while(rhsUses != NULL){
-        User *rhsUsers = rhsUses->Next;
+        User *rhsUsers = rhsUses->Parent;
         Instruction *rhsUserIns = (Instruction *)rhsUsers;
         if(rhsUserIns != instNode->inst){
             valid = false;
@@ -43,6 +49,8 @@ bool checkValid(Value *lhs, Value *rhs, InstNode *instNode){
     }
 
 
+
+    //check if both have same operand
 }
 
 
