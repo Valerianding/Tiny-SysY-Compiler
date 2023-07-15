@@ -185,8 +185,6 @@ int main(int argc, char* argv[]){
     for (Function *currentFunction = block->Parent;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
         RunBasicPasses(currentFunction);
-        Mark(currentFunction);
-        Sweep(currentFunction);
     }
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){

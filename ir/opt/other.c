@@ -15,8 +15,32 @@ bool checkValid(Value *lhs, Value *rhs, InstNode *instNode){
     Instruction *rhsIns = (Instruction *)rhs;
 
     //we need to prove them in the same block & only used here?
+
     //TODO 我们先让条件严格一点也就是说不仅要在一个block里面还需要满足只能使用
     Value *curValue = ins_get_dest(instNode->inst);
+
+    bool valid = true;
+
+    Use *lhsUses = lhs->use_list;
+    while(lhsUses != NULL){
+        User *lhsUsers = lhsUses->Next;
+        Instruction *lhsUserIns = (Instruction *)lhsUsers;
+        if(lhsUserIns != instNode->inst){
+            valid = false;
+        }
+        lhsUses = lhsUses->Next;
+    }
+
+
+    Use *rhsUses = rhs->use_list;
+    while(rhsUses != NULL){
+        User *rhsUsers = rhsUses->Next;
+        Instruction *rhsUserIns = (Instruction *)rhsUsers;
+        if(rhsUserIns != instNode->inst){
+            valid = false;
+        }
+        rhsUses = rhsUses->Next;
+    }
 
 
 }

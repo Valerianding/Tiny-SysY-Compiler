@@ -31,5 +31,9 @@ void RunOptimizePasses(Function *currentFunction){
 
     DVNT(currentFunction);
 
+    Mark(currentFunction);
+
+    Sweep(currentFunction);
+
     renameVariables(currentFunction);
 }
