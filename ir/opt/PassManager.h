@@ -14,6 +14,7 @@
 #include "licm.h"
 #include "globalopt.h"
 #include "sideeffect.h"
+#include "inscomb.h"
 void RunBasicPasses(Function *currentFunction);
 void RunOptimizePasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

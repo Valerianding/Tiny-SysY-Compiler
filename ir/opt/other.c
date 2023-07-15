@@ -9,9 +9,14 @@
 //for integer-divide-optimization only
 //we should analyze algorithm identical
 
-bool checkValid(Value *lhs, Value *rhs){
-    //
+bool checkValid(Value *lhs, Value *rhs, InstNode *instNode){
+    //check if the instructions
+    Instruction *lhsIns = (Instruction *)lhs;
+    Instruction *rhsIns = (Instruction *)rhs;
 
+    //we need to prove them in the same block & only used here?
+    //TODO 我们先让条件严格一点也就是说不仅要在一个block里面还需要满足只能使用
+    Value *curValue = ins_get_dest(instNode->inst);
 
 
 }

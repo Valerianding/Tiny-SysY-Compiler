@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
     }
 
     //mem2reg之后，优化前
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     CheckGlobalVariable(instruction_list);
@@ -170,7 +170,6 @@ int main(int argc, char* argv[]){
     }
 
 
-//    //如果开启了优化我们再跑一次
     if(Optimize) {
         //基本块内inscomb ok，基本块间ing
         for (Function *currentFunction = block->Parent;
@@ -190,17 +189,13 @@ int main(int argc, char* argv[]){
         Sweep(currentFunction);
     }
 
-
-//
-//
-//
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         Clean(currentFunction);
     }
 
 
     //phi上的优化
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 //
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){

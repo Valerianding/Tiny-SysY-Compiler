@@ -23,10 +23,13 @@ void RunOptimizePasses(Function *currentFunction){
 
     memlvn(currentFunction);
 
-
     //for loop
     loop(currentFunction);
     LICM(currentFunction);
+
+    instruction_combination(currentFunction);
+
+    DVNT(currentFunction);
 
     renameVariables(currentFunction);
 }
