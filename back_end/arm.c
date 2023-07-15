@@ -32,6 +32,7 @@ Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
 int ltorg_num=0;
 int give_param_flag[4];
 char return_message[100000];
+int stm_num; //8字节对齐
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 //eabi不会保存r12
@@ -790,6 +791,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
 //  执行完这两个之后，返回局部变量开辟的栈帧大小。返回之后进行
 //  真正栈帧的开辟，参数的存储位置从局部变量位置之上开始存储。
 //  所以说当前这个逻辑和FuncBegin函数的实现逻辑都得大改。
+            stm_num=0;
             global_hashmap=HashMapInit();
             regi=0;
             regs=0;
@@ -6281,6 +6283,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
+    int flag=0,reflag=0;
 //    还需要进行返回值类型的转化
 
 //    现在的话，参数传递是在call指令bl之前来处理的，
@@ -6301,11 +6304,31 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 
     func_param_type=value1;
     int param_num_=value1->pdata->symtab_func_pdata.param_num;
+//    if((param_num_%2)!=0){
+//        printf("\tstr\tr0,[sp,#-4]!\n");
+//        fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+//    }
     get_param_list(value1,&give_count);
 //    for(int i=0;i<param_num_;i++){
 //        InstNode *temp=one_param[i];
 //        printf("\n");
 //    }
+    if(reg_save[12]==1 && isSySYFunction(value1)){
+        flag=1;
+    }
+    if(param_num_<=4){
+        if(flag==1){
+            printf("\tstr\tr0,[sp,#-4]!\n");
+            fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+            reflag=1;
+        }
+    }else{
+        if(((flag+param_num_-4)%2)!=0){
+            printf("\tstr\tr0,[sp,#-4]!\n");
+            fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+            reflag=1;
+        }
+    }
     arm_trans_GIVE_PARAM(hashMap,param_num_);
 //    if(strcmp(user_get_operand_use(&ins->inst->user,0)->Val->name,"putfloat")==0){
 //        printf("\tvmov\ts0,r0\n");
@@ -6318,6 +6341,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     }
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
+
     if(reg_save[12]==1 && isSySYFunction(value1)){
         printf("\tldr\tr12,[sp],#4\n");
         fprintf(fp,"\tldr\tr12,[sp],#4\n");
@@ -6329,7 +6353,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //        fprintf(fp,"\tvmov\tr0,s0\n");
 //    }
 //    这里还需要调整sp,去掉压入栈的参数，这里可以使用add直接调整sp，也可以使用mov sp,fp直接调整
-    if(param_num_>4){
+    if(param_num_>4 || reflag==1 ){
         int x=param_num_-4;
 //        printf("\tadd\tsp,sp,#%d\n",x*4);
 //        fprintf(fp,"\tadd\tsp,sp,#%d\n",x*4);
@@ -6427,6 +6451,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     memset(return_message,0, sizeof(return_message));
+    int k;
     printf("\t.align\t2\n"
            "\t.global\t%s\n"
            "\t.arch armv7-a\n"
@@ -6451,7 +6476,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    reg_save[11]=1;fp帧指针并不是每个函数都需要保存，是在该函数调用了其他的函数的时候才需要保存，其实和lr是一样的
 //    上面这种设置方法是错误的，r11是否需要保存取决于该函数有没有破坏r11寄存器，就是函数一开始的时候，有没有mov r11,sp这样的指令
 //    这个mov r11,sp只要是开辟了局部栈也就是执行了sub 这个指令，那么都会执行mov r11,sp也就是破坏掉r11，这个时候就需要保存r11
-    save_r11=0;
+    save_r11=1;
+    reg_save[11]=1;
     memset(param_off,-1, sizeof(param_off));
     memset(funcName,0, sizeof(funcName));
     printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
@@ -6469,6 +6495,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 
 //只要存在bl指令，就需要保存lr
     for(;tmp!=NULL && tmp->inst->Opcode!= Return;tmp= get_next_inst(tmp)){
+        handle_reg_save(tmp->inst->_reg_[0]);
+        handle_reg_save(tmp->inst->_reg_[1]);
+        handle_reg_save(tmp->inst->_reg_[2]);
 //        数组初始化的时候会bl
         if(tmp->inst->Opcode==Alloca){
             Value *value0=&tmp->inst->user.value;
@@ -6499,6 +6528,37 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         }
 
     }
+    if(tmp->inst->Opcode==Return){
+        handle_reg_save(tmp->inst->_reg_[0]);
+        handle_reg_save(tmp->inst->_reg_[1]);
+        handle_reg_save(tmp->inst->_reg_[2]);
+    }
+    for(int i=4;i<13;i++){
+        if(reg_save[i]==1){
+            stm_num++;
+        }
+    }
+//    printf("stmnum1 %d\n",stm_num);
+    k=stm_num;
+    if(func_call_func>0){
+        stm_num++;
+    }
+//    printf("stmnum2 %d\n",stm_num);
+    if((stm_num%2)!=0){  //让stm是偶数个，就8字节对齐了，奇数个就随便多加一个好了
+        if(k==9){ //r4-r12
+            if(stm_num==9){
+                func_call_func=1;
+            }
+        }else{
+            for(int i=4;i<13;i++){
+                if(reg_save[i]==0){
+                    reg_save[i]=1;
+                    break;
+                }
+            }
+        }
+
+    }
 //    lr的保存也放在保护寄存器的地方来实现
 //    if(func_call_func>0){
 //        printf("\tstmfd\tsp!,{r11,lr}\n");
@@ -6511,7 +6571,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    HashMapSetCleanKey(hashMap,CleanKey);
 //    HashMapSetCleanValue(hashMap,CleanValue);
 
-    int local_stack=0;
+    int local_stack=0;//
 //    int x= get_siezof_sp(hashMap);
 //    printf("    sub sp,sp,#%d\n",4*x);
     //    在函数开始的时候要进行参数传递的str的处理
@@ -6530,8 +6590,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
 //                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 FuncBegin_hashmap_alloca_add(hashMap,value0,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                handle_reg_save(reg0);
+//                reg0=ins->inst->_reg_[0];
+//                handle_reg_save(reg0);
 //                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 break;
             case Add:
@@ -6541,12 +6601,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case Sub:
                 value0 = &ins->inst->user.value;
@@ -6555,12 +6615,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case Mul:
                 value0 = &ins->inst->user.value;
@@ -6569,12 +6629,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case Div:
                 value0 = &ins->inst->user.value;
@@ -6583,12 +6643,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case Mod:
                 value0 = &ins->inst->user.value;
@@ -6597,12 +6657,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case Call:
                 operandNum=ins->inst->user.value.NumUserOperands;
@@ -6619,36 +6679,36 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                     FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 }
 
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
                 break;
             case Store:
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
                 break;
             case Load:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
                 break;
             case GIVE_PARAM:
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg1);
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg1);
                 break;
             case LESS:
                 value0 = &ins->inst->user.value;
@@ -6657,12 +6717,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case GREAT:
                 value0 = &ins->inst->user.value;
@@ -6671,12 +6731,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case LESSEQ:
                 value0 = &ins->inst->user.value;
@@ -6685,12 +6745,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case GREATEQ:
                 value0 = &ins->inst->user.value;
@@ -6699,12 +6759,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case EQ:
                 value0 = &ins->inst->user.value;
@@ -6713,12 +6773,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case NOTEQ:
                 value0 = &ins->inst->user.value;
@@ -6727,32 +6787,32 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
             case XOR:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
                 break;
             case zext:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
                 break;
             case bitcast:
                 value0 = &ins->inst->user.value;
@@ -6760,10 +6820,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_bitcast_add(hashMap,value0,value1,&local_stack);
 //                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
 //                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
                 break;
             case GEP:
 //                value0代表存放位置，value1代表相对起始位置，value2代表偏移量
@@ -6776,12 +6836,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
 //            case MEMCPY:
 //                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
@@ -6796,12 +6856,12 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                reg2=ins->inst->_reg_[2];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
-                handle_reg_save(reg2);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                reg2=ins->inst->_reg_[2];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
+//                handle_reg_save(reg2);
                 break;
 //            case MEMSET:
 //                value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
@@ -6814,10 +6874,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
                 FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
                 FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                reg0=ins->inst->_reg_[0];
-                reg1=ins->inst->_reg_[1];
-                handle_reg_save(reg0);
-                handle_reg_save(reg1);
+//                reg0=ins->inst->_reg_[0];
+//                reg1=ins->inst->_reg_[1];
+//                handle_reg_save(reg0);
+//                handle_reg_save(reg1);
                 break;
             default:
                 break;
@@ -6834,7 +6894,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
             FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
             int reg1=ins->inst->_reg_[1];
-            handle_reg_save(reg1);
+//            handle_reg_save(reg1);
         }
 
     }
@@ -6848,10 +6908,13 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //    因为偏移量是从0开始加起的，所以说保存的寄存器应该是在局部变量的顶部
 //    也就是说进入函数后，先stmfd sp!,{}再sub
 //    所以说这里保护寄存器的栈帧开辟也就不需要在sub的时候进行了。
-    *stakc_size=local_stack;
-    if(local_stack!=0){
-        save_r11=1;
+    if((local_stack%8)!=0){
+        local_stack+=4;
     }
+    *stakc_size=local_stack;
+//    if(local_stack!=0){
+//        save_r11=1;
+//    }
 //    在sub之前，是需要先保护被破坏的寄存器,lr的保存也放在这里面吧
     printf_stmfd_rlist();
 
