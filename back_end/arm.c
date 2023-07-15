@@ -6926,10 +6926,10 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             printf("\tsub\tsp,sp,#%d\n",*stakc_size);
             fprintf(fp,"\tsub\tsp,sp,#%d\n",*stakc_size);
         }else{
-            handle_illegal_imm1(2,*stakc_size);
+            handle_illegal_imm1(4,*stakc_size);
 
-            printf("\tsub\tsp,sp,r2\n");
-            fprintf(fp,"\tsub\tsp,sp,r2\n");
+            printf("\tsub\tsp,sp,r4\n");
+            fprintf(fp,"\tsub\tsp,sp,r4\n");
         }
 
 //        调整fp帧指针,在一个函数中fp只需要在FunBegin的时候调整一次就可以了
