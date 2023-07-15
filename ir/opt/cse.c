@@ -3,25 +3,6 @@
 //
 
 #include "cse.h"
-const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
-//TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
-bool isSimpleOperator(InstNode *instNode){
-    for (int i = 0; i < sizeof(simpleOpcodes) / sizeof(Opcode); i++){
-        if (instNode->inst->Opcode == simpleOpcodes[i]){
-            return true;
-        }
-    }
-    return false;
-}
-/*
- *
- *need improve time
- *we use hash for an expression
- *we construct a hash key
- *one hash map is : unsigned hash key  -> expression
- *another hash map is : num -> value
- */
-
 bool commonSubexpressionElimination(Function *currentFunction){
     bool effective = false;
     //runs for each BasicBlock

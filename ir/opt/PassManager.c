@@ -17,7 +17,10 @@ void RunBasicPasses(Function *currentFunction){
 }
 
 void RunOptimizePasses(Function *currentFunction){
+    sideEffect(currentFunction);
+
     DVNT(currentFunction);
+
     memlvn(currentFunction);
 
 
@@ -25,8 +28,5 @@ void RunOptimizePasses(Function *currentFunction){
     loop(currentFunction);
     LICM(currentFunction);
 
-
-    Mark(currentFunction);
-    Sweep(currentFunction);
     renameVariables(currentFunction);
 }

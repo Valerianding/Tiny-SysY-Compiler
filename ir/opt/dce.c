@@ -49,16 +49,16 @@ void combine(BasicBlock *i, BasicBlock *j){
 
     InstNode *currNode = get_next_inst(labelNode);
 
-    printf("currNode is %d\n",currNode->inst->i);
+
+    InstNode *iHeadNode = i->head_node;
+    InstNode *jHeadNode = j->head_node;
+    printf("combine block %d, %d  each headnode is %d,  %d\n",i->id,j->id,iHeadNode->inst->i,jHeadNode->inst->i);
 
     //delete labelNode
     deleteIns(labelNode);
 
 
     InstNode *jTailNextNode = get_next_inst(j->tail_node);
-    if(jTailNextNode != NULL){
-        assert(jTailNextNode->inst->Opcode == Label);
-    }
 
     InstNode *nextLabelNode = get_next_inst(j->tail_node);
 
@@ -386,6 +386,7 @@ bool OnePass(Vector* vector) {
 
                 //跳过Label
                 bool removeAble = true;
+                bool condition = false;
                 InstNode *jNode = get_next_inst(j->head_node);
                 int jPhiCount = 0;
                 while(jNode != j->tail_node){
@@ -405,18 +406,39 @@ bool OnePass(Vector* vector) {
                         }
 
                         //另外如果j的phi包含一个不含phi函数的空基本快的前驱，如果这个基本块还有多个前驱的话，也是unremovable
-                        //TODO 那为什么不是
                         bool iHasPhi = false;
+                        Value *iPhi = NULL;
                         InstNode *iNode = block->head_node;
                         while(iNode != block->tail_node){
                             if(iNode->inst->Opcode == Phi){
+                                iPhi = ins_get_dest(iNode->inst);
                                 iHasPhi = true;
                                 break;
                             }
                             iNode = get_next_inst(iNode);
                         }
+
                         if(iHasPhi == false && HashSetSize(block->preBlocks) > 1){
                             removeAble = false;
+                        }
+
+                        //如果j只有一个phi函数 但是不引用i的phi函数代表i的phi函数支配j
+                        //这种情况我们也不remove
+                        if(jPhiCount == 1 && iHasPhi){
+                            assert(iPhi != NULL);
+                            InstNode *jPhiNode = j->head_node;
+                            while(jPhiNode->inst->Opcode != Phi){
+                                jPhiNode = get_next_inst(jPhiNode);
+                            }
+
+                            Value *jPhiValue = ins_get_dest(jPhiNode->inst);
+                            HashSet *jPhiSet = jPhiValue->pdata->pairSet;
+                            HashSetFirst(jPhiSet);
+                            for(pair *jInfo = HashSetNext(jPhiSet); jInfo != NULL; jInfo = HashSetNext(jPhiSet)){
+                                if(jInfo->define == iPhi){
+                                    condition = true;
+                                }
+                            }
                         }
                     }else{
                         break;
@@ -425,7 +447,7 @@ bool OnePass(Vector* vector) {
                 }
 
                 //
-                if(removeAble && processed == false){
+                if(removeAble && processed == false && condition == true){
                     processed = true;
                     printf("remove empty!\n");
                     //符合先决条件

@@ -59,7 +59,6 @@ void value_replaceAll(Value *oldValue,Value *newValue){
     oldValue->use_list = NULL;
 }
 
-//FIXME
 struct _Symtab* get_sym_tab(Value *V){
     return NULL;
 }
