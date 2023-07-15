@@ -56,7 +56,6 @@ bool Optimize = false;
 
 int main(int argc, char* argv[]){
     assert(sizeof(unsigned int) == 4);
-    srand(time(NULL));
     //lsy
     if(argc < 2 ){
         printf("ERROR: input file name is needed. \n");
@@ -167,7 +166,7 @@ int main(int argc, char* argv[]){
     //先跑一次
     //cse cf
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
+//        RunBasicPasses(currentFunction);
     }
 
 //IPO 暂时不开启
@@ -224,7 +223,7 @@ int main(int argc, char* argv[]){
     //lsy_begin
 //    printf("=================fix===================\n");
     fix_array(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[4],0);
+    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
@@ -240,6 +239,8 @@ int main(int argc, char* argv[]){
     arm_open_file(argv[3]);
     arm_translate_ins(instruction_list,argv[3]);
     arm_close_file(argv[3]);
+
+
     //    ljf_end
     return 0;
 }
