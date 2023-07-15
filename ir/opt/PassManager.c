@@ -28,5 +28,6 @@ void RunOptimizePasses(Function *currentFunction){
 
     Mark(currentFunction);
     Sweep(currentFunction);
+    instruction_combination(currentFunction);
     renameVariables(currentFunction);
 }
