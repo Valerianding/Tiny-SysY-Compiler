@@ -911,7 +911,7 @@ void handle_one_dimention(past init_val_list,Value *v_array,Value* begin_offset_
                     else if(strcmp(bstr2cstr(p->nodeType, '\0'), "expr") == 0)
                     {
                         if(isLocalArrayIntType(v_array->VTy) || isGlobalVarIntType(v_array->VTy))
-                             num= cal_expr(p,Var_INT,0);
+                            num= cal_expr(p,Var_INT,0);
                         else
                             num= cal_expr(p,Var_FLOAT,0);
                         if(num->VTy->ID==Int)
@@ -1886,7 +1886,7 @@ int handle_and_or(past root,bool flag,bool last_or)
                 {
                     //直接失败,生成br_i1_false
                     if(((v->VTy->ID==Const_INT && v->pdata->var_pdata.iVal==0) || (v->VTy->ID==Const_FLOAT && v->pdata->var_pdata.fVal==0)) && strcmp(bstr2cstr(root->sVal, '\0'), "&&") == 0) {
-                    //    InstNode *ins_false= true_location_handler(br_i1_false,NULL,t_index++);
+                        //    InstNode *ins_false= true_location_handler(br_i1_false,NULL,t_index++);
                         InstNode *ins_false= true_location_handler(br,NULL,-2);
                         t_index++;
                         insnode_push(&S_and,ins_false);
@@ -1971,7 +1971,7 @@ int handle_and_or(past root,bool flag,bool last_or)
                     InstNode *ins_true= true_location_handler(br,NULL,t_index++);
                     //insnode_push(&S_or,ins_true);
                 }
-                //TODO 好丑陋，但先保证一个正确性
+                    //TODO 好丑陋，但先保证一个正确性
                 else if(root->right->iVal==0 && strcmp(bstr2cstr(root->sVal, '\0'), "||") == 0)
                 {
                     int convert=-1;
@@ -2646,7 +2646,7 @@ void create_while_stmt(past root,Value* v_return,int block)
 //    if(ins_false!=NULL)
 //        ins_false->inst->user.value.pdata->instruction_pdata.false_goto_location=t_index-1;
     if(ins_false!=NULL)
-          ins_false->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index-1;
+        ins_false->inst->user.value.pdata->instruction_pdata.true_goto_location=t_index-1;
 
     //while完了，弹出while的起始位置
     InstNode *out_continue= NULL;
@@ -3685,7 +3685,7 @@ void create_params_stmt(past func_params,Value * v_func)
                     value_init_int(v_z,0);
                     Instruction *instruction1= ins_new_binary_operator(GEP, v_f, v_z);
                     v= ins_get_value_with_name(instruction1);
-                    v->pdata->var_pdata.iVal=dimension_count+1;  //到时候以dimension_count的态度打印
+                    v->pdata->var_pdata.iVal=dimension_count;  //到时候以dimension_count的态度打印
                     v->pdata->var_pdata.is_offset=1;
                     v->VTy->ID=AddressTyID;
                     v->alias=v_array;
@@ -3717,7 +3717,7 @@ void create_params_stmt(past func_params,Value * v_func)
                     value_init_int(v_z,0);
                     Instruction *instruction1= ins_new_binary_operator(GEP, v_f, v_z);
                     v= ins_get_value_with_name(instruction1);
-                    v->pdata->var_pdata.iVal=dimension_count+1;  //到时候以dimension_count的态度打印
+                    v->pdata->var_pdata.iVal=dimension_count;  //到时候以dimension_count的态度打印
                     v->pdata->var_pdata.is_offset=1;
                     v->VTy->ID=AddressTyID;
                     v->alias=v_array;
@@ -3759,7 +3759,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 v->VTy->ID=AddressTyID;
                 v->alias=v_test;
                 v->pdata->var_pdata.is_offset=1;
-                v->pdata->var_pdata.iVal=1;
+                v->pdata->var_pdata.iVal=0;
                 InstNode *node = new_inst_node(instruction1);
                 ins_node_add(instruction_list,node);
             }
@@ -3771,7 +3771,7 @@ void create_params_stmt(past func_params,Value * v_func)
                 v->VTy->ID=AddressTyID;
                 v->alias=v_test;
                 v->pdata->var_pdata.is_offset=1;
-                v->pdata->var_pdata.iVal=1;
+                v->pdata->var_pdata.iVal=0;
             }
             else
                 v= create_load_stmt(bstr2cstr(paramss->sVal, '\0'));
@@ -4476,18 +4476,18 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 {
                     for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
                     {
-                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.is_offset == 1)
                         {
                             v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
                             //就i32*
-                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure-1)
                             {
                                 printf("i32*,");
                                 fprintf(fptr,"i32*,");
                             }
                             else
                             {
-                                printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal+1,fptr);
                                 printf("*,");
                                 fprintf(fptr,"*,");
                             }
@@ -4508,17 +4508,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
 
                     for(int i=0;i<instruction->user.use_list->Val->pdata->symtab_func_pdata.param_num;i++)
                     {
-                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                        if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.is_offset == 1)
                         {
                             v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
-                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                            if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure-1)
                             {
                                 printf("i32*,");
                                 fprintf(fptr,"i32*,");
                             }
                             else
                             {
-                                printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal+1,fptr);
                                 printf("*,");
                                 fprintf(fptr,"*,");
                             }
@@ -4555,17 +4555,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                                 printf("i32 %f",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.fVal);
                                 fprintf(fptr,"i32 %f",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.fVal);
                             }
-                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.is_offset == 1)
                             {
                                 v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
-                                if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                                if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure-1)
                                 {
                                     printf("i32* %s",one_param[i]->inst->user.use_list->Val->name);
                                     fprintf(fptr,"i32* %s",one_param[i]->inst->user.use_list->Val->name);
                                 }
                                 else
                                 {
-                                    printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                    printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal+1,fptr);
                                     printf("* %s",one_param[i]->inst->user.use_list->Val->name);
                                     fprintf(fptr,"* %s",one_param[i]->inst->user.use_list->Val->name);
                                 }
@@ -4594,10 +4594,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                                 printf(",i32 %f",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.fVal);
                                 fprintf(fptr,",i32 %f",one_param[i]->inst->user.use_list->Val->pdata->var_pdata.fVal);
                             }
-                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal>0)
+                            else if(one_param[i]->inst->user.use_list->Val->VTy->ID==AddressTyID && one_param[i]->inst->user.use_list->Val->pdata->var_pdata.is_offset == 1)
                             {
                                 v_cur_array=one_param[i]->inst->user.use_list->Val->alias;
-                                if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure)
+                                if(one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal==v_cur_array->pdata->symtab_array_pdata.dimention_figure-1)
                                 {
                                     printf(",i32* %s",one_param[i]->inst->user.use_list->Val->name);
                                     fprintf(fptr,",i32* %s",one_param[i]->inst->user.use_list->Val->name);
@@ -4606,7 +4606,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                                 {
                                     printf(",");
                                     fprintf(fptr,",");
-                                    printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal,fptr);
+                                    printf_array(v_cur_array,one_param[i]->inst->user.use_list->Val->pdata->var_pdata.iVal+1,fptr);
                                     printf("* ");
                                     fprintf(fptr,"* ");
                                     printf("%s",one_param[i]->inst->user.use_list->Val->name);
@@ -4935,43 +4935,22 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                     if(instruction->user.use_list->Val->pdata->var_pdata.is_offset==0)
                     {
                         //是对数组参数的最后一个自造的gmp
-                        if(instruction->user.value.VTy->ID==AddressTyID && instruction->user.value.pdata->var_pdata.is_offset==1)
-                        {
-                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
-                            printf(",");
-                            fprintf(fptr,",");
-                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal-1,fptr);
-                            printf("* ");
-                            fprintf(fptr,"* ");
-                            if(instruction->user.use_list[1].Val->VTy->ID==Int)
-                            {
-                                printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                                fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                            }
-                            else
-                            {
-                                printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                                fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                            }
-                        }
-                            //正常的
-                        else{
-                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                            printf(",");
-                            fprintf(fptr,",");
-                            printf_array(v_cur_array,instruction->user.value.pdata->var_pdata.iVal,fptr);
-                            printf("* ");
-                            fprintf(fptr,"* ");
-                            if(instruction->user.use_list[1].Val->VTy->ID==Int)
-                            {
-                                printf("%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                                fprintf(fptr,"%s, i32 0,i32 %d",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
-                            }
-                            else
-                            {
-                                printf("%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                                fprintf(fptr,"%s, i32 0,i32 %s",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
-                            }
+                        printf_array(v_cur_array, instruction->user.value.pdata->var_pdata.iVal, fptr);
+                        printf(",");
+                        fprintf(fptr, ",");
+                        printf_array(v_cur_array, instruction->user.value.pdata->var_pdata.iVal, fptr);
+                        printf("* ");
+                        fprintf(fptr, "* ");
+                        if (instruction->user.use_list[1].Val->VTy->ID == Int) {
+                            printf("%s, i32 0,i32 %d", instruction->user.use_list->Val->name,
+                                   instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                            fprintf(fptr, "%s, i32 0,i32 %d", instruction->user.use_list->Val->name,
+                                    instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        } else {
+                            printf("%s, i32 0,i32 %s", instruction->user.use_list->Val->name,
+                                   instruction->user.use_list[1].Val->name);
+                            fprintf(fptr, "%s, i32 0,i32 %s", instruction->user.use_list->Val->name,
+                                    instruction->user.use_list[1].Val->name);
                         }
 
                     }
