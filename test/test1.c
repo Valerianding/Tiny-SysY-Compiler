@@ -1,58 +1,80 @@
+const int MAX_WIDTH = 1024, MAX_HEIGHT = 1024;
+int image[MAX_WIDTH * MAX_HEIGHT], width, height;
 
-int MAX(int a, int b)
-{
-    if (a == b)
-        return a;
-    else if (a > b)
-        return a;
-    else
-        return b;
+const float PI = 3.14159265359, TWO_PI = 6.28318530718, EPSILON = 1e-6;
+
+float my_fabs(float x) {
+    if (x > 0) return x;
+    return -x;
 }
 
-int max_sum_nonadjacent(int arr[], int n)
-{
-    int temp[16] = {};
-    temp[0] = arr[0];
-    temp[1] = MAX(arr[0], arr[1]);
-    int i = 2;
-    while (i < n) {
-        temp[i] = MAX(temp[i - 2] + arr[i], temp[i - 1]);
-        i = i + 1;
+float p(float x) { return 3 * x - 4 * x * x * x; }
+
+float my_sin_impl(float x) {
+    if (my_fabs(x) <= EPSILON) return x;
+    return p(my_sin_impl(x / 3.0));
+}
+
+float my_sin(float x) {
+    if (x > TWO_PI || x < -TWO_PI) {
+        int xx = x / TWO_PI;
+        x = x - xx * TWO_PI;
     }
-    return temp[n - 1];
+    if (x > PI) x = x - TWO_PI;
+    if (x < -PI) x = x + TWO_PI;
+    return my_sin_impl(x);
 }
 
-int longest_common_subseq(int arr1[], int len1,
-                          int arr2[], int len2)
-{
-    int p[16][16] = {};
-    int i, j;
-    i = 1;
-    while (i <= len1) {
-        j = 1;
-        while (j <= len2) {
-            if (arr1[i - 1] == arr2[j - 1]) {
-                p[i][j] = p[i - 1][j - 1] + 1;
-            } else {
-                p[i][j] = MAX(p[i - 1][j], p[i][j - 1]);
-            }
-            j = j + 1;
+float my_cos(float x) { return my_sin(x + PI / 2); }
+
+int read_image() {
+    if (getch() != 80 || getch() != 50) return -1;
+    width = getint();
+    height = getint();
+    if (width > MAX_WIDTH || height > MAX_HEIGHT || getint() != 255) return -1;
+    int y = 0;
+    while (y < height) {
+        int x = 0;
+        while (x < width) {
+            image[y * width + x] = getint();
+            x = x + 1;
         }
-        i = i + 1;
+        y = y + 1;
     }
-    return p[len1][len2];
+    return 0;
 }
 
-int main()
-{
-    int A[15] = {8, 7, 4, 1, 2, 7, 0, 1, 9, 3, 4, 8, 3, 7, 0};
-    int B[13] = {3, 9, 7, 1, 4, 2, 4, 3, 6, 8, 0, 1, 5};
-    int An, Bn;
+int rotate(int x, int y, float rad) {
+    float sinma = my_sin(rad), cosma = my_cos(rad);
+    int hwidth = width / 2, hheight = height / 2;
+    int xt = x - hwidth, yt = y - hheight;
+    int src_x = xt * cosma - yt * sinma + hwidth,
+            src_y = xt * sinma + yt * cosma + hheight;
+    if (src_x < 0 || src_x >= width || src_y < 0 || src_y >= height) return 0;
+    return image[src_y * width + src_x];
+}
 
-    putint(max_sum_nonadjacent(A, 15));
-    putch(10);
+void write_pgm(float rad) {
+    putch(80); putch(50); putch(10); // P2
+    putint(width); putch(32); putint(height); putch(32); // width height
+    putint(255); putch(10); // 255
+    int y = 0;
+    while (y < height) {
+        int x = 0;
+        while (x < width) {
+            putint(rotate(x, y, rad));
+            putch(32);
+            x = x + 1;
+        }
+        putch(10);
+        y = y + 1;
+    }
+}
 
-    putint(longest_common_subseq(A, 15, B, 13));
-    putch(10);
+int main() {
+    float rad = getfloat();
+    getch();
+    if (read_image() < 0) return -1;
+    write_pgm(rad);
     return 0;
 }

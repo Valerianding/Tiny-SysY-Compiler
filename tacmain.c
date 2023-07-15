@@ -166,7 +166,7 @@ int main(int argc, char* argv[]){
     //先跑一次
     //cse cf
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        RunBasicPasses(currentFunction);
+        RunBasicPasses(currentFunction);
     }
 
 //IPO 暂时不开启
