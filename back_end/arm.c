@@ -6494,7 +6494,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 
 
 //只要存在bl指令，就需要保存lr
-    for(;tmp!=NULL && tmp->inst->Opcode!= Return;tmp= get_next_inst(tmp)){
+    for(;tmp!=NULL && tmp->inst->Opcode!= FunEnd;tmp= get_next_inst(tmp)){
+//        printf("\tid ;%d\t%d\t%d\t%d\n",tmp->inst->i,tmp->inst->_reg_[0],tmp->inst->_reg_[1],tmp->inst->_reg_[2]);
         handle_reg_save(tmp->inst->_reg_[0]);
         handle_reg_save(tmp->inst->_reg_[1]);
         handle_reg_save(tmp->inst->_reg_[2]);
@@ -6502,7 +6503,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         if(tmp->inst->Opcode==Alloca){
             Value *value0=&tmp->inst->user.value;
             if(isLocalArrayIntType(value0->VTy)|| isLocalArrayFloatType(value0->VTy)|| isGlobalArrayIntType(value0->VTy)||isGlobalArrayFloatType(value0->VTy)){
-                func_call_func=1;
+                func_call_func+=1;
             }
         }
 //        bl __aeabi_idiv
@@ -6514,17 +6515,17 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                     isLocalArrayIntType(value1->VTy) || isGlobalArrayIntType(value1->VTy)){
                 if(isLocalVarIntType(value2->VTy)|| isGlobalVarIntType(value2->VTy)|| isImmIntType(value2->VTy) ||
                    isLocalArrayIntType(value2->VTy) || isGlobalArrayIntType(value2->VTy)){
-                    func_call_func=1;
+                    func_call_func+=1;
                 }
             }
         }
 //        bl__aeabi_divimod
         if(tmp->inst->Opcode==Mod){
-            func_call_func=1;
+            func_call_func+=1;
         }
         if(tmp->inst->Opcode==Call){
             func_call_func+=1;
-            break;
+//            break;
         }
 
     }
