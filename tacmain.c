@@ -19,6 +19,7 @@
 
 extern FILE *yyin;
 extern HashMap *callGraph;
+extern HashSet *visitedCall;
 extern int yylex();
 extern int yyparse();
 //extern past TRoot;
@@ -51,6 +52,7 @@ void yyerror(char *s)
     printf("%s\n", s);
 }
 
+bool Optimize = false;
 
 int main(int argc, char* argv[]){
     assert(sizeof(unsigned int) == 4);
@@ -60,8 +62,12 @@ int main(int argc, char* argv[]){
         printf("ERROR: input file name is needed. \n");
         exit(0);
     }
-    yyin=fopen(argv[4], "r");
+    //看看是否开启优化
+    if(argc == 6){
+        Optimize = true;
+    }
 
+    yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
 
@@ -97,12 +103,13 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL,0);
     travel_finish_type(instruction_list);
     move_give_param(instruction_list);
-//   printf_llvm_ir(instruction_list,argv[4],1);
+//  printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
-//init CallGraph
+    //init CallGraph
     callGraph = HashMapInit();
+    visitedCall = HashSetInit();
 
     bblock_divide(instruction_list);
 
@@ -128,12 +135,15 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
-    //   printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
+
         mem2reg(currentFunction);
+
         calculateLiveness(currentFunction);
+
         printLiveness(currentFunction);
 
         //这里build CallGraphNode
@@ -154,31 +164,36 @@ int main(int argc, char* argv[]){
     }
 
 
-
+    //先跑一次
+    //cse cf
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        sideEffect(currentFunction);
-//         ConstFolding(currentFunction);
-//         commonSubexpressionElimination(currentFunction);
-//         DVNT(currentFunction);
-//         memlvn(currentFunction);
-//         ConstFolding(currentFunction);
-//         commonSubexpressionElimination(currentFunction);
-//         loop(currentFunction);
-//         LICM(currentFunction);
-//         Mark(currentFunction);
-//         Sweep(currentFunction);
-//         Clean(currentFunction);
-//         renameVariables(currentFunction);
+        RunBasicPasses(currentFunction);
     }
 
-//    printf_llvm_ir(instruction_list,argv[4],1);
+//IPO 暂时不开启
+//    travel();
 
 
-    //基本块内inscomb ok，基本块间ing
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        instruction_combination(currentFunction);
-//        renameVariables(currentFunction);
-//    }
+    //如果开启了优化我们再跑一次
+    if(Optimize) {
+        //基本块内inscomb ok，基本块间ing
+        for (Function *currentFunction = block->Parent;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+             RunOptimizePasses(currentFunction);
+        }
+
+        for (Function *currentFunction = block->Parent;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+             RunBasicPasses(currentFunction);
+        }
+    }
+
+
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        Clean(currentFunction);
+    }
+
 
     //phi上的优化
 //    printf_llvm_ir(instruction_list,argv[4],1);
@@ -189,8 +204,8 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
         cleanLiveSet(currentFunction);
     }
-
-    //请注释掉我跑llvm脚本 phi函数消除
+//
+//    //请注释掉我跑llvm脚本 phi函数消除
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 //
@@ -202,24 +217,12 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
-
-
-
     // Liveness 计算之后请注释掉我跑llvm
-//    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,arrrrgv[4],1);
 
-
-
-//    printf_llvm_ir(instruction_list,argv[4],1);
-
-    //TODO 目前函数内联放在这里了，暂时的
-//    printf("=======func inline=========\n");
-//    func_inline(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[1],1);
-//    printf("=======func inline end=======\n");
 
     //lsy_begin
-    printf("=================fix===================\n");
+//    printf("=================fix===================\n");
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
@@ -230,7 +233,6 @@ int main(int argc, char* argv[]){
     //ljw_end`1`
 
 
-
     //    ljf_begin
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
@@ -239,6 +241,5 @@ int main(int argc, char* argv[]){
     arm_translate_ins(instruction_list,argv[3]);
     arm_close_file(argv[3]);
     //    ljf_end
-
     return 0;
 }

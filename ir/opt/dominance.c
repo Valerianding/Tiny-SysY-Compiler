@@ -41,6 +41,8 @@ void calculate_dominance(Function *currentFunction) {
         }
     }
 
+    HashSetDeinit(workList);
+
     HashSet *tempSet = HashSetInit();
     HashSetCopy(tempSet,allNode);
     HashSetFirst(allNode);
@@ -50,6 +52,7 @@ void calculate_dominance(Function *currentFunction) {
             HashSetCopy(tempBlock->dom,tempSet);
         }
     }
+    HashSetDeinit(tempSet);
 
     printf("right before all\n");
 
@@ -76,10 +79,10 @@ void calculate_dominance(Function *currentFunction) {
                 parent->visited = true;
 
                 //新建一个hashset
-                HashSet *newSet = HashSetInit();
+                HashSet *tempAllSet = HashSetInit();
 
                 //让它为全集
-                HashSetCopy(newSet,allNode);
+                HashSetCopy(tempAllSet,allNode);
 
                 //开始迭代
                 //找到前驱节点
@@ -87,33 +90,38 @@ void calculate_dominance(Function *currentFunction) {
 
                 HashSetFirst(prevBlocks);
 
+                HashSet *newSet = NULL;
                 //对于所有前驱节点
                 printf(" prevBlocks:");
                 for(BasicBlock *prevBlock = HashSetNext(prevBlocks); prevBlock != NULL; prevBlock = HashSetNext(prevBlocks)){
                     printf(" b%d",prevBlock->id);
                     HashSet *prevDom = prevBlock->dom;
-                    newSet = HashSetIntersect(newSet,prevDom);
+                    newSet = HashSetIntersect(tempAllSet,prevDom);
+                    assert(newSet != NULL);
+                    HashSetDeinit(tempAllSet);
+                    tempAllSet = newSet;
                 }
+
                 printf(" ");
 
-                HashSetFirst(newSet);
+                HashSetFirst(tempAllSet);
 
                 //并自己
                 HashSetAdd(newSet,parent);
 
                 printf("newSet contain:");
-                for(BasicBlock *key = HashSetNext(newSet);key != NULL; key = HashSetNext(newSet)){
+                for(BasicBlock *key = HashSetNext(tempAllSet);key != NULL; key = HashSetNext(tempAllSet)){
                     printf(" b%d",key->id);
                 }
 
                 //判断跟现在的集合是否有差别
-                changed = HashSetDifferent(newSet,parent->dom);
+                changed = HashSetDifferent(tempAllSet,parent->dom);
 
                 if(changed){
                     HashSetDeinit(parent->dom);
-                    parent->dom = newSet;
+                    parent->dom = tempAllSet;
                 }else{
-                    HashSetDeinit(newSet);
+                    HashSetDeinit(tempAllSet);
                 }
                 printf(" changed : %d\n",changed);
             }
@@ -379,9 +387,9 @@ void calculatePostDominance(Function *currentFunction) {
             HashSetAdd(workList, block->false_block);
         }
     }
-    HashSetAdd(exit->pDom, exit);
+    HashSetDeinit(workList);
 
-    HashSetFirst(allBlocks);
+    HashSetAdd(exit->pDom, exit);
     HashSet *tempSet = HashSetInit();
     HashSetCopy(tempSet, allBlocks);
     HashSetFirst(allBlocks);
@@ -400,16 +408,23 @@ void calculatePostDominance(Function *currentFunction) {
         for (BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)) {
             //
             if (block != exit) {
-                HashSet *newSet = HashSetInit();
-                HashSetCopy(newSet, tempSet);
+                HashSet *tempALlSet = HashSetInit();
+                HashSetCopy(tempALlSet, tempSet);
 
+                HashSet *newSet = NULL;
                 //for each successor block p
                 if (block->true_block) {
-                    newSet = HashSetIntersect(newSet, block->true_block->pDom);
+                    newSet = HashSetIntersect(tempALlSet, block->true_block->pDom);
+                    assert(newSet != NULL);
+                    HashSetDeinit(tempALlSet);
+                    tempALlSet = newSet;
                 }
 
                 if (block->false_block) {
-                    newSet = HashSetIntersect(newSet, block->false_block->pDom);
+                    newSet = HashSetIntersect(tempALlSet, block->false_block->pDom);
+                    assert(newSet != NULL);
+                    HashSetDeinit(tempALlSet);
+                    tempALlSet = newSet;
                 }
 
                 HashSetAdd(newSet, block);
@@ -417,7 +432,6 @@ void calculatePostDominance(Function *currentFunction) {
                 if (HashSetDifferent(newSet, block->pDom)) {
                     //如果不同 释放原来的
 
-                    printf("different!\n");
                     HashSetDeinit(block->pDom);
                     block->pDom = newSet;
                     changed |= true;
@@ -665,13 +679,20 @@ void cleanAll(Function *currentFunction){
 void dominanceAnalysis(Function *currentFunction){
     cleanAll(currentFunction);
     print_function_info(currentFunction);
+
     clear_visited_flag(currentFunction->entry);
+
     removeUnreachable(currentFunction);
+
     calculate_dominance(currentFunction);
-    calculatePostDominance(currentFunction);
+
+    if(Optimize) calculatePostDominance(currentFunction);
+
     clear_visited_flag(currentFunction->entry);
+
     calculate_dominance_frontier(currentFunction);
+
     calculate_iDominator(currentFunction);
+
     calculate_DomTree(currentFunction);
-    printf("after non locals\n");
 }

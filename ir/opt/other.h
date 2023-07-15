@@ -7,7 +7,7 @@
 #include "bblock.h"
 #include "function.h"
 #include "loopinfo.h"
+#include "sideeffect.h"
 extern InstNode *instruction_list;
 void RemoveUselessFunction(InstNode *insHead);
-void removeUselessLoop(Function* currentFunction);
 #endif //C22V1_OTHER_H

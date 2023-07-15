@@ -41,7 +41,7 @@ bool LICM_EACH(Loop *loop){
         while(currNode != bodyTail){
             if(!hasNoDestOperator(currNode)){
                 Value *insValue = ins_get_dest(currNode->inst);
-                printf("def %s\n",insValue->name);
+                //printf("def %s\n",insValue->name);
                 HashSetAdd(def,insValue);
             }
             currNode = get_next_inst(currNode);
@@ -54,7 +54,7 @@ bool LICM_EACH(Loop *loop){
     //def 全部知道了那我们就开始迭代吧 但是需要保证迭代的正确性
     bool changed = true;
     while(changed){
-        printf("here!\n");
+        //printf("here!\n");
         changed = false;
         HashSetFirst(loop->loopBody);
         BasicBlock *block = NULL;
@@ -100,7 +100,7 @@ bool LICM_EACH(Loop *loop){
     bool removeOne = true;
     while(removeOne){
         removeOne = false;
-        printf("here!\n");
+        //printf("here!\n");
         HashSetFirst(loopInvariantVariable);
         for(Value *var = HashSetNext(loopInvariantVariable); var != NULL; var = HashSetNext(loopInvariantVariable)){
             //首先看看这个var
@@ -113,7 +113,7 @@ bool LICM_EACH(Loop *loop){
             if(HashSetFind(loopInvariantVariable,rhs) && !HashSetFind(moveOut,rhs)){
                 continue;
             }
-            printf("var %s\n",var->name);
+            //printf("var %s\n",var->name);
             Instruction *ins = (Instruction*)var;
             BasicBlock *block = ins->Parent;
             //必须满足两个条件
@@ -157,7 +157,7 @@ bool LICM_EACH(Loop *loop){
 
             if((cond1 || cond2) && cond0){
                 removeOne = true;
-                printf("remove!\n");
+                //printf("remove!\n");
                 HashSetRemove(loopInvariantVariable,var);
 
 
@@ -193,7 +193,7 @@ bool LICM_EACH(Loop *loop){
                 }
 
                 // remove from
-                printf("move %s to block %d\n",var->name, newPrevBlock->id);
+                //printf("move %s to block %d\n",var->name, newPrevBlock->id);
                 InstNode *find = findNode(block,ins);
                 removeIns(find);
                 // 放到前驱基本块的前面

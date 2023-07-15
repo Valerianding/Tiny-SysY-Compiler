@@ -12,7 +12,7 @@ const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET}
 const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
 const char* InputSySYFunctions[] = {"getint","getfloat","getch","getarray","getfarray"};
 const char* OutputSySYFunctions[] = {"putint","putch","putarray","putfloat","putfarray","putf"};
-const char* TimeSySYFunctions[] = {"starttime","stoptime"};
+const char* TimeSySYFunctions[] = {"_sysy_starttime","_sysy_stoptime"};
 bool isValidOperator(InstNode *insNode){
     for (int i = 0; i < sizeof(invalidOpcodes) / sizeof(Opcode); i++) {
         if (insNode->inst->Opcode == invalidOpcodes[i]) {
