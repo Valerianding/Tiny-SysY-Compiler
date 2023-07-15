@@ -13,5 +13,7 @@
 #include "memlvn.h"
 #include "licm.h"
 #include "globalopt.h"
-void RunPasses(Function *currentFunction);
+#include "sideeffect.h"
+void RunBasicPasses(Function *currentFunction);
+void RunOptimizePasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

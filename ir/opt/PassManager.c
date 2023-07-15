@@ -3,20 +3,27 @@
 //
 
 #include "PassManager.h"
-void RunPasses(Function *currentFunction){
-    bool effective = false;
+void RunBasicPasses(Function *currentFunction){
+    bool effective = true;
 
-    effective |= ConstFolding(currentFunction);
-    effective |= commonSubexpressionElimination(currentFunction);
+    while(effective){
+        effective = false;
+        effective |= ConstFolding(currentFunction);
+        effective |=  commonSubexpressionElimination(currentFunction);
+    }
 
-    //DCE
-    Mark(currentFunction);
-    effective |= Sweep(currentFunction);
+    renameVariables(currentFunction);
+
+}
+
+void RunOptimizePasses(Function *currentFunction){
+    DVNT(currentFunction);
+    memlvn(currentFunction);
 
 
-    calculateLiveness(currentFunction);
+    //for loop
     loop(currentFunction);
-    //CFG clean
-    Clean(currentFunction);
-    if(effective) RunPasses(currentFunction);
+    LICM(currentFunction);
+
+    renameVariables(currentFunction);
 }

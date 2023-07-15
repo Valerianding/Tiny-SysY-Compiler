@@ -1,121 +1,67 @@
-// Brainfuck Interpreter
-// Reads program from stdin, interprets and outputs to stdout.
-//
-// Main optimization targets:
-// jump table, inline variables, etc.
+int set(int a[], int pos, int d){
+    const int bitcount = 30;
+    int x[bitcount + 1] = {};
 
-int program_length = 0;
-int program[65536] = {};
-int tape[65536] = {};
-int input[65536] = {};
-int input_length = 0;
-int output[65536] = {};
-int output_length = 0;
+    x[0] = 1;
+    x[1] = x[0] * 2;
+    x[2] = x[1] * 2;
+    x[3] = x[2] * 2;
+    x[4] = x[3] * 2;
+    x[5] = x[4] * 2;
+    x[6] = x[5] * 2;
+    x[7] = x[6] * 2;
+    x[8] = x[7] * 2;
+    x[9] = x[8] * 2;
+    x[10] = x[9] * 2;
 
-int get_bf_char() {
-    int get = getch();
-    while (get != 62 && get != 60 && get != 43 && get != 45 && get != 91 &&
-           get != 93 && get != 46 && get != 44 && get != 35) {
-        get = getch();
-    }
-    return get;
-}
-
-void read_program() {
-    int get = get_bf_char();
-    while (get != 35) {
-        program[program_length] = get;
-        get = get_bf_char();
-        program_length = program_length + 1;
-    }
-
-    // read input
-    // input starts with an `i`
-    int verify = getch();
-    if (verify != 105) {
-        return;
-    }
-    // and a length
-    input_length = getint();
-    // and a random char
-    getch();
-    int i = 0;
-    while (i < input_length) {
-        input[i] = getch();
+    int i = 10;
+    while (i < bitcount){
         i = i + 1;
+        x[i] = x[i - 1] * 2;
     }
+
+    int v = 0;
+
+    if (pos / bitcount >= 10000) return 0;
+
+    if (a[pos / bitcount] / (x[pos % bitcount]) % 2 != d){
+        if (a[pos / bitcount] / (x[pos % bitcount]) % 2 == 0)
+            if (d == 1)
+                v = x[pos % bitcount];
+
+        if (a[pos / bitcount] / x[pos % bitcount] % 2 == 1)
+            if (d == 0)
+                v = v - x[pos % bitcount];
+    }
+
+    a[pos / bitcount] = a[pos / bitcount] + v;
+    return 0;
 }
 
-void run_program() {
-    int ip = 0;
-    int read_head = 0;
-    int input_head = 0;
-    int return_address[512] = {};
-    int return_address_top = 0;
-    output_length = 0;
-    while (ip < program_length) {
-        int code = program[ip];
-        if (code == 62) {
-            read_head = read_head + 1;
-        } else if (code == 60) {
-            read_head = read_head - 1;
-        } else if (code == 43) {
-            tape[read_head] = tape[read_head] + 1;
-        } else if (code == 45) {
-            tape[read_head] = tape[read_head] - 1;
-        } else if (code == 91) {
-            int val = tape[read_head];
-            if (val != 0) {
-                return_address[return_address_top] = ip;
-                return_address_top = return_address_top + 1;
-            } else {
-                // find the matching ]
-                int loop = 1;
-                while (loop > 0) {
-                    ip = ip + 1;
-                    if (program[ip] == 93) {
-                        loop = loop - 1;
-                    }
-                    if (program[ip] == 91) {
-                        loop = loop + 1;
-                    }
-                }
-            }
-        } else if (code == 93) {
-            int val = tape[read_head];
-            if (val == 0) {
-                return_address_top = return_address_top - 1;
-            } else {
-                ip = return_address[return_address_top - 1];
-            }
-        } else if (code == 46) {
-            output[output_length] = tape[read_head];
-            output_length = output_length + 1;
-        } else if (code == 44) {
-            if (input_head >= input_length) {
-                tape[read_head] = 0;
-            } else {
-                tape[read_head] = input[input_head];
-                input_head = input_head + 1;
-            }
-        }
-        ip = ip + 1;
-    }
+int seed[3] = {19971231, 19981013, 1000000000 + 7};
+int staticvalue = 0;
+
+int rand(){
+    staticvalue = staticvalue * seed[0] + seed[1];
+    staticvalue = staticvalue % seed[2];
+    if (staticvalue < 0) staticvalue = seed[2] + staticvalue;
+    return staticvalue;
 }
 
-void output_() {
-    int i = 0;
-    while (i < output_length) {
-        putch(output[i]);
-        i = i + 1;
-    }
-}
+int a[10000] = {};
+int main(){
 
-int main() {
-    read_program();
+    int n = getint();
+    staticvalue = getint();
     starttime();
-    run_program();
+    int x, y;
+    while (n > 0){
+        n = n - 1;
+        x = rand() % 300000;
+        y = rand() % 2;
+        set(a, x, y);
+    }
     stoptime();
-    output_();
+    putarray(10000, a);
     return 0;
 }
