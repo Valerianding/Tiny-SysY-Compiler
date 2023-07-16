@@ -3258,8 +3258,8 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                     }
                     else
                     {
-                        if(v1->VTy->ID==Float || v1->VTy->ID==Var_FLOAT || v1->VTy->ID==GlobalVarFloat ||
-                           v2->VTy->ID==Float || v2->VTy->ID==Var_FLOAT || v2->VTy->ID==GlobalVarFloat)
+                        if(v1->VTy->ID==Float || v1->VTy->ID==Var_FLOAT || v1->VTy->ID==GlobalVarFloat || v1->VTy->ID==Param_FLOAT ||
+                           v2->VTy->ID==Float || v2->VTy->ID==Var_FLOAT || v2->VTy->ID==GlobalVarFloat || v2->VTy->ID==Param_FLOAT)
                         {
                             v_tmp->VTy->ID=Var_FLOAT;
                         }
