@@ -1197,6 +1197,26 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 //fpintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
+            case fptosi:
+                if(instruction->user.use_list->Val->VTy->ID == Var_FLOAT)
+                {
+                    printf(" %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    // fprintf(fptr," %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }else{
+                    printf(" %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                    // fprintf(fptr," %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                }
+                break;
+            case sitofp:
+                if(instruction->user.use_list->Val->VTy->ID == Var_INT)
+                {
+                    printf(" %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    // fprintf(fptr," %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }else{
+                    printf("%s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                    // fprintf(fptr," %s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                }
+                break;
             case Phi:{
                 Value *insValue = ins_get_dest(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
@@ -2662,10 +2682,42 @@ void travel_ir(InstNode *instruction_node)
             case XOR:
                 echo_tac[tac_cnt].dest_name=instruction->user.value.name;
                 echo_tac[tac_cnt].dest_use=0;
-                echo_tac[tac_cnt].left_name=instruction->user.value.name;
+                echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                 echo_tac[tac_cnt].left_use=1;
                 // printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 //fpintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                break;
+            case fptosi:
+                if(instruction->user.use_list->Val->VTy->ID == Var_FLOAT)
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                    // printf(" %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    // fprintf(fptr," %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }else{
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    // printf(" %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                    // fprintf(fptr," %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                }
+                break;
+            case sitofp:
+                if(instruction->user.use_list->Val->VTy->ID == Var_INT)
+                {
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    echo_tac[tac_cnt].left_use=1;
+                    // printf(" %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    // fprintf(fptr," %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }else{
+                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    echo_tac[tac_cnt].dest_use=0;
+                    // printf("%s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                    // fprintf(fptr," %s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                }
                 break;
             case Phi:{
                 Value *insValue = ins_get_dest(instruction);
