@@ -42,6 +42,9 @@ typedef enum OpcodeType{
     FunEnd = 33,
     Phi = 34,
     CopyOperation = 35,  //消除phi函数
+
+    fptosi = 36,
+    sitofp = 37,
 }Opcode;
 
 

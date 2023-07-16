@@ -3520,6 +3520,24 @@ struct _Value* create_load_stmt(char *name)
     //最后会删除吧，自动创建instruction的user.value
     Value *v1= ins_get_value_with_name(instruction);
 
+    if(instruction->user.use_list->Val->VTy->ID==Param_INT)
+    {
+        instruction->user.use_list->Val->VTy->ID=Var_INT;
+        v1->VTy->ID=instruction->user.use_list->Val->VTy->ID;
+    }
+    else if(instruction->user.use_list->Val->VTy->ID==Param_FLOAT)
+    {
+        instruction->user.use_list->Val->VTy->ID=Var_FLOAT;
+        v1->VTy->ID=instruction->user.use_list->Val->VTy->ID;
+    }
+    else if(instruction->user.use_list->Val->VTy->ID==GlobalVarInt)
+        v1->VTy->ID=Var_INT;
+    else if(instruction->user.use_list->Val->VTy->ID==GlobalVarFloat)
+        v1->VTy->ID=Var_FLOAT;
+    else
+        v1->VTy->ID=instruction->user.use_list->Val->VTy->ID;
+
+
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
     ins_node_add(instruction_list,node);
@@ -3546,7 +3564,38 @@ struct _Value* create_return_load(Value *v_return)
 void create_store_stmt(Value* v1,Value* v2)
 {
     Instruction *instruction=NULL;
-    instruction= ins_new_binary_operator(Store,v1,v2);
+
+    Instruction *convert = NULL;
+    //将float存进int
+    if(v2->VTy->ID == Var_INT && (v1->VTy->ID == Var_FLOAT || v1->VTy->ID == Float || v1->VTy->ID == Param_FLOAT)){
+        convert = ins_new_unary_operator(fptosi,v1);
+        //将这个instruction加入总list
+        InstNode *node_convert = new_inst_node(convert);
+        ins_node_add(instruction_list,node_convert);
+
+        Value *dest = ins_get_value_with_name(convert);
+        if(v1->VTy->ID == Float)
+            dest->VTy->ID = Int;
+        else
+            dest->VTy->ID = Var_INT;
+        instruction = ins_new_binary_operator(Store,dest,v2);
+    }
+    //将int存进float
+    else if(v2->VTy->ID == Var_FLOAT && (v1->VTy->ID == Var_INT || v1->VTy->ID == Int || v1->VTy->ID == Param_INT)){
+        convert = ins_new_unary_operator(sitofp,v1);
+        //将这个instruction加入总list
+        InstNode *node_convert = new_inst_node(convert);
+        ins_node_add(instruction_list,node_convert);
+
+        Value *dest = ins_get_value_with_name(convert);
+        if(v1->VTy->ID == Int)
+            dest->VTy->ID = Float;
+        else
+            dest->VTy->ID = Var_FLOAT;
+        instruction = ins_new_binary_operator(Store,dest,v2);
+    }
+    else
+        instruction= ins_new_binary_operator(Store,v1,v2);
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -5071,6 +5120,26 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 printf(" %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
+            case fptosi:
+                if(instruction->user.use_list->Val->VTy->ID == Var_FLOAT)
+                {
+                    printf(" %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    fprintf(fptr," %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }else{
+                    printf(" %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                    fprintf(fptr," %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                }
+                break;
+            case sitofp:
+                if(instruction->user.use_list->Val->VTy->ID == Var_INT)
+                {
+                    printf(" %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                    fprintf(fptr," %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
+                }else{
+                    printf("%s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                    fprintf(fptr," %s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                }
+                break;
             case Phi:{
                 Value *insValue = ins_get_dest(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
@@ -5130,17 +5199,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-//        Value *v,*vl,*vr;
-//        v= ins_get_dest(instruction_node->inst);
-//        vl= ins_get_lhs(instruction_node->inst);
-//        vr= ins_get_rhs(instruction_node->inst);
-//        if(v!=NULL)
-//            printf("left:%s,\t",type_str[v->VTy->ID]);
-//        if(vl!=NULL)
-//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-//        if(vr!=NULL)
-//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n\n");
+        Value *v,*vl,*vr;
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL)
+            printf("left:%s,\t",type_str[v->VTy->ID]);
+        if(vl!=NULL)
+            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+        if(vr!=NULL)
+            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+        printf("\n\n");
 
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
