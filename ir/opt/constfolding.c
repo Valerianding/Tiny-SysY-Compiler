@@ -15,7 +15,7 @@ bool ConstFolding(Function *currentFunction){
         InstNode *currNode = entry->head_node;
         while(currNode != tail->tail_node){
             // 不包含
-            if(isCalculationOperator(currNode)){
+            if(isSimpleOperator(currNode)){
                 // 应该得是两个
                 Value *lhs = ins_get_lhs(currNode->inst);
                 Value *rhs = ins_get_rhs(currNode->inst);

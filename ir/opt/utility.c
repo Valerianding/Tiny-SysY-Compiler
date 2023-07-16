@@ -10,6 +10,8 @@ const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
 const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label,GIVE_PARAM};
 const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET};
 const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
+const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
+//TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
 const char* InputSySYFunctions[] = {"getint","getfloat","getch","getarray","getfarray"};
 const char* OutputSySYFunctions[] = {"putint","putch","putarray","putfloat","putfarray","putf"};
 const char* TimeSySYFunctions[] = {"_sysy_starttime","_sysy_stoptime"};
@@ -530,6 +532,16 @@ bool JudgeIcmp(InstNode *icmp){
             return true;
         }
         uses = uses->Next;
+    }
+    return false;
+}
+
+
+bool isSimpleOperator(InstNode *instNode){
+    for (int i = 0; i < sizeof(simpleOpcodes) / sizeof(Opcode); i++){
+        if (instNode->inst->Opcode == simpleOpcodes[i]){
+            return true;
+        }
     }
     return false;
 }

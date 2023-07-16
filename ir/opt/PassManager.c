@@ -17,17 +17,23 @@ void RunBasicPasses(Function *currentFunction){
 }
 
 void RunOptimizePasses(Function *currentFunction){
-    DVNT(currentFunction);
-    memlvn(currentFunction);
+    sideEffect(currentFunction);
 
+    DVNT(currentFunction);
+
+    memlvn(currentFunction);
 
     //for loop
     loop(currentFunction);
     LICM(currentFunction);
 
+    instruction_combination(currentFunction);
+
+    DVNT(currentFunction);
 
     Mark(currentFunction);
+
     Sweep(currentFunction);
-    instruction_combination(currentFunction);
+
     renameVariables(currentFunction);
 }

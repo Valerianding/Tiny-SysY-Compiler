@@ -312,12 +312,8 @@ void traversal(CallGraphNode *node){
                             }
                         }
                     }else{
-                        //TODO 我们还可以删除很多无用的return
                         //我们只需要检查return 的 value 是不是也只被return use了 如果是并且这个midFunction的User同时也是被所有的ignored
-
                         //ins->生成return value的ins
-                        //TODO 我们现在只要不是call并且only used in return value我们都可能可以把这个remove掉
-                        //TODO 我们也不需要visit twice
                         printf("another case called function is %s\n",called->name);
 
 

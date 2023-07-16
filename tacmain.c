@@ -169,11 +169,7 @@ int main(int argc, char* argv[]){
         RunBasicPasses(currentFunction);
     }
 
-//IPO 暂时不开启
-//    travel();
 
-
-    //如果开启了优化我们再跑一次
     if(Optimize) {
         //基本块内inscomb ok，基本块间ing
         for (Function *currentFunction = block->Parent;
@@ -181,17 +177,22 @@ int main(int argc, char* argv[]){
              RunOptimizePasses(currentFunction);
         }
 
-        for (Function *currentFunction = block->Parent;
-             currentFunction != NULL; currentFunction = currentFunction->Next) {
-             RunBasicPasses(currentFunction);
+    }
+
+//IPO 暂时不开启
+//    travel();
+
+    for (Function *currentFunction = block->Parent;
+         currentFunction != NULL; currentFunction = currentFunction->Next) {
+        RunBasicPasses(currentFunction);
+    }
+
+    if(Optimize){
+        for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+            Clean(currentFunction);
         }
     }
 
-
-
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
-    }
 
 
     //phi上的优化
@@ -203,7 +204,7 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
         cleanLiveSet(currentFunction);
     }
-//
+
 //    //请注释掉我跑llvm脚本 phi函数消除
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
@@ -223,7 +224,7 @@ int main(int argc, char* argv[]){
     //lsy_begin
 //    printf("=================fix===================\n");
     fix_array(instruction_list);
-    printf_llvm_ir(instruction_list,argv[4],0);
+//    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
@@ -239,8 +240,6 @@ int main(int argc, char* argv[]){
     arm_open_file(argv[3]);
     arm_translate_ins(instruction_list,argv[3]);
     arm_close_file(argv[3]);
-
-
     //    ljf_end
     return 0;
 }

@@ -63,7 +63,7 @@ bool LICM_EACH(Loop *loop){
             InstNode *currNode = block->head_node;
             while(currNode != block->tail_node){
                 // TODO 解决所有Operator的情况 请仔细思考 !!!
-                if(isCalculationOperator(currNode)){
+                if(isSimpleOperator(currNode)){
                     Value *lhs = ins_get_lhs(currNode->inst);
                     Value *rhs = ins_get_rhs(currNode->inst);
                     Value *dest = ins_get_dest(currNode->inst);

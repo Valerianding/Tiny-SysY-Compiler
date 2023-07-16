@@ -49,16 +49,17 @@ void combine(BasicBlock *i, BasicBlock *j){
 
     InstNode *currNode = get_next_inst(labelNode);
 
-    printf("currNode is %d\n",currNode->inst->i);
+
+    InstNode *iHeadNode = i->head_node;
+    InstNode *jHeadNode = j->head_node;
+    printf("combine block %d, %d  each headnode is %d,  %d\n",i->id,j->id,iHeadNode->inst->i,jHeadNode->inst->i);
+
 
     //delete labelNode
     deleteIns(labelNode);
 
 
     InstNode *jTailNextNode = get_next_inst(j->tail_node);
-    if(jTailNextNode != NULL){
-        assert(jTailNextNode->inst->Opcode == Label);
-    }
 
     InstNode *nextLabelNode = get_next_inst(j->tail_node);
 
@@ -383,7 +384,6 @@ bool OnePass(Vector* vector) {
                 //replace transfers to i with transfers to j
                 BasicBlock *j = block->true_block;
                 //首先去判断是否符合条件
-
                 //跳过Label
                 bool removeAble = true;
                 InstNode *jNode = get_next_inst(j->head_node);
@@ -405,18 +405,44 @@ bool OnePass(Vector* vector) {
                         }
 
                         //另外如果j的phi包含一个不含phi函数的空基本快的前驱，如果这个基本块还有多个前驱的话，也是unremovable
-                        //TODO 那为什么不是
                         bool iHasPhi = false;
+                        Value *iPhi = NULL;
                         InstNode *iNode = block->head_node;
                         while(iNode != block->tail_node){
                             if(iNode->inst->Opcode == Phi){
+                                iPhi = ins_get_dest(iNode->inst);
                                 iHasPhi = true;
                                 break;
                             }
                             iNode = get_next_inst(iNode);
                         }
+
                         if(iHasPhi == false && HashSetSize(block->preBlocks) > 1){
                             removeAble = false;
+                        }
+
+                        //如果j只有一个phi函数 但是不引用i的phi函数代表i的phi函数支配j
+                        //这种情况我们也不remove
+                        if(jPhiCount == 1 && iHasPhi){
+                            assert(iPhi != NULL);
+                            InstNode *jPhiNode = j->head_node;
+                            while(jPhiNode->inst->Opcode != Phi){
+                                jPhiNode = get_next_inst(jPhiNode);
+                            }
+
+                            bool condition = false;
+                            Value *jPhiValue = ins_get_dest(jPhiNode->inst);
+                            HashSet *jPhiSet = jPhiValue->pdata->pairSet;
+                            HashSetFirst(jPhiSet);
+                            for(pair *jInfo = HashSetNext(jPhiSet); jInfo != NULL; jInfo = HashSetNext(jPhiSet)){
+                                if(jInfo->define == iPhi){
+                                    condition = true;
+                                }
+                            }
+
+                            if(condition == false){
+                                removeAble = false;
+                            }
                         }
                     }else{
                         break;
@@ -425,12 +451,11 @@ bool OnePass(Vector* vector) {
                 }
 
                 //
-                if(removeAble && processed == false){
+                if(removeAble == true && processed == false){
                     processed = true;
                     printf("remove empty!\n");
                     //符合先决条件
                     //如果block里面有phi函数
-
                     bool iHasPhi = false;
                     InstNode *iNode = block->head_node;
                     while(iNode != block->tail_node){
@@ -657,39 +682,6 @@ bool OnePass(Vector* vector) {
         }
     }
     return changed;
-}
-
-
-void EntryElimination(Function *currentFunction){
-    BasicBlock *entry = currentFunction->entry;
-    printf("entry head %d tail %d\n",entry->head_node->inst->i,entry->tail_node->inst->i);
-    print_one_ins_info(entry->head_node);
-    print_one_ins_info(get_next_inst(entry->head_node));
-
-
-    //反正entry又不可能有phi函数，并且后面的基本块不能含有phi函数
-//    if(isEmpty(entry) ){
-//        InstNode *headNode = entry->head_node;
-//        InstNode *tailNode = entry->tail_node;
-//
-//        //remove the last b node and the next label Node;
-//        deleteIns(tailNode);
-//        BasicBlock *nextBlock = get_next_inst(tailNode)->inst->Parent;
-//        InstNode *nextLabel = nextBlock->head_node;
-//        InstNode *nextTail = nextBlock->tail_node;
-//
-//
-//        //see if the next Block
-//        bool nextHasPhi = false;
-//        while(nextLabel != )
-//        deleteIns(nextLabel);
-//
-//        //let the next block be the first -> should change the headnode for nextblock
-//        nextBlock->head_node = headNode;
-//
-//
-//        //change the preBlocks for nextBlock
-//    }
 }
 
 
