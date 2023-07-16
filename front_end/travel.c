@@ -3247,7 +3247,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 {
                     //临时变量左值,v_tmp的pdata是没有实际内容的
                     Value *v_tmp= ins_get_value_with_name(instruction);
-                    if(is_empty_value(PS2) && type!=Unknown && type!=AddressTyID)
+                    if(*(pp+1) == NULL && type!=Unknown && type!=AddressTyID)
                     {
                         if(type==GlobalVarInt)
                             v_tmp->VTy->ID=Var_INT;
