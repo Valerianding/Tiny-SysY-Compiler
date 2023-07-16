@@ -3002,9 +3002,9 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 (x2->VTy->ID==Int || x2->VTy->ID==Const_INT)) {
                 Value *v3=(Value*) malloc(sizeof (Value));
                 value_init(v3);
-                if(type==Var_FLOAT)
-                    v3->VTy->ID=Float;
-                else
+//                if(type==Var_FLOAT)
+//                    v3->VTy->ID=Float;
+//                else
                     v3->VTy->ID=Int;
                 switch ((*pp)->iVal) {
                     case '+':
@@ -3039,9 +3039,9 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                      (x2->VTy->ID==Float || x2->VTy->ID==Const_FLOAT || x2->VTy->ID==Int || x2->VTy->ID==Const_INT)) {
                 Value *v3=(Value*) malloc(sizeof (Value));
                 value_init(v3);
-                if(type==Var_INT)
-                    v3->VTy->ID=Int;
-                else
+//                if(type==Var_INT)
+//                    v3->VTy->ID=Int;
+//                else
                     v3->VTy->ID=Float;
                 switch ((*pp)->iVal) {
                     case '+':
@@ -3198,19 +3198,6 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 else
                     v2=x2;
 
-                //TODO 除了把'+'禁掉，还有无更好的处理
-//                if((*pp)->iVal!='!' && (*pp)->iVal!='+' && get_last_inst(instruction_list)->inst->Opcode==XOR)
-//                {
-//                    //生成一条zext
-//                    Instruction *ins_zext= ins_new_unary_operator(zext,&get_last_inst(instruction_list)->inst->user.value);
-//                    Value *v_zext= ins_get_value_with_name(ins_zext);
-//
-//                    InstNode *node = new_inst_node(ins_zext);
-//                    ins_node_add(instruction_list,node);
-//
-//                    v2=v_zext;
-//                }
-
                 Value *v_real=NULL;
                 Instruction *ins_icmp=NULL;
                 switch ((*pp)->iVal) {
@@ -3234,7 +3221,8 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                         if(*real==0)
                         {
                             (*real)=!(*real);
-                        } else
+                        }
+                        else
                         {
                             ins_icmp= ins_new_binary_operator(NOTEQ,v2,v_zero);
                             //v_real
@@ -3259,7 +3247,7 @@ struct _Value *cal_expr(past expr,int type,int* real) {
                 {
                     //临时变量左值,v_tmp的pdata是没有实际内容的
                     Value *v_tmp= ins_get_value_with_name(instruction);
-                    if(type!=Unknown && type!=AddressTyID)
+                    if(is_empty_value(PS2) && type!=Unknown && type!=AddressTyID)
                     {
                         if(type==GlobalVarInt)
                             v_tmp->VTy->ID=Var_INT;
@@ -3573,11 +3561,16 @@ void create_store_stmt(Value* v1,Value* v2)
         InstNode *node_convert = new_inst_node(convert);
         ins_node_add(instruction_list,node_convert);
 
-        Value *dest = ins_get_value_with_name(convert);
-        if(v1->VTy->ID == Float)
+        Value *dest = NULL;
+        if(v1->VTy->ID == Float){
+            dest = ins_get_dest(convert);
             dest->VTy->ID = Int;
-        else
+            dest->pdata->var_pdata.iVal = (int)v1->pdata->var_pdata.fVal;
+        }
+        else{
+            dest = ins_get_value_with_name(convert);
             dest->VTy->ID = Var_INT;
+        }
         instruction = ins_new_binary_operator(Store,dest,v2);
     }
     //将int存进float
@@ -3587,11 +3580,16 @@ void create_store_stmt(Value* v1,Value* v2)
         InstNode *node_convert = new_inst_node(convert);
         ins_node_add(instruction_list,node_convert);
 
-        Value *dest = ins_get_value_with_name(convert);
-        if(v1->VTy->ID == Int)
+        Value *dest = NULL;
+        if(v1->VTy->ID == Int){
+            dest = ins_get_dest(convert);
             dest->VTy->ID = Float;
-        else
+            dest->pdata->var_pdata.fVal = (float )v1->pdata->var_pdata.iVal;
+        }
+        else{
+            dest = ins_get_value_with_name(convert);
             dest->VTy->ID = Var_FLOAT;
+        }
         instruction = ins_new_binary_operator(Store,dest,v2);
     }
     else
@@ -5121,23 +5119,23 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 fprintf(fptr," %s = xor i1 %s, true\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 break;
             case fptosi:
-                if(instruction->user.use_list->Val->VTy->ID == Var_FLOAT)
+                if(instruction->user.use_list->Val->VTy->ID == Var_FLOAT || instruction->user.use_list->Val->VTy->ID == GlobalVarFloat)
                 {
                     printf(" %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                     fprintf(fptr," %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 }else{
-                    printf(" %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
-                    fprintf(fptr," %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                    printf(" fptosi float %f to i32\n",instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                    fprintf(fptr," fptosi float %f to i32\n",instruction->user.use_list->Val->pdata->var_pdata.fVal);
                 }
                 break;
             case sitofp:
-                if(instruction->user.use_list->Val->VTy->ID == Var_INT)
+                if(instruction->user.use_list->Val->VTy->ID == Var_INT || instruction->user.use_list->Val->VTy->ID == GlobalVarInt)
                 {
                     printf(" %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                     fprintf(fptr," %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 }else{
-                    printf("%s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
-                    fprintf(fptr," %s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                    printf(" sitofp i32 %d to float\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                    fprintf(fptr," sitofp i32 %d to float\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
                 }
                 break;
             case Phi:{

@@ -9,6 +9,7 @@
 #include "../ir/symtab.h"
 #include "stack.h"
 #include "hash_map.h"
+#include <math.h>
 
 //#include "travel.h"
 typedef struct _ast ast;
@@ -61,8 +62,7 @@ void showAst(past node, int nest);
 //将变量插入符号表
 void insert_var_into_symtab(past type,past p);
 
-int cal_easy_expr(past expr);
-float cal_easy_expr_f(past expr);
+past cal_exp(past expr);
 
 //将函数参数插入到对应的作用域表中
 void insert_func_params(past params);
