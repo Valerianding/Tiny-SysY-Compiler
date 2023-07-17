@@ -18,6 +18,7 @@ struct  reg_now * echo_tac;
 struct BLOCK_list * block_list;
 int block_num;
 int tac_cnt;
+int mem_temp;
 struct name_num *live;
 InstNode * one_param[1000];   //存放单次正确位置的参数
 InstNode* params[1000];      //存放所有参数
@@ -2939,6 +2940,11 @@ void bian_init(BasicBlock * this_block)
     }
     // printf("tacid:%d\n",this_block->id);
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
+    if(var_num>1000)
+    {
+        mem_temp=1;
+    }
+    if(mem_temp)    return ;
     addtoin(this_block);
     addtoout(this_block);
     for(int i=0;i<var_num;i++)
@@ -3045,7 +3051,7 @@ void reg_control(struct _InstNode *instruction_node,InstNode *temp)
     ir_reg_init(instruction_node);
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next)
     {
-        // printf("func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
+        // printf("now_func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
         reg_control_func(currentFunction);
     }
     printf_llvm_ir_withreg(instruction_node);
@@ -3138,10 +3144,18 @@ void reg_control_block(BasicBlock *cur)
         return ;
 
     #else
+        mem_temp=0;
         // printf("this blcok start at %d\n",cur->head_node->inst->i);
         travel_ir(cur->head_node);
         live_init_block();
         bian_init(cur);
+        if(mem_temp)
+        {
+            add_to_ir();
+            clean_reg();
+            mem_temp=0;
+            return ;
+        }
         init_RIG();
         create_RIG();
         check_edge();
@@ -3255,110 +3269,139 @@ void add_to_ir()
     }
     return ;
     #else
-    int var_uid;
-    int reg_uid;
-    for(int i=0;i<tac_cnt;i++)
+    if(mem_temp)
     {
-        var_uid=find_var(echo_tac[i].dest_name);
-        if(var_uid>=0 && echo_tac[i].dest_use>=0)  
+        int var_uid;
+        int reg_uid;
+        for(int i=0;i<tac_cnt;i++)
         {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
-            else
+            if(echo_tac[i].dest_use==0)
+                echo_tac[i].irnode->_reg_[0]=-4;
+            else if(echo_tac[i].dest_use==1)
+                echo_tac[i].irnode->_reg_[0]=104;
+            else 
+                echo_tac[i].irnode->_reg_[0]=0;
+            if(echo_tac[i].left_use==0)
+                echo_tac[i].irnode->_reg_[1]=-5;
+            else if(echo_tac[i].left_use==1)
+                echo_tac[i].irnode->_reg_[1]=105;
+            else 
+                echo_tac[i].irnode->_reg_[1]=0;
+            if(echo_tac[i].right_use==0)
+                echo_tac[i].irnode->_reg_[2]=-6;
+            else if(echo_tac[i].right_use==1)
+                echo_tac[i].irnode->_reg_[2]=106;
+            else 
+                echo_tac[i].irnode->_reg_[2]=0;
+        }
+    }
+    else
+    {
+        int var_uid;
+        int reg_uid;
+        for(int i=0;i<tac_cnt;i++)
+        {
+            var_uid=find_var(echo_tac[i].dest_name);
+            if(var_uid>=0 && echo_tac[i].dest_use>=0)  
             {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
-                // if(echo_tac[i].dest_use==0)
-                // {
-                //     if(i==live[var_uid].last) 
-                //         echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
-                //     else
-                //         echo_tac[i].irnode->_reg_[0]=reg_uid;
-                // }
-                // if(echo_tac[i].dest_use==1)
-                // {
-                //     if(i==live[var_uid].first) 
-                //         echo_tac[i].irnode->_reg_[0]=reg_uid+100;
-                //     else
-                //         echo_tac[i].irnode->_reg_[0]=reg_uid;
-                // }
-                if(echo_tac[i].dest_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
-                    else
-                        echo_tac[i].irnode->_reg_[0]=reg_uid;
-                }
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].irnode->_reg_[0]=reg_uid+100;
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
+                    // if(echo_tac[i].dest_use==0)
+                    // {
+                    //     if(i==live[var_uid].last) 
+                    //         echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
+                    //     else
+                    //         echo_tac[i].irnode->_reg_[0]=reg_uid;
+                    // }
+                    // if(echo_tac[i].dest_use==1)
+                    // {
+                    //     if(i==live[var_uid].first) 
+                    //         echo_tac[i].irnode->_reg_[0]=reg_uid+100;
+                    //     else
+                    //         echo_tac[i].irnode->_reg_[0]=reg_uid;
+                    // }
+                    if(echo_tac[i].dest_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
+                        else
+                            echo_tac[i].irnode->_reg_[0]=reg_uid;
+                    }
                     else
-                        echo_tac[i].irnode->_reg_[0]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].irnode->_reg_[0]=reg_uid+100;
+                        else
+                            echo_tac[i].irnode->_reg_[0]=reg_uid;
+                    }
                 }
             }
-        }
-        else
-            echo_tac[i].irnode->_reg_[0]=0;
-        
-
-        var_uid=find_var(echo_tac[i].left_name);
-        if(var_uid>=0 && echo_tac[i].left_use>=0)  
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
             else
+                echo_tac[i].irnode->_reg_[0]=0;
+            
+
+            var_uid=find_var(echo_tac[i].left_name);
+            if(var_uid>=0 && echo_tac[i].left_use>=0)  
             {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
-               
-                if(echo_tac[i].left_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
-                    else
-                        echo_tac[i].irnode->_reg_[1]=reg_uid;
-                }
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].irnode->_reg_[1]=reg_uid+100;
-                    else
-                        echo_tac[i].irnode->_reg_[1]=reg_uid;
-                }
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
                 
-            }
-        }
-        else
-            echo_tac[i].irnode->_reg_[1]=0;
-
-        var_uid=find_var(echo_tac[i].right_name);
-        if(var_uid>=0 && echo_tac[i].right_use>=0)  
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
-            else
-            {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
-                if(echo_tac[i].left_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].irnode->_reg_[2]=reg_uid*-1;
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].irnode->_reg_[1]=reg_uid*-1;
+                        else
+                            echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    }
                     else
-                        echo_tac[i].irnode->_reg_[2]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].irnode->_reg_[1]=reg_uid+100;
+                        else
+                            echo_tac[i].irnode->_reg_[1]=reg_uid;
+                    }
+                    
                 }
+            }
+            else
+                echo_tac[i].irnode->_reg_[1]=0;
+
+            var_uid=find_var(echo_tac[i].right_name);
+            if(var_uid>=0 && echo_tac[i].right_use>=0)  
+            {
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].irnode->_reg_[2]=reg_uid+100;
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].irnode->_reg_[2]=reg_uid*-1;
+                        else
+                            echo_tac[i].irnode->_reg_[2]=reg_uid;
+                    }
                     else
-                        echo_tac[i].irnode->_reg_[2]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].irnode->_reg_[2]=reg_uid+100;
+                        else
+                            echo_tac[i].irnode->_reg_[2]=reg_uid;
+                    }
                 }
             }
+            else
+                echo_tac[i].irnode->_reg_[2]=0;
         }
-        else
-            echo_tac[i].irnode->_reg_[2]=0;
     }
     return ;
     #endif
