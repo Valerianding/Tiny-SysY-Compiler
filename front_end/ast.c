@@ -463,8 +463,8 @@ void insert_var_into_symtab(past type,past p)
             v->VTy->ID=Const_INT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
-            v->pdata->var_pdata.iVal=(int)p->right->fVal;
-            v->VTy->ID=Const_INT;
+            v->pdata->var_pdata.fVal=(float)p->right->iVal;
+            v->VTy->ID=Const_FLOAT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
             v->pdata->var_pdata.fVal=p->right->fVal;
