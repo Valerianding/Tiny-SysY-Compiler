@@ -33,6 +33,7 @@ void float_to_int2(int si,int srcri,int destri);
 bool is_int_array(Value *value);
 bool is_float_array(Value *value);
 int get_free_reg();
+int power_of_two(int x);
 /**
  * @details 获取哈希表的大小
  * @param hashMap

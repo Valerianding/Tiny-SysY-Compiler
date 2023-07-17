@@ -376,6 +376,17 @@ bool imm_is_valid2(int value){
         return false;
     }
 }
+int power_of_two(int n){
+    if (n <= 0 || (n & (n - 1)) != 0) {
+        return -1;
+    }
+    int power = 0;
+    while (n > 1) {
+        n = n >> 1;
+        power++;
+    }
+    return power;
+}
 int get_free_reg(){
     if(give_param_flag[0]==0){
         return 0;
@@ -3459,7 +3470,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 //    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
 //    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
-
+//     两个都是立即数的情况会被优化掉
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
         if(imm_is_valid(x1)&&(imm_is_valid(x2))){
@@ -3765,40 +3776,60 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
-
+//优化
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
+//        这里需要进行优化
         int x1=value1->pdata->var_pdata.iVal;
-        if(imm_is_valid(x1)){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
+        if(power_of_two(x1)==-1){ //非2的幂次，优化不了
+            if(imm_is_valid(x1)){
+                printf("\tmov\tr1,#%d\n",x1);
+                fprintf(fp,"\tmov\tr1,#%d\n",x1);
+                if(right_reg>100){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    handle_illegal_imm(right_reg,x,2);
+
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                }else{
+                    ;
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                }
+
+            }else{
+                handle_illegal_imm1(1,x1);
+
+                if(right_reg>100){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    handle_illegal_imm(right_reg,x,2);
+
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                }else{
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                }
+
+            }
+
+
+        }else{ //是2的幂次，可以优化，LSL左移n位（有符号和无符号是一样的操作）
+            int n= power_of_two(x1);
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
 
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,n);
+                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,n);
+//                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+//                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
-                ;
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+//                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+//                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,n);
+                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,n);
             }
-
-        }else{
-            handle_illegal_imm1(1,x1);
-
-            if(right_reg>100){
-                int x= get_value_offset_sp(hashMap,value2);
-                handle_illegal_imm(right_reg,x,2);
-
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-            }else{
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-            }
-
         }
-
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -4050,35 +4081,49 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
-
+//优化
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
-        if((imm_is_valid(x2))){
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+        if(power_of_two(x2)==-1){
+            if((imm_is_valid(x2))){
+                printf("\tmov\tr2,#%d\n",x2);
+                fprintf(fp,"\tmov\tr2,#%d\n",x2);
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
 
-                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
-                fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                    printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                    fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                }else{
+                    printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                    fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                }
             }else{
-                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
-                fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                handle_illegal_imm1(2,x2);
+
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                    fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                }else{
+                    printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                    fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                }
             }
         }else{
-            handle_illegal_imm1(2,x2);
-
+            int n= power_of_two(x2);
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
-                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
-                fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg-100);
+                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,n);
+                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,n);
             }else{
-                printf("\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
-                fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
+                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,n);
+                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,n);
             }
         }
+
 
 
         if(isLocalVarIntType(value0->VTy)){
@@ -5018,6 +5063,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
+//        这个是4/k这种情况，这个好像不好优化吧
         if(imm_is_valid(x1)){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
@@ -5090,6 +5136,8 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         }
         printf("\tmov\tr%d,r0\n",dest_reg_abs);
         fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+
+
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -5344,76 +5392,94 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
-        if((imm_is_valid(x2))){
-            printf("\tmov\tr1,#%d\n",x2);
-            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+        if(power_of_two(x2)==-1){
+            if((imm_is_valid(x2))){
+                printf("\tmov\tr1,#%d\n",x2);
+                fprintf(fp,"\tmov\tr1,#%d\n",x2);
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
 
-                printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-                if(reg_save[12]==1){
-                    printf("\tstr\tr12,[sp,#-4]!\n");
-                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-                }
-                printf("\tbl\t__aeabi_idiv\n");
-                fprintf(fp,"\tbl\t__aeabi_idiv\n");
-                if(reg_save[12]==1){
-                    printf("\tldr\tr12,[sp],#4\n");
-                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    if(reg_save[12]==1){
+                        printf("\tstr\tr12,[sp,#-4]!\n");
+                        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                    }
+                    printf("\tbl\t__aeabi_idiv\n");
+                    fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                    if(reg_save[12]==1){
+                        printf("\tldr\tr12,[sp],#4\n");
+                        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                    }
+                }else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                    if(reg_save[12]==1){
+                        printf("\tstr\tr12,[sp,#-4]!\n");
+                        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                    }
+                    printf("\tbl\t__aeabi_idiv\n");
+                    fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                    if(reg_save[12]==1){
+                        printf("\tldr\tr12,[sp],#4\n");
+                        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                    }
                 }
             }else{
-                printf("\tmov\tr0,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-                if(reg_save[12]==1){
-                    printf("\tstr\tr12,[sp,#-4]!\n");
-                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-                }
-                printf("\tbl\t__aeabi_idiv\n");
-                fprintf(fp,"\tbl\t__aeabi_idiv\n");
-                if(reg_save[12]==1){
-                    printf("\tldr\tr12,[sp],#4\n");
-                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                handle_illegal_imm1(0,x2);
+
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    if(reg_save[12]==1){
+                        printf("\tstr\tr12,[sp,#-4]!\n");
+                        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                    }
+                    printf("\tbl\t__aeabi_idiv\n");
+                    fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                    if(reg_save[12]==1){
+                        printf("\tldr\tr12,[sp],#4\n");
+                        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                    }
+                }else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                    if(reg_save[12]==1){
+                        printf("\tstr\tr12,[sp,#-4]!\n");
+                        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+                    }
+                    printf("\tbl\t__aeabi_idiv\n");
+                    fprintf(fp,"\tbl\t__aeabi_idiv\n");
+                    if(reg_save[12]==1){
+                        printf("\tldr\tr12,[sp],#4\n");
+                        fprintf(fp,"\tldr\tr12,[sp],#4\n");
+                    }
                 }
             }
-        }else{
-            handle_illegal_imm1(0,x2);
 
+            printf("\tmov\tr%d,r0\n",dest_reg_abs);
+            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+        }else{
+            int n= power_of_two(x2);
             if(left_reg>100){
                 int x= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x,1);
 
-                printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-                if(reg_save[12]==1){
-                    printf("\tstr\tr12,[sp,#-4]!\n");
-                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-                }
-                printf("\tbl\t__aeabi_idiv\n");
-                fprintf(fp,"\tbl\t__aeabi_idiv\n");
-                if(reg_save[12]==1){
-                    printf("\tldr\tr12,[sp],#4\n");
-                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
-                }
+                printf("\tasr\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,n);
+                fprintf(fp,"\tasr\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,n);
+//                printf("\tmov\tr0,r%d\n",left_reg-100);
+//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+
             }else{
-                printf("\tmov\tr0,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-                if(reg_save[12]==1){
-                    printf("\tstr\tr12,[sp,#-4]!\n");
-                    fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-                }
-                printf("\tbl\t__aeabi_idiv\n");
-                fprintf(fp,"\tbl\t__aeabi_idiv\n");
-                if(reg_save[12]==1){
-                    printf("\tldr\tr12,[sp],#4\n");
-                    fprintf(fp,"\tldr\tr12,[sp],#4\n");
-                }
+                printf("\tasr\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,n);
+                fprintf(fp,"\tasr\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,n);
+
             }
         }
-
-        printf("\tmov\tr%d,r0\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
