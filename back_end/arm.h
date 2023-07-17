@@ -122,6 +122,8 @@ InstNode * arm_trans_zeroinitializer(InstNode *ins);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode *arm_trans_Phi(InstNode *ins);
 InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
+InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins);
+InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins);
 
 
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
