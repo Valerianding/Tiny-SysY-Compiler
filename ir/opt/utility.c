@@ -556,3 +556,12 @@ bool isSame(Value *left, Value *right){
     }
     return false;
 }
+
+bool isSameLargeType(Value *left, Value *right){
+    if(isInt(left) && isInt(right)){
+        return true;
+    }else if(isFloat(left) && isFloat(right)){
+        return true;
+    }
+    return false;
+}

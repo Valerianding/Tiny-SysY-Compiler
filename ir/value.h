@@ -113,4 +113,6 @@ bool isGlobalArrayInt(Value *val); // 是否全局int数组
 bool isGlobalArrayFloat(Value *val); // 是否全局float数组
 bool isAddress(Value *val);
 bool isArrayInitialize(Value *val); // 判断是否初始化了数组
+bool isInt(Value *val);
+bool isFloat(Value *val);
 #endif

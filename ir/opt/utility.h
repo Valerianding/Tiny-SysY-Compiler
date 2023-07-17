@@ -39,4 +39,5 @@ bool isSame(Value *left, Value *right);
 //false -> 不会被其他用到
 bool JudgeIcmp(InstNode *icmp);
 bool isSimpleOperator(InstNode *instNode);
+bool isSameLargeType(Value *left, Value *right);
 #endif //C22V1_UTILITY_H
