@@ -153,7 +153,7 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 
-//    CheckGlobalVariable(instruction_list);
+    CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
 
@@ -205,17 +205,17 @@ int main(int argc, char* argv[]){
         cleanLiveSet(currentFunction);
     }
 
-//    //请注释掉我跑llvm脚本 phi函数消除
-    printf_llvm_ir(instruction_list,argv[4],1);
+    //请注释掉我跑llvm脚本 phi函数消除
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 //
-//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
-//        clear_visited_flag(currentFunction->entry);
-//        printf("after out of SSA!\n");
-//        calculateLiveness(currentFunction);
-//        printLiveness(currentFunction);
-//    }
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
+        clear_visited_flag(currentFunction->entry);
+        printf("after out of SSA!\n");
+        calculateLiveness(currentFunction);
+        printLiveness(currentFunction);
+    }
 
     // Liveness 计算之后请注释掉我跑llvm
 //    printf_llvm_ir(instruction_list,arrrrgv[4],1);
