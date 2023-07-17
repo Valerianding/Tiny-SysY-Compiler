@@ -33,6 +33,7 @@ void float_to_int2(int si,int srcri,int destri);
 bool is_int_array(Value *value);
 bool is_float_array(Value *value);
 int get_free_reg();
+int power_of_two(int x);
 /**
  * @details 获取哈希表的大小
  * @param hashMap
@@ -122,6 +123,8 @@ InstNode * arm_trans_zeroinitializer(InstNode *ins);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode *arm_trans_Phi(InstNode *ins);
 InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
+InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins);
+InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins);
 
 
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
