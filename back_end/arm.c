@@ -35,6 +35,7 @@ char return_message[100000];
 int stm_num; //8字节对齐
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
+
 //eabi不会保存r12
 void printf_stmfd_rlist(){
 //    printf();
@@ -834,6 +835,87 @@ void arm_translate_ins(InstNode *ins,char argv[]){
     printf("%s\n",globalvar_message);
     fprintf(fp,"%s\n",globalvar_message);
     return;
+}
+InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
+//    float强制转换为intvalue1 --> value0,现在的情况是value1有可能是立即数，也可能是变量
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int left_reg=ins->inst->_reg_[1];
+    int left_reg_abs;
+    int dest_reg_abs=abs(dest_reg);
+//    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
+
+    if(isImmFloatType(value1->VTy)){
+        float fx=value1->pdata->var_pdata.fVal;
+        int x=*(int*)(&fx);
+        handle_illegal_imm1(0,x);
+        left_reg_abs=0;
+    }
+    else if(isLocalVarFloatType(value1->VTy)){
+        assert(left_reg!=0);
+        if(left_reg>100){
+            left_reg_abs=left_reg-100;
+            int x= get_value_offset_sp(hashMap,value1);
+            handle_illegal_imm(left_reg,x,1);
+        }else{
+            left_reg_abs=left_reg;
+        }
+    }
+    else{
+        assert(false);
+    }
+    printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+    fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+    printf("\tvcvt.s32.f32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    printf("\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    if(dest_reg<0){
+        int x= get_value_offset_sp(hashMap,value0);
+        handle_illegal_imm(dest_reg_abs,x,0);
+    }
+    return ins;
+}
+InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
+//    float强制转换为intvalue1 --> value0,现在的情况是value1有可能是立即数，也可能是变量
+    Value *value0=&ins->inst->user.value;
+    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+    int dest_reg=ins->inst->_reg_[0];
+    int left_reg=ins->inst->_reg_[1];
+    int left_reg_abs;
+    int dest_reg_abs=abs(dest_reg);
+//    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
+
+    if(isImmIntType(value1->VTy)){
+        int x=value1->pdata->var_pdata.iVal;
+        handle_illegal_imm1(0,x);
+        left_reg_abs=0;
+    }
+    else if(isLocalVarIntType(value1->VTy)){
+        assert(left_reg!=0);
+        if(left_reg>100){
+            left_reg_abs=left_reg-100;
+            int x= get_value_offset_sp(hashMap,value1);
+            handle_illegal_imm(left_reg,x,1);
+        }else{
+            left_reg_abs=left_reg;
+        }
+    }
+    else{
+        assert(false);
+    }
+    printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+    fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+    printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    printf("\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+    if(dest_reg<0){
+        int x= get_value_offset_sp(hashMap,value0);
+        handle_illegal_imm(dest_reg_abs,x,0);
+    }
+    return ins;
 }
 InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
 //    默认左值的type默认和value1的type是一样的,需要考虑value0和value1是否在寄存器或者说是内存里面，这个可以后面在完善的，现在先把样例过了
@@ -9719,6 +9801,10 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_CopyOperation(ins,hashMap);
         case FunEnd:
             return arm_trans_FuncEnd(ins);
+        case sitofp:
+            return arm_trans_sitofp(hashMap,ins);
+        case fptosi:
+            return arm_trans_fptosi(hashMap,ins);
         default:
             return ins;
     }
