@@ -113,15 +113,15 @@ void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map){
     }
 }
 
-void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBlock* caller_cur_block, Function* callee_func){
+void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBlock* caller_cur_block, Function* callee_func, BasicBlock* last_cur_new_block){
+    //callee的最后一个copy block后继为caller_cur_block的后继,必须先做，因为caller_cur_block的后继会改变
+    last_cur_new_block->true_block = caller_cur_block->true_block;
+    last_cur_new_block->false_block = caller_cur_block->false_block;
+
     HashSetFirst(callee_block_set);
     for(BasicBlock* block = HashSetNext(callee_block_set); block!=NULL; block = HashSetNext(callee_block_set)){
         BasicBlock *alias_block = HashMapGet(block_map,block);
-        //callee的最后一个copy block后继为caller_cur_block的后继
-        if(block == callee_func->tail){
-            alias_block->true_block = caller_cur_block->true_block;
-            alias_block->false_block = caller_cur_block->false_block;
-        }else{
+        if(block != callee_func->tail) {
             if(block->true_block)
                 alias_block->true_block = HashMapGet(block_map,block->true_block);
             if(block->false_block)
@@ -322,7 +322,7 @@ void func_inline(struct _InstNode* instruction_node)
 
                 //将最后一个块中的后半段ir速速设parent
                 //此时的cur_new_block必然是最后一个新block
-                InstNode *reserve = instruction_node;
+                InstNode *reserve = get_next_inst(instruction_node);
                 InstNode *prev = NULL;
                 while(cur_new_block!=NULL && reserve!=NULL &&reserve->inst->Opcode!=Label){
                     reserve->inst->Parent = cur_new_block;
@@ -334,7 +334,8 @@ void func_inline(struct _InstNode* instruction_node)
 
 
                 reduce_phi(phi_map,left_alias_map,block_map);
-                connect_caller_block(block_map,block_set,instruction->Parent,begin_func->inst->Parent->Parent);
+                if(cur_new_block!=NULL)
+                    connect_caller_block(block_map,block_set,instruction->Parent,begin_func->inst->Parent->Parent,cur_new_block);
 
                 //处理最后的一句ret和call
                 //将ret的值替换call的左值
