@@ -196,25 +196,28 @@ void func_inline(struct _InstNode* instruction_node)
                     else if(vr==NULL)   //1操作数
                     {
                         //是直接用的参数
-                        if(begin_tmp(begin_func->inst->user.use_list->Val->name) &&
-                                get_name_index(begin_func->inst->user.use_list->Val)<num)
+                        if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float &&
+                        begin_tmp(begin_func->inst->user.use_list->Val->name) && get_name_index(begin_func->inst->user.use_list->Val)<num)
                         {
                             param_index=get_name_index(begin_func->inst->user.use_list->Val);
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val);
                         }
                         //其他正常情况
-                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name))
+                        else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode, HashMapGet(left_alias_map,begin_func->inst->user.use_list->Val));
                         else  //全局
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val);
                     }
                     else   //2操作数
                     {
+                        Value *v1=begin_func->inst->user.use_list->Val;
+                        Value *v2=begin_func->inst->user.use_list[1].Val;
                         //getint(),@a
-                        if(!(begin_tmp(begin_func->inst->user.use_list->Val->name)) && !(begin_tmp(begin_func->inst->user.use_list[1].Val->name)) )
+                        if(((!begin_tmp(begin_func->inst->user.use_list->Val->name) || begin_func->inst->user.use_list->Val->VTy->ID == Int || begin_func->inst->user.use_list->Val->VTy->ID==Float) && (!begin_tmp(begin_func->inst->user.use_list[1].Val->name) || begin_func->inst->user.use_list[1].Val->VTy->ID == Int || begin_func->inst->user.use_list[1].Val->VTy->ID==Float)) )
                             ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val);
                         //%1,%2
-                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name) && begin_tmp(begin_func->inst->user.use_list[1].Val->name))
+                        else if((begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
+                        && (begin_func->inst->user.use_list[1].Val->VTy->ID!=Int && begin_func->inst->user.use_list[1].Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list[1].Val->name)))
                         {
                             if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num && get_name_index(begin_func->inst->user.use_list[1].Val)<num)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,one_param[get_name_index(begin_func->inst->user.use_list[1].Val)]->inst->user.use_list->Val);
@@ -226,7 +229,7 @@ void func_inline(struct _InstNode* instruction_node)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,HashMapGet(left_alias_map,begin_func->inst->user.use_list->Val),HashMapGet(left_alias_map,begin_func->inst->user.use_list[1].Val));
                         }
                         //%1,1
-                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name))
+                        else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
                         {
                             if((param_index= get_name_index(begin_func->inst->user.use_list->Val))<num)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val);
@@ -235,7 +238,7 @@ void func_inline(struct _InstNode* instruction_node)
                         }
                         else
                         {
-                            if((param_index= get_name_index(begin_func->inst->user.use_list[1].Val))<num)
+                            if((param_index= get_name_index(v2))<num)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,one_param[param_index]->inst->user.use_list->Val);
                             else
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,HashMapGet(left_alias_map,begin_func->inst->user.use_list[1].Val));
@@ -313,6 +316,7 @@ void func_inline(struct _InstNode* instruction_node)
                     begin_func=get_next_inst(begin_func);
                 }
 
+                //如果caller的这个block是function的最后一个block,换成cur_new_block
                 if(cur_new_block!=NULL && instruction->Parent->Parent->tail == instruction->Parent)
                     instruction->Parent->Parent->tail = cur_new_block;
 
@@ -360,6 +364,9 @@ void func_inline(struct _InstNode* instruction_node)
 
                 //对map进行内容清0
                 HashMapClean(left_alias_map);
+                HashMapClean(block_map);
+                HashSetClean(block_set);
+                HashMapClean(phi_map);
             }
         }
         else if(instruction->Opcode==GIVE_PARAM)
@@ -401,4 +408,7 @@ void func_inline(struct _InstNode* instruction_node)
     }
 
     HashMapDeinit(left_alias_map);
+    HashMapDeinit(block_map);
+    HashMapDeinit(phi_map);
+    HashSetDeinit(block_set);
 }
