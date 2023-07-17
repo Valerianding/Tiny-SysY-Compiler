@@ -52,11 +52,6 @@ add_executable(compiler
         tacmain.c)
 
 
-#aux_source_directory(. DIR_SRC)
 
-# file(GLOB_RECURSE DIR_LIB_SRC "third_party/*.cpp")
-# add_compile_options(-g -O0)
-# include_directories(src)
-# include_directories(third_party/antlr4-runtime)
-# add_executable(compiler ${DIR_SRC} ${DIR_LIB_SRC})
-#add_executable(xiaolin main.cpp)
+
+

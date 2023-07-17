@@ -34,6 +34,7 @@ bool isOutputFunction(Value *function);
 bool isTimeFunction(Value *function);
 bool JudgeXor(InstNode *insList);
 void combineZext(InstNode *insList);
+bool isSame(Value *left, Value *right);
 //true -> 会被其他用到
 //false -> 不会被其他用到
 bool JudgeIcmp(InstNode *icmp);

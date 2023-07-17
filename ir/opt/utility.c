@@ -545,3 +545,14 @@ bool isSimpleOperator(InstNode *instNode){
     }
     return false;
 }
+
+bool isSame(Value *left, Value *right){
+    if(isImmInt(left) && isImmInt(right) && (left->pdata->var_pdata.iVal == right->pdata->var_pdata.iVal)){
+        return true;
+    }else if(isImmFloat(left) && isImmFloat(right) && (left->pdata->var_pdata.fVal == right->pdata->var_pdata.fVal)){
+        return true;
+    }else if(left == right){
+        return true;
+    }
+    return false;
+}
