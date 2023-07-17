@@ -2699,8 +2699,8 @@ void travel_ir(InstNode *instruction_node)
                     // printf(" %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                     // fprintf(fptr," %s = fptosi float %s to i32\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 }else{
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+                    // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    // echo_tac[tac_cnt].dest_use=0;
                     // printf(" %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
                     // fprintf(fptr," %s = fptosi float %f to i32\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal);
                 }
@@ -2715,8 +2715,8 @@ void travel_ir(InstNode *instruction_node)
                     // printf(" %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                     // fprintf(fptr," %s = sitofp i32 %s to float\n",instruction->user.value.name,instruction->user.use_list->Val->name);
                 }else{
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+                    // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    // echo_tac[tac_cnt].dest_use=0;
                     // printf("%s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
                     // fprintf(fptr," %s = sitofp i32 %d to float\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal);
                 }
