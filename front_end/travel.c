@@ -444,8 +444,46 @@ void create_return_stmt(past root,Value* v_return,int block) {
             //只有一条返回语句
         else
         {
-            if(v!=NULL)
-                instruction = ins_new_unary_operator(Return, v);
+            if(v!=NULL){
+                if(v_cur_func->pdata->symtab_func_pdata.return_type.ID == Var_INT && (v->VTy->ID == Var_FLOAT || v->VTy->ID == Float || v->VTy->ID == Param_FLOAT || v->VTy->ID==GlobalVarFloat)){
+                    Instruction *convert = ins_new_unary_operator(fptosi,v);
+                    //将这个instruction加入总list
+                    InstNode *node_convert = new_inst_node(convert);
+                    ins_node_add(instruction_list,node_convert);
+
+                    Value *dest = NULL;
+                    if(v->VTy->ID == Float){
+                        dest = ins_get_dest(convert);
+                        dest->VTy->ID = Int;
+                        dest->pdata->var_pdata.iVal = (int)v->pdata->var_pdata.fVal;
+                    }
+                    else{
+                        dest = ins_get_value_with_name(convert);
+                        dest->VTy->ID = Var_INT;
+                    }
+                    instruction = ins_new_unary_operator(Return, dest);
+                }
+                else if(v_cur_func->pdata->symtab_func_pdata.return_type.ID == Var_FLOAT && (v->VTy->ID == Var_INT || v->VTy->ID == Int || v->VTy->ID == Param_INT || v->VTy->ID == GlobalVarInt)){
+                        Instruction *convert = ins_new_unary_operator(sitofp,v);
+                    //将这个instruction加入总list
+                    InstNode *node_convert = new_inst_node(convert);
+                    ins_node_add(instruction_list,node_convert);
+
+                    Value *dest = NULL;
+                    if(v->VTy->ID == Int){
+                        dest = ins_get_dest(convert);
+                        dest->VTy->ID = Float;
+                        dest->pdata->var_pdata.fVal = (float )v->pdata->var_pdata.iVal;
+                    }
+                    else{
+                        dest = ins_get_value_with_name(convert);
+                        dest->VTy->ID = Var_FLOAT;
+                    }
+                    instruction = ins_new_unary_operator(Return, dest);
+                }
+                else
+                    instruction = ins_new_unary_operator(Return, v);
+            }
             else
                 instruction = ins_new_zero_operator(Return);
 
@@ -1095,9 +1133,10 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
         root=root->next;
     }
     //load
+    Instruction *ins_load = NULL;
     if(flag==1 && param==0)
     {
-        Instruction *ins_load= ins_new_unary_operator(Load,v_last);
+        ins_load= ins_new_unary_operator(Load,v_last);
         Value *v_load= ins_get_value_with_name(ins_load);
         v_last=v_load;
 
@@ -1108,7 +1147,22 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
 
     if(dimension!=-1 && param==0)
         v_last->VTy->ID=AddressTyID;
-
+    else {
+        if(ins_load!= NULL && ins_load->user.value.VTy->ID==Unknown && ins_load->user.use_list->Val->pdata->var_pdata.is_offset==0)
+        {
+            if(v_array->VTy->ID==ArrayTy_INT || v_array->VTy->ID==ArrayTyID_ConstINT || v_array->VTy->ID==GlobalArrayInt || v_array->VTy->ID==GlobalArrayConstINT)
+                ins_load->user.value.VTy->ID=Var_INT;
+            else if(v_array->VTy->ID==AddressTyID)
+            {
+                if(v_array->pdata->symtab_array_pdata.address_type==0)
+                    ins_load->user.value.VTy->ID=Var_INT;
+                else
+                    ins_load->user.value.VTy->ID=Var_FLOAT;
+            }
+            else
+                ins_load->user.value.VTy->ID=Var_FLOAT;
+        }
+    }
     return v_last;
 }
 
@@ -3522,9 +3576,44 @@ struct _Value* create_load_stmt(char *name)
         v1->VTy->ID=Var_INT;
     else if(instruction->user.use_list->Val->VTy->ID==GlobalVarFloat)
         v1->VTy->ID=Var_FLOAT;
+
+    else if(instruction->user.use_list->Val->VTy->ID==Unknown)
+    {
+        Value *v_array= instruction->user.use_list->Val->alias;
+        if(v_array->VTy->ID==ArrayTy_INT || v_array->VTy->ID==ArrayTyID_ConstINT || v_array->VTy->ID==GlobalArrayInt || v_array->VTy->ID==GlobalArrayConstINT)
+            instruction->user.value.VTy->ID=Var_INT;
+        else if(v_array->VTy->ID==AddressTyID)
+        {
+            if(instruction->user.use_list->Val->pdata->var_pdata.is_offset==1)
+                instruction->user.value.VTy->ID=AddressTyID;
+            else if(v_array->pdata->symtab_array_pdata.address_type==0)
+                instruction->user.value.VTy->ID=Var_INT;
+            else
+                instruction->user.value.VTy->ID=Var_FLOAT;
+        }
+        else
+            instruction->user.value.VTy->ID=Var_FLOAT;
+    }
+    else if(instruction->user.use_list->Val->VTy->ID==AddressTyID)
+    {
+        if(instruction->user.value.VTy->ID==Unknown && instruction->user.use_list->Val->pdata->var_pdata.is_offset==0)
+        {
+            Value *v_array= instruction->user.use_list->Val->alias;
+            if(v_array->VTy->ID==ArrayTy_INT || v_array->VTy->ID==ArrayTyID_ConstINT || v_array->VTy->ID==GlobalArrayInt || v_array->VTy->ID==GlobalArrayConstINT)
+                instruction->user.value.VTy->ID=Var_INT;
+            else if(v_array->VTy->ID==AddressTyID)
+            {
+                if(v_array->pdata->symtab_array_pdata.address_type==0)
+                    instruction->user.value.VTy->ID=Var_INT;
+                else
+                    instruction->user.value.VTy->ID=Var_FLOAT;
+            }
+            else
+                instruction->user.value.VTy->ID=Var_FLOAT;
+        }
+    }
     else
         v1->VTy->ID=instruction->user.use_list->Val->VTy->ID;
-
 
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
@@ -3548,6 +3637,20 @@ struct _Value* create_return_load(Value *v_return)
     return v1;
 }
 
+//0代表int,1代表float
+int address_type(Value* v)
+{
+    Value *v_array = v->alias;
+    if(v_array->VTy->ID == ArrayTy_INT || v_array->VTy->ID == ArrayTyID_ConstINT || v_array->VTy->ID == GlobalArrayInt || v_array->VTy->ID == GlobalArrayConstINT){
+        return 0;
+    }
+    else if(v_array->VTy->ID == AddressTyID){
+        if(v_array->pdata->symtab_array_pdata.address_type ==0)
+            return 0;
+    }
+    return 1;
+}
+
 //将v1的值存入v2的栈帧地址中
 void create_store_stmt(Value* v1,Value* v2)
 {
@@ -3555,7 +3658,8 @@ void create_store_stmt(Value* v1,Value* v2)
 
     Instruction *convert = NULL;
     //将float存进int
-    if(v2->VTy->ID == Var_INT && (v1->VTy->ID == Var_FLOAT || v1->VTy->ID == Float || v1->VTy->ID == Param_FLOAT)){
+    if((v2->VTy->ID == Var_INT || v2->VTy->ID == Param_INT || v2->VTy->ID == GlobalVarInt || (v2->VTy->ID == AddressTyID && !address_type(v2)))
+        && (v1->VTy->ID == Var_FLOAT || v1->VTy->ID == Float || v1->VTy->ID == Param_FLOAT || v1->VTy->ID == GlobalVarFloat)){
         convert = ins_new_unary_operator(fptosi,v1);
         //将这个instruction加入总list
         InstNode *node_convert = new_inst_node(convert);
@@ -3574,7 +3678,8 @@ void create_store_stmt(Value* v1,Value* v2)
         instruction = ins_new_binary_operator(Store,dest,v2);
     }
     //将int存进float
-    else if(v2->VTy->ID == Var_FLOAT && (v1->VTy->ID == Var_INT || v1->VTy->ID == Int || v1->VTy->ID == Param_INT)){
+    else if((v2->VTy->ID == Var_FLOAT || v2->VTy->ID == Param_FLOAT || v2->VTy->ID == GlobalVarFloat || (v2->VTy->ID == AddressTyID && address_type(v2)))
+    && (v1->VTy->ID == Var_INT || v1->VTy->ID == Int || v1->VTy->ID == Param_INT || v1->VTy->ID == GlobalVarInt)){
         convert = ins_new_unary_operator(sitofp,v1);
         //将这个instruction加入总list
         InstNode *node_convert = new_inst_node(convert);
@@ -5142,7 +5247,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 Value *insValue = ins_get_dest(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
-                printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
+                //printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
+                printf(" %s = phi i32",instruction->user.value.name);
                 fprintf(fptr," %s = phi i32",instruction->user.value.name);
                 unsigned int size=HashSetSize(phiSet);
                 int i=0;

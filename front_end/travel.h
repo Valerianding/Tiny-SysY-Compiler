@@ -15,7 +15,7 @@ void travel_finish_type(struct _InstNode *instruction_node);
 
 void create_blockItemList(past root,Value* v_return,int flag,int block);
 void create_instruction_list(past root,Value* v_return,int block);
-void  create_assign_stmt(past root,Value* v_return,int block);
+void create_assign_stmt(past root,Value* v_return,int block);
 void create_return_stmt(past root,Value* v_return,int block);
 void create_var_decl(past root,Value* v_return,bool is_global,int block);
 void create_if_stmt(past root,Value* v_return,int block);

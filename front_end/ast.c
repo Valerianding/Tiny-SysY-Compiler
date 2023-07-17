@@ -277,31 +277,37 @@ void insert_var_into_symtab(past type,past p)
         else
             v->pdata->define_flag=0;
 
-        //比如int a=8，为常数;其他复杂的情况在这一步暂时认为是无初值!
-        if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
-            v->pdata->var_pdata.iVal=p->right->iVal;
-            if(is_global_map(this))
-                v->VTy->ID=GlobalVarInt;
-            else
-                v->VTy->ID=Var_INT;
-        }
-        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0){
-            v->pdata->var_pdata.fVal=p->right->fVal;
+        if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
             if(is_global_map(this))
                 v->VTy->ID=GlobalVarFloat;
             else
                 v->VTy->ID=Var_FLOAT;
         }
-            //是expr
+        else if(strcmp(bstr2cstr(type->sVal,'\0'),"int")==0){
+            if(is_global_map(this))
+                v->VTy->ID=GlobalVarInt;
+            else
+                v->VTy->ID=Var_INT;
+        }
+
+        //lsy
+        //比如int a=8，为常数;其他复杂的情况在这一步暂时认为是无初值!
+        if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"int")==0){
+            v->pdata->var_pdata.iVal=p->right->iVal;
+        } else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"int")==0){
+            v->pdata->var_pdata.iVal=(int)p->right->iVal;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
+            v->pdata->var_pdata.fVal=p->right->fVal;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
+            v->pdata->var_pdata.fVal=(float)p->right->iVal;
+        }
+         //是expr
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"expr")==0)
         {
             if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
             {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarFloat;
-                else
-                    v->VTy->ID=Var_FLOAT;
-
                 past ret = cal_exp(p->right);
                 float res = ret->fVal;
                 if(res!=-12345678)
@@ -309,11 +315,6 @@ void insert_var_into_symtab(past type,past p)
             }
             else
             {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarInt;
-                else
-                    v->VTy->ID=Var_INT;
-
                 past ret = cal_exp(p->right);
                 int res= (int)ret->fVal;
                 if(res!=-12345678)
@@ -329,76 +330,15 @@ void insert_var_into_symtab(past type,past p)
                 if(v_num->VTy->ID==Const_FLOAT)
                 {
                     v->pdata->var_pdata.fVal=v_num->pdata->var_pdata.fVal;
-                    //v->VTy->ID=Const_FLOAT;
-                    if(is_global_map(this))
-                        v->VTy->ID=GlobalVarFloat;
-                    else
-                        v->VTy->ID=Var_FLOAT;
                 }
                     //Const_Int
                 else if(v_num->VTy->ID==Const_INT)
                 {
                     v->pdata->var_pdata.iVal=v_num->pdata->var_pdata.iVal;
-                    //v->VTy->ID=Const_INT;
-                    if(is_global_map(this))
-                        v->VTy->ID=GlobalVarInt;
-                    else
-                        v->VTy->ID=Var_INT;
-                }
-                else
-                {
-                    if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-                    {
-                        if(is_global_map(this))
-                            v->VTy->ID=GlobalVarFloat;
-                        else
-                            v->VTy->ID=Var_FLOAT;
-                    }
-                    else
-                    {
-                        if(is_global_map(this))
-                            v->VTy->ID=GlobalVarInt;
-                        else
-                            v->VTy->ID=Var_INT;
-                    }
-                }
-            }
-            //参数
-            else
-            {
-                if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-                {
-                    if(is_global_map(this))
-                        v->VTy->ID=GlobalVarFloat;
-                    else
-                        v->VTy->ID=Var_FLOAT;
-                }
-                else
-                {
-                    if(is_global_map(this))
-                        v->VTy->ID=GlobalVarInt;
-                    else
-                        v->VTy->ID=Var_INT;
                 }
             }
         }
-        else
-        {
-            if(strcmp(bstr2cstr(type->sVal,'\0'),"float")==0)
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarFloat;
-                else
-                    v->VTy->ID=Var_FLOAT;
-            }
-            else
-            {
-                if(is_global_map(this))
-                    v->VTy->ID=GlobalVarInt;
-                else
-                    v->VTy->ID=Var_INT;
-            }
-        }
+        //lsy
 
         if(is_global_map(this))
         {
@@ -414,7 +354,6 @@ void insert_var_into_symtab(past type,past p)
         symtab_insert_value_name(this,bstr2cstr(p->left->sVal,0),v);
     }
 
-        //TODO 怎么存初始化的值{1,2,3,4}
     else if((strcmp(bstr2cstr(p->nodeType,'\0'),"VarDef_array_init")==0) || (strcmp(bstr2cstr(p->nodeType,'\0'),"ConstDef_array_init")==0))
     {
         Value *v=(Value*) malloc(sizeof (Value));
@@ -519,8 +458,12 @@ void insert_var_into_symtab(past type,past p)
             strcpy(v->name,bstr2cstr(p->left->sVal,0));
         }
 
-        if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0){
+        if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"int")==0){
             v->pdata->var_pdata.iVal=p->right->iVal;
+            v->VTy->ID=Const_INT;
+        }
+        else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_int")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
+            v->pdata->var_pdata.iVal=(int)p->right->fVal;
             v->VTy->ID=Const_INT;
         }
         else if(strcmp(bstr2cstr(p->right->nodeType,'\0'),"num_float")==0 && strcmp(bstr2cstr(type->sVal,'\0'),"float")==0){
