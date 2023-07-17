@@ -196,7 +196,7 @@ int main(int argc, char* argv[]){
 
 
     //phi上的优化
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 //
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -205,7 +205,7 @@ int main(int argc, char* argv[]){
         cleanLiveSet(currentFunction);
     }
 
-//    //请注释掉我跑llvm脚本 phi函数消除
+    //请注释掉我跑llvm脚本 phi函数消除
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 //
