@@ -1346,6 +1346,7 @@ void travel_ir(InstNode *instruction_node)
             echo_tac[i].left_use=-1;
             echo_tac[i].right_use=-1;
             echo_tac[i].irnode=NULL;
+            echo_tac[i].give_param=0;
         }
         int p=0;
         int if_br_ir=0;

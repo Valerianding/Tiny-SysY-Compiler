@@ -25,7 +25,7 @@
 
 
 #define all_in_memory 0
-#define reg_alloc_test 0
+#define reg_alloc_test 1
 struct reg_queue
 {
     int variable_index;
