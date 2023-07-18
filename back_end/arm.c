@@ -3463,7 +3463,39 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
     return  ins;
 
 }
+int count_bit(int value){
+    assert(value>0);
+    int count=0;
+    while (value){
+        value&=(value-1);
+        count++;
+    }
+    return count;
+}
 
+int optimization_mul(int dest_reg,int left_reg,int imm){
+
+    int imm_abs= abs(imm);
+    int n= power_of_two(imm_abs);
+    if(n!=-1){ //    2^n 和 -2^n 优化
+        if(imm>0){
+            printf("\tlsl\tr%d,r%d,#%d\n",dest_reg,left_reg,n);
+            fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg,left_reg,n);
+        }else if(imm<0){
+            printf("\tmov\tr1,#0\n");
+            fprintf(fp,"\tmov\tr1,#0\n");
+            printf("\tsub\tr%d,r1,r%d,lsl #%d\n",dest_reg,left_reg,n);
+            fprintf(fp,"\tsub\tr%d,r1,r%d,lsl #%d\n",dest_reg,left_reg,n);
+        }
+        return 1;
+    }
+    //TODO
+    int bit1_num= count_bit(imm_abs);
+    if(bit1_num==2){ // 优化乘数或者是被乘数（先取绝对值转换为正数）的二进制中有两个一的情况，改用移位和加法指令来实现。
+//        这里还需要去确定到底是那两位是1。
+    }
+
+}
 InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
