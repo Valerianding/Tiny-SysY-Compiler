@@ -10,9 +10,10 @@ int regi=0;
 //si
 int regs=0;
 //优化开关1打开
-int optimization=1;//优化总开关
-int opt_div2=1; //除以2幂次
-int opt_mod2=1; //取余2幂次
+int optimization=0;//优化总开关
+int opt_div2=0; //除以2幂次
+int opt_mod2=0; //取余2幂次
+int opt_mul=0;  //乘法优化
 
 int func_call_func;
 extern InstNode *one_param[];
