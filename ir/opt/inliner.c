@@ -118,6 +118,36 @@ void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBl
     last_cur_new_block->true_block = caller_cur_block->true_block;
     last_cur_new_block->false_block = caller_cur_block->false_block;
 
+    //caller的call ir所在块也要单独处理，phi的到达块要变成最后一个块,TODO 它的后继的前驱也要调整
+    if(caller_cur_block->true_block){
+        InstNode *node = get_next_inst(caller_cur_block->true_block->head_node);
+        while (node->inst->Opcode == Phi){
+            HashSetFirst(node->inst->user.value.pdata->pairSet);
+            for(pair* p = HashSetNext(node->inst->user.value.pdata->pairSet); p!=NULL; p=HashSetNext(node->inst->user.value.pdata->pairSet)){
+                if(p->from == caller_cur_block)
+                    p->from = last_cur_new_block;
+            }
+            node = get_next_inst(node);
+        }
+        //调整true_block的前驱
+        bb_delete_one_prev(caller_cur_block->true_block, caller_cur_block);
+        bb_add_prev(last_cur_new_block,caller_cur_block->true_block);
+    }
+    if(caller_cur_block->false_block){
+        InstNode *node = get_next_inst(caller_cur_block->false_block->head_node);
+        while (node->inst->Opcode == Phi){
+            HashSetFirst(node->inst->user.value.pdata->pairSet);
+            for(pair* p = HashSetNext(node->inst->user.value.pdata->pairSet); p!=NULL; p=HashSetNext(node->inst->user.value.pdata->pairSet)){
+                if(p->from == caller_cur_block)
+                    p->from = last_cur_new_block;
+            }
+            node = get_next_inst(node);
+        }
+        //调整false_block的前驱
+        bb_delete_one_prev(caller_cur_block->false_block, caller_cur_block);
+        bb_add_prev(last_cur_new_block,caller_cur_block->false_block);
+    }
+
     HashSetFirst(callee_block_set);
     for(BasicBlock* block = HashSetNext(callee_block_set); block!=NULL; block = HashSetNext(callee_block_set)){
         BasicBlock *alias_block = HashMapGet(block_map,block);
