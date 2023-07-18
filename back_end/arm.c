@@ -10,9 +10,9 @@ int regi=0;
 //si
 int regs=0;
 //优化开关1打开
-int optimization=0;//优化总开关
+int optimization=1;//优化总开关
 int opt_div2=0; //除以2幂次
-int opt_mod2=0; //取余2幂次
+int opt_mod2=1; //取余2幂次
 
 int func_call_func;
 extern InstNode *one_param[];
@@ -6363,10 +6363,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                         printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
                         fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
                         if(imm_is_valid(tmp)){
-                            printf("\tbic\tr1,r1,#%d\n",tmp);
-                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                            printf("\tbic\tr1,r1,#%d\n",tmp-1);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp-1);
                         }else{
-                            handle_illegal_imm1(3,tmp);
+                            handle_illegal_imm1(3,tmp-1);
                             printf("\tbic\tr1,r1,r3\n");
                             fprintf(fp,"\tbic\tr1,r1,r3\n");
                         }
@@ -6378,10 +6378,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                         printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
                         fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
                         if(imm_is_valid(tmp)){
-                            printf("\tbic\tr1,r1,#%d\n",tmp);
-                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                            printf("\tbic\tr1,r1,#%d\n",tmp-1);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp-1);
                         }else{
-                            handle_illegal_imm1(3,tmp);
+                            handle_illegal_imm1(3,tmp-1);
                             printf("\tbic\tr1,r1,r3\n");
                             fprintf(fp,"\tbic\tr1,r1,r3\n");
                         }
@@ -6418,10 +6418,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                         printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
                         fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
                         if(imm_is_valid(tmp)){
-                            printf("\tbic\tr1,r1,#%d\n",tmp);
-                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                            printf("\tbic\tr1,r1,#%d\n",tmp-1);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp-1);
                         }else{
-                            handle_illegal_imm1(3,tmp);
+                            handle_illegal_imm1(3,tmp-1);
                             printf("\tbic\tr1,r1,r3\n");
                             fprintf(fp,"\tbic\tr1,r1,r3\n");
                         }
@@ -6433,10 +6433,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                         printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
                         fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
                         if(imm_is_valid(tmp)){
-                            printf("\tbic\tr1,r1,#%d\n",tmp);
-                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                            printf("\tbic\tr1,r1,#%d\n",tmp-1);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp-1);
                         }else{
-                            handle_illegal_imm1(3,tmp);
+                            handle_illegal_imm1(3,tmp-1);
                             printf("\tbic\tr1,r1,r3\n");
                             fprintf(fp,"\tbic\tr1,r1,r3\n");
                         }
