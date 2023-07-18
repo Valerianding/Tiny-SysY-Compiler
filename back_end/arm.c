@@ -11,7 +11,7 @@ int regi=0;
 int regs=0;
 //优化开关1打开
 int optimization=1;//优化总开关
-int opt_div2=0; //除以2幂次
+int opt_div2=1; //除以2幂次
 int opt_mod2=1; //取余2幂次
 
 int func_call_func;
