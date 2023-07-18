@@ -6328,47 +6328,171 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         }
     }
 
+//    这里可以优化
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
-        if((imm_is_valid(x2))){
-            printf("\tmov\tr1,#%d\n",x2);
-            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-            if(left_reg > 100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+        int tmp= abs(x2);
+        int n= power_of_two(tmp);
+        if(n!=-1 && optimization==1 && opt_mod2==1){ //优化
+            if(x2<0){
+                if(n==1){
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+                        printf("\tadd\tr1,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
+                        fprintf(fp,"\tadd\tr1,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
+                        printf("\tbic\tr1,r1,#1\n");
+                        fprintf(fp,"\tbic\tr1,r1,#1\n");
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                    } else{
+                        printf("\tadd\tr1,r%d,r%d,lsr #31\n",left_reg,left_reg);
+                        fprintf(fp,"\tadd\tr1,r%d,r%d,lsr #31\n",left_reg,left_reg);
+                        printf("\tbic\tr1,r1,#1\n");
+                        fprintf(fp,"\tbic\tr1,r1,#1\n");
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                    }
+                } else{
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
 
-                printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-            } else{
-                printf("\tmov\tr0,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                        printf("\tasr\tr1,r%d,#31\n",left_reg-100);
+                        fprintf(fp,"\tasr\tr1,r%d,#31\n",left_reg-100);
+                        printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
+                        fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
+                        if(imm_is_valid(tmp)){
+                            printf("\tbic\tr1,r1,#%d\n",tmp);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                        }else{
+                            handle_illegal_imm1(3,tmp);
+                            printf("\tbic\tr1,r1,r3\n");
+                            fprintf(fp,"\tbic\tr1,r1,r3\n");
+                        }
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                    } else{
+                        printf("\tasr\tr1,r%d,#31\n",left_reg);
+                        fprintf(fp,"\tasr\tr1,r%d,#31\n",left_reg);
+                        printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
+                        fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
+                        if(imm_is_valid(tmp)){
+                            printf("\tbic\tr1,r1,#%d\n",tmp);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                        }else{
+                            handle_illegal_imm1(3,tmp);
+                            printf("\tbic\tr1,r1,r3\n");
+                            fprintf(fp,"\tbic\tr1,r1,r3\n");
+                        }
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                    }
+                }
+            }else if(x2>0){
+                if(n==1){
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+                        printf("\tadd\tr1,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
+                        fprintf(fp,"\tadd\tr1,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
+                        printf("\tbic\tr1,r1,#1\n");
+                        fprintf(fp,"\tbic\tr1,r1,#1\n");
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                    } else{
+                        printf("\tadd\tr1,r%d,r%d,lsr #31\n",left_reg,left_reg);
+                        fprintf(fp,"\tadd\tr1,r%d,r%d,lsr #31\n",left_reg,left_reg);
+                        printf("\tbic\tr1,r1,#1\n");
+                        fprintf(fp,"\tbic\tr1,r1,#1\n");
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                    }
+                } else{
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+
+                        printf("\tasr\tr1,r%d,#31\n",left_reg-100);
+                        fprintf(fp,"\tasr\tr1,r%d,#31\n",left_reg-100);
+                        printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
+                        fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg-100,32-n);
+                        if(imm_is_valid(tmp)){
+                            printf("\tbic\tr1,r1,#%d\n",tmp);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                        }else{
+                            handle_illegal_imm1(3,tmp);
+                            printf("\tbic\tr1,r1,r3\n");
+                            fprintf(fp,"\tbic\tr1,r1,r3\n");
+                        }
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg-100);
+                    } else{
+                        printf("\tasr\tr1,r%d,#31\n",left_reg);
+                        fprintf(fp,"\tasr\tr1,r%d,#31\n",left_reg);
+                        printf("\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
+                        fprintf(fp,"\tadd\tr1,r%d,r1,lsr #%d\n",left_reg,32-n);
+                        if(imm_is_valid(tmp)){
+                            printf("\tbic\tr1,r1,#%d\n",tmp);
+                            fprintf(fp,"\tbic\tr1,r1,#%d\n",tmp);
+                        }else{
+                            handle_illegal_imm1(3,tmp);
+                            printf("\tbic\tr1,r1,r3\n");
+                            fprintf(fp,"\tbic\tr1,r1,r3\n");
+                        }
+                        printf("\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tsub\tr%d,r%d,r1\n",dest_reg_abs,left_reg);
+                    }
+                }
             }
         }else{
-            handle_illegal_imm1(1,x2);
+            if((imm_is_valid(x2))){
+                printf("\tmov\tr1,#%d\n",x2);
+                fprintf(fp,"\tmov\tr1,#%d\n",x2);
+                if(left_reg > 100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
 
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                } else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                }
+            }else{
+                handle_illegal_imm1(1,x2);
 
-                printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-            } else{
-                printf("\tmov\tr0,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+
+                    printf("\tmov\tr0,r%d\n",left_reg-100);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                } else{
+                    printf("\tmov\tr0,r%d\n",left_reg);
+                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+                }
             }
+            if(reg_save[12]==1){
+                printf("\tstr\tr12,[sp,#-4]!\n");
+                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+            }
+            printf("\tbl\t__aeabi_idivmod\n");
+            fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+            if(reg_save[12]==1){
+                printf("\tldr\tr12,[sp],#4\n");
+                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+            }
+            printf("\tmov\tr%d,r1\n",dest_reg_abs);
+            fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+
         }
-        if(reg_save[12]==1){
-            printf("\tstr\tr12,[sp,#-4]!\n");
-            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-        }
-        printf("\tbl\t__aeabi_idivmod\n");
-        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-        if(reg_save[12]==1){
-            printf("\tldr\tr12,[sp],#4\n");
-            fprintf(fp,"\tldr\tr12,[sp],#4\n");
-        }
-        printf("\tmov\tr%d,r1\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+
+
+
+
+
+
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
