@@ -27,9 +27,9 @@ InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name)
 }
 
 //TODO 目前内联条件(可能会再修改)
-//1. 无跳转(单个基本块)
-//2. 不call非库函数
-//3. 变量数最大为6(私心多给了1个)
+//1. 最多4个基本块
+//2. 不递归
+//3. 变量数最大为20
 void label_func_inline(struct _InstNode* instNode_list)
 {
     InstNode *temp = get_next_inst(instNode_list);
@@ -42,7 +42,7 @@ void label_func_inline(struct _InstNode* instNode_list)
     //遍历函数
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         //1.数变量数量
-        //2.判断有无br或call
+        //2.判断基本块与递归call
         BasicBlock *entry = currentFunction->entry;
         BasicBlock *end = currentFunction->tail;
 
@@ -55,37 +55,77 @@ void label_func_inline(struct _InstNode* instNode_list)
         //跳过第一条FunBegin
         currNode = get_next_inst(currNode);
         int max_num=0;       //不管有参没参，变量数都等于max_num数
+        int block_num = 1;
         while (currNode != get_next_inst(end->tail_node)) {
             //最后的一定出现在左边
-            if(currNode->inst->user.value.name!=NULL)
-            {
+            if(currNode->inst->user.value.name!=NULL){
                 max_num= get_name_index(&currNode->inst->user.value);
-                if(max_num>6)
+                if(max_num>20)
                 {
                     funcValue->pdata->symtab_func_pdata.flag_inline=0;
                     break;
                 }
             }
-
-            if(currNode->inst->Opcode==Call || currNode->inst->Opcode==br || currNode->inst->Opcode==br_i1 || currNode->inst->Opcode==br_i1_true)
-            {
-                if(currNode->inst->Opcode==Call)
-                {
-                    //非库函数
-                    if(symtab_lookup_withmap(this,currNode->inst->user.use_list->Val->name,&this->value_maps->next->map)!=NULL)
-                    {
-                        funcValue->pdata->symtab_func_pdata.flag_inline=0;
-                        break;
-                    }
-                }
-                else
-                {
+            //判断基本块数量
+            if(currNode->inst->Opcode==Label){
+                block_num++;
+                if(block_num>4){
                     funcValue->pdata->symtab_func_pdata.flag_inline=0;
                     break;
                 }
+            }
+
+            if(currNode->inst->Opcode==Call && currNode->inst->user.use_list->Val->name == funcValue->name){
+                funcValue->pdata->symtab_func_pdata.flag_inline=0;
+                break;
             }
 
             currNode = get_next_inst(currNode);
+        }
+    }
+}
+
+//将phi的信息补充完整
+void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map){
+    HashMapFirst(phi_map);
+    for(Pair* p = HashMapNext(phi_map); p!=NULL; p = HashMapNext(phi_map)){
+        Value *v_key = p->key;
+        Value *v_value = p->value;
+
+        HashSet* set = HashSetInit();
+        HashSetFirst(v_key->pdata->pairSet);
+        for(pair *pp = HashSetNext(v_key->pdata->pairSet); pp!=NULL ;pp = HashSetNext(v_key->pdata->pairSet)){
+            pair* pair1 = (pair*) malloc(sizeof (pair));
+            pair1->from = HashMapGet(block_map,pp->from);
+
+            Value *num = (Value*) malloc(sizeof (Value));
+            if(pp->define->VTy->ID == Int){
+                value_init_int(num,pp->define->pdata->var_pdata.iVal);
+            }else if(pp->define->VTy->ID == Float){
+                value_init_float(num,pp->define->pdata->var_pdata.fVal);
+            }else{
+                num = HashMapGet(alias_map,pp->define);
+            }
+            pair1->define = num;
+            HashSetAdd(set,pair1);
+        }
+        v_value->pdata->pairSet = set;
+    }
+}
+
+void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBlock* caller_cur_block, Function* callee_func){
+    HashSetFirst(callee_block_set);
+    for(BasicBlock* block = HashSetNext(callee_block_set); block!=NULL; block = HashSetNext(callee_block_set)){
+        BasicBlock *alias_block = HashMapGet(block_map,block);
+        //callee的最后一个copy block后继为caller_cur_block的后继
+        if(block == callee_func->tail){
+            alias_block->true_block = caller_cur_block->true_block;
+            alias_block->false_block = caller_cur_block->false_block;
+        }else{
+            if(block->true_block)
+                alias_block->true_block = HashMapGet(block_map,block->true_block);
+            if(block->false_block)
+                alias_block->false_block = HashMapGet(block_map,block->false_block);
         }
     }
 }
@@ -102,6 +142,16 @@ void func_inline(struct _InstNode* instruction_node)
     int give_count = 0;
     //Value*——>Value*
     HashMap *left_alias_map = HashMapInit();     //代替原来alias的形式
+
+    //callee中基本块-------->caller中基本块
+    HashMap* block_map = HashMapInit();
+    //phi map,因为phi的信息可能要遍历到后面才能找全
+    HashMap *phi_map = HashMapInit();
+    //callee中的block set
+    HashSet* block_set = HashSetInit();
+
+    BasicBlock *cur_new_block = NULL;
+
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
 
@@ -128,6 +178,9 @@ void func_inline(struct _InstNode* instruction_node)
                 begin_func=get_next_inst(begin_func);     //函数中的第一条ir
                 int index=1;
                 int param_index=0;
+
+                HashMapPut(block_map, begin_func->inst->Parent, instruction->Parent);
+                HashSetAdd(block_set, begin_func->inst->Parent);
                 while (begin_func->inst->Opcode!=Return)
                 {
                     Instruction *ins_copy=NULL;
@@ -189,7 +242,42 @@ void func_inline(struct _InstNode* instruction_node)
                         }
                     }
 
-                    if(v->name!=NULL)  //左值有名字
+                    node_copy = new_inst_node(ins_copy);
+
+                    if(begin_func->inst->Opcode == Label){
+                        ins_copy->user.value.pdata->instruction_pdata.true_goto_location = begin_func->inst->user.value.pdata->instruction_pdata.true_goto_location;
+                        BasicBlock *new_block = bb_create();
+                        new_block->head_node = node_copy;
+                        new_block->Parent = instruction->Parent->Parent;
+                        //TODO new_block->preBlocks
+                        if(cur_new_block == NULL)
+                            new_block->preBlocks = instruction->Parent->preBlocks;
+//                        else
+//                            bb_add_prev(cur_new_block,)
+                        new_block->id = index;
+                        index++;
+                        //new_block->id = begin_func->inst->user.value.pdata->instruction_pdata.true_goto_location;
+                        cur_new_block = new_block;
+                        HashMapPut(block_map, begin_func->inst->Parent, new_block);
+                        HashSetAdd(block_set, begin_func->inst->Parent);
+                    }
+                    else if(begin_func->inst->Opcode == br || begin_func->inst->Opcode == br_i1){
+                        node_copy->inst->user.value.pdata = begin_func->inst->user.value.pdata;
+                        if(cur_new_block == NULL)
+                            instruction->Parent->tail_node = node_copy;
+                        else
+                            cur_new_block->tail_node = node_copy;
+                    }
+
+
+                    if(begin_func->inst->Opcode == Phi){
+                        Value *v_left_now=ins_get_value_with_name_and_index(ins_copy,index);
+                        v_left_now->IsPhi = true;
+                        v_left_now->VTy = begin_func->inst->user.value.VTy;
+                        HashMapPut(phi_map, &begin_func->inst->user.value, &ins_copy->user.value);
+                        HashMapPut(left_alias_map,&begin_func->inst->user.value,v_left_now);
+                    }
+                    else if(v->name!=NULL)  //左值有名字
                     {
                         Value *v_left_now=ins_get_value_with_name_and_index(ins_copy,index);
                         index++;
@@ -205,8 +293,11 @@ void func_inline(struct _InstNode* instruction_node)
                     }
 
                     //设置所属基本块
-                    ins_copy->Parent = instruction->Parent;
-                    node_copy = new_inst_node(ins_copy);
+                    if(cur_new_block == NULL)
+                        ins_copy->Parent = instruction->Parent;
+                    else
+                        ins_copy->Parent = cur_new_block;
+
                     //alloca上提
                     if(ins_copy->Opcode==Alloca)
                     {
@@ -221,6 +312,25 @@ void func_inline(struct _InstNode* instruction_node)
 
                     begin_func=get_next_inst(begin_func);
                 }
+
+                if(cur_new_block!=NULL && instruction->Parent->Parent->tail == instruction->Parent)
+                    instruction->Parent->Parent->tail = cur_new_block;
+
+                //将最后一个块中的后半段ir速速设parent
+                //此时的cur_new_block必然是最后一个新block
+                InstNode *reserve = instruction_node;
+                InstNode *prev = NULL;
+                while(cur_new_block!=NULL && reserve!=NULL &&reserve->inst->Opcode!=Label){
+                    reserve->inst->Parent = cur_new_block;
+                    prev = reserve;
+                    reserve = get_next_inst(reserve);
+                }
+                if(cur_new_block!=NULL)
+                    cur_new_block->tail_node = prev;
+
+
+                reduce_phi(phi_map,left_alias_map,block_map);
+                connect_caller_block(block_map,block_set,instruction->Parent,begin_func->inst->Parent->Parent);
 
                 //处理最后的一句ret和call
                 //将ret的值替换call的左值
@@ -239,8 +349,7 @@ void func_inline(struct _InstNode* instruction_node)
                 }
 
                 //one_param里面的ir(give_param)也可以从链中删掉了
-                for(int i=0;i<v_func->pdata->symtab_func_pdata.param_num;i++)
-                {
+                for(int i=0;i<v_func->pdata->symtab_func_pdata.param_num;i++){
                     deleteIns(one_param[i]);
                 }
 
@@ -248,9 +357,10 @@ void func_inline(struct _InstNode* instruction_node)
                 InstNode *pre=get_prev_inst(instruction_node);
                 deleteIns(instruction_node);
                 instruction_node=pre;
+
+                //对map进行内容清0
+                HashMapClean(left_alias_map);
             }
-            //对map进行内容清0
-            HashMapClean(left_alias_map);
         }
         else if(instruction->Opcode==GIVE_PARAM)
         {
