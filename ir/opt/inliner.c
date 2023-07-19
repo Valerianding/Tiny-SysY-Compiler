@@ -28,9 +28,9 @@ InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name)
 }
 
 //TODO 目前内联条件(可能会再修改)
-//1. 最多4个基本块
+//1. 最多5个基本块
 //2. 不递归
-//3. 变量数最大为20
+//3. 变量数最大为30
 void label_func_inline(struct _InstNode* instNode_list)
 {
     InstNode *temp = get_next_inst(instNode_list);
@@ -61,7 +61,7 @@ void label_func_inline(struct _InstNode* instNode_list)
             //最后的一定出现在左边
             if(currNode->inst->user.value.name!=NULL){
                 max_num= get_name_index(&currNode->inst->user.value);
-                if(max_num>200)
+                if(max_num>30)
                 {
                     funcValue->pdata->symtab_func_pdata.flag_inline=0;
                     printf("%s inline 0\n",funcValue->name);
@@ -71,7 +71,7 @@ void label_func_inline(struct _InstNode* instNode_list)
             //判断基本块数量
             if(currNode->inst->Opcode==Label){
                 block_num++;
-                if(block_num>20){
+                if(block_num>5){
                     funcValue->pdata->symtab_func_pdata.flag_inline=0;
                     printf("%s inline 0\n",funcValue->name);
                     break;
