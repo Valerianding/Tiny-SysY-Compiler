@@ -3492,8 +3492,11 @@ int optimization_mul(int dest_reg,int left_reg,int imm){
     //TODO
     int bit1_num= count_bit(imm_abs);
     if(bit1_num==2){ // 优化乘数或者是被乘数（先取绝对值转换为正数）的二进制中有两个一的情况，改用移位和加法指令来实现。
-//        这里还需要去确定到底是那两位是1。
+//        这里还需要去确定到底是那两位是1，确定下来之后，将被乘数左移x1位存放到r0，r0再加上被乘数左移x2位
+//        如果imm是负数的话，rsb 0将结果取反就可以了，如果是正数，r0里面直接就是存放的结果了
+        return 1;
     }
+//    还可以优化的就是照着谌强的区分奇偶和加减1成为2的幂次。
 
 }
 InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
@@ -6698,14 +6701,14 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     }
     if(param_num_<=4){
         if(flag==1){
-            printf("\tstr\tr0,[sp,#-4]!\n");
-            fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+            printf("\tsub\tsp,sp,#4\n");
+            fprintf(fp,"\tsub\tsp,sp,#4\n");
             reflag=1;
         }
     }else{
         if(((flag+param_num_-4)%2)!=0){
-            printf("\tstr\tr0,[sp,#-4]!\n");
-            fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+            printf("\tsub\tsp,sp,#4\n");
+            fprintf(fp,"\tsub\tsp,sp,#4\n");
             reflag=1;
         }
     }
