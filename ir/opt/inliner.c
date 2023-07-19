@@ -93,7 +93,7 @@ void label_func_inline(struct _InstNode* instNode_list)
 }
 
 //将phi的信息补充完整
-void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map){
+void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map, int param){
     HashMapFirst(phi_map);
     for(Pair* p = HashMapNext(phi_map); p!=NULL; p = HashMapNext(phi_map)){
         Value *v_key = p->key;
@@ -106,12 +106,15 @@ void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map){
             pair1->from = HashMapGet(block_map,pp->from);
 
             Value *num = (Value*) malloc(sizeof (Value));
+            int param_index;
             if(pp->define == NULL)
                 num = NULL;
             else if(pp->define->VTy->ID == Int){
                 value_init_int(num,pp->define->pdata->var_pdata.iVal);
             }else if(pp->define->VTy->ID == Float){
                 value_init_float(num,pp->define->pdata->var_pdata.fVal);
+            }else if(begin_tmp(pp->define->name) && (param_index = get_name_index(pp->define)) < param){
+                num = one_param[param_index]->inst->user.use_list->Val;
             }else{
                 num = HashMapGet(alias_map,pp->define);
             }
@@ -380,7 +383,7 @@ void func_inline(struct _InstNode* instruction_node)
                     cur_new_block->tail_node = prev;
 
 
-                reduce_phi(phi_map,left_alias_map,block_map);
+                reduce_phi(phi_map,left_alias_map,block_map,num);
                 if(cur_new_block!=NULL)
                     connect_caller_block(block_map,block_set,instruction->Parent,begin_func->inst->Parent->Parent,cur_new_block);
 
