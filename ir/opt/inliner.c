@@ -4,9 +4,10 @@ extern InstNode * one_param[];   //存放单次正确位置的参数
 extern InstNode* params[];      //存放所有参数
 extern Symtab *this;
 
+int flag = 0;      //内联结果，0代表内联失败，1代表基本块无变化，2代表有新增基本块
+
 //根据名字拿到它的index
-int get_name_index(Value* v)
-{
+int get_name_index(Value* v){
     return (int)strtol(v->name+1,NULL,10);
 }
 
@@ -182,7 +183,7 @@ void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBl
     }
 }
 
-void func_inline(struct _InstNode* instruction_node)
+int func_inline(struct _InstNode* instruction_node)
 {
     //先跑一遍，看是否符合内联条件
     label_func_inline(instruction_node);
@@ -306,6 +307,7 @@ void func_inline(struct _InstNode* instruction_node)
                         new_block->Parent = instruction->Parent->Parent;
                         new_block->id = begin_func->inst->user.value.pdata->instruction_pdata.true_goto_location;
                         cur_new_block = new_block;
+                        flag = 2;
                         HashMapPut(block_map, begin_func->inst->Parent, new_block);
                         HashSetAdd(block_set, begin_func->inst->Parent);
                     }
@@ -466,4 +468,7 @@ void func_inline(struct _InstNode* instruction_node)
     HashMapDeinit(block_map);
     HashMapDeinit(phi_map);
     HashSetDeinit(block_set);
+    if(!flag)
+        flag = 1;
+    return flag;
 }
