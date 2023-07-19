@@ -161,12 +161,16 @@ int main(int argc, char* argv[]){
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
 //        renameVariables(currentFunction);
 //    }
-
-
+//
 //    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        loop(currentFunction);
-//        LICM(currentFunction);
+//        AlgorithmEliminate(currentFunction);
 //    }
+
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        loop(currentFunction);
+        LICM(currentFunction);
+
+    }
 
     //先跑一次
     //cse cf
@@ -202,7 +206,7 @@ int main(int argc, char* argv[]){
 
 
     //phi上的优化
-    // printf_llvm_ir(instruction_list,argv[4],1);
+     printf_llvm_ir(instruction_list,argv[4],1);
 //
 //    if(Optimize){
 //        for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){

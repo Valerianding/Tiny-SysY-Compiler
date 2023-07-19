@@ -35,6 +35,9 @@ typedef struct Loop{
     BasicBlock *body_block;
     //block to jump to when the loop exits
     BasicBlock *exit_block;
+
+    HashSet *latchs; //current not used
+    bool containMultiBackEdge;
 }Loop;
 
 

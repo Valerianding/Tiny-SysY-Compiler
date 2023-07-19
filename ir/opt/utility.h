@@ -40,4 +40,5 @@ bool isSame(Value *left, Value *right);
 bool JudgeIcmp(InstNode *icmp);
 bool isSimpleOperator(InstNode *instNode);
 bool isSameLargeType(Value *left, Value *right);
+void valueReplaceWithout(Value *oldValue, Value *newValue, Value *cur, Function *currentFunction);
 #endif //C22V1_UTILITY_H

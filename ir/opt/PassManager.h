@@ -16,6 +16,7 @@
 #include "sideeffect.h"
 #include "inscomb.h"
 #include "other.h"
+#include "loopconv.h"
 void RunBasicPasses(Function *currentFunction);
 void RunOptimizePasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

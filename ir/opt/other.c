@@ -173,8 +173,10 @@ bool AlgorithmIdentical(BasicBlock *block) {
 
                 assert(lhsIns->Opcode == rhsIns->Opcode);
                 if(lhsIns->Opcode == Div){
+                    //如果是divide我们希望divide 的sameOperand to be constant
                     return false;
                 }else if(lhsIns->Opcode == Mul){
+                    printf("mul instead of divide\n");
                     Value *lhsOther = ins_get_lhs(lhsIns) == sameOperand ? ins_get_rhs(lhsIns) : ins_get_lhs(lhsIns);
                     Value *rhsOther = ins_get_lhs(rhsIns) == sameOperand ? ins_get_rhs(rhsIns) : ins_get_lhs(rhsIns);
 
@@ -190,6 +192,8 @@ bool AlgorithmIdentical(BasicBlock *block) {
                     //OK and this two instruction is not needed
                     InstNode *lhsNode = findNode(lhsIns->Parent, lhsIns);
                     InstNode *rhsNode = findNode(rhsIns->Parent, rhsIns);
+
+
 
                     deleteIns(lhsNode);
                     deleteIns(rhsNode);
@@ -212,6 +216,12 @@ bool AlgorithmIdentical(BasicBlock *block) {
                     //attach
                     ins_insert_after(newNode, tailNode);
 
+                    Value *newDest = ins_get_dest(newNode->inst);
+
+                    //replace currDest with new but do not replace current
+                    //valueReplaceAll(curDest,newDest,block->Parent);
+
+                    valueReplaceWithout(curDest,newDest,newDest,block->Parent);
                     effective = true;
                 }else{
                     assert(false);
