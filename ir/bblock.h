@@ -100,4 +100,7 @@ void deleteIns(InstNode *this);
 void Inst(InstNode *this);
 
 InstNode *ins_get_funcHead(InstNode *this);
+
+//lsy：删除一个block前驱集中的基本块
+void bb_delete_one_prev(BasicBlock* cur,BasicBlock* delete_block);
 #endif

@@ -89,6 +89,12 @@ void bb_add_prev(BasicBlock *prev,BasicBlock *pos){
     HashSetAdd(posPrevBlocks,prev);
 }
 
+//lsy：删除一个block前驱集中的基本块
+void bb_delete_one_prev(BasicBlock* cur,BasicBlock* delete_block){
+    HashSet *preBlocks = cur->preBlocks;
+    HashSetRemove(preBlocks,delete_block);
+}
+
 void print_one_ins_info(InstNode *insNode){
     printf("%d : opcode:", insNode->inst->i);
     print_ins_opcode(insNode->inst);

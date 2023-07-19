@@ -328,7 +328,9 @@ void fix_array2(struct _InstNode *instruction_node)
             //instruction->user.value.pdata->var_pdata.is_offset=0;
         }
             //一维数组,is_offset=1
-        else if(instruction->Opcode==GEP && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure==1 && instruction->user.value.pdata->var_pdata.is_offset==1)
+            //或者是它后面没有use是gep，但它的offset是1
+        else if(instruction->Opcode==GEP && instruction->user.value.alias->pdata->symtab_array_pdata.dimention_figure==1 && instruction->user.value.pdata->var_pdata.is_offset==1
+                 || (instruction->Opcode==GEP && instruction->user.value.pdata->var_pdata.iVal == 0 && instruction->user.value.pdata->var_pdata.is_offset==1 && use_not_gep(instruction)))
         {
             instruction->user.value.pdata->var_pdata.iVal=-1;
         }

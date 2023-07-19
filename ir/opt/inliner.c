@@ -113,15 +113,45 @@ void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map){
     }
 }
 
-void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBlock* caller_cur_block, Function* callee_func){
+void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBlock* caller_cur_block, Function* callee_func, BasicBlock* last_cur_new_block){
+    //callee的最后一个copy block后继为caller_cur_block的后继,必须先做，因为caller_cur_block的后继会改变
+    last_cur_new_block->true_block = caller_cur_block->true_block;
+    last_cur_new_block->false_block = caller_cur_block->false_block;
+
+    //caller的call ir所在块也要单独处理，phi的到达块要变成最后一个块,TODO 它的后继的前驱也要调整
+    if(caller_cur_block->true_block){
+        InstNode *node = get_next_inst(caller_cur_block->true_block->head_node);
+        while (node->inst->Opcode == Phi){
+            HashSetFirst(node->inst->user.value.pdata->pairSet);
+            for(pair* p = HashSetNext(node->inst->user.value.pdata->pairSet); p!=NULL; p=HashSetNext(node->inst->user.value.pdata->pairSet)){
+                if(p->from == caller_cur_block)
+                    p->from = last_cur_new_block;
+            }
+            node = get_next_inst(node);
+        }
+        //调整true_block的前驱
+        bb_delete_one_prev(caller_cur_block->true_block, caller_cur_block);
+        bb_add_prev(last_cur_new_block,caller_cur_block->true_block);
+    }
+    if(caller_cur_block->false_block){
+        InstNode *node = get_next_inst(caller_cur_block->false_block->head_node);
+        while (node->inst->Opcode == Phi){
+            HashSetFirst(node->inst->user.value.pdata->pairSet);
+            for(pair* p = HashSetNext(node->inst->user.value.pdata->pairSet); p!=NULL; p=HashSetNext(node->inst->user.value.pdata->pairSet)){
+                if(p->from == caller_cur_block)
+                    p->from = last_cur_new_block;
+            }
+            node = get_next_inst(node);
+        }
+        //调整false_block的前驱
+        bb_delete_one_prev(caller_cur_block->false_block, caller_cur_block);
+        bb_add_prev(last_cur_new_block,caller_cur_block->false_block);
+    }
+
     HashSetFirst(callee_block_set);
     for(BasicBlock* block = HashSetNext(callee_block_set); block!=NULL; block = HashSetNext(callee_block_set)){
         BasicBlock *alias_block = HashMapGet(block_map,block);
-        //callee的最后一个copy block后继为caller_cur_block的后继
-        if(block == callee_func->tail){
-            alias_block->true_block = caller_cur_block->true_block;
-            alias_block->false_block = caller_cur_block->false_block;
-        }else{
+        if(block != callee_func->tail) {
             if(block->true_block)
                 alias_block->true_block = HashMapGet(block_map,block->true_block);
             if(block->false_block)
@@ -196,25 +226,28 @@ void func_inline(struct _InstNode* instruction_node)
                     else if(vr==NULL)   //1操作数
                     {
                         //是直接用的参数
-                        if(begin_tmp(begin_func->inst->user.use_list->Val->name) &&
-                                get_name_index(begin_func->inst->user.use_list->Val)<num)
+                        if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float &&
+                        begin_tmp(begin_func->inst->user.use_list->Val->name) && get_name_index(begin_func->inst->user.use_list->Val)<num)
                         {
                             param_index=get_name_index(begin_func->inst->user.use_list->Val);
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val);
                         }
                         //其他正常情况
-                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name))
+                        else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode, HashMapGet(left_alias_map,begin_func->inst->user.use_list->Val));
                         else  //全局
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val);
                     }
                     else   //2操作数
                     {
+                        Value *v1=begin_func->inst->user.use_list->Val;
+                        Value *v2=begin_func->inst->user.use_list[1].Val;
                         //getint(),@a
-                        if(!(begin_tmp(begin_func->inst->user.use_list->Val->name)) && !(begin_tmp(begin_func->inst->user.use_list[1].Val->name)) )
+                        if(((!begin_tmp(begin_func->inst->user.use_list->Val->name) || begin_func->inst->user.use_list->Val->VTy->ID == Int || begin_func->inst->user.use_list->Val->VTy->ID==Float) && (!begin_tmp(begin_func->inst->user.use_list[1].Val->name) || begin_func->inst->user.use_list[1].Val->VTy->ID == Int || begin_func->inst->user.use_list[1].Val->VTy->ID==Float)) )
                             ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val);
                         //%1,%2
-                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name) && begin_tmp(begin_func->inst->user.use_list[1].Val->name))
+                        else if((begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
+                        && (begin_func->inst->user.use_list[1].Val->VTy->ID!=Int && begin_func->inst->user.use_list[1].Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list[1].Val->name)))
                         {
                             if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num && get_name_index(begin_func->inst->user.use_list[1].Val)<num)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,one_param[get_name_index(begin_func->inst->user.use_list[1].Val)]->inst->user.use_list->Val);
@@ -226,7 +259,7 @@ void func_inline(struct _InstNode* instruction_node)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,HashMapGet(left_alias_map,begin_func->inst->user.use_list->Val),HashMapGet(left_alias_map,begin_func->inst->user.use_list[1].Val));
                         }
                         //%1,1
-                        else if(begin_tmp(begin_func->inst->user.use_list->Val->name))
+                        else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
                         {
                             if((param_index= get_name_index(begin_func->inst->user.use_list->Val))<num)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val);
@@ -235,7 +268,7 @@ void func_inline(struct _InstNode* instruction_node)
                         }
                         else
                         {
-                            if((param_index= get_name_index(begin_func->inst->user.use_list[1].Val))<num)
+                            if((param_index= get_name_index(v2))<num)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,one_param[param_index]->inst->user.use_list->Val);
                             else
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,HashMapGet(left_alias_map,begin_func->inst->user.use_list[1].Val));
@@ -313,12 +346,13 @@ void func_inline(struct _InstNode* instruction_node)
                     begin_func=get_next_inst(begin_func);
                 }
 
+                //如果caller的这个block是function的最后一个block,换成cur_new_block
                 if(cur_new_block!=NULL && instruction->Parent->Parent->tail == instruction->Parent)
                     instruction->Parent->Parent->tail = cur_new_block;
 
                 //将最后一个块中的后半段ir速速设parent
                 //此时的cur_new_block必然是最后一个新block
-                InstNode *reserve = instruction_node;
+                InstNode *reserve = get_next_inst(instruction_node);
                 InstNode *prev = NULL;
                 while(cur_new_block!=NULL && reserve!=NULL &&reserve->inst->Opcode!=Label){
                     reserve->inst->Parent = cur_new_block;
@@ -330,7 +364,8 @@ void func_inline(struct _InstNode* instruction_node)
 
 
                 reduce_phi(phi_map,left_alias_map,block_map);
-                connect_caller_block(block_map,block_set,instruction->Parent,begin_func->inst->Parent->Parent);
+                if(cur_new_block!=NULL)
+                    connect_caller_block(block_map,block_set,instruction->Parent,begin_func->inst->Parent->Parent,cur_new_block);
 
                 //处理最后的一句ret和call
                 //将ret的值替换call的左值
@@ -360,6 +395,9 @@ void func_inline(struct _InstNode* instruction_node)
 
                 //对map进行内容清0
                 HashMapClean(left_alias_map);
+                HashMapClean(block_map);
+                HashSetClean(block_set);
+                HashMapClean(phi_map);
             }
         }
         else if(instruction->Opcode==GIVE_PARAM)
@@ -401,4 +439,7 @@ void func_inline(struct _InstNode* instruction_node)
     }
 
     HashMapDeinit(left_alias_map);
+    HashMapDeinit(block_map);
+    HashMapDeinit(phi_map);
+    HashSetDeinit(block_set);
 }

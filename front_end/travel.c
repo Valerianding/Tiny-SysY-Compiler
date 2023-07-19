@@ -1150,6 +1150,8 @@ Value *handle_assign_array(past root,Value *v_array,int flag,int dimension,int p
     else {
         if(ins_load!= NULL && ins_load->user.value.VTy->ID==Unknown && ins_load->user.use_list->Val->pdata->var_pdata.is_offset==0)
         {
+            if(begin_tmp(v_array->name))
+                v_array = v_array->alias;
             if(v_array->VTy->ID==ArrayTy_INT || v_array->VTy->ID==ArrayTyID_ConstINT || v_array->VTy->ID==GlobalArrayInt || v_array->VTy->ID==GlobalArrayConstINT)
                 ins_load->user.value.VTy->ID=Var_INT;
             else if(v_array->VTy->ID==AddressTyID)
