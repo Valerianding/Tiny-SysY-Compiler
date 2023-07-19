@@ -136,4 +136,7 @@ int array_suffix(Value*array,int which_dimension);
 void handle_reg_save(int reg);
 void printf_stmfd_rlist();
 void printf_ldmfd_rlist();
+int count_bit(int value); //输入正数
+//返回0优化失败（不符合优化条件），返回1成功优化.
+int optimization_mul(int dest_reg,int left_reg,int imm); //进入函数之前先把其加载到寄存器
 #endif //C22V1_ARM_H
