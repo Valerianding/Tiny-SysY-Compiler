@@ -60,7 +60,7 @@ void label_func_inline(struct _InstNode* instNode_list)
             //最后的一定出现在左边
             if(currNode->inst->user.value.name!=NULL){
                 max_num= get_name_index(&currNode->inst->user.value);
-                if(max_num>20)
+                if(max_num>200)
                 {
                     funcValue->pdata->symtab_func_pdata.flag_inline=0;
                     printf("%s inline 0\n",funcValue->name);
@@ -70,7 +70,7 @@ void label_func_inline(struct _InstNode* instNode_list)
             //判断基本块数量
             if(currNode->inst->Opcode==Label){
                 block_num++;
-                if(block_num>5){
+                if(block_num>20){
                     funcValue->pdata->symtab_func_pdata.flag_inline=0;
                     printf("%s inline 0\n",funcValue->name);
                     break;
@@ -113,7 +113,7 @@ void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map, int para
                 value_init_int(num,pp->define->pdata->var_pdata.iVal);
             }else if(pp->define->VTy->ID == Float){
                 value_init_float(num,pp->define->pdata->var_pdata.fVal);
-            }else if(begin_tmp(pp->define->name) && (param_index = get_name_index(pp->define)) < param){
+            }else if(begin_tmp(pp->define->name) && (param_index = get_name_index(pp->define)) < param && param_index>=0){
                 num = one_param[param_index]->inst->user.use_list->Val;
             }else{
                 num = HashMapGet(alias_map,pp->define);
@@ -228,7 +228,7 @@ void func_inline(struct _InstNode* instruction_node)
                 //无参数直接上手
                 //复制ir
                 begin_func=get_next_inst(begin_func);     //函数中的第一条ir
-                int index=1;
+                int index=-1;
                 int param_index=0;
 
                 HashMapPut(block_map, begin_func->inst->Parent, instruction->Parent);
@@ -249,9 +249,9 @@ void func_inline(struct _InstNode* instruction_node)
                     {
                         //是直接用的参数
                         if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float &&
-                        begin_tmp(begin_func->inst->user.use_list->Val->name) && get_name_index(begin_func->inst->user.use_list->Val)<num)
+                        begin_tmp(begin_func->inst->user.use_list->Val->name) && get_name_index(begin_func->inst->user.use_list->Val)<num && get_name_index(begin_func->inst->user.use_list->Val)>=0)
                         {
-                            param_index=get_name_index(begin_func->inst->user.use_list->Val);
+                            param_index= get_name_index(begin_func->inst->user.use_list->Val);
                             ins_copy= ins_new_unary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val);
                         }
                         //其他正常情况
@@ -271,11 +271,11 @@ void func_inline(struct _InstNode* instruction_node)
                         else if((begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
                         && (begin_func->inst->user.use_list[1].Val->VTy->ID!=Int && begin_func->inst->user.use_list[1].Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list[1].Val->name)))
                         {
-                            if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num && get_name_index(begin_func->inst->user.use_list[1].Val)<num)
+                            if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num && param_index>=0 && get_name_index(begin_func->inst->user.use_list[1].Val)<num && get_name_index(begin_func->inst->user.use_list[1].Val)>=0)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,one_param[get_name_index(begin_func->inst->user.use_list[1].Val)]->inst->user.use_list->Val);
-                            else if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num)
+                            else if((param_index=get_name_index(begin_func->inst->user.use_list->Val))<num && param_index>=0)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,HashMapGet(left_alias_map,begin_func->inst->user.use_list[1].Val));
-                            else if((param_index=get_name_index(begin_func->inst->user.use_list[1].Val))<num)
+                            else if((param_index=get_name_index(begin_func->inst->user.use_list[1].Val))<num && param_index>=0)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode, HashMapGet(left_alias_map,begin_func->inst->user.use_list->Val),one_param[param_index]->inst->user.use_list->Val);
                             else
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,HashMapGet(left_alias_map,begin_func->inst->user.use_list->Val),HashMapGet(left_alias_map,begin_func->inst->user.use_list[1].Val));
@@ -283,14 +283,14 @@ void func_inline(struct _InstNode* instruction_node)
                         //%1,1
                         else if(begin_func->inst->user.use_list->Val->VTy->ID!=Int && begin_func->inst->user.use_list->Val->VTy->ID!=Float && begin_tmp(begin_func->inst->user.use_list->Val->name))
                         {
-                            if((param_index= get_name_index(begin_func->inst->user.use_list->Val))<num)
+                            if((param_index= get_name_index(begin_func->inst->user.use_list->Val))<num && param_index>=0)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,one_param[param_index]->inst->user.use_list->Val,begin_func->inst->user.use_list[1].Val);
                             else
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,HashMapGet(left_alias_map,begin_func->inst->user.use_list->Val),begin_func->inst->user.use_list[1].Val);
                         }
                         else
                         {
-                            if((param_index= get_name_index(v2))<num)
+                            if((param_index= get_name_index(v2))<num && param_index>=0)
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,one_param[param_index]->inst->user.use_list->Val);
                             else
                                 ins_copy= ins_new_binary_operator(begin_func->inst->Opcode,begin_func->inst->user.use_list->Val,HashMapGet(left_alias_map,begin_func->inst->user.use_list[1].Val));
@@ -304,8 +304,6 @@ void func_inline(struct _InstNode* instruction_node)
                         BasicBlock *new_block = bb_create();
                         new_block->head_node = node_copy;
                         new_block->Parent = instruction->Parent->Parent;
-//                        new_block->id = index;
-//                        index++;
                         new_block->id = begin_func->inst->user.value.pdata->instruction_pdata.true_goto_location;
                         cur_new_block = new_block;
                         HashMapPut(block_map, begin_func->inst->Parent, new_block);
@@ -322,7 +320,7 @@ void func_inline(struct _InstNode* instruction_node)
 
                     if(begin_func->inst->Opcode == Phi){
                         Value *v_left_now=ins_get_value_with_name_and_index(ins_copy,index);
-                        index++;
+                        index--;
                         v_left_now->IsPhi = true;
                         v_left_now->VTy = begin_func->inst->user.value.VTy;
                         HashMapPut(phi_map, &begin_func->inst->user.value, &ins_copy->user.value);
@@ -331,7 +329,7 @@ void func_inline(struct _InstNode* instruction_node)
                     else if(v->name!=NULL)  //左值有名字
                     {
                         Value *v_left_now=ins_get_value_with_name_and_index(ins_copy,index);
-                        index++;
+                        index--;
                         //左值的pdata可能需要copy
                         //v_left_now->pdata->var_pdata.iVal=begin_func->inst->user.value.pdata->var_pdata.iVal;
                         v_left_now->pdata=begin_func->inst->user.value.pdata;
@@ -349,12 +347,17 @@ void func_inline(struct _InstNode* instruction_node)
                     else
                         ins_copy->Parent = cur_new_block;
 
-                    //alloca上提
-                    if(ins_copy->Opcode==Alloca)
+                    //alloca上提,顺带上提bitcast和memset
+                    if(ins_copy->Opcode==Alloca || ins_copy->Opcode==bitcast || ins_copy->Opcode== MEMSET || ins_copy->Opcode==MEMCPY)
                     {
                         InstNode *instNode=instruction_node;
-                        while(get_prev_inst(instNode)->inst->Opcode!=Alloca)
-                            instNode= get_prev_inst(instNode);
+                        if(ins_copy->Opcode==Alloca){
+                            while(get_prev_inst(instNode)->inst->Opcode!=Alloca && get_prev_inst(instNode)->inst->Opcode!=FunBegin)
+                                instNode= get_prev_inst(instNode);
+                        }else {
+                            while(&get_prev_inst(instNode)->inst->user.value != ins_copy->user.use_list->Val && get_prev_inst(instNode)->inst->Opcode!=FunBegin)
+                                instNode= get_prev_inst(instNode);
+                        }
                         //将alloca插在instNode前面
                         ins_insert_before(node_copy,instNode);
                     }
@@ -397,7 +400,7 @@ void func_inline(struct _InstNode* instruction_node)
 
                     if(v_return->VTy->ID == Int || v_return->VTy->ID == Float)
                         valueReplaceAll(v_call,v_return,instruction->Parent->Parent);
-                    else if(begin_tmp(v_return->name) && ((param_index=get_name_index(v_return))<num))
+                    else if(begin_tmp(v_return->name) && ((param_index=get_name_index(v_return))<num && param_index>=0))
                         valueReplaceAll(v_call,one_param[param_index]->inst->user.use_list->Val, instruction->Parent->Parent);
                     else
                         valueReplaceAll(v_call, HashMapGet(left_alias_map,v_return),instruction->Parent->Parent);
