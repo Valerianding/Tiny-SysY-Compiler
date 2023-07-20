@@ -267,6 +267,8 @@ void findInductionVariable(Loop *loop){
     loop->body_block = HashSetFind(loop->loopBody,trueBlock) ? trueBlock : falseBlock;
     loop->exit_block = HashSetFind(loop->loopBody,trueBlock) ? falseBlock : trueBlock;
 
+
+    printf("loop body block %d exit block %d\n",loop->body_block->id,loop->exit_block->id);
     //get the induction variable
     BasicBlock *tail = loop->tail;
     InstNode *currNode = exitBlock->head_node;

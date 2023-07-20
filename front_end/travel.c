@@ -5302,6 +5302,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 //printf("a copy operation\n");
                 break;
             }
+            case SysYMemset:{
+                printf("call void SysYMemset\n");
+                break;
+            }
             default:
                 break;
         }

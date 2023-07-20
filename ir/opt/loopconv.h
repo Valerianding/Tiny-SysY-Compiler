@@ -6,6 +6,8 @@
 #define C22V1_LOOPCONV_H
 #include "utility.h"
 #include "loopinfo.h"
+extern int instruction_uid;
 bool CheckLoop(Loop *loop);
-bool LoopConv(Loop *loop);
+bool LoopConversion(Function *currentFunction);
+bool dfsTravel(Loop *root);
 #endif //C22V1_LOOPCONV_H
