@@ -1,9 +1,13 @@
-int test(){
-    int arr[10];
-    int i = 0;
-    int n = getint();
-    while(i < n){
-       arr[i] = n;
-        i = i + 1;
+int main(){
+    int a = getint();
+    int b = getint();
+    int c = getint();
+    int temp = b + c;
+    int result;
+    if(a > 10){
+        result = temp;
+    }else{
+        result = temp;
     }
+    return result;
 }

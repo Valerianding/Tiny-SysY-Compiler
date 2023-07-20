@@ -100,7 +100,15 @@ void cleanBlock(BasicBlock *block){
 }
 
 bool LoopConv(Loop *loop){
-    if(!LoopConvCheckLoop(loop)) return false;
+
+    printf("now is loop %d!\n",loop->head->id);
+    //reconstruct loop
+    reconstructLoop(loop);
+
+    if(!LoopConvCheckLoop(loop)){
+        printf("one loop is not satisfy for remove!\n");
+        return false;
+    }
 
     //must be rhs of end_cond
     Instruction *endIns = (Instruction *)loop->end_cond;
@@ -292,6 +300,13 @@ bool LoopConv(Loop *loop){
     loopEntry->false_block = NULL;
     loopEntry->head_node = entryLabel;
     loopEntry->tail_node = jumpNode;
+
+    //我们还需要移除这个loop 以保证parent不会再访问这个loop了
+    //并且parent的loop还需要重构避免bug的出现
+    if(loop->parent != NULL){
+        Loop *parent = loop->parent;
+        HashSetRemove(parent->child,loop);
+    }
     return true;
 //    InstNode *preHeaderTail = preHeader->tail_node;
 //    if(preHeaderTail->inst->Opcode == br){

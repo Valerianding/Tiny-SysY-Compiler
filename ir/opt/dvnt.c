@@ -9,7 +9,8 @@
 
 #include "dvnt.h"
 
-const Opcode valueOperator[] = {Load,Call,Add,Sub, Div,Mul,Mod};
+//TODO 由于新增了fptosi 和 sitofp 需要重新考虑，并且加上算术相等的判断！！！
+const Opcode valueOperator[] = {Load,Call,Add,Sub, Div,Mul,Mod,GEP,};
 unsigned int value_number_seed = 1;
 bool isValueAbleOperator(InstNode *instNode){
     int n = sizeof(valueOperator) / sizeof(Opcode);

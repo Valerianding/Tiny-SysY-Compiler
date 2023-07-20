@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
-#define ALL 0
+//#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]){
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         loop(currentFunction);
         LICM(currentFunction);
-        LoopConversion(currentFunction);
+//        LoopConversion(currentFunction);
     }
 
     //先跑一次
