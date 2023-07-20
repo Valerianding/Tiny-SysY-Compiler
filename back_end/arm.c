@@ -46,6 +46,9 @@ int ltorg_num=0;
 int give_param_flag[4];
 char return_message[100000];
 int stm_num; //8字节对齐
+//现在reg1，reg2会出现负数的情况，就是说右边的寄存器在用完之后就回存到内存，腾出寄存器
+
+
 
 //eabi不会保存r12
 void printf_stmfd_rlist(){
@@ -1091,6 +1094,12 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
     int dest_reg_abs= abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int right_reg=ins->inst->_reg_[2];
+
+//    int src_leftreg=ins->inst->_reg_[1];
+//    int src_rightreg=ins->inst->_reg_[2];
+//    int left_reg=abs(src_leftreg);
+//    int right_reg=abs(src_rightreg);
+
 //    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
 //    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -2275,6 +2284,15 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+
+//    if(src_leftreg<0){
+//        int x= get_value_offset_sp(hashMap,value1);
+//        handle_illegal_imm(left_reg,x,0);
+//    }
+//    if(src_rightreg<0){
+//        int x= get_value_offset_sp(hashMap,value2);
+//        handle_illegal_imm(right_reg,x,0);
+//    }
     return  ins;
 }
 
@@ -2287,6 +2305,11 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
     int dest_reg_abs= abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int right_reg=ins->inst->_reg_[2];
+
+//    int src_leftreg=ins->inst->_reg_[1];
+//    int src_rightreg=ins->inst->_reg_[2];
+//    int left_reg=abs(src_leftreg);
+//    int right_reg=abs(src_rightreg);
 //    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
 //    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -3480,6 +3503,14 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+//    if(src_leftreg<0){
+//        int x= get_value_offset_sp(hashMap,value1);
+//        handle_illegal_imm(left_reg,x,0);
+//    }
+//    if(src_rightreg<0){
+//        int x= get_value_offset_sp(hashMap,value2);
+//        handle_illegal_imm(right_reg,x,0);
+//    }
     return  ins;
 
 }
@@ -3645,6 +3676,11 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
     int dest_reg_abs= abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int right_reg=ins->inst->_reg_[2];
+
+//    int src_leftreg=ins->inst->_reg_[1];
+//    int src_rightreg=ins->inst->_reg_[2];
+//    int left_reg=abs(src_leftreg);
+//    int right_reg=abs(src_rightreg);
 //    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
 //    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -4861,6 +4897,15 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             ;
         }
     }
+
+//    if(src_leftreg<0){
+//        int x= get_value_offset_sp(hashMap,value1);
+//        handle_illegal_imm(left_reg,x,0);
+//    }
+//    if(src_rightreg<0){
+//        int x= get_value_offset_sp(hashMap,value2);
+//        handle_illegal_imm(right_reg,x,0);
+//    }
     return  ins;
 }
 
@@ -4876,6 +4921,11 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
     int dest_reg_abs= abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int right_reg=ins->inst->_reg_[2];
+
+//    int src_leftreg=ins->inst->_reg_[1];
+//    int src_rightreg=ins->inst->_reg_[2];
+//    int left_reg=abs(src_leftreg);
+//    int right_reg=abs(src_rightreg);
 //    立即数操作数是不用考虑寄存器，但是其结果需要考虑寄存器的。
 //    这里的设计就是直接将运算结果存放在目的寄存器了。
     if(isImmIntType(value1->VTy)&&isImmIntType(value2->VTy)){
@@ -6314,6 +6364,14 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 //        printf("\tldr\tr12,[sp],#4\n");
 //        fprintf(fp,"\tldr\tr12,[sp],#4\n");
 //    }
+//    if(src_leftreg<0){
+//        int x= get_value_offset_sp(hashMap,value1);
+//        handle_illegal_imm(left_reg,x,0);
+//    }
+//    if(src_rightreg<0){
+//        int x= get_value_offset_sp(hashMap,value2);
+//        handle_illegal_imm(right_reg,x,0);
+//    }
     return  ins;
 }
 
@@ -6335,6 +6393,12 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
     int dest_reg_abs= abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int right_reg=ins->inst->_reg_[2];
+
+//    int src_leftreg=ins->inst->_reg_[1];
+//    int src_rightreg=ins->inst->_reg_[2];
+//    int left_reg=abs(src_leftreg);
+//    int right_reg=abs(src_rightreg);
+
     if(isImmIntType(value1->VTy)&& isImmIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
@@ -6809,6 +6873,14 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //        fprintf(fp,"\tldr\tr12,[sp],#4\n");
 //    }
 //    printf("arm_trans_Module\n");
+//    if(src_leftreg<0){
+//        int x= get_value_offset_sp(hashMap,value1);
+//        handle_illegal_imm(left_reg,x,0);
+//    }
+//    if(src_rightreg<0){
+//        int x= get_value_offset_sp(hashMap,value2);
+//        handle_illegal_imm(right_reg,x,0);
+//    }
     return ins;
 }
 
