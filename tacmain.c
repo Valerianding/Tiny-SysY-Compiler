@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
-
+//#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -61,6 +61,7 @@ int main(int argc, char* argv[]){
         printf("ERROR: input file name is needed. \n");
         exit(0);
     }
+
     //看看是否开启优化
     if(argc == 6){
         Optimize = true;
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -150,7 +151,7 @@ int main(int argc, char* argv[]){
     }
 
     //mem2reg之后，优化前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     CheckGlobalVariable(instruction_list);
@@ -158,46 +159,66 @@ int main(int argc, char* argv[]){
     combineZext(instruction_list);
 
     //need to put it into CheckGlobalVariable
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        renameVariables(currentFunction);
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        renameVariables(currentFunction);
+//    }
+//
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        AlgorithmEliminate(currentFunction);
+//    }
 
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        loop(currentFunction);
+        LICM(currentFunction);
+//        LoopConversion(currentFunction);
+    }
 
     //先跑一次
     //cse cf
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
-    }
-
-
-    if(Optimize) {
-        //基本块内inscomb ok，基本块间ing
-        for (Function *currentFunction = block->Parent;
-             currentFunction != NULL; currentFunction = currentFunction->Next) {
-             RunOptimizePasses(currentFunction);
-        }
-
-    }
+//    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        RunBasicPasses(currentFunction);
+//    }
+//
+//
+//    if(Optimize) {
+//        //基本块内inscomb ok，基本块间ing
+//        for (Function *currentFunction = block->Parent;
+//             currentFunction != NULL; currentFunction = currentFunction->Next) {
+//             RunOptimizePasses(currentFunction);
+//        }
+//
+//    }
 
 //IPO 暂时不开启
 //    travel();
 
-    for (Function *currentFunction = block->Parent;
-         currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
-    }
 
-    if(Optimize){
-        for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-            Clean(currentFunction);
-        }
-    }
+//    for (Function *currentFunction = block->Parent;
+//         currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        RunBasicPasses(currentFunction);
+
+//
+//    if(Optimize){
+//        for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//            Clean(currentFunction);
+//        }
+//    }
 
 
 
     //phi上的优化
-    // printf_llvm_ir(instruction_list,argv[4],1);
+     printf_llvm_ir(instruction_list,argv[4],1);
 //
+//    if(Optimize){
+//        for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+//            Clean(currentFunction);
+//        }
+//    }
+
+//    printf_llvm_ir(instruction_list,argv[4],1);
+#ifdef ALL
+    //phi上的优化
+
     block = temp->inst->Parent;
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
@@ -218,28 +239,29 @@ int main(int argc, char* argv[]){
     }
 
     // Liveness 计算之后请注释掉我跑llvm
-//    printf_llvm_ir(instruction_list,arrrrgv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //lsy_begin
 //    printf("=================fix===================\n");
-    fix_array(instruction_list);
+//    fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
-    reg_control(instruction_list,temp);
+//    reg_control(instruction_list,temp);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
-
 
     //    ljf_begin
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
-//
-    arm_open_file(argv[3]);
-    arm_translate_ins(instruction_list,argv[3]);
-    arm_close_file(argv[3]);
+
+//    arm_open_file(argv[3]);
+//    arm_translate_ins(instruction_list,argv[3]);
+//    arm_close_file(argv[3]);
     //    ljf_end
+
+#endif
     return 0;
 }

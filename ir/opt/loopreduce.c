@@ -3,3 +3,5 @@
 //
 
 #include "loopreduce.h"
+
+//this pass will try to run loop strength reduction

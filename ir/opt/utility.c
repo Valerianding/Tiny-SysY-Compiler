@@ -374,6 +374,40 @@ void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction
     }
 }
 
+//valueReplaceAll but do not replace if it's User is cur
+void valueReplaceWithout(Value *oldValue, Value *newValue, Value *cur, Function *currentFunction){
+    // 使用两个Use的原因是需要维护Next的正确性
+    if(oldValue->use_list != NULL){
+        Use *use1 = oldValue->use_list;
+        Use *use2 = use1->Next;
+        while(use1 != NULL){
+            Value *user = (Value *)use1->Parent;
+            if(user != cur){
+                value_add_use(newValue,use1);
+                use1->Val = newValue;
+            }
+            use1 = use2;
+            use2 = (use2 == NULL ? NULL : use2->Next);
+        }
+    }
+    oldValue->use_list = NULL;
+    InstNode *currNode = currentFunction->entry->head_node;
+    InstNode *tailNode = currentFunction->tail->tail_node;
+    while(currNode != tailNode){
+        if(currNode->inst->Opcode == Phi){
+            HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                if(phiInfo->define == oldValue){
+                    phiInfo->define = newValue;
+                }
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
+
+}
+
 bool isParam(Value *val, int paramNum){
     char *name = val->name;
     name++;
@@ -544,4 +578,33 @@ bool isSimpleOperator(InstNode *instNode){
         }
     }
     return false;
+}
+
+bool isSame(Value *left, Value *right){
+    if(isImmInt(left) && isImmInt(right) && (left->pdata->var_pdata.iVal == right->pdata->var_pdata.iVal)){
+        return true;
+    }else if(isImmFloat(left) && isImmFloat(right) && (left->pdata->var_pdata.fVal == right->pdata->var_pdata.fVal)){
+        return true;
+    }else if(left == right){
+        return true;
+    }
+    return false;
+}
+
+bool isSameLargeType(Value *left, Value *right){
+    if(isInt(left) && isInt(right)){
+        return true;
+    }else if(isFloat(left) && isFloat(right)){
+        return true;
+    }
+    return false;
+}
+
+
+//TODO Think carefully
+void SwapOperand(InstNode *instNode){
+    //swap Operand regardless of the correctness
+    User *user = &instNode->inst->user;
+
+    //
 }

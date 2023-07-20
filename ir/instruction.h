@@ -45,6 +45,7 @@ typedef enum OpcodeType{
 
     fptosi = 36,
     sitofp = 37,
+    SysYMemset = 38,
 }Opcode;
 
 

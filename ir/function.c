@@ -12,6 +12,8 @@ void func_set(Function *this,BasicBlock *head,BasicBlock *tail){
     HashSet *allNode = HashSetInit();
     InstNode *begin = head->head_node;
     InstNode *end = tail->tail_node;
+
+    this->name = begin->inst->user.use_list[0].Val->name;
     while(begin != end){
         BasicBlock *block = begin->inst->Parent;
         if(!HashSetFind(allNode,block)){

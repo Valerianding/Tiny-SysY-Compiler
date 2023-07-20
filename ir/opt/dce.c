@@ -5,7 +5,6 @@
 #include "dce.h"
 const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label};
 BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
-    bool marked = false;
     BasicBlock *parent = postDomNode->parent;
     InstNode *currNode = parent->head_node;
     while(currNode != parent->tail_node){

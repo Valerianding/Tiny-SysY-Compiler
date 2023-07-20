@@ -29,7 +29,6 @@ void bblock_divide(InstNode *head){
     int curBlockLabel = -1;
     while(cur != NULL){
         if(cur->inst->Opcode == FunBegin || cur->inst->Opcode == Label){
-            InstNode *cur_prev = get_prev_inst(cur);
             prev_in = cur;
             if(cur->inst->Opcode == Label){
                 curBlockLabel = cur->inst->user.value.pdata->instruction_pdata.true_goto_location;

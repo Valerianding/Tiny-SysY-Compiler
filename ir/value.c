@@ -182,3 +182,17 @@ bool isArrayInitialize(Value *val){
         return false;
     }
 }
+
+bool isInt(Value *val){
+    if(isImmInt(val) || isLocalVarInt(val)){
+        return true;
+    }
+    return false;
+}
+
+bool isFloat(Value *val){
+    if(isImmFloat(val) || isLocalVarFloat(val)){
+        return true;
+    }
+    return false;
+}

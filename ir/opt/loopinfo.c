@@ -53,7 +53,10 @@ void loop(Function *currentFunction){
     }
 
     HashSetDeinit(visited);
+    HashSetDeinit(workList);
 
+
+    printf("function:%s contain loops:\n",currentFunction->name);
     //对刚刚收集到的loop进行一系列的整合构建
     HashSetFirst(allLoops);
     for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
@@ -62,14 +65,45 @@ void loop(Function *currentFunction){
         for(BasicBlock *block = HashSetNext(l->loopBody); block != NULL; block = HashSetNext(l->loopBody)){
             printf("b%d",block->id);
         }
+
+        if(HashSetSize(l->exitingBlock) == 1){
+            printf(" with a dedicated exiting block!");
+        }else{
+            printf(" with not a dedicated exiting block!");
+        }
         printf("\n");
     }
+
 
 
     //循环森林的构建
     HashSet *tempSet = HashSetInit();
     HashSetCopy(tempSet,allLoops);
     assert(HashSetSize(allLoops) == HashSetSize(tempSet));
+    //需要提前解决多重回边的问题
+    HashSetFirst(allLoops);
+    for(Loop *l1 = HashSetNext(allLoops); l1 != NULL; l1 = HashSetNext(allLoops)){
+        BasicBlock *l1Head = l1->head;
+        HashSetFirst(tempSet);
+        for(Loop *l2 = HashSetNext(tempSet); l2 != NULL; l2 = HashSetNext(tempSet)){
+            BasicBlock *l2Head = l2->head;
+            if(l1Head == l2Head && l1 != l2){
+                //it means loop with multi back-edge
+                l1->containMultiBackEdge = true;
+                //copy loop body
+                HashSetFirst(l2->loopBody);
+                for(BasicBlock *l2Body = HashSetNext(l2->loopBody); l2Body != NULL; l2Body = HashSetNext(l2->loopBody)){
+                    HashSetAdd(l1->loopBody,l2Body);
+                }
+
+                //remove l2 from Loops
+                HashSetRemove(tempSet,l2);
+                HashSetRemove(allLoops,l2);
+            }
+        }
+    }
+
+    printf("--------\n");
 
     HashSetFirst(allLoops);
     for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
@@ -97,6 +131,8 @@ void loop(Function *currentFunction){
             HashSetRemove(allLoops,l);
         }
     }
+
+    HashSetDeinit(tempSet);
 }
 
 
@@ -111,7 +147,7 @@ Loop *constructLoop(BasicBlock *head,BasicBlock *tail){
     loop->exitingBlock = HashSetInit();
     loop->loopBody = HashSetInit();
     loop->child = HashSetInit();
-
+    loop->containMultiBackEdge = false;
     //body
     findBody(loop);
 
@@ -231,6 +267,8 @@ void findInductionVariable(Loop *loop){
     loop->body_block = HashSetFind(loop->loopBody,trueBlock) ? trueBlock : falseBlock;
     loop->exit_block = HashSetFind(loop->loopBody,trueBlock) ? falseBlock : trueBlock;
 
+
+    printf("loop body block %d exit block %d\n",loop->body_block->id,loop->exit_block->id);
     //get the induction variable
     BasicBlock *tail = loop->tail;
     InstNode *currNode = exitBlock->head_node;

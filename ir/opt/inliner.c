@@ -5,6 +5,10 @@ extern InstNode* params[];      //存放所有参数
 extern Symtab *this;
 
 int flag = 0;      //内联结果，0代表内联失败，1代表基本块无变化，2代表有新增基本块
+HashSet *callsite_set;
+HashMap *cost_map;     //<Function, cost>
+//维护一个func被调用call的关系
+HashMap *callee_map;
 
 //根据名字拿到它的index
 int get_name_index(Value* v){
@@ -25,6 +29,194 @@ InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name)
         instruction_node= get_next_inst(instruction_node);
     }
     return NULL;
+}
+
+//particular ir的cost是0, 其他普通ir一条cost为5
+bool is_particular_instr(Opcode opcode) {
+    if(opcode == Alloca || opcode == bitcast || opcode == Phi || opcode == GEP || opcode == Return || opcode == br || opcode == FunBegin || opcode == FunEnd)
+        return true;
+    return false;
+};
+
+void cal_cost(Function* callee,int threshold)
+{
+    int *cost = (int*) malloc(4);
+    *cost = 0;
+    //1.数变量数量
+    //2.判断基本块与递归call
+    BasicBlock *entry = callee->entry;
+    BasicBlock *end = callee->tail;
+
+    InstNode *currNode = entry->head_node;
+    Value *funcValue = currNode->inst->user.use_list->Val;
+
+    //跳过第一条FunBegin
+    currNode = get_next_inst(currNode);
+
+    while (currNode != get_next_inst(end->tail_node)) {
+        //1. 指令成本
+        if(!is_particular_instr(currNode->inst->Opcode))
+            *cost += Instr_cost;
+
+        //如果是特殊的递归函数
+        if(currNode->inst->Opcode == Call && strcmp(ins_get_lhs(currNode->inst)->name, funcValue->name)==0){
+            *cost = 15000;
+            break;
+        }
+
+        int *call_func_cost = (int*) malloc(4);
+        if(currNode->inst->Opcode == Call && symtab_lookup_withmap(this,ins_get_lhs(currNode->inst)->name, &this->value_maps->next->map)){
+            call_func_cost = HashMapGet(cost_map,ins_get_lhs(currNode->inst));
+            if(*call_func_cost > threshold){
+                *cost = 2000;
+                break;
+            }
+        }
+
+        currNode = get_next_inst(currNode);
+    }
+    //2. 参数成本Arg_cost, LLVM的参数成本负向增加Cost的值
+    //TypeSize;    //arg所占位数 32*
+    //PointerSize;  //指针所占位数，即整数位数 ,是32位
+    //Num = min((TypeSize+PointerSize-1)/PointerSize , 8); //Num取表达式和8中小的值
+    int Num = min((funcValue->pdata->symtab_func_pdata.param_num*32 + 32 -1),8);
+    *cost -= 2 * Num * Instr_cost;
+
+    printf("cost : %d\n",*cost);
+    HashMapPut(cost_map,funcValue,cost);
+}
+
+void remove_one_callsite(Value* caller, Value* callee)
+{
+    HashSetFirst(callsite_set);
+    for(Callsite* callsite = HashSetNext(callsite_set); callsite!=NULL; callsite = HashSetNext(callsite_set)){
+        if(callsite->caller == caller && callsite->callee == callee)
+            HashSetRemove(callsite_set,callsite);
+    }
+}
+
+bool find_one_callsite(Value* caller, Value* callee)
+{
+    HashSetFirst(callsite_set);
+    for(Callsite* callsite = HashSetNext(callsite_set); callsite!=NULL; callsite = HashSetNext(callsite_set)){
+        if(callsite->caller == caller && callsite->callee == callee)
+            return true;
+    }
+    return false;
+}
+
+//TODO 2种llvm优化改进的NFC和BLF没做
+void label_func_inline_llvm(struct _InstNode* instNode_list, int threshold)
+{
+    cost_map = HashMapInit();
+    callsite_set = HashSetInit();
+    callee_map = HashMapInit();
+
+    //1. 第一遍计算,计算出每个function的初始call, 并将关系添加至Callsite
+    InstNode *temp = get_next_inst(instNode_list);
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    BasicBlock *block = temp->inst->Parent;
+
+    //遍历函数
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        BasicBlock *entry = currentFunction->entry;
+        BasicBlock *end = currentFunction->tail;
+
+        InstNode *currNode = entry->head_node;
+
+        Value *funcValue = currNode->inst->user.use_list->Val;
+        if(strcmp(funcValue->name,"main")!=0){
+            cal_cost(currentFunction,threshold);
+        }
+
+        //跳过第一条FunBegin
+        currNode = get_next_inst(currNode);
+
+        while (currNode != get_next_inst(end->tail_node)) {
+
+            Value *func_callee = NULL;
+            if(currNode->inst->Opcode==Call)
+                func_callee = symtab_lookup_withmap(this, currNode->inst->user.use_list->Val->name, &this->value_maps->next->map);
+            if(currNode->inst->Opcode==Call && func_callee && (func_callee->name != funcValue->name)){
+                //如果被调函数的cost已经超过threshold了, caller---->callee就不加入进内联队列了
+                int *callee_cost = HashMapGet(cost_map,func_callee);
+                if(*callee_cost > threshold){
+                    currNode = get_next_inst(currNode);
+                    continue;
+                }
+
+                Callsite *callsite = (Callsite*) malloc(sizeof (Callsite));
+                callsite->caller = funcValue;
+                callsite->callee = func_callee;
+                HashSetAdd(callsite_set,callsite);
+
+                if(HashMapGet(callee_map,func_callee) == NULL){
+                    HashSet *set = HashSetInit();
+                    HashSetAdd(set, funcValue);
+                    HashMapPut(callee_map,func_callee,set);
+                }else{
+                    HashSet *set = HashMapGet(callee_map,func_callee);
+                    if(!HashSetFind(set,funcValue))
+                        HashSetAdd(set, funcValue);
+                }
+            }
+            currNode = get_next_inst(currNode);
+        }
+    }
+
+    //2. 如果函数A调用B（A→B），B调用C（B→C），这时如果把C内联到B中，使得本来可以内联到A中的B不再能内联，则模型不内联C到B中，从而保证B内联到A中
+    //直接按函数顺序遍历,每遍历到一个新函数，拿出所有caller,分别判断能否进行内联
+    //1. 第一遍计算,计算出每个function的初始call, 并将关系添加至Callsite
+    temp = get_next_inst(instNode_list);
+    //找到第一个function的
+    while(temp->inst->Parent->Parent == NULL){
+        temp = get_next_inst(temp);
+    }
+    block = temp->inst->Parent;
+
+    //遍历函数
+    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+        BasicBlock *entry = currentFunction->entry;
+        InstNode *currNode = entry->head_node;
+        bool can_del = true;
+
+        Value *funcValue = currNode->inst->user.use_list->Val;
+        int *cost = HashMapGet(cost_map,funcValue);
+
+        HashSet *callers = HashMapGet(callee_map, funcValue);
+        if(callers){
+            HashSetFirst(callers);
+            for(Value* func = HashSetNext(callers); func!=NULL; func = HashSetNext(callers)){
+                if(strcmp(func->name,"main")!=0){
+                    int *func_cost = HashMapGet(cost_map,func);
+                    if(*func_cost + *cost > threshold){
+                        //取消C到B的内联
+                        remove_one_callsite(func, funcValue);
+                        can_del = false;
+                    }
+                    else {
+                        *func_cost = *func_cost + *cost;
+                        //更新func的cost
+                        HashMapPut(cost_map, func,func_cost);
+                    }
+                }
+            }
+        }
+        if(can_del && strcmp(funcValue->name,"main")!=0){
+            int *del_func = HashMapGet(cost_map, funcValue);
+            if(*del_func <= threshold)
+                funcValue->pdata->symtab_func_pdata.flag_inline = 1;
+        }
+    }
+
+    //test
+    HashSetFirst(callsite_set);
+    for(Callsite* callsite = HashSetNext(callsite_set); callsite!=NULL ;callsite = HashSetNext(callsite_set)){
+        printf("caller %s, callee %s\n",callsite->caller->name,callsite->callee->name);
+    }
 }
 
 //TODO 目前内联条件(可能会再修改)
@@ -183,10 +375,11 @@ void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBl
     }
 }
 
-int func_inline(struct _InstNode* instruction_node)
+int func_inline(struct _InstNode* instruction_node, int threshold)
 {
     //先跑一遍，看是否符合内联条件
-    label_func_inline(instruction_node);
+    //label_func_inline(instruction_node);
+    label_func_inline_llvm(instruction_node,threshold);
 
     InstNode *start=instruction_node;
     instruction_node= get_next_inst(instruction_node);
@@ -204,20 +397,26 @@ int func_inline(struct _InstNode* instruction_node)
     HashSet* block_set = HashSetInit();
 
     BasicBlock *cur_new_block = NULL;
-
+    Value *cur_func = NULL;
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN) {
         Instruction *instruction = instruction_node->inst;
+
+        if(instruction->Opcode == FunBegin)
+            cur_func = ins_get_lhs(instruction);
 
         if(instruction->Opcode==Call)
         {
             int num=0;
+            Value *v_func = NULL;
+            begin_func=find_func_begin(start,instruction->user.use_list->Val->name);
+            if(begin_func)
+                v_func=begin_func->inst->user.use_list->Val;
             //遍历ir找到对应的函数ir,进行一波复制
-            if((begin_func=find_func_begin(start,instruction->user.use_list->Val->name))!=NULL && begin_func->inst->user.use_list->Val->pdata->symtab_func_pdata.flag_inline==1)
+            if(begin_func!=NULL && find_one_callsite(cur_func, v_func))
             {
-                Value *v_func=begin_func->inst->user.use_list->Val;
                 //判断被内联的函数有无参数
                 //有参
-                if(begin_func->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
+                if(begin_func && begin_func->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num!=0)
                 {
                     //记一下参数个数，比它小的都是参数，要区别处理(原value的alias为NULL)
                     num= v_func->pdata->symtab_func_pdata.param_num;
@@ -325,6 +524,7 @@ int func_inline(struct _InstNode* instruction_node)
                         index--;
                         v_left_now->IsPhi = true;
                         v_left_now->VTy = begin_func->inst->user.value.VTy;
+                        v_left_now->alias=begin_func->inst->user.value.alias;
                         HashMapPut(phi_map, &begin_func->inst->user.value, &ins_copy->user.value);
                         HashMapPut(left_alias_map,&begin_func->inst->user.value,v_left_now);
                     }

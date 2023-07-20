@@ -34,8 +34,11 @@ bool isOutputFunction(Value *function);
 bool isTimeFunction(Value *function);
 bool JudgeXor(InstNode *insList);
 void combineZext(InstNode *insList);
+bool isSame(Value *left, Value *right);
 //true -> 会被其他用到
 //false -> 不会被其他用到
 bool JudgeIcmp(InstNode *icmp);
 bool isSimpleOperator(InstNode *instNode);
+bool isSameLargeType(Value *left, Value *right);
+void valueReplaceWithout(Value *oldValue, Value *newValue, Value *cur, Function *currentFunction);
 #endif //C22V1_UTILITY_H

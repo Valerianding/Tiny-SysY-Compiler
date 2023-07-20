@@ -13,7 +13,7 @@ bool RunOnLoop(Loop *loop){
 
 }
 
-bool CheckLoop(Loop *loop){
+bool LSRCheckLoop(Loop *loop){
 
 }
 

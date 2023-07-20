@@ -14,6 +14,7 @@ struct _Function{
     HashMap *storeSet;
     HashSet *loops; // 存储loop结构
     Function *Next;
+    char *name;
 };
 
 Function *function_create();
