@@ -95,8 +95,10 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap);
+InstNode * arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
+
 InstNode *arm_trans_FuncEnd(InstNode*ins);
 
 InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
