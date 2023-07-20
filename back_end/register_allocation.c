@@ -9,7 +9,7 @@ struct SString * live_in_name;
 struct SString * live_out_name;
 int edge_num;
 int var_num=0;
-int KK = 6;
+int KK = 5;
 int rig_num;
 int reg_param_num;
 int block_in_num,block_out_num;
@@ -2972,10 +2972,10 @@ void bian_init(BasicBlock * this_block)
         for(int j=i+1;j<var_num;j++)
         {
             // printf("now %s %s\n",live[i].name,live[j].name);
-            // if((live[i].last<live[j].first||live[i].first>live[j].last)||
-            //     (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
-            //     (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
-            if(live[i].last<live[j].first||live[i].first>live[j].last)
+            if((live[i].last<live[j].first||live[i].first>live[j].last)||
+                (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
+                (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
+            // if(live[i].last<live[j].first||live[i].first>live[j].last)
             {
                 // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
                 // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
@@ -3310,20 +3310,6 @@ void add_to_ir()
                 {
                     if(reg_uid==5)  reg_uid=12;
                     else    reg_uid+=6;
-                    // if(echo_tac[i].dest_use==0)
-                    // {
-                    //     if(i==live[var_uid].last) 
-                    //         echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
-                    //     else
-                    //         echo_tac[i].irnode->_reg_[0]=reg_uid;
-                    // }
-                    // if(echo_tac[i].dest_use==1)
-                    // {
-                    //     if(i==live[var_uid].first) 
-                    //         echo_tac[i].irnode->_reg_[0]=reg_uid+100;
-                    //     else
-                    //         echo_tac[i].irnode->_reg_[0]=reg_uid;
-                    // }
                     if(echo_tac[i].dest_use==0)
                     {
                         if(i==live[var_uid].last_def&&live[var_uid].isout)
