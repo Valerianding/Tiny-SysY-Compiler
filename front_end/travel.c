@@ -4795,6 +4795,15 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                     }
                 }
                 printf("\n");
+                if(instruction->Parent){
+                    BasicBlock *parent = instruction->Parent;
+                    if(parent->true_block)
+                        printf("                                   ; true = %%%d , ",parent->true_block->id);
+                    if(parent->false_block)
+                        printf("false = %%%d",parent->false_block->id);
+                }
+
+                printf("\n");
                 break;
             case Add:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
@@ -5249,8 +5258,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 Value *insValue = ins_get_dest(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
-                //printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
-                printf(" %s = phi i32",instruction->user.value.name);
+                printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
+                //printf(" %s = phi i32",instruction->user.value.name);
                 fprintf(fptr," %s = phi i32",instruction->user.value.name);
                 unsigned int size=HashSetSize(phiSet);
                 int i=0;
@@ -5309,17 +5318,17 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
 
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
@@ -5501,17 +5510,12 @@ void move_give_param(struct _InstNode *instruction_node)
 
 void get_param_list(Value* v_func,int* give_count)
 {
-    //用于返回的InsNode[]
-//    InstNode *one_param[50];
-//    for(int i=0;i<50;i++)
-//        one_param[i]=NULL;
-
     //扫一下params数组
     //还是得从后往前走
     int start=0;
     for(int i=*give_count-1;i>0;i--)
     {
-        if(strcmp(v_func->name,params[i]->inst->user.use_list[1].Val->name)==0)
+        if((v_func == NULL && params[i]->inst->user.value.NumUserOperands == 1) || ((v_func && params[i]->inst->user.value.NumUserOperands == 2) && strcmp(v_func->name,params[i]->inst->user.use_list[1].Val->name)==0))
         {
             start=i;
             break;
@@ -5519,23 +5523,56 @@ void get_param_list(Value* v_func,int* give_count)
     }
     //找出one_param参数列表
     int record_start=start;int j=0;
-    while (j<v_func->pdata->symtab_func_pdata.param_num)
-    {
-        if(strcmp(v_func->name,params[record_start]->inst->user.use_list[1].Val->name)==0)
+    if(v_func){
+        while (j<v_func->pdata->symtab_func_pdata.param_num)
         {
-            one_param[v_func->pdata->symtab_func_pdata.param_num-j-1]=params[record_start];
-            j++;
+            if(strcmp(v_func->name,params[record_start]->inst->user.use_list[1].Val->name)==0)
+            {
+                one_param[v_func->pdata->symtab_func_pdata.param_num-j-1]=params[record_start];
+                j++;
+            }
+            record_start--;
         }
-        record_start--;
+    }else
+    {
+        while (j<3)
+        {
+            if(params[record_start]->inst->user.value.NumUserOperands == 1)
+            {
+                one_param[3-j-1]=params[record_start];
+                j++;
+            }
+            record_start--;
+        }
     }
 
-    if(v_func->pdata->symtab_func_pdata.param_num!=0)
-    {
+    if(v_func){
+        if(v_func->pdata->symtab_func_pdata.param_num!=0)
+        {
+            j=0;
+            //将参数全部置0
+            while(j<v_func->pdata->symtab_func_pdata.param_num)
+            {
+                if(strcmp(v_func->name,params[start]->inst->user.use_list[1].Val->name)==0)
+                {
+                    params[start--]=NULL;
+                    j++;
+                }
+            }
+            j=0;
+            for(int k=0;k<*give_count;k++)
+            {
+                if(params[k]!=NULL)
+                    params[j++]=params[k];
+            }
+            (*give_count)-=v_func->pdata->symtab_func_pdata.param_num;
+        }
+    } else{
         j=0;
         //将参数全部置0
-        while(j<v_func->pdata->symtab_func_pdata.param_num)
+        while(j<3)
         {
-            if(strcmp(v_func->name,params[start]->inst->user.use_list[1].Val->name)==0)
+            if(params[start]->inst->user.value.NumUserOperands == 1)
             {
                 params[start--]=NULL;
                 j++;
@@ -5547,7 +5584,7 @@ void get_param_list(Value* v_func,int* give_count)
             if(params[k]!=NULL)
                 params[j++]=params[k];
         }
-        (*give_count)-=v_func->pdata->symtab_func_pdata.param_num;
+        (*give_count)-=3;
     }
 }
 
