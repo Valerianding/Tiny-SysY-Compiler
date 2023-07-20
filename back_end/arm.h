@@ -99,7 +99,7 @@ InstNode * arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
 
-InstNode *arm_trans_FuncEnd(InstNode*ins);
+InstNode * arm_trans_FuncEnd(InstNode*ins);
 
 InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
@@ -123,10 +123,10 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_MEMCPY(InstNode *ins);
 InstNode * arm_trans_zeroinitializer(InstNode *ins);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
-InstNode *arm_trans_Phi(InstNode *ins);
-InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
-InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins);
-InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins);
+InstNode * arm_trans_Phi(InstNode *ins);
+InstNode * arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
+InstNode * arm_trans_fptosi(HashMap *hashMap,InstNode *ins);
+InstNode * arm_trans_sitofp(HashMap *hashMap,InstNode *ins);
 
 
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
