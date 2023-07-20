@@ -1091,39 +1091,46 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            printf("    add r%d,#%d,#%d\n",result_regri,x1,x2);
-        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            handle_illegal_imm1(1,x1);
-
-            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            printf("    add r%d,r1,#%d\n",result_regri,x2);
-        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            handle_illegal_imm1(2,x2);
-
-            printf("\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
-            fprintf(fp,"\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
-//            printf("    add r%d,r2,#%d\n",result_regri,x1);
+        int ans=x1+x2;
+        if(imm_is_valid(ans)){
+            printf("\tmov\tr%d,#%d\n",dest_reg_abs,ans);
+            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,ans);
         }else{
-            handle_illegal_imm1(1,x1);
-            handle_illegal_imm1(2,x2);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",x1);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",x2);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
-            fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
-//            printf("    add r%d,r1,r2\n",result_regri);
+            handle_illegal_imm1(dest_reg_abs,ans);
         }
+//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+//            printf("\tmov\tr1,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
+//            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
+//            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
+////            printf("    add r%d,#%d,#%d\n",result_regri,x1,x2);
+//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+//            handle_illegal_imm1(1,x1);
+//
+//            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
+//            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
+////            printf("    add r%d,r1,#%d\n",result_regri,x2);
+//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+//            handle_illegal_imm1(2,x2);
+//
+//            printf("\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
+//            fprintf(fp,"\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
+////            printf("    add r%d,r2,#%d\n",result_regri,x1);
+//        }else{
+//            handle_illegal_imm1(1,x1);
+//            handle_illegal_imm1(2,x2);
+////            char arr1[12]="0x";
+////            sprintf(arr1+2,"%0x",x1);
+////            char arr2[12]="0x";
+////            sprintf(arr2+2,"%0x",x2);
+////            printf("\tldr\tr1,=%s\n",arr1);
+////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+////            printf("\tldr\tr2,=%s\n",arr2);
+////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+//            printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
+//            fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
+////            printf("    add r%d,r1,r2\n",result_regri);
+//        }
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -2280,41 +2287,48 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
 
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            printf("    sub r%d,#%d,#%d\n",result_regri,x1,x2);
-        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            handle_illegal_imm1(1,x1);
-
-            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            printf("    sub r%d,r1,#%d\n",result_regri,x2);
-        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            handle_illegal_imm1(2,x2);
-
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-
-            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
-            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//            printf("    sub r%d,r2,#%d\n",result_regri,x1);
+        int ans=x1-x2;
+        if(imm_is_valid(ans)){
+            printf("\tmov\tr%d,#%d\n",dest_reg_abs,ans);
+            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,ans);
         }else{
-            handle_illegal_imm1(1,x1);
-            handle_illegal_imm1(2,x2);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",x1);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",x2);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
-            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
+            handle_illegal_imm1(dest_reg_abs,ans);
         }
+//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+//            printf("\tmov\tr1,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
+//            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
+//            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
+////            printf("    sub r%d,#%d,#%d\n",result_regri,x1,x2);
+//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+//            handle_illegal_imm1(1,x1);
+//
+//            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
+//            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
+////            printf("    sub r%d,r1,#%d\n",result_regri,x2);
+//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+//            handle_illegal_imm1(2,x2);
+//
+//            printf("\tmov\tr1,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
+//
+//            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
+//            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
+////            printf("    sub r%d,r2,#%d\n",result_regri,x1);
+//        }else{
+//            handle_illegal_imm1(1,x1);
+//            handle_illegal_imm1(2,x2);
+////            char arr1[12]="0x";
+////            sprintf(arr1+2,"%0x",x1);
+////            char arr2[12]="0x";
+////            sprintf(arr2+2,"%0x",x2);
+////            printf("\tldr\tr1,=%s\n",arr1);
+////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+////            printf("\tldr\tr2,=%s\n",arr2);
+////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+//            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
+//            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
+//        }
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -3631,45 +3645,52 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 //     两个都是立即数的情况会被优化掉
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            printf("    mul r%d,#%d,#%d\n",result_regri,x1,x2);
-        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            handle_illegal_imm1(1,x1);
-
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            printf("    mul r%d,r1,#%d\n",result_regri,x2);
-        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            handle_illegal_imm1(2,x2);
-
-            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            printf("    mul r%d,r2,#%d\n",result_regri,x1);
+        int ans=x1*x2;
+        if(imm_is_valid(ans)){
+            printf("\tmov\tr%d,#%d\n",dest_reg_abs,ans);
+            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,ans);
         }else{
-            handle_illegal_imm1(1,x1);
-            handle_illegal_imm1(2,x2);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",x1);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",x2);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            printf("    mul r%d,r1,r2\n",result_regri);
+            handle_illegal_imm1(dest_reg_abs,ans);
         }
+//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+//            printf("\tmov\tr1,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
+//            printf("\tmov\tr2,#%d\n",x2);
+//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
+//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
+////            printf("    mul r%d,#%d,#%d\n",result_regri,x1,x2);
+//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+//            handle_illegal_imm1(1,x1);
+//
+//            printf("\tmov\tr2,#%d\n",x2);
+//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
+//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
+////            printf("    mul r%d,r1,#%d\n",result_regri,x2);
+//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+//            printf("\tmov\tr1,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
+//            handle_illegal_imm1(2,x2);
+//
+//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
+////            printf("    mul r%d,r2,#%d\n",result_regri,x1);
+//        }else{
+//            handle_illegal_imm1(1,x1);
+//            handle_illegal_imm1(2,x2);
+////            char arr1[12]="0x";
+////            sprintf(arr1+2,"%0x",x1);
+////            char arr2[12]="0x";
+////            sprintf(arr2+2,"%0x",x2);
+////            printf("\tldr\tr1,=%s\n",arr1);
+////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
+////            printf("\tldr\tr2,=%s\n",arr2);
+////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
+//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
+////            printf("    mul r%d,r1,r2\n",result_regri);
+//        }
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -4855,87 +4876,94 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
 
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("\tmov\tr0,#%d\n",x1);
-            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-
-            printf("\tmov\tr1,#%d\n",x2);
-            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-            if(reg_save[12]==1){
-                printf("\tstr\tr12,[sp,#-4]!\n");
-                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-            }
-            printf("\tbl __aeabi_idiv\n");
-            fprintf(fp,"\tbl __aeabi_idiv\n");
-            if(reg_save[12]==1){
-                printf("\tldr\tr12,[sp],#4\n");
-                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-            }
-
-            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            handle_illegal_imm1(0,x1);
-
-
-            //mov to r1
-            printf("\tmov\tr1,#%d\n",x2);
-            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-            if(reg_save[12]==1){
-                printf("\tstr\tr12,[sp,#-4]!\n");
-                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-            }
-            printf("\tbl __aeabi_idiv\n");
-            fprintf(fp,"\tbl __aeabi_idiv\n");
-            if(reg_save[12]==1){
-                printf("\tldr\tr12,[sp],#4\n");
-                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-            }
-
-            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            printf("\tmov\tr0,#%d\n",x1);
-            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-            handle_illegal_imm1(1,x2);
-            if(reg_save[12]==1){
-                printf("\tstr\tr12,[sp,#-4]!\n");
-                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-            }
-            printf("\tbl __aeabi_idiv\n");
-            fprintf(fp,"\tbl __aeabi_idiv\n");
-            if(reg_save[12]==1){
-                printf("\tldr\tr12,[sp],#4\n");
-                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-            }
-            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+        int ans=x1/x2;
+        if(imm_is_valid(ans)){
+            printf("\tmov\tr%d,#%d\n",dest_reg_abs,ans);
+            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,ans);
         }else{
-            handle_illegal_imm1(0,x1);
-            handle_illegal_imm1(1,x2);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",x1);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",x2);
-//            printf("\tldr\tr0,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-//
-//            printf("\tldr\tr1,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
-            if(reg_save[12]==1){
-                printf("\tstr\tr12,[sp,#-4]!\n");
-                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-            }
-            printf("\tbl __aeabi_idiv\n");
-            fprintf(fp,"\tbl __aeabi_idiv\n");
-            if(reg_save[12]==1){
-                printf("\tldr\tr12,[sp],#4\n");
-                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-            }
-
-            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+            handle_illegal_imm1(dest_reg_abs,ans);
         }
+//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+//            printf("\tmov\tr0,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
+//
+//            printf("\tmov\tr1,#%d\n",x2);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
+//            if(reg_save[12]==1){
+//                printf("\tstr\tr12,[sp,#-4]!\n");
+//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//            }
+//            printf("\tbl __aeabi_idiv\n");
+//            fprintf(fp,"\tbl __aeabi_idiv\n");
+//            if(reg_save[12]==1){
+//                printf("\tldr\tr12,[sp],#4\n");
+//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//            }
+//
+//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
+//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+//            handle_illegal_imm1(0,x1);
+//
+//
+//            //mov to r1
+//            printf("\tmov\tr1,#%d\n",x2);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
+//            if(reg_save[12]==1){
+//                printf("\tstr\tr12,[sp,#-4]!\n");
+//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//            }
+//            printf("\tbl __aeabi_idiv\n");
+//            fprintf(fp,"\tbl __aeabi_idiv\n");
+//            if(reg_save[12]==1){
+//                printf("\tldr\tr12,[sp],#4\n");
+//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//            }
+//
+//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
+//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+//            printf("\tmov\tr0,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
+//            handle_illegal_imm1(1,x2);
+//            if(reg_save[12]==1){
+//                printf("\tstr\tr12,[sp,#-4]!\n");
+//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//            }
+//            printf("\tbl __aeabi_idiv\n");
+//            fprintf(fp,"\tbl __aeabi_idiv\n");
+//            if(reg_save[12]==1){
+//                printf("\tldr\tr12,[sp],#4\n");
+//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//            }
+//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
+//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+//        }else{
+//            handle_illegal_imm1(0,x1);
+//            handle_illegal_imm1(1,x2);
+////            char arr1[12]="0x";
+////            sprintf(arr1+2,"%0x",x1);
+////            char arr2[12]="0x";
+////            sprintf(arr2+2,"%0x",x2);
+////            printf("\tldr\tr0,=%s\n",arr1);
+////            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+////
+////            printf("\tldr\tr1,=%s\n",arr2);
+////            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+//            if(reg_save[12]==1){
+//                printf("\tstr\tr12,[sp,#-4]!\n");
+//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//            }
+//            printf("\tbl __aeabi_idiv\n");
+//            fprintf(fp,"\tbl __aeabi_idiv\n");
+//            if(reg_save[12]==1){
+//                printf("\tldr\tr12,[sp],#4\n");
+//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//            }
+//
+//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
+//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+//        }
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -6304,45 +6332,53 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
     if(isImmIntType(value1->VTy)&& isImmIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-            printf("\tmov\tr0,#%d\n",x1);
-            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-            printf("\tmov\tr1,#%d\n",x2);
-            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-            handle_illegal_imm1(0,x1);
-
-            printf("\tmov\tr1,#%d\n",x2);
-            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-            printf("\tmov\tr0,#%d\n",x1);
-            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-            handle_illegal_imm1(1,x2);
-
+        int ans=x1%x2;
+        if(imm_is_valid(ans)){
+            printf("\tmov\tr%d,#%d\n",dest_reg_abs,ans);
+            fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,ans);
         }else{
-            handle_illegal_imm1(0,x1);
-            handle_illegal_imm1(1,x2);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",x1);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",x2);
-//            printf("\tldr\tr0,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-//            printf("\tldr\tr1,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+            handle_illegal_imm1(dest_reg_abs,ans);
         }
-        if(reg_save[12]==1){
-            printf("\tstr\tr12,[sp,#-4]!\n");
-            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-        }
-        printf("\tbl\t__aeabi_idivmod\n");
-        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-        if(reg_save[12]==1){
-            printf("\tldr\tr12,[sp],#4\n");
-            fprintf(fp,"\tldr\tr12,[sp],#4\n");
-        }
-        printf("\tmov\tr%d,r1\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
+//            printf("\tmov\tr0,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
+//            printf("\tmov\tr1,#%d\n",x2);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
+//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
+//            handle_illegal_imm1(0,x1);
+//
+//            printf("\tmov\tr1,#%d\n",x2);
+//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
+//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
+//            printf("\tmov\tr0,#%d\n",x1);
+//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
+//            handle_illegal_imm1(1,x2);
+//
+//        }else{
+//            handle_illegal_imm1(0,x1);
+//            handle_illegal_imm1(1,x2);
+////            char arr1[12]="0x";
+////            sprintf(arr1+2,"%0x",x1);
+////            char arr2[12]="0x";
+////            sprintf(arr2+2,"%0x",x2);
+////            printf("\tldr\tr0,=%s\n",arr1);
+////            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
+////            printf("\tldr\tr1,=%s\n",arr2);
+////            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
+//        }
+//        if(reg_save[12]==1){
+//            printf("\tstr\tr12,[sp,#-4]!\n");
+//            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
+//        }
+//        printf("\tbl\t__aeabi_idivmod\n");
+//        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+//        if(reg_save[12]==1){
+//            printf("\tldr\tr12,[sp],#4\n");
+//            fprintf(fp,"\tldr\tr12,[sp],#4\n");
+//        }
+//        printf("\tmov\tr%d,r1\n",dest_reg_abs);
+//        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -6940,7 +6976,7 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     memset(give_param_flag,0, sizeof(give_param_flag));
 
     get_param_list(NULL,&give_count);
-    func_param_type=NULL;
+    func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
 
     arm_trans_GIVE_PARAM(hashMap,3);
     printf("\tbl\tmemset\n");
