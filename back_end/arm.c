@@ -6940,6 +6940,8 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     memset(give_param_flag,0, sizeof(give_param_flag));
 
     get_param_list(NULL,&give_count);
+    func_param_type=NULL;
+
     arm_trans_GIVE_PARAM(hashMap,3);
     printf("\tbl\tmemset\n");
     fprintf(fp,"\tbl\tmemset\n");
@@ -7751,6 +7753,7 @@ InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
+
 //只有int和float相互转换的时候需要强制转换，其他的是不需要的。函数定义参数的类型只有三种var_int,var_float和address
 
 //  这边需要修改的就是，在call的时候将function对应的Value*存放在了func_param_type这个全局变量里面
@@ -7787,6 +7790,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         for(int i=0;i<num;i++){
 
             tmp=one_param[i];
+//            printf(" id : %d\t",tmp->inst->i);
             int left_reg= tmp->inst->_reg_[1];
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
 //            判断传递参数时的give_param的类型和被调用函数期望的类型是否一致？
@@ -7795,18 +7799,19 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //            }
             // 对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递，但是也是会出现那全局变量来传参的情况，但是不影响
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
-                assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                     fprintf(fp,"\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
-                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                    if(func_param_type!=NULL &&func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
 //                        传入为int,接受为float
                         int_to_float(i,i);
                     }
 
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
                     handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
-                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
                         int_to_float(i,i);
                     }
                 } else if(isImmFloatType(value1->VTy)){
@@ -7815,17 +7820,17 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //                    sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
 //                    printf("\tldr\tr%d,=%s\n",i,arr);
 //                    fprintf(fp,"\tldr\tr%d,=%s\n",i,arr);
-                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
                         printf("\tvmov\ts%d,r%d\n",i,i);
                         fprintf(fp,"\tvmov\ts%d,r%d\n",i,i);
-                    }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
+                    }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
                         float_to_int(i,i);
                     }
                 }
             }else{
 //              变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
                 if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
-                    assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                    if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                     if(left_reg>100){
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
@@ -7836,14 +7841,14 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
                     }
                     if(isLocalVarIntType(value1->VTy)){
-                        if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                        if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
                             int_to_float(i,i);
                         }
                     }else if(isLocalVarFloatType(value1->VTy)){
-                        if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                        if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
                             printf("\tvmov\ts%d,r%d\n",i,i);
                             fprintf(fp,"\tvmov\ts%d,r%d\n",i,i);
-                        }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
+                        }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
                             float_to_int(i,i);
                         }
                     }
@@ -7867,6 +7872,34 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
                     }
                 }
+
+//                这里还需要加上特地为SysYMemset判断的数组类型
+                else if(isLocalArrayIntType(value1->VTy) || isLocalArrayFloatType(value1->VTy)){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    if(imm_is_valid(x)){
+                        if(x==0){
+                            printf("\tmov\tr%d,r11\n",i);
+                            fprintf(fp,"\tmov\tr%d,r11\n",i);
+                        }else{
+                            printf("\tadd\tr%d,r11,#%d\n",i,x);
+                            fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
+                        }
+                    }else{
+                        handle_illegal_imm1(1,x);
+                    }
+                }
+                else if(isGlobalArrayIntType(value1->VTy) || isGlobalArrayFloatType(value1->VTy)){
+                    printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                }
+                else{
+                    assert(false);
+                }
+
+
+
             }
 //            直接在这个地方判断类型，然后加上add ri,sp,#%d好像就可以了
             give_param_flag[i]=1;
