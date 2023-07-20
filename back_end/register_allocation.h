@@ -79,6 +79,7 @@ struct  reg_now
     int left_use;
     int right_use;
     int give_param;
+    int reg_3[3];
 };
 
 
@@ -111,6 +112,10 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node);
 void reg_control(struct _InstNode *instruction_node,InstNode *temp);
 void reg_control_func(Function *currentFunction);
 void reg_control_block(BasicBlock *cur);
+void reg_control_block_temp(BasicBlock *cur);
+void live_init_block();
+void init_global(BasicBlock *cur);
+void add_to_global();
 void reg_inmem_one_ins(int id); // 放到内存中
 int use_type(struct _InstNode *temp);
 int is_Immediate(int type_id);
@@ -124,6 +129,8 @@ void create_bian(int i,int j);
 void bian_init(BasicBlock * this_block);
 void bian_init_test();
 void add_to_ir();
+void add_to_echo();
+void echo_to_ir();
 void ir_reg_init(InstNode *instruction_node);
 void clean_reg();//完成后释放内存
 void printf_asm_test(char * filename_test);
