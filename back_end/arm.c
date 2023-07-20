@@ -13,7 +13,7 @@ int regs=0;
 int optimization=1;//优化总开关
 int opt_div2=1; //除以2幂次
 int opt_mod2=1; //取余2幂次
-int opt_mul=0;  //乘法优化
+int opt_mul=1;  //乘法优化
 
 int func_call_func;
 extern InstNode *one_param[];
@@ -3475,7 +3475,9 @@ int count_bit(int value){
 // 默认left_reg为已经加载的，并且left_reg时对应的寄存器编号
 // 其实在这里面解决这个是否存在于内存中也是可以的
 int optimization_mul(int dest_reg,int left_reg,int imm){
-
+    if(optimization==0 || opt_mul==0){ //乘法优化开关被关闭
+        return 0;
+    }
     int imm_abs=abs(imm);
     int flag=0; // imm的正负
     int n1=0;
@@ -6934,7 +6936,17 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 
     return ins;
 }
+InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymemset
+    memset(give_param_flag,0, sizeof(give_param_flag));
 
+    get_param_list(NULL,&give_count);
+    arm_trans_GIVE_PARAM(hashMap,3);
+    printf("\tbl\tmemset\n");
+    fprintf(fp,"\tbl\tmemset\n");
+
+    memset(give_param_flag,0, sizeof(give_param_flag));
+    return ins;
+}
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     memset(return_message,0, sizeof(return_message));
     int k;
@@ -10209,6 +10221,8 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_sitofp(hashMap,ins);
         case fptosi:
             return arm_trans_fptosi(hashMap,ins);
+        case SysYMemset:
+            return arm_tarns_SysYMemset(hashMap,ins);
         default:
             return ins;
     }
