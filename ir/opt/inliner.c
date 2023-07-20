@@ -524,6 +524,7 @@ int func_inline(struct _InstNode* instruction_node, int threshold)
                         index--;
                         v_left_now->IsPhi = true;
                         v_left_now->VTy = begin_func->inst->user.value.VTy;
+                        v_left_now->alias=begin_func->inst->user.value.alias;
                         HashMapPut(phi_map, &begin_func->inst->user.value, &ins_copy->user.value);
                         HashMapPut(left_alias_map,&begin_func->inst->user.value,v_left_now);
                     }
