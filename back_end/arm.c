@@ -3472,31 +3472,147 @@ int count_bit(int value){
     }
     return count;
 }
-
+// 默认left_reg为已经加载的，并且left_reg时对应的寄存器编号
+// 其实在这里面解决这个是否存在于内存中也是可以的
 int optimization_mul(int dest_reg,int left_reg,int imm){
 
-    int imm_abs= abs(imm);
-    int n= power_of_two(imm_abs);
-    if(n!=-1){ //    2^n 和 -2^n 优化
-        if(imm>0){
-            printf("\tlsl\tr%d,r%d,#%d\n",dest_reg,left_reg,n);
-            fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg,left_reg,n);
-        }else if(imm<0){
-            printf("\tmov\tr1,#0\n");
-            fprintf(fp,"\tmov\tr1,#0\n");
-            printf("\tsub\tr%d,r1,r%d,lsl #%d\n",dest_reg,left_reg,n);
-            fprintf(fp,"\tsub\tr%d,r1,r%d,lsl #%d\n",dest_reg,left_reg,n);
+    int imm_abs=abs(imm);
+    int flag=0; // imm的正负
+    int n1=0;
+    int n2=0;
+    if((imm > 2147483648) || (imm<-2147483648)){
+        return 0;
+    }
+    if(imm<0) {
+        flag = 1;
+    }
+
+    if(imm==0){
+        printf("\tmov\tr%d,#0\n",dest_reg);
+        fprintf(fp,"\tmov\tr%d,#0\n",dest_reg);
+        return 1;
+    }
+    else if(imm==1){
+        printf("\tmov\tr%d,r%d\n",dest_reg,left_reg);
+        fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg,left_reg);
+        return 1;
+    }
+    else if(imm==-1){
+        printf("\trsb\tr%d,r%d,#0\n",dest_reg,left_reg);
+        fprintf(fp,"\trsb\tr%d,r%d,#0\n",dest_reg,left_reg);
+        return 1;
+    }
+
+    if(imm_abs%2==0){ //偶数
+        if((imm_abs&(imm_abs-1))==0){ //2的幂次
+            while (imm_abs!=1){
+                imm_abs=imm_abs>>1;
+                n1++;
+            }
+            if(flag==0){
+                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg, left_reg,n1);
+                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg, left_reg,n1);
+            }else{
+                printf("\tmov\tr0,#0\n");
+                fprintf(fp,"\tmov\tr0,#0\n");
+                printf("\tsub\tr%d,r0,r%d,lsl #%d\n",dest_reg,left_reg,n1);
+                fprintf(fp,"\tsub\tr%d,r0,r%d,lsl #%d\n",dest_reg,left_reg,n1);
+            }
+            return 1;
+        }else{  //非2的幂次
+            while (imm_abs%2==0){
+                imm_abs=imm_abs>>1;
+                n1++;
+            }
+//           此时剩余的imm_abs是奇数，因为最后一位是1
+            if(((imm_abs+1)&imm_abs)==0){ //剩余数加一是2的幂次
+                int tmp=imm_abs+1;
+                while (tmp!=1){
+                    tmp=tmp>>1;
+                    n2++;
+                }
+                if(flag==0){
+                    printf("\trsb\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                    fprintf(fp,"\trsb\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                }else{
+                    printf("\tsub\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                    fprintf(fp,"\tsub\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                }
+                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg,dest_reg,n1);
+                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg,dest_reg,n1);
+                return 1;
+            }else if(((imm_abs-1)&(imm_abs-2))==0){ //剩余数-1是2的幂次
+                int tmp=imm_abs-1;
+                while (tmp!=1){
+                    tmp=tmp>>1;
+                    n2++;
+                }
+                printf("\tadd\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                fprintf(fp,"\tadd\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                if(flag==1){
+                    printf("\trsb\tr%d,r%d,#0\n",dest_reg,dest_reg);
+                    fprintf(fp,"\trsb\tr%d,r%d,#0\n",dest_reg,dest_reg);
+                }
+                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg,dest_reg,n1);
+                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg,dest_reg,n1);
+                return 1;
+            }
+            return 0;
         }
-        return 1;
+    }else{
+        if(((imm_abs+1)&imm_abs)==0){ //+1是2的幂次
+            int tmp=imm_abs+1;
+            while (tmp!=1){
+                tmp=tmp>>1;
+                n2++;
+            }
+            if(flag==0){
+                printf("\trsb\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                fprintf(fp,"\trsb\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+            }else{
+                printf("\tsub\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+                fprintf(fp,"\tsub\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+            }
+            return 1;
+        }
+        else if(((imm_abs-2)&(imm_abs-1))==0){  //-1是2的幂次
+            int tmp=imm_abs-1;
+            while (tmp!=1){
+                tmp=tmp>>1;
+                n2++;
+            }
+            printf("\tadd\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+            fprintf(fp,"\tadd\tr%d,r%d,r%d,lsl #%d\n",dest_reg,left_reg,left_reg,n2);
+            if(flag==1){
+                printf("\trsb\tr%d,r%d,#0\n",dest_reg,dest_reg);
+                fprintf(fp,"\trsb\tr%d,r%d,#0\n",dest_reg,dest_reg);
+            }
+            return 1;
+        }
+        return 0;
     }
-    //TODO
-    int bit1_num= count_bit(imm_abs);
-    if(bit1_num==2){ // 优化乘数或者是被乘数（先取绝对值转换为正数）的二进制中有两个一的情况，改用移位和加法指令来实现。
-//        这里还需要去确定到底是那两位是1，确定下来之后，将被乘数左移x1位存放到r0，r0再加上被乘数左移x2位
-//        如果imm是负数的话，rsb 0将结果取反就可以了，如果是正数，r0里面直接就是存放的结果了
-        return 1;
-    }
-//    还可以优化的就是照着谌强的区分奇偶和加减1成为2的幂次。
+    return 0;
+//    int imm_abs= abs(imm);
+//    int n= power_of_two(imm_abs);
+//    if(n!=-1){ //    2^n 和 -2^n 优化
+//        if(imm>0){
+//            printf("\tlsl\tr%d,r%d,#%d\n",dest_reg,left_reg,n);
+//            fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg,left_reg,n);
+//        }else if(imm<0){
+//            printf("\tmov\tr1,#0\n");
+//            fprintf(fp,"\tmov\tr1,#0\n");
+//            printf("\tsub\tr%d,r1,r%d,lsl #%d\n",dest_reg,left_reg,n);
+//            fprintf(fp,"\tsub\tr%d,r1,r%d,lsl #%d\n",dest_reg,left_reg,n);
+//        }
+//        return 1;
+//    }
+//    int bit1_num= count_bit(imm_abs);
+//    if(bit1_num==2){ // 优化乘数或者是被乘数（先取绝对值转换为正数）的二进制中有两个一的情况，改用移位和加法指令来实现。
+////        这里还需要去确定到底是那两位是1，确定下来之后，将被乘数左移x1位存放到r0，r0再加上被乘数左移x2位
+////        如果imm是负数的话，rsb 0将结果取反就可以了，如果是正数，r0里面直接就是存放的结果了
+//        return 1;
+//    }
+////    还可以优化的就是照着谌强的区分奇偶和加减1成为2的幂次。
 
 }
 InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
@@ -3821,55 +3937,47 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 //        这里需要进行优化
         int x1=value1->pdata->var_pdata.iVal;
 //        if(power_of_two(x1)==-1){ //非2的幂次，优化不了
-        if(imm_is_valid(x1)){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            if(right_reg>100){
-                int x= get_value_offset_sp(hashMap,value2);
-                handle_illegal_imm(right_reg,x,2);
-
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-            }else{
-                ;
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-            }
-
+        int right_reg_end;
+        if(right_reg>100){
+            int x= get_value_offset_sp(hashMap,value2);
+            handle_illegal_imm(right_reg,x,2);
+            right_reg_end=right_reg-100;
         }else{
-            handle_illegal_imm1(1,x1);
+            right_reg_end=right_reg;
+        }
+        if(optimization_mul(dest_reg_abs,right_reg_end,x1)==0){ //返回值为1表示已经优化。返回值为零表示无法优化，使用mul指令
+            if(imm_is_valid(x1)){
+                printf("\tmov\tr1,#%d\n",x1);
+                fprintf(fp,"\tmov\tr1,#%d\n",x1);
+                if(right_reg>100){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    handle_illegal_imm(right_reg,x,2);
 
-            if(right_reg>100){
-                int x= get_value_offset_sp(hashMap,value2);
-                handle_illegal_imm(right_reg,x,2);
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                }else{
+                    ;
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                }
 
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
             }else{
-                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-            }
+                handle_illegal_imm1(1,x1);
 
+                if(right_reg>100){
+                    int x= get_value_offset_sp(hashMap,value2);
+                    handle_illegal_imm(right_reg,x,2);
+
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
+                }else{
+                    printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                    fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
+                }
+
+            }
         }
 
-
-//        }else{ //是2的幂次，可以优化，LSL左移n位（有符号和无符号是一样的操作）
-//            int n= power_of_two(x1);
-//            if(right_reg>100){
-//                int x= get_value_offset_sp(hashMap,value2);
-//                handle_illegal_imm(right_reg,x,2);
-//
-//                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,n);
-//                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg-100,n);
-////                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-////                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg-100);
-//            }else{
-////                printf("\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-////                fprintf(fp,"\tmul\tr%d,r1,r%d\n",dest_reg_abs,right_reg);
-//                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,n);
-//                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,right_reg,n);
-//            }
-//        }
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -4124,7 +4232,15 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
 //优化
     if(isLocalVarIntType(value1->VTy)&&isImmIntType(value2->VTy)){
         int x2=value2->pdata->var_pdata.iVal;
-        if(power_of_two(x2)==-1){
+        int left_reg_abs=0;
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            handle_illegal_imm(left_reg,x,1);
+            left_reg_abs=left_reg-100;
+        }else{
+            left_reg_abs=left_reg;
+        }
+        if(optimization_mul(dest_reg_abs,left_reg_abs,x2)==0){ //返回1代表优化成功，0优化失败使用mul指令
             if((imm_is_valid(x2))){
                 printf("\tmov\tr2,#%d\n",x2);
                 fprintf(fp,"\tmov\tr2,#%d\n",x2);
@@ -4151,20 +4267,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tmul\tr%d,r%d,r2\n",dest_reg_abs,left_reg);
                 }
             }
-        }else{
-            int n= power_of_two(x2);
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
-                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,n);
-                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,n);
-            }else{
-                printf("\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,n);
-                fprintf(fp,"\tlsl\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,n);
-            }
         }
-
-
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
