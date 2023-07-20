@@ -3,24 +3,29 @@
 //
 
 #include "arm.h"
+
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 //ri
 int regi=0;
 //si
 int regs=0;
-//优化开关1打开
+//优化开关
 int optimization=1;//优化总开关
 int opt_div2=1; //除以2幂次
 int opt_mod2=1; //取余2幂次
 int opt_mul=1;  //乘法优化
 
+//记录本函数调用的函数个数
 int func_call_func;
+//神奇的数组
 extern InstNode *one_param[];
 extern InstNode *params[];
 extern HashMap *global_hashmap;
 int give_count=0;
+
 int globalvar_num;
+//定义数据段的全局变量的信息
 char globalvar_message[100000];
 
 //存放打开文件的FILE指针
@@ -36,6 +41,7 @@ int global_flag=0;
 int give_param_num;
 Value *func_return_type=NULL; //用来进行函数return返回值类型转换
 Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
+//用来记录开辟的文字池
 int ltorg_num=0;
 int give_param_flag[4];
 char return_message[100000];
