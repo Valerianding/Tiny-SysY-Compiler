@@ -7596,6 +7596,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         int i;
         int k=num-1;
         int temp=k;
+        // 可以考虑一下，把这一部分代码放在后面，就是先传超出的参数，再去传前四个参数
         for(i=1;i<4;++i){
 
             tmp=one_param[i];
