@@ -68,7 +68,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num);
  * @param add_sp 用来记录临时变量的开辟
  */
 
-void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num);
+void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num,int reg_flag);
 
 //void hashmap_add_left(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
 //void hashmap_add_right(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);

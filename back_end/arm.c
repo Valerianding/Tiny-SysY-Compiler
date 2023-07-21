@@ -571,7 +571,7 @@ int get_value_offset_sp(HashMap *hashMap,Value*value){
     return -1;
 }
 
-void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack){
+void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack,int reg_flag){
 // 这种存储方法好像是错的，因为后面用到的同一个value，这里给他分配了不同地址的mykey_node()，所以回得到不的key
 // hashmap不会释放value*对应的内存
     char param_name[5]="%4";
@@ -586,13 +586,14 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
     int value_name_num=-1;
     int name_num= atoi(name+1);
     int param_name_num= atoi(param_name+1);
-//    这里好像有问题，就是函数名只有一个字母的情况，get_one,名字只有一个g,g+1进行atoi就会得到0，所以需要判断第一个字母是不是%
+//    这里好像有问题，就是函数名只有一个字母的情况，get_one,名字只有一个g,g+1进行atoi就会得到0，所以需要判断第一个字母是不是%,比如全局变量
     if(value->name!=NULL && value->name[0]=='%'){
         value_name_num= atoi(value->name+1);
     }
 //    if(value->name!=NULL && strcmp(value->name,name)<0 && strlen(value->name)<= strlen(name)){
 //        if(strcmp(value->name,param_name)<0&& strlen(value->name)<= strlen(param_name)){
     if(value_name_num!=-1 && value_name_num<name_num){
+//        是参数
         if(value_name_num<param_name_num){
 //            为r0-r3对应的参数
 //这个HashMapContian好像是有问题的，但是所有的问题都应该是没有进行hashPut
@@ -640,7 +641,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
     }
     else{
 //        数组只在alloca指令里面开辟，其他的不用管
-        if(!HashMapContain(hashMap, value)){
+        if(reg_flag<0 && !HashMapContain(hashMap, value)){
             offset *node=offset_node();
             node->memory=1;
             node->regs=-1;
@@ -679,7 +680,8 @@ void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack)
             node->regr=-1;
             HashMapPut(hashMap,value,node);
         } else{
-//            这个应该是处理其他的情况，比如说是unknown的情况
+            assert(false);
+//            这个应该是处理其他的情况，比如说是unknown的情况,这里应该是存在的
             offset *node=offset_node();
             node->offset_sp=(*local_stack);
             (*local_stack)+=4;
@@ -6787,9 +6789,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6801,9 +6803,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6815,9 +6817,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6829,9 +6831,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6843,9 +6845,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6859,13 +6861,13 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                     value0 = &ins->inst->user.value;
                     value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                     if(value0->VTy!=Unknown){
-                        FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
+                        FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
                     }
 
-                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
                 }else if(operandNum==1){
                     value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
                 }
 
 //                reg0=ins->inst->_reg_[0];
@@ -6876,8 +6878,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case Store:
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -6886,8 +6888,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case Load:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -6895,7 +6897,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 break;
             case GIVE_PARAM:
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg1);
                 break;
@@ -6903,9 +6905,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6917,9 +6919,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6931,9 +6933,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6945,9 +6947,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6959,9 +6961,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6973,9 +6975,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -6986,8 +6988,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case XOR:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -6996,8 +6998,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case zext:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -7022,9 +7024,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //                FuncBegin_hashmap_bitcast_add(hashMap,value0,value1,&local_stack);
 //                GEP指令已经进行了改变，所以说GEP操作的是数组，
 //                alloc指令应该是再最前面的，也就如何GEP操作数组的时候对应了array的类型，不会被重新开辟
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7042,9 +7044,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7061,8 +7063,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case CopyOperation:
                 value0=ins->inst->user.value.alias;
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -7081,7 +7083,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //        if(user_get_operand_use(&ins->inst->user,0)==NULL){
         }else{
             Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+            FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
             int reg1=ins->inst->_reg_[1];
 //            handle_reg_save(reg1);
         }
