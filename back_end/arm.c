@@ -161,10 +161,7 @@ void printf_stmfd_rlist(){
     return;
 }
 void printf_ldmfd_rlist(){
-//    printf();
-//    fprintf(fp,);
-//    char ldmfd_rlist_mesg[50];
-//    int len=0;
+
 
 
     int k=0,n=0;
@@ -190,8 +187,7 @@ void printf_ldmfd_rlist(){
         if(k==1){
             printf("\tldr\tr%d,[sp],#4\n",n);
             fprintf(fp,"\tldr\tr%d,[sp],#4\n",n);
-//            sprintf(ldmfd_rlist_mesg,"\tldr\tr%d,[sp],#4\n",n);
-//            strcat(return_message,ldmfd_rlist_mesg);
+
             return;
         }
         int start = -1;
@@ -199,8 +195,7 @@ void printf_ldmfd_rlist(){
 
         printf("\tldmfd\tsp!,{");
         fprintf(fp,"\tldmfd\tsp!,{");
-//        sprintf(ldmfd_rlist_mesg+len,"\tldmfd\tsp!,{");
-//        len+= strlen("\tldmfd\tsp!,{");
+
         for (int i = 4; i < 13; i++) {
             if (reg_save[i] == 1) {
                 if (start == -1) {
@@ -212,17 +207,11 @@ void printf_ldmfd_rlist(){
                     if (start == end) {
                         printf("r%d,", start);
                         fprintf(fp,"r%d,", start);
-//                        sprintf(ldmfd_rlist_mesg+len,"r%d,", start);
-//                        char tmp[10];
-//                        sprintf(tmp,"r%d,", start);
-//                        len+= strlen(tmp);
+
                     } else {
                         printf("r%d-r%d,", start, end);
                         fprintf(fp,"r%d-r%d,", start, end);
-//                        sprintf(ldmfd_rlist_mesg+len,"r%d-r%d,", start, end);
-//                        char tmp[10];
-//                        sprintf(tmp,"r%d-r%d,", start, end);
-//                        len+= strlen(tmp);
+
 
                     }
                     start = i;
@@ -235,23 +224,16 @@ void printf_ldmfd_rlist(){
             if (start == end) {
                 printf("r%d", start);
                 fprintf(fp,"r%d", start);
-//                sprintf(ldmfd_rlist_mesg+len,"r%d", start);
-//                char tmp[10];
-//                sprintf(tmp,"r%d", start);
-//                len+=strlen(tmp);
+
             } else {
                 printf("r%d-r%d", start, end);
                 fprintf(fp,"r%d-r%d", start, end);
-//                sprintf(ldmfd_rlist_mesg+len,"r%d-r%d", start, end);
-//                char tmp[10];
-//                sprintf(tmp,"r%d-r%d", start, end);
-//                len+=strlen(tmp);
+
             }
         }
         printf("}\n");
         fprintf(fp,"}\n");
-//        sprintf(ldmfd_rlist_mesg+len,"}\n");
-//        strcat(return_message,ldmfd_rlist_mesg);
+
         return;
     }
 //    既要保存现场，又要保存lr
@@ -273,18 +255,10 @@ void printf_ldmfd_rlist(){
                     printf("r%d,", start);
                     fprintf(fp,"r%d,", start);
 
-//                    sprintf(ldmfd_rlist_mesg+len,"r%d,", start);
-//                    char tmp[10];
-//                    sprintf(tmp,"r%d,", start);
-//                    len+= strlen(tmp);
                 } else {
                     printf("r%d-r%d,", start, end);
                     fprintf(fp,"r%d-r%d,", start, end);
 
-//                    sprintf(ldmfd_rlist_mesg+len,"r%d-r%d,", start, end);
-//                    char tmp[10];
-//                    sprintf(tmp,"r%d-r%d,", start, end);
-//                    len+= strlen(tmp);
                 }
                 start = i;
                 end = i;
@@ -297,24 +271,15 @@ void printf_ldmfd_rlist(){
             printf("r%d", start);
             fprintf(fp,"r%d", start);
 
-//            sprintf(ldmfd_rlist_mesg+len,"r%d", start);
-//            char tmp[10];
-//            sprintf(tmp,"r%d", start);
-//            len+= strlen(tmp);
         } else {
             printf("r%d-r%d", start, end);
             fprintf(fp,"r%d-r%d", start, end);
-//
-//            sprintf(ldmfd_rlist_mesg+len,"r%d-r%d", start, end);
-//            char tmp[10];
-//            sprintf(tmp,"r%d-r%d", start, end);
-//            len+= strlen(tmp);
+
         }
     }
     printf(",lr}\n");
     fprintf(fp,",lr}\n");
-//    sprintf(ldmfd_rlist_mesg+len,",lr}\n");
-//    strcat(return_message,ldmfd_rlist_mesg);
+
     return;
 }
 void handle_reg_save(int reg){
@@ -372,7 +337,7 @@ bool imm_is_valid(int x)
     }
     return false;
 }
-//bool imm_is_valid(int x) { //int版本
+//bool imm_is_valid(int x) { //int版本,有问题
 //    for (int i = 0; i < 32; i += 2) {
 //        int rotated = x;
 //        rotated = (rotated << i) | (rotated >> (32 - i));  // Left rotation by i bits.
@@ -585,7 +550,6 @@ void arm_open_file(char filename[]){
 //    } else {
 //        printf("输入文件名有误\n");
 //    }
-//    return;
     char new_ext[260];
     strcpy(new_ext,filename);
     fp= fopen(new_ext,"w");
@@ -732,7 +696,7 @@ void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,i
 //    while (HashMapContain(hashMap,contain)){
 //
 //    }
-    if(!HashMapContain(hashMap,value0)){
+    if(!HashMapContain(hashMap,value0)){ //这里应该是只进入一层就够了，因为每一层的node都是一样的，就没有必要追溯到第一层
         if(HashMapContain(hashMap,value1)){
             offset *node= HashMapGet(hashMap,value1);
             HashMapPut(hashMap,value0,node);
@@ -959,8 +923,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
     }
@@ -972,8 +934,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
 
@@ -990,11 +950,8 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
-        ;
     }
     if(isLocalVarIntType(value1->VTy)){
         if(left_reg>100){
@@ -1017,8 +974,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
     }
@@ -1043,8 +998,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
     }
@@ -1074,10 +1027,7 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
         int x= get_value_offset_sp(hashMap,value0);
         handle_illegal_imm(dest_reg_abs,x,0);
 
-    }else{
-        ;
     }
-
 //    printf("CopyOperation\n");
     return ins;
 }
@@ -1113,39 +1063,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    add r%d,#%d,#%d\n",result_regri,x1,x2);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    add r%d,r1,#%d\n",result_regri,x2);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
-//            fprintf(fp,"\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
-////            printf("    add r%d,r2,#%d\n",result_regri,x1);
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//            handle_illegal_imm1(2,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    add r%d,r1,r2\n",result_regri);
-//        }
+
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -1208,40 +1126,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         }
 
 
-//        if(imm_is_valid(x1)){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }
-//        printf("\tvadd.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -1299,42 +1184,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
 
-//        if(imm_is_valid(x2)){
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }else{
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }
-//        printf("\tvadd.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -1392,26 +1242,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
 
-//        int *xx1=(int*)&x1;
-//        handle_illegal_imm1(1,*xx1);
-////        char arr1[12]="0x";
-////        sprintf(arr1+2,"%0x",*xx1);
-////        printf("\tldr\tr1,=%s\n",arr1);
-////        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//        printf("\tvmov\ts1,r1\n");
-//        fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//        int *xx2=(int*)&x2;
-//        handle_illegal_imm1(2,*xx2);
-////        char arr2[12]="0x";
-////        sprintf(arr2+2,"%0x",*xx2);
-////        printf("\tldr\tr2,=%s\n",arr2);
-////        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//        printf("\tvmov\ts2,r2\n");
-//        fprintf(fp,"\tvmov\ts2,r2\n");
-//
-//        printf("\tvadd.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -2366,41 +2197,6 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    sub r%d,#%d,#%d\n",result_regri,x1,x2);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    sub r%d,r1,#%d\n",result_regri,x2);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//
-//            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    sub r%d,r2,#%d\n",result_regri,x1);
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//            handle_illegal_imm1(2,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//        }
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -2461,40 +2257,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        if(imm_is_valid(x1)){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }
-//        printf("\tvsub.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
+
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -2553,42 +2316,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
 
-//        if(imm_is_valid(x2)){
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }else{
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }
-//        printf("\tvsub.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -2645,26 +2373,6 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        int *xx1=(int*)&x1;
-//        handle_illegal_imm1(1,*xx1);
-////        char arr1[12]="0x";
-////        sprintf(arr1+2,"%0x",*xx1);
-////        printf("\tldr\tr1,=%s\n",arr1);
-////        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//        printf("\tvmov\ts1,r1\n");
-//        fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//        int *xx2=(int*)&x2;
-//        handle_illegal_imm1(2,*xx2);
-////        char arr2[12]="0x";
-////        sprintf(arr2+2,"%0x",*xx2);
-////        printf("\tldr\tr2,=%s\n",arr2);
-////        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//        printf("\tvmov\ts2,r2\n");
-//        fprintf(fp,"\tvmov\ts2,r2\n");
-//
-//        printf("\tvsub.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -3777,45 +3485,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,#%d,#%d\n",result_regri,x1,x2);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,r1,#%d\n",result_regri,x2);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,r2,#%d\n",result_regri,x1);
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//            handle_illegal_imm1(2,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,r1,r2\n",result_regri);
-//        }
+
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -3876,40 +3546,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        if(imm_is_valid(x1)){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }
-//        printf("\tvmul.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
+
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -3967,42 +3604,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        if(imm_is_valid(x2)){
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }else{
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }
-//        printf("\tvmul.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -4060,26 +3662,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        int *xx1=(int*)&x1;
-//        handle_illegal_imm1(1,*xx1);
-////        char arr1[12]="0x";
-////        sprintf(arr1+2,"%0x",*xx1);
-////        printf("\tldr\tr1,=%s\n",arr1);
-////        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//        printf("\tvmov\ts1,r1\n");
-//        fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//        int *xx2=(int*)&x2;
-//        handle_illegal_imm1(2,*xx2);
-////        char arr2[12]="0x";
-////        sprintf(arr2+2,"%0x",*xx2);
-////        printf("\tldr\tr2,=%s\n",arr2);
-////        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//        printf("\tvmov\ts2,r2\n");
-//        fprintf(fp,"\tvmov\ts2,r2\n");
-//
-//        printf("\tvmul.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
+
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -5063,87 +4646,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr0,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-//
-//            printf("\tmov\tr1,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(0,x1);
-//
-//
-//            //mov to r1
-//            printf("\tmov\tr1,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            printf("\tmov\tr0,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-//            handle_illegal_imm1(1,x2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        }else{
-//            handle_illegal_imm1(0,x1);
-//            handle_illegal_imm1(1,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr0,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-////
-////            printf("\tldr\tr1,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        }
+
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -5204,43 +4707,6 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        if(imm_is_valid(x1)){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            printf("\tvcvt.f32.s32\ts1,s1\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-//
-//            int *xx2=(int*)&x2;
-//            handle_illegal_imm1(2,*xx2);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",*xx2);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//        }
-//        printf("\tvdiv.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -5299,42 +4765,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        if(imm_is_valid(x2)){
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }else{
-//            int *xx1=(int*)&x1;
-//            handle_illegal_imm1(1,*xx1);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",*xx1);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tvmov\ts1,r1\n");
-//            fprintf(fp,"\tvmov\ts1,r1\n");
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tvmov\ts2,r2\n");
-//            fprintf(fp,"\tvmov\ts2,r2\n");
-//            printf("\tvcvt.f32.s32\ts2,s2\n");
-//            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-//
-//        }
-//        printf("\tvdiv.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -5391,26 +4822,6 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\ts0,r0\n");
             fprintf(fp,"\tvmov\ts0,r0\n");
         }
-//        int *xx1=(int*)&x1;
-//        handle_illegal_imm1(1,*xx1);
-////        char arr1[12]="0x";
-////        sprintf(arr1+2,"%0x",*xx1);
-////        printf("\tldr\tr1,=%s\n",arr1);
-////        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//        printf("\tvmov\ts1,r1\n");
-//        fprintf(fp,"\tvmov\ts1,r1\n");
-//
-//        int *xx2=(int*)&x2;
-//        handle_illegal_imm1(2,*xx2);
-////        char arr2[12]="0x";
-////        sprintf(arr2+2,"%0x",*xx2);
-////        printf("\tldr\tr2,=%s\n",arr2);
-////        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//        printf("\tvmov\ts2,r2\n");
-//        fprintf(fp,"\tvmov\ts2,r2\n");
-//
-//        printf("\tvdiv.f32\ts0,s1,s2\n");
-//        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
