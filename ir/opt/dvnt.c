@@ -10,7 +10,7 @@
 #include "dvnt.h"
 
 //TODO 由于新增了fptosi 和 sitofp 需要重新考虑，并且加上算术相等的判断！！！
-const Opcode valueOperator[] = {Load,Call,Add,Sub, Div,Mul,Mod,GEP,};
+const Opcode valueOperator[] = {Alloca,GEP,bitcast,Load,Call,Add,Sub, Div,Mul,Mod,fptosi,sitofp};
 unsigned int value_number_seed = 1;
 bool isValueAbleOperator(InstNode *instNode){
     int n = sizeof(valueOperator) / sizeof(Opcode);
@@ -44,7 +44,7 @@ unsigned long getHashValueNumber(Opcode opcode,unsigned int lhsValueNumber, unsi
 }
 
 bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *currentFunction) {
-
+    printf("DVNT in block: %d\n",block->id);
     bool changed = false;
     //allocate a new scope for B
     //我们使用一个hash set记录一下
@@ -55,27 +55,28 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
     InstNode *phiNode = block->head_node;
     InstNode *tailNode = block->tail_node;
     while (phiNode != tailNode) {
+        //只用判断
         if (phiNode->inst->Opcode == Phi) {
             HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
-            // TODO 应该不存在redundant 的情况
+
             HashSetFirst(phiSet);
             bool isMeaningLess = true;
             unsigned int currDefineValueNumber = 0;
             unsigned int prevDefineValueNumber = 0;
             int time = 0;
-            //undefine, 1, 1也需要优化
+            //undefine, 1, 1也需要优化  -> 谁会写undefined behavior的我杀谁
             for (pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)) {
                 Value *define = phiInfo->define;
                 if (define != NULL) {
                     //找Value Number
                     if(isImm(define)){
-                        //如果是是立即数
+                        //如果是立即数
                         switch (define->VTy->ID) {
                             case Int:
-                                currDefineValueNumber = -(unsigned int)define->pdata->var_pdata.iVal;
+                                currDefineValueNumber = (unsigned int)define->pdata->var_pdata.iVal;
                                 break;
                             case Float:
-                                currDefineValueNumber = -(unsigned int)define->pdata->var_pdata.fVal;
+                                currDefineValueNumber = (unsigned int)define->pdata->var_pdata.fVal;
                                 break;
                             default:
                                 assert(false);
@@ -86,6 +87,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         if(pValueNumber == NULL){
                             isMeaningLess = false;
                             //回边
+                            //or undefined
                             break;
                         }else{
                             //得到这个valueNumber的valueNumber
@@ -110,16 +112,8 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
             Value *phiValue = ins_get_dest(phiNode->inst);
             if (isMeaningLess) {
                 changed = true;
-                //当前的phi Value
-                //value number必须是malloc出来的
-                unsigned int *pValueNumber = (unsigned int *) malloc(sizeof(unsigned int));
-                *pValueNumber = currDefineValueNumber;
 
-                //put it into var2num
-                HashMapPut(var2num,phiValue,pValueNumber);
-
-
-                //TODO 这里需要修改部分
+                //TODO 这里需要修改部分 ?? why 不需要了吧 -> 只要我们每次deallocate var2num之后就不需要了
                 Value *replace = NULL;
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -134,7 +128,6 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 valueReplaceAll(phiValue,replace,currentFunction);
 
 
-                //理论上来说的
 
                 //remove this instruction!!
                 InstNode *tempNode = get_next_inst(phiNode);
@@ -148,6 +141,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 value_number_seed++;
                 //put it into the var2num table
                 HashMapPut(var2num,phiValue,pNewValueNumber);
+                HashSetAdd(newScope,phiValue);
                 phiNode = get_next_inst(phiNode);
             }
         }else{
@@ -170,7 +164,33 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     //每个应该是自己独有的
                     //对于call而言我们直接
                     value_number_seed++;
+
                     HashMapPut(var2num, dest, pValue_number);
+                    HashSetAdd(newScope,dest);
+                    break;
+                }
+                case Alloca:{
+                    //为alloca新建一个value number
+                    Value *dest = ins_get_dest(currNode->inst);
+                    unsigned int *pValue_number = (unsigned  int *)malloc(sizeof(unsigned int));
+                    *pValue_number = value_number_seed;
+                    value_number_seed++;
+
+                    HashSetAdd(newScope,dest);
+                    HashMapPut(var2num,dest,pValue_number);
+                    break;
+                }
+                case bitcast:{
+                    //bitcast 的 value number 应该和bitcast的右边一样
+                    Value *lhs = ins_get_lhs(currNode->inst);
+                    Value *dest = ins_get_dest(currNode->inst);
+                    unsigned int *pLhs = HashMapGet(var2num,lhs);
+
+                    //same
+                    unsigned int *pValue_number = (unsigned int *)malloc(sizeof(unsigned int));
+                    *pValue_number = *pLhs;
+                    HashSetAdd(newScope,dest);
+                    HashMapPut(var2num,dest,pValue_number);
                     break;
                 }
                 case Load:{
@@ -179,6 +199,26 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     unsigned int *pValue_number = (unsigned int *)malloc(sizeof(unsigned int));
                     *pValue_number = value_number_seed;
                     value_number_seed++;
+                    HashSetAdd(newScope,dest);
+                    HashMapPut(var2num,dest,pValue_number);
+                    break;
+                }
+                case fptosi:{
+                    //assign a new value number for it
+                    Value *dest = ins_get_dest(currNode->inst);
+                    unsigned int *pValue_number = (unsigned int*)malloc(sizeof(unsigned int));
+                    *pValue_number = value_number_seed;
+                    value_number_seed++;
+                    HashSetAdd(newScope,dest);
+                    HashMapPut(var2num,dest,pValue_number);
+                    break;
+                }
+                case sitofp:{
+                    Value *dest = ins_get_dest(currNode->inst);
+                    unsigned int *pValue_number = (unsigned int*)malloc(sizeof(unsigned int));
+                    *pValue_number = value_number_seed;
+                    value_number_seed++;
+                    HashSetAdd(newScope,dest);
                     HashMapPut(var2num,dest,pValue_number);
                     break;
                 }
@@ -193,26 +233,31 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                     unsigned int *pLhsNumber = NULL;
                     unsigned int *pRhsNumber = NULL;
-                    unsigned int LhsNumber;
-                    unsigned int RhsNumber;
+                    unsigned int LhsNumber = 0;
+                    unsigned int RhsNumber = 0;
                     if(lhs != NULL) {
                         if(!isImm(lhs)){
-                            //还有可能是参数所以无法取出来，对于参数而言我们也是var_num_seed去存
-                            if(isParam(lhs,paramNum)){
-                                //assign a new ValueNumber to this
-                                unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
-                                *pValueNumber = value_number_seed;
-                                value_number_seed++;
-                                HashMapPut(var2num,lhs,pValueNumber);
+                            pLhsNumber = HashMapGet(var2num,lhs);
+                            if(pLhsNumber == NULL){
+                                //还有可能是参数所以无法取出来，对于参数而言我们也是var_num_seed去存
+                                if(isParam(lhs,paramNum) || isGlobalArray(lhs)){
+                                    //assign a new ValueNumber to this
+                                    unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                                    *pValueNumber = value_number_seed;
+                                    value_number_seed++;
+                                    HashMapPut(var2num,lhs,pValueNumber);
+                                }else{
+                                    assert(false);
+                                }
                             }
                             pLhsNumber = HashMapGet(var2num,lhs);
                             assert(pLhsNumber != NULL);
                             LhsNumber = *pLhsNumber;
                         }else{
                             if(isImmInt(lhs)){
-                                LhsNumber = (unsigned int)lhs->pdata->var_pdata.iVal;
+                                LhsNumber = -(unsigned int)lhs->pdata->var_pdata.iVal;
                             }else if(isImmFloat(lhs)){
-                                LhsNumber = (unsigned int)lhs->pdata->var_pdata.fVal;
+                                LhsNumber = -(unsigned int)lhs->pdata->var_pdata.fVal;
                             }else{
                                 assert(false);
                             }
@@ -221,23 +266,31 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                     if(rhs != NULL){
                         if(!isImm(rhs)){
-                            if(isParam(rhs,paramNum)){
-                                unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
-                                *pValueNumber = value_number_seed;
-                                value_number_seed++;
-                                HashMapPut(var2num,rhs,pValueNumber);
+                            pRhsNumber = HashMapGet(var2num, rhs);
+                            if(pRhsNumber == NULL){
+                                if(isParam(rhs,paramNum) || isGlobalArray(rhs)){
+                                    unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                                    *pValueNumber = value_number_seed;
+                                    value_number_seed++;
+                                    HashMapPut(var2num,rhs,pValueNumber);
+                                }else{
+                                    assert(false);
+                                }
                             }
+                            //还有可能是global array
                             pRhsNumber = HashMapGet(var2num, rhs);
                             assert(pRhsNumber != NULL);
                             RhsNumber = *pRhsNumber;
                         }else{
                             if(isImmInt(rhs)){
-                                RhsNumber = (unsigned int)rhs->pdata->var_pdata.iVal;
+                                RhsNumber = -(unsigned int)rhs->pdata->var_pdata.iVal;
                             }else if(isImmFloat(rhs)){
-                                RhsNumber = (unsigned int)rhs->pdata->var_pdata.fVal;
+                                RhsNumber = -(unsigned int)rhs->pdata->var_pdata.fVal;
                             }
                         }
                     }
+
+                    printf("currNode LhsValueNumber %d RhsValueNumber %d\n",LhsNumber,RhsNumber);
 
                     //然后去table里面查有没有
                     //table里面
@@ -251,7 +304,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             case Add:{
                                 if((expression->op == currNode->inst->Opcode)  &&
                                    ((expression->rhsValueNumber == RhsNumber && expression->lhsValueNumber == LhsNumber)
-                                    || expression->rhsValueNumber == LhsNumber && expression->lhsValueNumber == RhsNumber)){
+                                    || (expression->rhsValueNumber == LhsNumber && expression->lhsValueNumber == RhsNumber))){
                                     replace = pair->key;
                                     if(replace->VTy->ID == dest->VTy->ID){
                                         changed = true;
@@ -297,7 +350,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             case Mul:{
                                 if((expression->op == currNode->inst->Opcode)  &&
                                    ((expression->rhsValueNumber == RhsNumber && expression->lhsValueNumber == LhsNumber)
-                                    || expression->rhsValueNumber == LhsNumber && expression->lhsValueNumber == RhsNumber)){
+                                    || (expression->rhsValueNumber == LhsNumber && expression->lhsValueNumber == RhsNumber))){
                                     replace = pair->key;
                                     if(replace->VTy->ID == dest->VTy->ID){
                                         changed = true;
@@ -305,6 +358,21 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                         replace = NULL;
                                     }
                                 }
+                                break;
+                            }
+                            case GEP:{
+                                printf("in gep lhsValueNumber is %d\n",LhsNumber);
+
+                                if((expression->op == currNode->inst->Opcode) &&  (expression->lhsValueNumber == LhsNumber) && (expression->rhsValueNumber == RhsNumber)){
+
+                                    replace = pair->key;
+                                    if(replace->VTy->ID == dest->VTy->ID){
+                                        changed = true;
+                                    }else{
+                                        replace = NULL;
+                                    }
+                                }
+
                                 break;
                             }
                             default:{
@@ -370,6 +438,14 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
     //for each successor s for b adjust the phi function inputs in S
 
 
+    //debug 一下我们push了哪些参数进去
+    HashSetFirst(newScope);
+    printf("pushed:");
+    for(Value *pushed = HashSetNext(newScope); pushed != NULL; pushed = HashSetNext(newScope)){
+        printf(" %s",pushed->name);
+    }
+    printf("\n");
+
     //for each child c of B in the dominator tree
     //不存在回边不需要额外考虑
     struct _DomNode *domTreeNode = block->domTreeNode;
@@ -378,6 +454,8 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
         changed |= DVNT_EACH(child->block,table,var2num,currentFunction);
     }
 
+
+    printf("\n");
     //deallocate the scope for B
     HashSetFirst(newScope);
     for(Value *pushed = HashSetNext(newScope); pushed != NULL; pushed = HashSetNext(newScope)){
@@ -386,6 +464,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
         free(expression);
         expression = NULL;
         HashMapRemove(table,pushed);
+        HashMapRemove(var2num,pushed);
     }
+
+    //remove var2num
     return changed;
 }

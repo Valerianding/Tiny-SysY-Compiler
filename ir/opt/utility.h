@@ -41,4 +41,5 @@ bool JudgeIcmp(InstNode *icmp);
 bool isSimpleOperator(InstNode *instNode);
 bool isSameLargeType(Value *left, Value *right);
 void valueReplaceWithout(Value *oldValue, Value *newValue, Value *cur, Function *currentFunction);
+Function *ReconstructFunction(InstNode *inst_list);
 #endif //C22V1_UTILITY_H

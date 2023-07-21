@@ -33,8 +33,10 @@ void calculate_iDominator(Function *currentFunction);
 void calculate_DomTree(Function *currentFunction);
 void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child);
 void DomTreePrinter(DomTreeNode *root);
-void cleanAll(Function *currentFunction);
+void cleanDominance(Function *currentFunction);
+void cleanPostDominance(Function *currentFunction);
 void dominanceAnalysis(Function *currentFunction);
+void postDominanceAnalysis(Function *currentFunction);
 void calculatePostDominance(Function *currentFunction);
 void removeUnreachable(Function *currentFunction);
 #endif //C22V1_DOMINANCE_H
