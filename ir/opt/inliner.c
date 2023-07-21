@@ -33,7 +33,7 @@ InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name)
 
 //particular ir的cost是0, 其他普通ir一条cost为5
 bool is_particular_instr(Opcode opcode) {
-    if(opcode == Alloca || opcode == bitcast || opcode == Phi || opcode == GEP || opcode == Return || opcode == br || opcode == FunBegin || opcode == FunEnd)
+    if(opcode == Alloca || opcode == bitcast || opcode == Phi || opcode == GEP || opcode == Return || opcode == br || opcode == FunBegin || opcode == FunEnd || opcode == Label)
         return true;
     return false;
 };
