@@ -7975,7 +7975,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 //            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
 //            printf("\tldr\tr2,=%s\n",arr2);
 //            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tcmp\tr1,r2\n");
+            printf("\tcmp\tr1,r2\n");
             fprintf(fp,"\tcmp\tr1,r2\n");
         }
     }
@@ -8817,8 +8817,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         if(flag<0){
             int y=value2->pdata->var_pdata.iVal*4;
             if(imm_is_valid(y)){
-                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
-                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                if(y!=0){
+                    printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                    fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                }else{
+                    printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
+                    fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
+                }
+
             }else{
                 handle_illegal_imm1(1,y);
 
@@ -8840,8 +8846,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 if(imm_is_valid(y)){
-                    printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
-                    fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                    if(y!=0){
+                        printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                        fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
+                    }
+
                 }else{
                     handle_illegal_imm1(2,y);
 
@@ -8886,9 +8898,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             int x=value2->pdata->var_pdata.iVal*4;
             x+=off;
             if(imm_is_valid(x)){
+                if(x!=0){
+                    printf("\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
+                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
+                }else{
+                    printf("\tmov\tr%d,r11\n",dest_reg_abs);
+                    fprintf(fp,"\tmov\tr%d,r11\n",dest_reg_abs);
+                }
 
-                printf("\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
-                fprintf(fp,"\tadd\tr%d,r11,#%d\n",dest_reg_abs,x);
             }else{
                 handle_illegal_imm1(0,x);
 
@@ -8922,8 +8939,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 y*=result;
                 y+=off;
                 if(imm_is_valid(y)){
-                    printf("\tadd\tr%d,r11,#%d\n",dest_reg_abs,y);
-                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",dest_reg_abs,y);
+                    if(y!=0){
+                        printf("\tadd\tr%d,r11,#%d\n",dest_reg_abs,y);
+                        fprintf(fp,"\tadd\tr%d,r11,#%d\n",dest_reg_abs,y);
+                    }else{
+                        printf("\tmov\tr%d,r11\n",dest_reg_abs);
+                        fprintf(fp,"\tmov\tr%d,r11\n",dest_reg_abs);
+                    }
+
                 }else{
                     handle_illegal_imm1(2,y);
 
@@ -8936,8 +8959,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     int x1= get_value_offset_sp(hashMap,value1);//数组首地址的偏移量,这里可以直接r11加上数组首地址的偏移量就可以了
 //                这里面也是需要判断x1是否为合法立即数的
                     if(imm_is_valid(x1)){
-                        printf("\tadd\tr1,r11,#%d\n",x1);
-                        fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
+                        if(x1!=0){
+                            printf("\tadd\tr1,r11,#%d\n",x1);
+                            fprintf(fp,"\tadd\tr1,r11,#%d\n",x1);
+                        }else{
+                            printf("\tmov\tr1,r11\n");
+                            fprintf(fp,"\tmov\tr1,r11\n");
+                        }
+
                     }else{
                         handle_illegal_imm1(2,x1);
 
@@ -8987,8 +9016,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
             fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
             if(imm_is_valid(x)){
-                printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
-                fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
+                if(x!=0){
+                    printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
+                    fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
+                }else{
+                    printf("\tmov\tr%d,r1\n",dest_reg_abs);
+                    fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+                }
+
             }else{
                 handle_illegal_imm1(0,x);
                 printf("\tadd\tr%d,r1,r0\n",dest_reg_abs);
@@ -9030,8 +9065,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 if(imm_is_valid(y)){
-                    printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
-                    fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
+                    if(y!=0){
+                        printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
+                        fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
+                    }else{
+                        printf("\tmov\tr%d,r1\n",dest_reg_abs);
+                        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+                    }
+
                 }else{
                     handle_illegal_imm1(2,y);
 
@@ -9093,8 +9134,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     int x1= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x1,1);
 
-                    printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
-                    fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
+                    if(x!=0){
+                        printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
+                        fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,x);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg_abs,left_reg-100);
+                    }
+
                 }else{
                     printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
                     fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,x);
@@ -9123,12 +9170,38 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             if(left_reg>100){
                 int x1= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x1,1);
+                if(imm_is_valid(result)){
+                    if(result!=0){
+                        printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,result);
+                        fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,result);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg_abs,left_reg-100);
+                    }
+                }else{
+                    handle_illegal_imm1(0,result);
+                    printf("\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg-100);
+                    fprintf(fp,"\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg-100);
+                }
 
-                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,result);
-                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg-100,result);
+
+
             }else{
-                printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,result);
-                fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,result);
+                if(imm_is_valid(result)){
+                    if(result!=0){
+                        printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,result);
+                        fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg,result);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg_abs,left_reg);
+                    }
+
+                }else{
+                    handle_illegal_imm1(0,result);
+                    printf("\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg);
+                    fprintf(fp,"\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg);
+                }
+
             }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
