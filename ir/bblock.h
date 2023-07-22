@@ -103,4 +103,6 @@ InstNode *ins_get_funcHead(InstNode *this);
 
 //lsy：删除一个block前驱集中的基本块
 void bb_delete_one_prev(BasicBlock* cur,BasicBlock* delete_block);
+InstNode *auto_binary_node_insert_before(int Op, Value *S1, Value *S2,int index,BasicBlock *block,InstNode* pos);
+InstNode *auto_binary_node_insert_after(int Op, Value *S1, Value *S2,int index,BasicBlock *block,InstNode* pos);
 #endif
