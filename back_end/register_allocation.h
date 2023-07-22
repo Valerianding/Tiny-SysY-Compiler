@@ -124,7 +124,6 @@ void create_variable_list();
 void print_RIG();
 void spill_variable();
 void printf_llvm_ir_withreg(struct _InstNode *instruction_node);
-void reg_control(struct _InstNode *instruction_node,InstNode *temp);
 void reg_control_func(Function *currentFunction);
 void reg_control_block(BasicBlock *cur);
 void reg_control_block_temp(BasicBlock *cur);
@@ -155,3 +154,4 @@ void clean_reg();//完成后释放内存
 void clean_reg_global();
 void addinout();
 void printf_asm_test(char * filename_test);
+void reg_control(struct _InstNode *instruction_node,Function *start);

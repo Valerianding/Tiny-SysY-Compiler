@@ -1,41 +1,82 @@
-int n;
-int bubblesort(int arr[])
+const int INF = 65535;
+int e[16][16];
+int book[16];
+int dis[16];
+int n, m;
+int v1, v2, w;
+
+void Dijkstra()
 {
-    int i;
-    int j;
-    i =0;
-    while(i < n-1){
-        // Last i elements are already in place
-        j = 0;
-        while(j < n-i-1){
-            if (arr[j] > arr[j+1]) {
-                // swap(&arr[j], &arr[j+1]);
-                int tmp;
-                tmp = arr[j+1];
-                arr[j+1] = arr[j];
-                arr[j] = tmp;
+    int i, j;
+
+    i = 1;
+    while (i <= n) {
+        dis[i] = e[1][i];
+        book[i] = 0;
+        i = i + 1;
+    }
+    book[1] = 1;
+
+    i = 1;
+    while (i <= n - 1) {
+        int min_num = INF;
+        int min_index = 0;
+        int k = 1;
+        while (k <= n) {
+            if (min_num > dis[k] && book[k] == 0) {
+                min_num = dis[k];
+                min_index = k;
+            }
+            k = k + 1;
+        }
+        book[min_index] = 1;
+        int j = 1;
+        while (j <= n) {
+            if (e[min_index][j] < INF) {
+                if (dis[j] > dis[min_index] + e[min_index][j]) {
+                    dis[j] = dis[min_index] + e[min_index][j];
+                }
             }
             j = j + 1;
         }
         i = i + 1;
     }
-    return 0;
 }
 
-int main(){
-    n = 10;
-    int a[10];
-    a[0]=4;a[1]=3;a[2]=9;a[3]=2;a[4]=0;
-    a[5]=1;a[6]=6;a[7]=5;a[8]=7;a[9]=8;
+int main()
+{
     int i;
-    i = bubblesort(a);
-    while (i < n) {
-        int tmp;
-        tmp = a[i];
-        putint(tmp);
-        tmp = 10;
-        putch(tmp);
+    n = getint();
+    m = getint();
+
+    i = 1;
+    while (i <= n) {
+        int j = 1;
+        while (j <= n) {
+            if (i == j)
+                e[i][j] = 0;
+            else
+                e[i][j] = INF;
+            j = j + 1;
+        }
         i = i + 1;
     }
+
+    i = 1;
+    while (i <= m) {
+        int u = getint(), v = getint();
+        e[u][v] = getint();
+        i = i + 1;
+    }
+
+    Dijkstra();
+
+    i = 1;
+    while (i <= n) {
+        putint(dis[i]);
+        putch(32);
+        i = i + 1;
+    }
+    putch(10);
     return 0;
 }

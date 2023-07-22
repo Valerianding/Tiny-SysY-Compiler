@@ -177,6 +177,7 @@ int main(int argc, char* argv[]){
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
         dominanceAnalysis(currentFunction);
         loop(currentFunction);
+        LICM(currentFunction);
     }
 
     if(Optimize) {
@@ -193,15 +194,14 @@ int main(int argc, char* argv[]){
     }
 
 
-
+//
     for (Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
-
+         bool eff = commonSubexpressionElimination(currentFunction);
     }
 
 //phi上的优
-    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],0);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -233,7 +233,7 @@ int main(int argc, char* argv[]){
     //lsy_end
 
     //ljw_begin
-    reg_control(instruction_list,temp);
+    reg_control(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 

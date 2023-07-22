@@ -3276,14 +3276,12 @@ void bian_init_test(BasicBlock * this_block)
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
 }
 
-void reg_control(struct _InstNode *instruction_node,InstNode *temp)
+void reg_control(struct _InstNode *instruction_node,Function *start)
 {
     printf("/*******************reg_start******************/\n");
-    // while(temp->inst->Parent->Parent == NULL)   temp = get_next_inst(temp);]
 
-    BasicBlock *block = temp->inst->Parent;
     ir_reg_init(instruction_node);
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next)
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next)
     {
         // printf("now_func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
         reg_control_func(currentFunction);

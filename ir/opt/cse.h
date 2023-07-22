@@ -6,6 +6,7 @@
 #define C22V1_CSE_H
 #include "function.h"
 #include "utility.h"
+#include "hash.h"
 bool commonSubexpressionElimination(Function *currentFunction);
 bool commonSubexpression(BasicBlock *block,Function *currentFunction);
 #endif //C22V1_CSE_H

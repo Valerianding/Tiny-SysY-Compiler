@@ -30,47 +30,36 @@ bool commonSubexpressionElimination(Function *currentFunction){
 
 
 //TODO 利用num
-uint32_t hash_expr(int Opcode, Value* lhs, Value* rhs) {
-    uintptr_t p1;
+unsigned int hash_expr(int Opcode, Value* lhs, Value* rhs) {
+     unsigned  p1;
     if(isImm(lhs)){
         if(isImmInt(lhs)){
-            p1 = (uintptr_t)lhs->pdata->var_pdata.iVal;
+            p1 = (unsigned long)lhs->pdata->var_pdata.iVal;
         }else{
-            p1 = (uintptr_t)lhs->pdata->var_pdata.fVal;
+            p1 = (unsigned long)lhs->pdata->var_pdata.fVal;
         }
     }else{
-        p1 = (uintptr_t)lhs;
+        p1 = (unsigned long)lhs;
     }
 
-    uintptr_t p2;
+    unsigned p2;
     if(isImm(rhs)){
         if(isImmInt(rhs)){
-            p2 = (uintptr_t)rhs->pdata->var_pdata.iVal;
+            p2 = (unsigned long)rhs->pdata->var_pdata.iVal;
         }else{
-            p2 = (uintptr_t)rhs->pdata->var_pdata.fVal;
+            p2 = (unsigned long)rhs->pdata->var_pdata.fVal;
         }
     }else{
-        p2 = (uintptr_t)rhs;
+        p2 = (unsigned long)rhs;
     }
 
-    uint32_t h1 = (uint32_t)p1;
-    uint32_t h2 = (uint32_t)p2;
-    uint32_t r = Opcode;
+    assert(sizeof(unsigned ) == sizeof(int));
 
-    for(int i = 0; i < 16; i++){
-        h1 *= 15485863u;
-        h2 *= 949417133u;
-        r *= 87701971u;
-        h1 ^= h2 ^ r;
-    }
-
-
-    h1 ^= h1 >> 16;
-    h1 *= 73244475u;
-    h1 ^= h1 >> 15;
-    h1 ^= h1 >> 16;
-
-    return h1;
+    unsigned *memory = (unsigned *)malloc(sizeof(unsigned) * 3);
+    memory[0] = Opcode;
+    memory[1] = p1;
+    memory[2] = p2;
+    return HashMurMur32(memory, sizeof(unsigned ) * 3);
 }
 
 
