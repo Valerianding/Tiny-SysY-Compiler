@@ -3279,7 +3279,7 @@ void bian_init_test(BasicBlock * this_block)
 void reg_control(struct _InstNode *instruction_node,Function *start)
 {
     printf("/*******************reg_start******************/\n");
-
+    // while(temp->inst->Parent->Parent == NULL)   temp = get_next_inst(temp);]
     ir_reg_init(instruction_node);
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next)
     {

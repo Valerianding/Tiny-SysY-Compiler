@@ -89,7 +89,14 @@ void Schedule_Early(Instruction *ins){
         //also it is a pinned instruction we don't want to modify this instruction
         iNode = NULL;
     }else if(ins->Opcode == Load){
+        Value *loadPlace = ins_get_lhs(ins);
+        if(!isGlobalVar(loadPlace)){
+            //那么一定是gep出来的一条指令
+            Instruction *inputIns = (Instruction *)loadPlace;
+            Schedule_Early(inputIns);
+        }
 
+        iNode = NULL;
     }
 
 
