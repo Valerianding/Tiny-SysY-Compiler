@@ -47,6 +47,7 @@ struct name_num
     int num;
     char *name;
     int ifparam;
+    int iffuc;
     int first_use;
     int first;
     int last;
@@ -80,8 +81,18 @@ struct  reg_now
     int dest_use;//0为def，1为use
     int left_use;
     int right_use;
+    int dest_first;
+    int left_first;
+    int right_first;
     int give_param;
     int reg_3[3];
+    int whoinreg[13];
+    int jumpto[2];
+    int jumptoid[2];
+    int from_cnt;
+    int from[100];
+    int label;
+    int visited;
 };
 
 
@@ -106,6 +117,7 @@ int find_var(char * str);
 int find_var_global(char * str);
 //void create_RIG(FILE * re_in);
 void create_RIG();
+void jumpfromto();
 int check_edge();//检查rig
 void create_edge(int firstNode,int secondNode);
 void create_variable_list();
@@ -118,8 +130,11 @@ void reg_control_block(BasicBlock *cur);
 void reg_control_block_temp(BasicBlock *cur);
 int is_func_param(char * str);
 void live_init_block();
+void visittac();
+void fyreg(int i,int j);
 void init_global(BasicBlock *cur);
 void add_to_global();
+char * find_live_name(int id);
 void reg_inmem_one_ins(int id); // 放到内存中
 int use_type(struct _InstNode *temp);
 int is_Immediate(int type_id);
@@ -138,4 +153,5 @@ void echo_to_ir();
 void ir_reg_init(InstNode *instruction_node);
 void clean_reg();//完成后释放内存
 void clean_reg_global();
+void addinout();
 void printf_asm_test(char * filename_test);
