@@ -561,17 +561,26 @@ void arm_close_file(){
     return;
 }
 int get_value_offset_sp(HashMap *hashMap,Value*value){
+
     offset *node= HashMapGet(hashMap, value);
     if(node!=NULL) {
+//        printf("ldr %s\n",value->name);
         return node->offset_sp;
+
     }
     if(node==NULL&&(isImmFloatType(value->VTy)|| isImmIntType(value->VTy))){
 //        printf("this is imm,can't find in stack!!!");
     }
+//    if(value == NULL){printf("NULLL!\n");}
+//    else{
+//        printf("value can't find %s\n",value->name);
+//    }
+//    assert(false);
     return -1;
 }
 
 void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack,int reg_flag){
+//    reg_flag=-1;
 // 这种存储方法好像是错的，因为后面用到的同一个value，这里给他分配了不同地址的mykey_node()，所以回得到不的key
 // hashmap不会释放value*对应的内存
     char param_name[5]="%4";
@@ -607,6 +616,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
                 param_off[x]=node->offset_sp;
 //                printf("param_off[%d]=%d\n",x,*local_stack);
                 (*local_stack)+=4;
+//                printf("funcbegin %s %d\n",value->name,node->offset_sp);
                 HashMapPut(hashMap,value,node);
             }
 
@@ -655,6 +665,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 //                (*local_stack)=(*local_stack)+x-4;
 //            }
 //            printf("funcBeginhaspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,value->name,value);
+//            printf("funcbegin %s %d\n",value->name,node->offset_sp);
             HashMapPut(hashMap,value,node);
         }
     }
@@ -6543,7 +6554,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    if(operandNum==2){
 //
 //    }else if(operandNum==1){
-////        call函数的返回值为void，不需要处理
+////        call函数的返回值为void，不需要处理,这个operandNum是没有标识value0的，所以说没用
 //    }
 
     //        call函数的返回值不为void,还要将r0转移到左值
@@ -6558,52 +6569,55 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     // 如果用一个float型去接受int型的结果，后面应该会有Copy指令的
 
 //    返回值为int
-    if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_INT){
-        if(isLocalVarIntType(value0->VTy)){ //接受为int
-            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+    if(!returnValueNotUsed(ins)){ //返回值被使用，需要保存
+        if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_INT){
+            if(isLocalVarIntType(value0->VTy)){ //接受为int
+                printf("\tmov\tr%d,r0\n",dest_reg_abs);
+                fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
 
-            }
-        } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
-            printf("\tvmov\ts0,r0\n");
-            fprintf(fp,"\tvmov\ts0,r0\n");
-            printf("\tvcvt.f32.s32\ts0,s0\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
-            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-            fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+                }
+            } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
+                printf("\tvmov\ts0,r0\n");
+                fprintf(fp,"\tvmov\ts0,r0\n");
+                printf("\tvcvt.f32.s32\ts0,s0\n");
+                fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
+                }
             }
         }
-    }
 //    返回值为float
-    if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_FLOAT){
-        if(isLocalVarIntType(value0->VTy)){ //接受为int
-            printf("\tvcvt.s32.f32\ts0,s0\n");
-            fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
-            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-            fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+        if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_FLOAT){
+            if(isLocalVarIntType(value0->VTy)){ //接受为int
+                printf("\tvcvt.s32.f32\ts0,s0\n");
+                fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
+                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
 
-            }
+                }
 
 
-        } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
-            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-            fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+            } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
+                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
 
+                }
             }
         }
     }
+
 
 //    else if(isLocalArrayIntType(value0->VTy)){
 //        ;
@@ -6856,19 +6870,25 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //                handle_reg_save(reg2);
                 break;
             case Call:
-                operandNum=ins->inst->user.value.NumUserOperands;
-                if(operandNum==2){
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    if(value0->VTy!=Unknown){
-                        FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
-                    }
+//                operandNum=ins->inst->user.value.NumUserOperands; //这个表示use的value的个数（就是value1和value2的个数，跟value0无关）
+//                if(operandNum==2){
+                  if(returnValueNotUsed(ins)){ //返回值未被使用，不需要保存
+                      value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                      FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                  }else{ //返回值被使用需要保存
+                      value0 = &ins->inst->user.value;
+                      value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+//                      if(value0->VTy!=Unknown){
+//                          FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+//                      }
+                      FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                      FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                  }
 
-                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
-                }else if(operandNum==1){
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
-                }
+//                }else if(operandNum==1){
+//                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+//                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+//                }
 
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
@@ -8783,6 +8803,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        printf("isParam\n");
         int x;
         if(left_reg>100){
+//            printf("%s\n",value1->name);
             x= get_value_offset_sp(hashMap,value1);
             handle_illegal_imm(left_reg,x,1);
             // left_reg_abs里面存放的是数组首地址的绝对地址
