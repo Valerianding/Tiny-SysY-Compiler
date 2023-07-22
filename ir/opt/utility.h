@@ -5,9 +5,11 @@
 #ifndef C22V1_UTILITY_H
 #define C22V1_UTILITY_H
 #include "function.h"
+#include "loopinfo.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
+struct Loop;
 bool isValidOperator(InstNode *insNode);
 void clear_visited_flag(BasicBlock *block);
 void correctType(Function *currentFunction);
@@ -42,4 +44,6 @@ bool isSimpleOperator(InstNode *instNode);
 bool isSameLargeType(Value *left, Value *right);
 void valueReplaceWithout(Value *oldValue, Value *newValue, Value *cur, Function *currentFunction);
 Function *ReconstructFunction(InstNode *inst_list);
+bool isLoopInvariant(struct Loop *loop,Value *var);
+bool returnValueNotUsed(InstNode *instNode);
 #endif //C22V1_UTILITY_H

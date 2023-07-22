@@ -160,7 +160,7 @@ int main(int argc, char* argv[]){
     func_inline(instruction_list,255);
 
 
-    //重新构建Functi
+    //重新构建Function
     Function *start = ReconstructFunction(instruction_list);
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -175,19 +175,19 @@ int main(int argc, char* argv[]){
     //先跑一次
     //cse cf
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
+        loop(currentFunction);
     }
-//
 
     if(Optimize) {
 
 
         //IPO
-        travel();
-        for (Function *currentFunction = start;
-             currentFunction != NULL; currentFunction = currentFunction->Next) {
-             RunOptimizePasses(currentFunction);
-        }
+//        travel();
+//        for (Function *currentFunction = start;
+//             currentFunction != NULL; currentFunction = currentFunction->Next) {
+//            dominanceAnalysis(currentFunction);
+//             RunOptimizePasses(currentFunction);
+//        }
 
     }
 

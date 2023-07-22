@@ -55,32 +55,12 @@ void loop(Function *currentFunction){
     HashSetDeinit(visited);
     HashSetDeinit(workList);
 
-
-    printf("function:%s contain loops:\n",currentFunction->name);
-    //对刚刚收集到的loop进行一系列的整合构建
-    HashSetFirst(allLoops);
-    for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
-        HashSetFirst(l->loopBody);
-        printf("Loop head b%d: ",l->head->id);
-        for(BasicBlock *block = HashSetNext(l->loopBody); block != NULL; block = HashSetNext(l->loopBody)){
-            printf("b%d",block->id);
-        }
-
-        if(HashSetSize(l->exitingBlock) == 1){
-            printf(" with a dedicated exiting block!");
-        }else{
-            printf(" with not a dedicated exiting block!");
-        }
-        printf("\n");
-    }
-
-
-
-    //循环森林的构建
+    //需要提前解决多重回边的问题
     HashSet *tempSet = HashSetInit();
     HashSetCopy(tempSet,allLoops);
     assert(HashSetSize(allLoops) == HashSetSize(tempSet));
-    //需要提前解决多重回边的问题
+
+
     HashSetFirst(allLoops);
     for(Loop *l1 = HashSetNext(allLoops); l1 != NULL; l1 = HashSetNext(allLoops)){
         BasicBlock *l1Head = l1->head;
@@ -104,6 +84,54 @@ void loop(Function *currentFunction){
     }
 
     printf("--------\n");
+
+    printf("function:%s contain loops:\n",currentFunction->name);
+    //对刚刚收集到的loop
+    HashSetFirst(allLoops);
+    for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
+        HashSetFirst(l->loopBody);
+        printf("Loop head b%d: ",l->head->id);
+        for(BasicBlock *block = HashSetNext(l->loopBody); block != NULL; block = HashSetNext(l->loopBody)){
+            printf("b%d",block->id);
+        }
+
+        //exiting的next block不能有前驱
+        bool hasDedicatedExist = true;
+        HashSetFirst(l->exitingBlock);
+        for(BasicBlock *block = HashSetNext(l->exitingBlock); block != NULL; block = HashSetNext(l->exitingBlock)){
+            //exitingblock的true / false不在我们body里面的block就是exit
+            if(block->true_block && !HashSetFind(l->loopBody,block->true_block)){
+                BasicBlock *exit = block->true_block;
+                //如果前驱存在不在循环里面的block代表了
+                HashSetFirst(exit->preBlocks);
+                for(BasicBlock *exitPrev = HashSetNext(exit->preBlocks); exitPrev != NULL; exitPrev = HashSetNext(exit->preBlocks)){
+                    if(!HashSetFind(l->loopBody,exitPrev)){
+                        hasDedicatedExist = false;
+                    }
+                }
+            }
+            if(block->false_block && !HashSetFind(l->loopBody,block->false_block)){
+                BasicBlock *exit = block->false_block;
+                HashSetFirst(exit->preBlocks);
+                for(BasicBlock *exitPrev = HashSetNext(exit->preBlocks); exitPrev != NULL; exitPrev = HashSetNext(exit->preBlocks)){
+                    if(!HashSetFind(l->loopBody,exitPrev)){
+                        hasDedicatedExist = false;
+                    }
+                }
+            }
+        }
+        if(hasDedicatedExist){
+            l->hasDedicatedExit = true;
+            printf("with a dedicated exist!");
+        }else{
+            l->hasDedicatedExit = false;
+            printf("with not a dedicated exist!");
+        }
+        printf("\n");
+    }
+
+
+
 
     HashSetFirst(allLoops);
     for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
@@ -169,7 +197,7 @@ Loop *constructLoop(BasicBlock *head,BasicBlock *tail){
     printf("\n");
 
 
-    printf("loop exit:");
+    printf("loop exiting:");
     HashSetFirst(exit);
     for(BasicBlock *block = HashSetNext(exit); block != NULL; block = HashSetNext(exit)){
         printf("b%d",block->id);

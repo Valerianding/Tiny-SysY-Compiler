@@ -641,3 +641,34 @@ Function *ReconstructFunction(InstNode *inst_list){
 
     return start;
 }
+
+bool isLoopInvariant(Loop *loop,Value *var){
+    BasicBlock *loopEntry = loop->head;
+    Function *function = loopEntry->Parent;
+    BasicBlock *entry = function->entry;
+    int paraNum = entry->head_node->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
+
+    printf("paramNum is %d\n",paraNum);
+
+    if(isParam(var,paraNum)){
+        return true;
+    }else{
+        Instruction *ins = (Instruction *)var;
+        BasicBlock *block = ins->Parent;
+        if(!HashSetFind(loop->loopBody,block)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+}
+
+bool returnValueNotUsed(InstNode *instNode){
+    assert(instNode->inst->Opcode == Call);
+
+    Value *returnValue = ins_get_dest(instNode->inst);
+    if(returnValue->use_list == NULL){
+        return true;
+    }
+    return false;
+}
