@@ -561,16 +561,22 @@ void arm_close_file(){
     return;
 }
 int get_value_offset_sp(HashMap *hashMap,Value*value){
-
+//    printf("find %s\n",value->name);
     offset *node= HashMapGet(hashMap, value);
     if(node!=NULL) {
 //        printf("ldr %s\n",value->name);
+//        printf("get_value_offset_sp %d\n",node->offset_sp);
         return node->offset_sp;
 
     }
     if(node==NULL&&(isImmFloatType(value->VTy)|| isImmIntType(value->VTy))){
 //        printf("this is imm,can't find in stack!!!");
     }
+//    if(node==NULL){
+//        printf("not find %s\n",value->name);
+//        printf("%p\n",value);
+//    }
+
 //    if(value == NULL){printf("NULLL!\n");}
 //    else{
 //        printf("value can't find %s\n",value->name);
@@ -8900,8 +8906,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
         int flag=value0->pdata->var_pdata.iVal;
         int off= get_value_offset_sp(hashMap,value1);
+        assert(off!=-1);
+//        if(value1 && value1->name && strcmp(value1->name,"%5")==0){
+//            printf("hhe\n");
+//        }
+//        printf("%s %d\n",value1->name,off);
         if(flag<0){ //常数
             int x=value2->pdata->var_pdata.iVal*4;
+//            printf("x  %d\n",x);
             x+=off;
             if(imm_is_valid(x)){
                 if(x!=0){
@@ -9138,6 +9150,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //            非第一条GEP而且是常数的偏移（其后不含变量）,常数的偏移的话直接add就可以了
 //            想这种情况right_reg=0,直接取value2里面的值就可以了
             int x=value2->pdata->var_pdata.iVal*4;
+
             if(imm_is_valid(x)){
                 if(left_reg>100){
                     int x1= get_value_offset_sp(hashMap,value1);
