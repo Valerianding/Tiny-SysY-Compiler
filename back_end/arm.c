@@ -161,10 +161,7 @@ void printf_stmfd_rlist(){
     return;
 }
 void printf_ldmfd_rlist(){
-//    printf();
-//    fprintf(fp,);
-//    char ldmfd_rlist_mesg[50];
-//    int len=0;
+
 
 
     int k=0,n=0;
@@ -190,8 +187,7 @@ void printf_ldmfd_rlist(){
         if(k==1){
             printf("\tldr\tr%d,[sp],#4\n",n);
             fprintf(fp,"\tldr\tr%d,[sp],#4\n",n);
-//            sprintf(ldmfd_rlist_mesg,"\tldr\tr%d,[sp],#4\n",n);
-//            strcat(return_message,ldmfd_rlist_mesg);
+
             return;
         }
         int start = -1;
@@ -199,8 +195,7 @@ void printf_ldmfd_rlist(){
 
         printf("\tldmfd\tsp!,{");
         fprintf(fp,"\tldmfd\tsp!,{");
-//        sprintf(ldmfd_rlist_mesg+len,"\tldmfd\tsp!,{");
-//        len+= strlen("\tldmfd\tsp!,{");
+
         for (int i = 4; i < 13; i++) {
             if (reg_save[i] == 1) {
                 if (start == -1) {
@@ -212,17 +207,11 @@ void printf_ldmfd_rlist(){
                     if (start == end) {
                         printf("r%d,", start);
                         fprintf(fp,"r%d,", start);
-//                        sprintf(ldmfd_rlist_mesg+len,"r%d,", start);
-//                        char tmp[10];
-//                        sprintf(tmp,"r%d,", start);
-//                        len+= strlen(tmp);
+
                     } else {
                         printf("r%d-r%d,", start, end);
                         fprintf(fp,"r%d-r%d,", start, end);
-//                        sprintf(ldmfd_rlist_mesg+len,"r%d-r%d,", start, end);
-//                        char tmp[10];
-//                        sprintf(tmp,"r%d-r%d,", start, end);
-//                        len+= strlen(tmp);
+
 
                     }
                     start = i;
@@ -235,23 +224,16 @@ void printf_ldmfd_rlist(){
             if (start == end) {
                 printf("r%d", start);
                 fprintf(fp,"r%d", start);
-//                sprintf(ldmfd_rlist_mesg+len,"r%d", start);
-//                char tmp[10];
-//                sprintf(tmp,"r%d", start);
-//                len+=strlen(tmp);
+
             } else {
                 printf("r%d-r%d", start, end);
                 fprintf(fp,"r%d-r%d", start, end);
-//                sprintf(ldmfd_rlist_mesg+len,"r%d-r%d", start, end);
-//                char tmp[10];
-//                sprintf(tmp,"r%d-r%d", start, end);
-//                len+=strlen(tmp);
+
             }
         }
         printf("}\n");
         fprintf(fp,"}\n");
-//        sprintf(ldmfd_rlist_mesg+len,"}\n");
-//        strcat(return_message,ldmfd_rlist_mesg);
+
         return;
     }
 //    既要保存现场，又要保存lr
@@ -273,18 +255,10 @@ void printf_ldmfd_rlist(){
                     printf("r%d,", start);
                     fprintf(fp,"r%d,", start);
 
-//                    sprintf(ldmfd_rlist_mesg+len,"r%d,", start);
-//                    char tmp[10];
-//                    sprintf(tmp,"r%d,", start);
-//                    len+= strlen(tmp);
                 } else {
                     printf("r%d-r%d,", start, end);
                     fprintf(fp,"r%d-r%d,", start, end);
 
-//                    sprintf(ldmfd_rlist_mesg+len,"r%d-r%d,", start, end);
-//                    char tmp[10];
-//                    sprintf(tmp,"r%d-r%d,", start, end);
-//                    len+= strlen(tmp);
                 }
                 start = i;
                 end = i;
@@ -297,24 +271,15 @@ void printf_ldmfd_rlist(){
             printf("r%d", start);
             fprintf(fp,"r%d", start);
 
-//            sprintf(ldmfd_rlist_mesg+len,"r%d", start);
-//            char tmp[10];
-//            sprintf(tmp,"r%d", start);
-//            len+= strlen(tmp);
         } else {
             printf("r%d-r%d", start, end);
             fprintf(fp,"r%d-r%d", start, end);
-//
-//            sprintf(ldmfd_rlist_mesg+len,"r%d-r%d", start, end);
-//            char tmp[10];
-//            sprintf(tmp,"r%d-r%d", start, end);
-//            len+= strlen(tmp);
+
         }
     }
     printf(",lr}\n");
     fprintf(fp,",lr}\n");
-//    sprintf(ldmfd_rlist_mesg+len,",lr}\n");
-//    strcat(return_message,ldmfd_rlist_mesg);
+
     return;
 }
 void handle_reg_save(int reg){
@@ -372,7 +337,7 @@ bool imm_is_valid(int x)
     }
     return false;
 }
-//bool imm_is_valid(int x) { //int版本
+//bool imm_is_valid(int x) { //int版本,有问题
 //    for (int i = 0; i < 32; i += 2) {
 //        int rotated = x;
 //        rotated = (rotated << i) | (rotated >> (32 - i));  // Left rotation by i bits.
@@ -585,7 +550,6 @@ void arm_open_file(char filename[]){
 //    } else {
 //        printf("输入文件名有误\n");
 //    }
-//    return;
     char new_ext[260];
     strcpy(new_ext,filename);
     fp= fopen(new_ext,"w");
@@ -597,17 +561,26 @@ void arm_close_file(){
     return;
 }
 int get_value_offset_sp(HashMap *hashMap,Value*value){
+
     offset *node= HashMapGet(hashMap, value);
     if(node!=NULL) {
+//        printf("ldr %s\n",value->name);
         return node->offset_sp;
+
     }
     if(node==NULL&&(isImmFloatType(value->VTy)|| isImmIntType(value->VTy))){
 //        printf("this is imm,can't find in stack!!!");
     }
+//    if(value == NULL){printf("NULLL!\n");}
+//    else{
+//        printf("value can't find %s\n",value->name);
+//    }
+//    assert(false);
     return -1;
 }
 
-void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack){
+void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack,int reg_flag){
+//    reg_flag=-1;
 // 这种存储方法好像是错的，因为后面用到的同一个value，这里给他分配了不同地址的mykey_node()，所以回得到不的key
 // hashmap不会释放value*对应的内存
     char param_name[5]="%4";
@@ -622,13 +595,14 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
     int value_name_num=-1;
     int name_num= atoi(name+1);
     int param_name_num= atoi(param_name+1);
-//    这里好像有问题，就是函数名只有一个字母的情况，get_one,名字只有一个g,g+1进行atoi就会得到0，所以需要判断第一个字母是不是%
+//    这里好像有问题，就是函数名只有一个字母的情况，get_one,名字只有一个g,g+1进行atoi就会得到0，所以需要判断第一个字母是不是%,比如全局变量
     if(value->name!=NULL && value->name[0]=='%'){
         value_name_num= atoi(value->name+1);
     }
 //    if(value->name!=NULL && strcmp(value->name,name)<0 && strlen(value->name)<= strlen(name)){
 //        if(strcmp(value->name,param_name)<0&& strlen(value->name)<= strlen(param_name)){
     if(value_name_num!=-1 && value_name_num<name_num){
+//        是参数
         if(value_name_num<param_name_num){
 //            为r0-r3对应的参数
 //这个HashMapContian好像是有问题的，但是所有的问题都应该是没有进行hashPut
@@ -642,6 +616,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
                 param_off[x]=node->offset_sp;
 //                printf("param_off[%d]=%d\n",x,*local_stack);
                 (*local_stack)+=4;
+//                printf("funcbegin %s %d\n",value->name,node->offset_sp);
                 HashMapPut(hashMap,value,node);
             }
 
@@ -676,7 +651,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
     }
     else{
 //        数组只在alloca指令里面开辟，其他的不用管
-        if(!HashMapContain(hashMap, value)){
+        if(reg_flag<0 && !HashMapContain(hashMap, value)){
             offset *node=offset_node();
             node->memory=1;
             node->regs=-1;
@@ -690,6 +665,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 //                (*local_stack)=(*local_stack)+x-4;
 //            }
 //            printf("funcBeginhaspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,value->name,value);
+//            printf("funcbegin %s %d\n",value->name,node->offset_sp);
             HashMapPut(hashMap,value,node);
         }
     }
@@ -715,7 +691,8 @@ void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack)
             node->regr=-1;
             HashMapPut(hashMap,value,node);
         } else{
-//            这个应该是处理其他的情况，比如说是unknown的情况
+            assert(false);
+//            这个应该是处理其他的情况，比如说是unknown的情况,这里应该是存在的
             offset *node=offset_node();
             node->offset_sp=(*local_stack);
             (*local_stack)+=4;
@@ -732,7 +709,7 @@ void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,i
 //    while (HashMapContain(hashMap,contain)){
 //
 //    }
-    if(!HashMapContain(hashMap,value0)){
+    if(!HashMapContain(hashMap,value0)){ //这里应该是只进入一层就够了，因为每一层的node都是一样的，就没有必要追溯到第一层
         if(HashMapContain(hashMap,value1)){
             offset *node= HashMapGet(hashMap,value1);
             HashMapPut(hashMap,value0,node);
@@ -959,8 +936,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
     }
@@ -972,8 +947,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
 
@@ -990,11 +963,8 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
-        ;
     }
     if(isLocalVarIntType(value1->VTy)){
         if(left_reg>100){
@@ -1017,8 +987,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
     }
@@ -1043,8 +1011,6 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            ;
         }
         return ins;
     }
@@ -1074,10 +1040,7 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
         int x= get_value_offset_sp(hashMap,value0);
         handle_illegal_imm(dest_reg_abs,x,0);
 
-    }else{
-        ;
     }
-
 //    printf("CopyOperation\n");
     return ins;
 }
@@ -1113,39 +1076,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    add r%d,#%d,#%d\n",result_regri,x1,x2);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    add r%d,r1,#%d\n",result_regri,x2);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
-//            fprintf(fp,"\tadd\tr%d,r2,#%d\n",dest_reg_abs,x1);
-////            printf("    add r%d,r2,#%d\n",result_regri,x1);
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//            handle_illegal_imm1(2,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    add r%d,r1,r2\n",result_regri);
-//        }
+
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -1192,40 +1123,23 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
-        if(imm_is_valid(x1)){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+
+        float fx1=(float)x1;
+        float ans=fx1+x2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            handle_illegal_imm1(1,x1);
-
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvadd.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+
+
+
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -1269,42 +1183,21 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x2)){
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+        float fx2=(float)x2;
+        float ans=x1+fx2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            handle_illegal_imm1(2,x2);
-
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvadd.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
+
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -1349,26 +1242,20 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         float x2=value2->pdata->var_pdata.fVal;
-        int *xx1=(int*)&x1;
-        handle_illegal_imm1(1,*xx1);
-//        char arr1[12]="0x";
-//        sprintf(arr1+2,"%0x",*xx1);
-//        printf("\tldr\tr1,=%s\n",arr1);
-//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-        printf("\tvmov\ts1,r1\n");
-        fprintf(fp,"\tvmov\ts1,r1\n");
+        float ans=x1+x2;
+        int ix=*(int*)&ans;
+        if(imm_is_valid(ix)){
+            printf("\tmov\tr0,#%d\n",ix);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }else{
+            handle_illegal_imm1(0,ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }
 
-        int *xx2=(int*)&x2;
-        handle_illegal_imm1(2,*xx2);
-//        char arr2[12]="0x";
-//        sprintf(arr2+2,"%0x",*xx2);
-//        printf("\tldr\tr2,=%s\n",arr2);
-//        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-        printf("\tvmov\ts2,r2\n");
-        fprintf(fp,"\tvmov\ts2,r2\n");
 
-        printf("\tvadd.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvadd.f32\ts0,s1,s2\n");
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -2323,41 +2210,6 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    sub r%d,#%d,#%d\n",result_regri,x1,x2);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-//            fprintf(fp,"\tsub\tr%d,r1,#%d\n",dest_reg_abs,x2);
-////            printf("    sub r%d,r1,#%d\n",result_regri,x2);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//
-//            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    sub r%d,r2,#%d\n",result_regri,x1);
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//            handle_illegal_imm1(2,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tsub\tr%d,r1,r2\n",dest_reg_abs);
-//        }
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -2401,44 +2253,24 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
         }
 
     }
-
     if(isImmIntType(value1->VTy) && isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
-        if(imm_is_valid(x1)){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+
+        float fx1=(float)x1;
+        float ans=fx1-x2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            handle_illegal_imm1(1,x1);
-
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvsub.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
+
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -2482,42 +2314,22 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x2)){
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
 
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+        float fx2=(float)x2;
+        float ans=x1-fx2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            handle_illegal_imm1(2,x2);
-
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvsub.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
+
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -2562,26 +2374,18 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         float x2=value2->pdata->var_pdata.fVal;
-        int *xx1=(int*)&x1;
-        handle_illegal_imm1(1,*xx1);
-//        char arr1[12]="0x";
-//        sprintf(arr1+2,"%0x",*xx1);
-//        printf("\tldr\tr1,=%s\n",arr1);
-//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-        printf("\tvmov\ts1,r1\n");
-        fprintf(fp,"\tvmov\ts1,r1\n");
-
-        int *xx2=(int*)&x2;
-        handle_illegal_imm1(2,*xx2);
-//        char arr2[12]="0x";
-//        sprintf(arr2+2,"%0x",*xx2);
-//        printf("\tldr\tr2,=%s\n",arr2);
-//        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-        printf("\tvmov\ts2,r2\n");
-        fprintf(fp,"\tvmov\ts2,r2\n");
-
-        printf("\tvsub.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvsub.f32\ts0,s1,s2\n");
+        float ans=x1-x2;
+        int ix=*(int*)&ans;
+        if(imm_is_valid(ix)){
+            printf("\tmov\tr0,#%d\n",ix);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }else{
+            handle_illegal_imm1(0,ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -3694,45 +3498,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,#%d,#%d\n",result_regri,x1,x2);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(1,x1);
-//
-//            printf("\tmov\tr2,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,r1,#%d\n",result_regri,x2);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            printf("\tmov\tr1,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-//            handle_illegal_imm1(2,x2);
-//
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,r2,#%d\n",result_regri,x1);
-//        }else{
-//            handle_illegal_imm1(1,x1);
-//            handle_illegal_imm1(2,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr1,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-////            printf("\tldr\tr2,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tmul\tr%d,r1,r2\n",dest_reg_abs);
-//            fprintf(fp,"\tmul\tr%d,r1,r2\n",dest_reg_abs);
-////            printf("    mul r%d,r1,r2\n",result_regri);
-//        }
+
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
@@ -3779,40 +3545,21 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
-        if(imm_is_valid(x1)){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+
+        float fx1=(float)x1;
+        float ans=fx1*x2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            handle_illegal_imm1(1,x1);
-
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvmul.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
+
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -3856,42 +3603,21 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x2)){
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
 
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+        float fx2=(float)x2;
+        float ans=x1*fx2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            handle_illegal_imm1(2,x2);
-
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvmul.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -3936,26 +3662,20 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         float x2=value2->pdata->var_pdata.fVal;
-        int *xx1=(int*)&x1;
-        handle_illegal_imm1(1,*xx1);
-//        char arr1[12]="0x";
-//        sprintf(arr1+2,"%0x",*xx1);
-//        printf("\tldr\tr1,=%s\n",arr1);
-//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-        printf("\tvmov\ts1,r1\n");
-        fprintf(fp,"\tvmov\ts1,r1\n");
 
-        int *xx2=(int*)&x2;
-        handle_illegal_imm1(2,*xx2);
-//        char arr2[12]="0x";
-//        sprintf(arr2+2,"%0x",*xx2);
-//        printf("\tldr\tr2,=%s\n",arr2);
-//        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-        printf("\tvmov\ts2,r2\n");
-        fprintf(fp,"\tvmov\ts2,r2\n");
+        float ans=x1*x2;
+        int ix=*(int*)&ans;
+        if(imm_is_valid(ix)){
+            printf("\tmov\tr0,#%d\n",ix);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }else{
+            handle_illegal_imm1(0,ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }
 
-        printf("\tvmul.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvmul.f32\ts0,s1,s2\n");
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -4939,87 +4659,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr0,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-//
-//            printf("\tmov\tr1,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(0,x1);
-//
-//
-//            //mov to r1
-//            printf("\tmov\tr1,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            printf("\tmov\tr0,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-//            handle_illegal_imm1(1,x2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        }else{
-//            handle_illegal_imm1(0,x1);
-//            handle_illegal_imm1(1,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr0,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-////
-////            printf("\tldr\tr1,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
-//            printf("\tbl __aeabi_idiv\n");
-//            fprintf(fp,"\tbl __aeabi_idiv\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
-//
-//            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-//            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-//        }
+
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg>0){
 //               说明不用存回内存，所以这里不需要处理
@@ -5067,43 +4707,19 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
     if(isImmIntType(value1->VTy)&&isImmFloatType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         float x2=value2->pdata->var_pdata.fVal;
-        if(imm_is_valid(x1)){
-            printf("\tmov\tr1,#%d\n",x1);
-            fprintf(fp,"\tmov\tr1,#%d\n",x1);
-
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+        float fx1=(float)x1;
+        float ans=fx1/x2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            handle_illegal_imm1(1,x1);
-
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            printf("\tvcvt.f32.s32\ts1,s1\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
-
-            int *xx2=(int*)&x2;
-            handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvdiv.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
             fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
@@ -5148,42 +4764,21 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmIntType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         int x2=value2->pdata->var_pdata.iVal;
-        if(imm_is_valid(x2)){
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
 
-            printf("\tmov\tr2,#%d\n",x2);
-            fprintf(fp,"\tmov\tr2,#%d\n",x2);
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+        float fx2=(float)x2;
+        float ans=x1/fx2;
+        int ix1=*(int*)&ans;
+        if(imm_is_valid(ix1)){
+            printf("\tmov\tr0,#%d\n",ix1);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }else{
-            int *xx1=(int*)&x1;
-            handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-            printf("\tvmov\ts1,r1\n");
-            fprintf(fp,"\tvmov\ts1,r1\n");
-            handle_illegal_imm1(2,x2);
-
-            printf("\tvmov\ts2,r2\n");
-            fprintf(fp,"\tvmov\ts2,r2\n");
-            printf("\tvcvt.f32.s32\ts2,s2\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts2,s2\n");
-
+            handle_illegal_imm1(0,ix1);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
         }
-        printf("\tvdiv.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
+
 //        判断结果（左值类型）
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -5228,26 +4823,18 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
     if(isImmFloatType(value1->VTy)&&isImmFloatType(value2->VTy)){
         float x1=value1->pdata->var_pdata.fVal;
         float x2=value2->pdata->var_pdata.fVal;
-        int *xx1=(int*)&x1;
-        handle_illegal_imm1(1,*xx1);
-//        char arr1[12]="0x";
-//        sprintf(arr1+2,"%0x",*xx1);
-//        printf("\tldr\tr1,=%s\n",arr1);
-//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-        printf("\tvmov\ts1,r1\n");
-        fprintf(fp,"\tvmov\ts1,r1\n");
-
-        int *xx2=(int*)&x2;
-        handle_illegal_imm1(2,*xx2);
-//        char arr2[12]="0x";
-//        sprintf(arr2+2,"%0x",*xx2);
-//        printf("\tldr\tr2,=%s\n",arr2);
-//        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-        printf("\tvmov\ts2,r2\n");
-        fprintf(fp,"\tvmov\ts2,r2\n");
-
-        printf("\tvdiv.f32\ts0,s1,s2\n");
-        fprintf(fp,"\tvdiv.f32\ts0,s1,s2\n");
+        float ans=x1/x2;
+        int ix=*(int*)&ans;
+        if(imm_is_valid(ix)){
+            printf("\tmov\tr0,#%d\n",ix);
+            fprintf(fp,"\tmov\tr0,#%d\n",ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }else{
+            handle_illegal_imm1(0,ix);
+            printf("\tvmov\ts0,r0\n");
+            fprintf(fp,"\tvmov\ts0,r0\n");
+        }
 
         if(isLocalVarIntType(value0->VTy)){
             printf("\tvcvt.s32.f32\ts0,s0\n");
@@ -6967,7 +6554,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    if(operandNum==2){
 //
 //    }else if(operandNum==1){
-////        call函数的返回值为void，不需要处理
+////        call函数的返回值为void，不需要处理,这个operandNum是没有标识value0的，所以说没用
 //    }
 
     //        call函数的返回值不为void,还要将r0转移到左值
@@ -6982,52 +6569,55 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     // 如果用一个float型去接受int型的结果，后面应该会有Copy指令的
 
 //    返回值为int
-    if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_INT){
-        if(isLocalVarIntType(value0->VTy)){ //接受为int
-            printf("\tmov\tr%d,r0\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+    if(!returnValueNotUsed(ins)){ //返回值被使用，需要保存
+        if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_INT){
+            if(isLocalVarIntType(value0->VTy)){ //接受为int
+                printf("\tmov\tr%d,r0\n",dest_reg_abs);
+                fprintf(fp,"\tmov\tr%d,r0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
 
-            }
-        } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
-            printf("\tvmov\ts0,r0\n");
-            fprintf(fp,"\tvmov\ts0,r0\n");
-            printf("\tvcvt.f32.s32\ts0,s0\n");
-            fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
-            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-            fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+                }
+            } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
+                printf("\tvmov\ts0,r0\n");
+                fprintf(fp,"\tvmov\ts0,r0\n");
+                printf("\tvcvt.f32.s32\ts0,s0\n");
+                fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
+                }
             }
         }
-    }
 //    返回值为float
-    if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_FLOAT){
-        if(isLocalVarIntType(value0->VTy)){ //接受为int
-            printf("\tvcvt.s32.f32\ts0,s0\n");
-            fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
-            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-            fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+        if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_FLOAT){
+            if(isLocalVarIntType(value0->VTy)){ //接受为int
+                printf("\tvcvt.s32.f32\ts0,s0\n");
+                fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
+                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
 
-            }
+                }
 
 
-        } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
-            printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-            fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-            if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+            } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
+                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    handle_illegal_imm(dest_reg_abs,x,0);
 
+                }
             }
         }
     }
+
 
 //    else if(isLocalArrayIntType(value0->VTy)){
 //        ;
@@ -7213,9 +6803,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7227,9 +6817,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7241,9 +6831,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7255,9 +6845,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7269,9 +6859,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7280,19 +6870,25 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //                handle_reg_save(reg2);
                 break;
             case Call:
-                operandNum=ins->inst->user.value.NumUserOperands;
-                if(operandNum==2){
-                    value0 = &ins->inst->user.value;
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    if(value0->VTy!=Unknown){
-                        FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                    }
+//                operandNum=ins->inst->user.value.NumUserOperands; //这个表示use的value的个数（就是value1和value2的个数，跟value0无关）
+//                if(operandNum==2){
+                  if(returnValueNotUsed(ins)){ //返回值未被使用，不需要保存
+                      value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                      FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                  }else{ //返回值被使用需要保存
+                      value0 = &ins->inst->user.value;
+                      value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+//                      if(value0->VTy!=Unknown){
+//                          FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+//                      }
+                      FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                      FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                  }
 
-                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                }else if(operandNum==1){
-                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                }
+//                }else if(operandNum==1){
+//                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+//                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+//                }
 
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
@@ -7302,8 +6898,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case Store:
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -7312,8 +6908,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case Load:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -7321,7 +6917,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 break;
             case GIVE_PARAM:
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg1);
                 break;
@@ -7329,9 +6925,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7343,9 +6939,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7357,9 +6953,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7371,9 +6967,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7385,9 +6981,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7399,9 +6995,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7412,8 +7008,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case XOR:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -7422,8 +7018,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case zext:
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -7448,9 +7044,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //                FuncBegin_hashmap_bitcast_add(hashMap,value0,value1,&local_stack);
 //                GEP指令已经进行了改变，所以说GEP操作的是数组，
 //                alloc指令应该是再最前面的，也就如何GEP操作数组的时候对应了array的类型，不会被重新开辟
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7468,9 +7064,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 value0 = &ins->inst->user.value;
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
                 value2 = user_get_operand_use(&ins->inst->user, 1)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                FuncBegin_hashmap_add(hashMap,value2,name,&local_stack,ins->inst->_reg_[2]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                reg2=ins->inst->_reg_[2];
@@ -7487,8 +7083,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             case CopyOperation:
                 value0=ins->inst->user.value.alias;
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
-                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack);
-                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+                FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
 //                reg0=ins->inst->_reg_[0];
 //                reg1=ins->inst->_reg_[1];
 //                handle_reg_save(reg0);
@@ -7507,7 +7103,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //        if(user_get_operand_use(&ins->inst->user,0)==NULL){
         }else{
             Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            FuncBegin_hashmap_add(hashMap,value1,name,&local_stack);
+            FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
             int reg1=ins->inst->_reg_[1];
 //            handle_reg_save(reg1);
         }
@@ -8022,6 +7618,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         int i;
         int k=num-1;
         int temp=k;
+        // 可以考虑一下，把这一部分代码放在后面，就是先传超出的参数，再去传前四个参数
         for(i=1;i<4;++i){
 
             tmp=one_param[i];
@@ -9206,6 +8803,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        printf("isParam\n");
         int x;
         if(left_reg>100){
+//            printf("%s\n",value1->name);
             x= get_value_offset_sp(hashMap,value1);
             handle_illegal_imm(left_reg,x,1);
             // left_reg_abs里面存放的是数组首地址的绝对地址

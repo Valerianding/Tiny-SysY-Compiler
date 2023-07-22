@@ -357,6 +357,7 @@ void calculateNonLocals(Function *currentFunction){
 
 
 void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction){
+    printf("in function %s\n",currentFunction->name);
     value_replaceAll(oldValue,newValue);
     InstNode *currNode = currentFunction->entry->head_node;
     InstNode *tailNode = currentFunction->tail->tail_node;
@@ -607,4 +608,67 @@ void SwapOperand(InstNode *instNode){
     User *user = &instNode->inst->user;
 
     //
+}
+
+
+Function *ReconstructFunction(InstNode *inst_list){
+    //
+    InstNode *tempNode = inst_list;
+    Function *start = NULL;
+    Function *prev = NULL;
+    Function *curr = NULL;
+
+    //找到第一个funcHead
+    while(tempNode->inst->Opcode != FunBegin){
+        tempNode = get_next_inst(tempNode);
+    }
+
+    assert(tempNode->inst->Opcode == FunBegin);
+
+
+    start = tempNode->inst->Parent->Parent;
+    prev = start;
+
+    tempNode = get_next_inst(tempNode);
+    while(tempNode != NULL){
+        if(tempNode->inst->Opcode == FunBegin){
+            curr = tempNode->inst->Parent->Parent;
+            prev->Next = curr;
+            prev = curr;
+        }
+        tempNode = get_next_inst(tempNode);
+    }
+
+    return start;
+}
+
+bool isLoopInvariant(Loop *loop,Value *var){
+    BasicBlock *loopEntry = loop->head;
+    Function *function = loopEntry->Parent;
+    BasicBlock *entry = function->entry;
+    int paraNum = entry->head_node->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
+
+    printf("paramNum is %d\n",paraNum);
+
+    if(isParam(var,paraNum)){
+        return true;
+    }else{
+        Instruction *ins = (Instruction *)var;
+        BasicBlock *block = ins->Parent;
+        if(!HashSetFind(loop->loopBody,block)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+}
+
+bool returnValueNotUsed(InstNode *instNode){
+    assert(instNode->inst->Opcode == Call);
+
+    Value *returnValue = ins_get_dest(instNode->inst);
+    if(returnValue->use_list == NULL){
+        return true;
+    }
+    return false;
 }

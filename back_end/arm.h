@@ -12,6 +12,7 @@
 #include "offset.h"
 #include "travel.h"
 #include "ir/opt/utility.h"
+#include "ir/opt/scev.h"
 #include <unistd.h>
 
 /**
@@ -129,7 +130,7 @@ InstNode * arm_trans_fptosi(HashMap *hashMap,InstNode *ins);
 InstNode * arm_trans_sitofp(HashMap *hashMap,InstNode *ins);
 
 
-void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack);
+void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_stack,int reg_flag);
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack);
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
 void usage_of_global_variables();

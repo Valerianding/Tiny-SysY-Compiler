@@ -31,6 +31,8 @@ void RunOptimizePasses(Function *currentFunction){
 
     //DVNT(currentFunction);
 
+    postDominanceAnalysis(currentFunction);
+
     Mark(currentFunction);
 
     Sweep(currentFunction);

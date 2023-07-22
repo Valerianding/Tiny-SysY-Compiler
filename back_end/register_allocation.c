@@ -78,6 +78,7 @@ void init_global(BasicBlock *cur)
     tac_cnt_gloabl=0;
     var_num_global=0;
     edge_num=0;
+    mem_temp=0;
     InstNode * temp_instruction_node= get_next_inst(cur->head_node);
     while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=FunEnd)
     {
@@ -98,6 +99,14 @@ void init_global(BasicBlock *cur)
         echo_tac_global[i].reg_3[0]=0;
         echo_tac_global[i].reg_3[1]=0;
         echo_tac_global[i].reg_3[2]=0;
+        for(int j=0;j<13;j++)
+            echo_tac_global[i].whoinreg[j]=-1;
+        echo_tac_global[i].jumpto[0]=-1;
+        echo_tac_global[i].jumpto[1]=-1;
+        echo_tac_global[i].jumptoid[0]=-1;
+        echo_tac_global[i].jumptoid[1]=-1;
+        echo_tac_global[i].from_cnt=0;
+        echo_tac_global[i].visited=0;
     }
     _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((temp_cnt+10)*(temp_cnt+10)/2));
     live_global=(struct name_num *)malloc(sizeof(struct name_num)*((temp_cnt+20)*3));
@@ -112,10 +121,17 @@ void init_global(BasicBlock *cur)
         live_global[i].isin=0;
         live_global[i].isout=0;
         live_global[i].kua=0;
+        live_global[i].iffuc=0;
+    }
+    for(int i=0;i<reg_param_num;i++)
+    {
+        sprintf(live_global[i].name,"%%%d",i);
+        live_global[i].iffuc=1;
+        // printf("%s\t",live_global[i].name);
+        var_num_global++;
     }
     return ;
 }
-
 int in_live(char * str)
 {
     //printf("in_live:%s\n",str);
@@ -343,6 +359,35 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
             case br_i1_true:
                 printf(" br i1 true,label %%%d,label %%%d\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 //fpintf(fptr," br i1 true,label %%%d,label %%%d\n\n",instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+                break;
+            case EQ:
+                if(instruction->user.use_list->Val->VTy->ID==Int)
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        printf(" %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        // fprintf(fptr," %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        printf(" %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                        // fprintf(fptr," %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    }
+                }
+                else
+                {
+                    if(instruction->user.use_list[1].Val->VTy->ID==Int)
+                    {
+                        printf(" %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                        // fprintf(fptr," %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
+                    }
+                    else
+                    {
+                        printf(" %s = icmp eq i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                        // fprintf(fptr," %s = icmp eq i32 %s,%s\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    }
+                }
+
                 break;
             case LESS:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
@@ -1396,7 +1441,9 @@ void travel_ir(InstNode *instruction_node)
     int give_param_ir_num;
     for(int i=0;i<1000;i++) give_param_ir[i]=0;
     give_param_ir_num=0;
-    InstNode * temp_instruction_node= get_next_inst(instruction_node);
+    // InstNode * temp_instruction_node= get_next_inst(instruction_node);
+
+    InstNode * temp_instruction_node= instruction_node;
     // #if  reg_alloc_test
     //     while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=FunEnd)
     //     {
@@ -1467,7 +1514,6 @@ void travel_ir(InstNode *instruction_node)
         //     params[i]=NULL;
 
         while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN 
-        && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
         && instruction_node->inst->Opcode!=FunEnd)
     // #endif
     {
@@ -1545,24 +1591,28 @@ void travel_ir(InstNode *instruction_node)
             case br:
                 {
                     if_br_ir = 1;
+                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
                     break;
                 }
             case br_i1:
                 {
                     echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
                     echo_tac[tac_cnt].dest_use=1;
-                    
+                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
+                    echo_tac[tac_cnt].jumpto[1]=instruction->user.value.pdata->instruction_pdata.false_goto_location;
                     if_br_ir = 1;
                     break;
                     // printf(" br i1 %s,label %%%d,label %%%d\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
                 }
             case br_i1_false:
                 {
+                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
                     if_br_ir = 1;
                     break;
                 }
             case br_i1_true:
                 {
+                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
                     if_br_ir = 1;
                     break;
                 }
@@ -2137,6 +2187,7 @@ void travel_ir(InstNode *instruction_node)
             case Label:
                 // printf("%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 //fpintf(fptr,"%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                echo_tac[tac_cnt].label=instruction->user.value.pdata->instruction_pdata.true_goto_location;
                 break;
             case Add:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
@@ -2910,6 +2961,7 @@ void addtolive(char * name,int tacid,int ifuse,int paramid)
 
 void create_bian(int i,int j)
 {
+    if(i==j)    return ;
     for(int tie=0;tie<edge_num;tie++)
     {
         if((_bian[tie].a==i&&_bian[tie].b==j)||(_bian[tie].a==j&&_bian[tie].b==i))
@@ -2917,6 +2969,7 @@ void create_bian(int i,int j)
             return ;
         }
     }
+    printf("%d %d %s %s在一起了\n",i,j,live_global[i].name,live_global[j].name);
     _bian[edge_num].a=i;
     _bian[edge_num++].b=j;
     // printf("边:%s--%s\n",live[i].name,live[j].name);
@@ -2943,7 +2996,7 @@ void addtoin(BasicBlock *this_block)
     //     live_in_name[block_in_num].name =(char *)malloc(1000);
     //     sprintf(live_in_name[block_in_num++].name,"%%%d",i);
     // }
-    // printf("in:\tblockid:%d\tnum:%d\n",reg_curblock->id,block_in_num);
+    // printf("in:\n",reg_curblock->id,block_in_num);
     // for(int i=0;i<block_in_num;i++)
     //     printf("%s\n",live_in_name[i].name);
     return ;
@@ -3057,21 +3110,70 @@ void addtogloballive()
         {
             if(strcmp(live[i].name,live_global[j].name)==0)
             {
-                live[i].ys=j;
-                live_global[j].last=live[i].last;
-                tie_flag=0;
+                if(live_global[j].first==-1)
+                {
+                    live[i].ys=j;
+                    live_global[j].first=live[i].first+tac_cnt_gloabl-tac_cnt;
+                    live_global[j].last=live[i].last+tac_cnt_gloabl-tac_cnt;
+                    live_global[j].iffuc=live[i].iffuc;
+                }
+                else
+                {
+                    live[i].ys=j;
+                    live_global[j].last=live[i].last+tac_cnt_gloabl-tac_cnt;
+                    tie_flag=0;
+                }
                 break;
             }
         }
         if(tie_flag)
         {
             live[i].ys=var_num_global;
-            live_global[var_num_global].first=live[i].first;
-            live_global[var_num_global].last=live[i].last;
+            live_global[var_num_global].first=live[i].first+tac_cnt_gloabl-tac_cnt;
+            live_global[var_num_global].last=live[i].last+tac_cnt_gloabl-tac_cnt;
+            live_global[var_num_global].iffuc=live[i].iffuc;
             live_global[var_num_global++].name=live[i].name;
         }
     }
     // for(int i=0;i<var_num_global;i++) printf("var id:%d\tname:%s\n",i,live_global[i].name);
+    return ;
+}
+
+void addinout()
+{
+    int tie_flag;
+    for(int i=0;i<block_in_num;i++)
+    {
+        tie_flag=1;
+        for(int j=0;j<var_num_global;j++)
+        {
+            if(strcmp(live_in_name[i].name,live_global[j].name)==0)
+            {
+                tie_flag=0;
+                break;
+            }
+        }
+        if(tie_flag)
+        {
+            live_global[var_num_global++].name=live_in_name[i].name;
+        }
+    }
+    for(int i=0;i<block_out_num;i++)
+    {
+        tie_flag=1;
+        for(int j=0;j<var_num_global;j++)
+        {
+            if(strcmp(live_out_name[i].name,live_global[j].name)==0)
+            {
+                tie_flag=0;
+                break;
+            }
+        }
+        if(tie_flag)
+        {
+            live_global[var_num_global++].name=live_out_name[i].name;
+        }
+    }
     return ;
 }
 
@@ -3093,12 +3195,22 @@ void bian_init_test(BasicBlock * this_block)
             addtolive(echo_tac[i].right_name,i,echo_tac[i].right_use,echo_tac[i].give_param);
         }
     }
+    for(int i=0;i<var_num;i++)
+        if(is_func_param(live[i].name))
+            live[i].iffuc=1;
     addtogloballive();
+    if(var_num>900||var_num_global>3000)
+    {
+        mem_temp=1;
+    }
+    if(mem_temp)
+        return ;
     // printf("tacid:%d\n",this_block->id);
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first,live[i].last);
     // _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((var_num)*(var_num)/2));
-    addtoin(this_block);
     addtoout(this_block);
+    addtoin(this_block);
+    addinout();
     for(int i=0;i<var_num;i++)
     {
         for(int j=0;j<block_in_num;j++)
@@ -3106,7 +3218,7 @@ void bian_init_test(BasicBlock * this_block)
             if(strcmp(live_in_name[j].name,live[i].name)==0)
             {
                 live[i].isin=1;
-                live_global[live[i].ys].kua=1;
+                // live_global[live[i].ys].kua=1;
                 break;
             }
         }
@@ -3115,7 +3227,7 @@ void bian_init_test(BasicBlock * this_block)
             if(strcmp(live_out_name[j].name,live[i].name)==0)
             {
                 live[i].isout=1;
-                live_global[live[i].ys].kua=1;
+                // live_global[live[i].ys].kua=1;
                 break;
             }
         }
@@ -3125,26 +3237,41 @@ void bian_init_test(BasicBlock * this_block)
     {
         for(int j=i+1;j<var_num;j++)
         {
-            // printf("now %s %s\n",live[i].name,live[j].name);
-            if(((live[i].last<live[j].first||live[i].first>live[j].last)||
-                (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
-                (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
-                &&live[i].isout==0&&live[j].isout==0&&live[i].isin==0&&live[i].isin==0)
-            // if(live[i].last<live[j].first||live[i].first>live[j].last)
+            if(live[i].iffuc==0&&live[j].iffuc==0)
             {
-                // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
-                // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
-                // if(live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)  printf("from2\n");
-                // if(live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1)  printf("from3\n");
-            }
-            else
-            {
-                // printf("%s %s在一起了\n",live_global[live[i].ys].name,live_global[live[j].ys].name);
-                create_bian(live[i].ys,live[j].ys);
+                // printf("now %s %s\n",live[i].name,live[j].name);
+                if(((live[i].last<live[j].first||live[i].first>live[j].last)||
+                    (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
+                    (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
+                    &&live[i].isout==0&&live[j].isout==0&&live[i].isin==0&&live[i].isin==0)
+                // if(live[i].last<live[j].first||live[i].first>live[j].last)
+                {
+                    // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
+                    // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
+                    // if(live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)  printf("from2\n");
+                    // if(live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1)  printf("from3\n");
+                }
+                else
+                {
+                    // printf("%s %s在一起了\n",live_global[live[i].ys].name,live_global[live[j].ys].name);
+                    create_bian(live[i].ys,live[j].ys);
+                }
             }
         }
     }
-
+    for(int i=0;i<var_num;i++)
+    {
+        for(int j=0;j<block_in_num;j++)
+        {
+            if(live[i].iffuc==0&&live_global[find_var_global(live_in_name[j].name)].iffuc==0)
+                create_bian(live[i].ys,find_var_global(live_in_name[j].name));
+        }
+        for(int j=0;j<block_out_num;j++)
+        {
+            if(live[i].iffuc==0&&live_global[find_var_global(live_out_name[j].name)].iffuc==0)
+                create_bian(live[i].ys,find_var_global(live_out_name[j].name));
+        }
+    }
     // for(int i=0;i<tac_cnt;i++)  printf("%d:%s\t%d\t%s\t%d\t%s\t%d\n",i,echo_tac[i].dest_name,echo_tac[i].dest_use,echo_tac[i].left_name,echo_tac[i].left_use,echo_tac[i].right_name,echo_tac[i].right_use);
     // for(int i=0;i<var_num;i++)  printf("var_id:%d:\t%s\t%d\t%d\n",i,live[i].name,live[i].first_use,live[i].last_def);
 }
@@ -3178,6 +3305,7 @@ void printf_asm_test(char * filename_test)
 
 int is_func_param(char * str)
 {
+    if(str[0]!='%') return 0;
     int length=strlen(str);
     int strcnt=0;
     for(int i=1;i<length;i++)
@@ -3187,6 +3315,79 @@ int is_func_param(char * str)
     }
     if(strcnt<reg_param_num)    return 1;
     return 0;
+}
+
+void jumpfromto()
+{
+    for(int i=0;i<tac_cnt_gloabl;i++)
+    {
+        if(echo_tac_global[i].jumpto[0]!=-1)
+        {
+            for(int j=0;j<tac_cnt_gloabl;j++)
+            {
+                if(echo_tac_global[j].label==echo_tac_global[i].jumpto[0])
+                {
+                    echo_tac_global[i].jumptoid[0]=j;
+                    echo_tac_global[j].from[echo_tac_global[j].from_cnt]=i;
+                    break;
+                }
+            }
+        }
+        if(echo_tac_global[i].jumpto[1]!=-1)
+        {
+            for(int j=0;j<tac_cnt_gloabl;j++)
+            {
+                if(echo_tac_global[j].label==echo_tac_global[i].jumpto[1])
+                {
+                    echo_tac_global[i].jumptoid[1]=j;
+                    echo_tac_global[j].from[echo_tac_global[j].from_cnt]=i;
+                    break;
+                }
+            }
+        }
+    }
+    return ;
+}
+
+
+void fyreg(int i,int j)
+{
+    for(int x=0;x<13;x++)
+    {
+        if(inwhichreg(echo_tac_global[j].reg_3[0])!=x&&inwhichreg(echo_tac_global[j].reg_3[1])!=x&&inwhichreg(echo_tac_global[j].reg_3[2])!=x)
+        echo_tac_global[j].whoinreg[x]=echo_tac_global[i].whoinreg[x];
+    }
+    return ;
+}
+
+void visittac(int tacid)
+{
+    while(tacid < tac_cnt_gloabl)
+    {
+        if(echo_tac_global[tacid].jumpto[0]!=-1)
+        {
+            if(echo_tac_global[echo_tac_global[tacid].jumpto[0]].from_cnt==1)
+            {
+                fyreg(tacid,echo_tac_global[tacid].jumpto[0]);
+            }
+        }
+        if(echo_tac_global[tacid].jumpto[1]!=-1)
+        {
+            if(echo_tac_global[echo_tac_global[tacid].jumpto[1]].from_cnt==1)
+            {
+                fyreg(tacid,echo_tac_global[tacid].jumpto[1]);
+            }
+        }
+        if(tacid!=0&&echo_tac_global[tacid].from_cnt==0)
+            fyreg(tacid-1,tacid);
+        tacid++;
+    }
+    // for(int i=0;i<tac_cnt_gloabl;i++)
+    // {
+    //     for(int j=4;j<11;j++)
+    //         printf("r%d:%s ",j,find_live_name(echo_tac_global[i].whoinreg[j]));
+    //     printf("\n");
+    // }
 }
 
 void reg_control_func(Function *currentFunction)
@@ -3221,22 +3422,36 @@ void reg_control_func(Function *currentFunction)
             // printf("block:%d\n",i);
             reg_control_block_temp(block_list[i].reg_block);
         }
-        init_RIG();
-        create_RIG();
-        check_edge();
-        //print_info();
-        minimize_RIG();
-        init_non_available_colors();
-        while(first_fit_coloring())
+        if(mem_temp)
         {
-            reset_colors();
-            reset_queue();
-            spill_variable();
+            printf("use mem\n");
         }
-        // test_ans();
-        // print_colors();
-        color_removed();
+        else
+        {
+            jumpfromto();
+            // for(int i=0;i<tac_cnt_gloabl;i++)
+            //     printf("%d: %s %s %s\n",i,echo_tac_global[i].dest_name,echo_tac_global[i].left_name,echo_tac_global[i].right_name);
+            // for(int i=0;i<var_num_global;i++)
+            //     printf("%d:%s %d\n",i,live_global[i].name,live_global[i].first);
+            init_RIG();
+            create_RIG();
+            check_edge();
+            //print_info();
+            minimize_RIG();
+            init_non_available_colors();
+            while(first_fit_coloring())
+            {
+                reset_colors();
+                reset_queue();
+                spill_variable();
+            }
+            // test_ans();
+            // print_colors();
+            color_removed();
+        }
         add_to_echo();
+        if(mem_temp==0)
+            visittac(0);
         echo_to_ir();
         clean_reg_global();
         free(block_list);
@@ -3323,6 +3538,7 @@ void reg_control_block(BasicBlock *cur)
 
     #endif
 }
+
 void add_to_global()
 {
     for(int i=0;i<tac_cnt;i++)
@@ -3361,6 +3577,26 @@ void reg_control_block_temp(BasicBlock *cur)
 
 }
 
+int inwhichreg(int regid)
+{
+    if(regid>100)
+    {
+        return regid-100;
+    }
+    else if(regid<0)
+    {
+        return -regid;
+    }
+    return regid;
+}
+
+char * find_live_name(int id)
+{
+    if(id>=0)
+        return live_global[id].name;
+    return NULL;
+}
+
 void add_to_echo()
 {
     int var_uid;
@@ -3368,117 +3604,148 @@ void add_to_echo()
     #if reg_alloc_test
     for(int i=0;i<tac_cnt_gloabl;i++)
     {
-        var_uid=find_var_global(echo_tac_global[i].dest_name);
-        if(var_uid>=0 && echo_tac_global[i].dest_use>=0)  
+        if(mem_temp==0)
         {
-            reg_uid=list_of_variables[var_uid].color;
-            if(echo_tac_global[i].dest_use==0)
+            var_uid=find_var_global(echo_tac_global[i].dest_name);
+            if(var_uid>=0 && echo_tac_global[i].dest_use>=0)  
             {
-                if(reg_uid<0)
+                reg_uid=list_of_variables[var_uid].color;
+                if(echo_tac_global[i].dest_use==0)
                 {
-                    echo_tac_global[i].reg_3[0]=-4;
+                    if(reg_uid<0||live_global[var_uid].iffuc)
+                    {
+                        echo_tac_global[i].reg_3[0]=-4;
+                    }
+                    else
+                    {
+                        if(reg_uid==5)  reg_uid=12;
+                        else    reg_uid+=6;
+                        echo_tac_global[i].reg_3[0]=reg_uid;
+                    }
                 }
                 else
                 {
-                    if(reg_uid==5)  reg_uid=12;
-                    else    reg_uid+=6;
-                    echo_tac_global[i].reg_3[0]=reg_uid;
+                    if(reg_uid<0||live_global[var_uid].iffuc)
+                    {
+                        echo_tac_global[i].reg_3[0]=104;
+                    }
+                    else
+                    {
+                        if(reg_uid==5)  reg_uid=12;
+                        else    reg_uid+=6;
+                        if(is_func_param(echo_tac_global[i].dest_name)&&live_global[var_uid].first==i)
+                            echo_tac_global[i].reg_3[0]=reg_uid+100;
+                        else
+                            echo_tac_global[i].reg_3[0]=reg_uid;
+                    }
                 }
             }
             else
-            {
-                if(reg_uid<0)
-                {
-                    echo_tac_global[i].reg_3[0]=104;
-                }
-                else
-                {
-                    if(reg_uid==5)  reg_uid=12;
-                    else    reg_uid+=6;
-                    if(is_func_param(echo_tac_global[i].dest_name)&&live_global[var_uid].first==i)
-                        echo_tac_global[i].reg_3[0]=reg_uid+100;
-                    else
-                        echo_tac_global[i].reg_3[1]=reg_uid;
-                }
-            }
-        }
-        else
-            echo_tac_global[i].reg_3[0]=0;
-        
-        var_uid=find_var_global(echo_tac_global[i].left_name);
-        if(var_uid>=0 && echo_tac_global[i].left_use>=0)  
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(echo_tac_global[i].left_use==0)
-            {
-                if(reg_uid<0)
-                {
-                    echo_tac_global[i].reg_3[1]=-4;
-                }
-                else
-                {
-                    if(reg_uid==5)  reg_uid=12;
-                    else    reg_uid+=6;
-                    echo_tac_global[i].reg_3[1]=reg_uid;
-                }
-            }
-            else
-            {
-                if(reg_uid<0)
-                {
-                    echo_tac_global[i].reg_3[1]=104;
-                }
-                else
-                {
-                    if(reg_uid==5)  reg_uid=12;
-                    else    reg_uid+=6;
-                    if(is_func_param(echo_tac_global[i].left_name)&&live_global[var_uid].first==i)
-                        echo_tac_global[i].reg_3[1]=reg_uid+100;
-                    else
-                        echo_tac_global[i].reg_3[1]=reg_uid;
-                }
-            }
-        }
-        else
-            echo_tac_global[i].reg_3[1]=0;
+                echo_tac_global[i].reg_3[0]=0;
+            if(echo_tac_global[i].reg_3[0]!=0)
+                echo_tac_global[i].whoinreg[inwhichreg(echo_tac_global[i].reg_3[0])]=var_uid;
 
-        var_uid=find_var_global(echo_tac_global[i].right_name);
-        if(var_uid>=0 && echo_tac_global[i].right_use>=0)  
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(echo_tac_global[i].right_use==0)
+
+            var_uid=find_var_global(echo_tac_global[i].left_name);
+            if(var_uid>=0 && echo_tac_global[i].left_use>=0)  
             {
-                if(reg_uid<0)
+                reg_uid=list_of_variables[var_uid].color;
+                if(echo_tac_global[i].left_use==0)
                 {
-                    echo_tac_global[i].reg_3[2]=-5;
+                    if(reg_uid<0||live_global[var_uid].iffuc)
+                    {
+                        echo_tac_global[i].reg_3[1]=-4;
+                    }
+                    else
+                    {
+                        if(reg_uid==5)  reg_uid=12;
+                        else    reg_uid+=6;
+                        echo_tac_global[i].reg_3[1]=reg_uid;
+                    }
                 }
                 else
                 {
-                    if(reg_uid==5)  reg_uid=12;
-                    else    reg_uid+=6;
-                    echo_tac_global[i].reg_3[2]=reg_uid;
+                    if(reg_uid<0||live_global[var_uid].iffuc)
+                    {
+                        echo_tac_global[i].reg_3[1]=104;
+                    }
+                    else
+                    {
+                        if(reg_uid==5)  reg_uid=12;
+                        else    reg_uid+=6;
+                        if(is_func_param(echo_tac_global[i].left_name)&&live_global[var_uid].first==i)
+                            echo_tac_global[i].reg_3[1]=reg_uid+100;
+                        else
+                            echo_tac_global[i].reg_3[1]=reg_uid;
+                    }
                 }
             }
             else
+                echo_tac_global[i].reg_3[1]=0;
+            if(echo_tac_global[i].reg_3[1]!=0)
+                echo_tac_global[i].whoinreg[inwhichreg(echo_tac_global[i].reg_3[1])]=var_uid;
+
+            var_uid=find_var_global(echo_tac_global[i].right_name);
+            if(var_uid>=0 && echo_tac_global[i].right_use>=0)  
             {
-                if(reg_uid<0)
+                reg_uid=list_of_variables[var_uid].color;
+                if(echo_tac_global[i].right_use==0)
                 {
-                    echo_tac_global[i].reg_3[2]=104;
+                    if(reg_uid<0||live_global[var_uid].iffuc)
+                    {
+                        echo_tac_global[i].reg_3[2]=-5;
+                    }
+                    else
+                    {
+                        if(reg_uid==5)  reg_uid=12;
+                        else    reg_uid+=6;
+                        echo_tac_global[i].reg_3[2]=reg_uid;
+                    }
                 }
                 else
                 {
-                    if(reg_uid==5)  reg_uid=12;
-                    else    reg_uid+=6;
-                    if(is_func_param(echo_tac_global[i].right_name)&&live_global[var_uid].first==i)
-                        echo_tac_global[i].reg_3[2]=reg_uid+100;
+                    if(reg_uid<0||live_global[var_uid].iffuc)
+                    {
+                        echo_tac_global[i].reg_3[2]=105;
+                    }
                     else
-                        echo_tac_global[i].reg_3[2]=reg_uid;
+                    {
+                        if(reg_uid==5)  reg_uid=12;
+                        else    reg_uid+=6;
+                        if(is_func_param(echo_tac_global[i].right_name)&&live_global[var_uid].first==i)
+                            echo_tac_global[i].reg_3[2]=reg_uid+100;
+                        else
+                            echo_tac_global[i].reg_3[2]=reg_uid;
+                    }
                 }
             }
+            else
+                echo_tac_global[i].reg_3[2]=0;
+            if(echo_tac_global[i].reg_3[2]!=0)
+                echo_tac_global[i].whoinreg[inwhichreg(echo_tac_global[i].reg_3[2])]=var_uid;
         }
         else
-            echo_tac_global[i].reg_3[2]=0;
-    }
+        {
+            if(echo_tac_global[i].dest_use==0)
+                echo_tac_global[i].reg_3[0]=-4;
+            else if(echo_tac_global[i].dest_use==1)
+                echo_tac_global[i].reg_3[0]=104;
+            else 
+                echo_tac_global[i].reg_3[0]=-4;
+            if(echo_tac_global[i].left_use==0)
+                echo_tac_global[i].reg_3[1]=-5;
+            else if(echo_tac_global[i].left_use==1)
+                echo_tac_global[i].reg_3[1]=105;
+            else 
+                echo_tac_global[i].reg_3[1]=0;
+            if(echo_tac_global[i].right_use==0)
+                echo_tac_global[i].reg_3[2]=-6;
+            else if(echo_tac_global[i].right_use==1)
+                echo_tac_global[i].reg_3[2]=106;
+            else 
+                echo_tac_global[i].reg_3[2]=0;
+        }
+    }   
     #else
     for(int i=0;i<tac_cnt;i++)
     {
@@ -4172,7 +4439,7 @@ int find_var(char * str)
 int find_var_global(char * str)
 {
     if(str==NULL)   return -1;
-    for(int i=0;i<rig_num;i++)
+    for(int i=0;i<var_num_global;i++)
     {
         if(supercmp(live_global[i].name,str)==0)
             return i;

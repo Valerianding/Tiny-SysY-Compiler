@@ -564,7 +564,6 @@ void removeUnreachable(Function *currentFunction){
         HashSetFirst(workList);
         BasicBlock *next = (BasicBlock *)HashSetNext(workList);
         HashSetRemove(workList,next);
-        printf("next block is  b%d\n",next->id);
         assert(next->visited == false);
         next->visited = true;
 
@@ -631,10 +630,6 @@ void removeUnreachable(Function *currentFunction){
     }
 
     clear_visited_flag(entry);
-    //renameVariables(currentFunction);
-    clear_visited_flag(entry);
-
-    print_block_info(entry);
 }
 
 void cleanAll(Function *currentFunction){
@@ -676,8 +671,63 @@ void cleanAll(Function *currentFunction){
     }
 }
 
+void cleanDominance(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
+    HashSet *workList = HashSetInit();
+    clear_visited_flag(entry);
+
+    // workList 是的一个HashSet
+    HashSetAdd(workList,entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+
+        assert(block->visited == false);
+        block->visited = true;
+
+        HashSetClean(block->dom);
+        HashSetClean(block->df);
+
+        DomTreeNode *domTreeNode = block->domTreeNode;
+        if(domTreeNode != NULL){
+            HashSetDeinit(domTreeNode->children);
+            free(domTreeNode);
+        }
+        // 再其它函数里面进行清理
+        block->domTreeNode = NULL;
+
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
+        }
+
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
+        }
+    }
+}
+
+void cleanPostDominance(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
+
+    clear_visited_flag(entry);
+
+    HashSet *workList = HashSetInit();
+
+    HashSetAdd(workList,entry);
+
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+        block->visited = true;
+
+    }
+}
+
 void dominanceAnalysis(Function *currentFunction){
-    cleanAll(currentFunction);
+    cleanDominance(currentFunction);
+
     print_function_info(currentFunction);
 
     clear_visited_flag(currentFunction->entry);
@@ -686,8 +736,6 @@ void dominanceAnalysis(Function *currentFunction){
 
     calculate_dominance(currentFunction);
 
-    if(Optimize) calculatePostDominance(currentFunction);
-
     clear_visited_flag(currentFunction->entry);
 
     calculate_dominance_frontier(currentFunction);
@@ -695,4 +743,21 @@ void dominanceAnalysis(Function *currentFunction){
     calculate_iDominator(currentFunction);
 
     calculate_DomTree(currentFunction);
+}
+
+void postDominanceAnalysis(Function *currentFunction){
+
+    BasicBlock *entry = currentFunction->entry;
+
+    assert(Optimize == true);
+
+    clear_visited_flag(entry);
+
+    removeUnreachable(currentFunction);
+
+    clear_visited_flag(entry);
+
+    calculatePostDominance(currentFunction);
+
+    clear_visited_flag(entry);
 }

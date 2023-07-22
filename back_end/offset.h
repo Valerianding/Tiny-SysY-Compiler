@@ -7,6 +7,7 @@
 #include "bblock.h"
 #include "hash_map.h"
 #include "ast.h"
+#include "ir/opt/scev.h"
 /**
  * @struct  使用哈希表来存放栈帧的信息key=Value*,value=offset*
  * @details regr通用寄存器标号
@@ -68,7 +69,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num);
  * @param add_sp 用来记录临时变量的开辟
  */
 
-void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num);
+void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num,int reg_flag);
 
 //void hashmap_add_left(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
 //void hashmap_add_right(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int regri);
