@@ -25,7 +25,7 @@
 
 
 #define all_in_memory 0
-#define reg_alloc_test 0
+#define reg_alloc_test 1
 struct reg_queue
 {
     int variable_index;
@@ -47,6 +47,7 @@ struct name_num
     int num;
     char *name;
     int ifparam;
+    int iffuc;
     int first_use;
     int first;
     int last;
@@ -55,6 +56,8 @@ struct name_num
     int last_is_use;
     int isin;
     int isout;
+    int ys;
+    int kua;
 };
 
 struct BLOCK_list
@@ -78,7 +81,18 @@ struct  reg_now
     int dest_use;//0为def，1为use
     int left_use;
     int right_use;
+    int dest_first;
+    int left_first;
+    int right_first;
     int give_param;
+    int reg_3[3];
+    int whoinreg[13];
+    int jumpto[2];
+    int jumptoid[2];
+    int from_cnt;
+    int from[100];
+    int label;
+    int visited;
 };
 
 
@@ -100,8 +114,10 @@ void print_colors();
 void init_RIG();
 int supercmp(char *a ,char *b);
 int find_var(char * str);
+int find_var_global(char * str);
 //void create_RIG(FILE * re_in);
 void create_RIG();
+void jumpfromto();
 int check_edge();//检查rig
 void create_edge(int firstNode,int secondNode);
 void create_variable_list();
@@ -111,6 +127,14 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node);
 void reg_control(struct _InstNode *instruction_node,InstNode *temp);
 void reg_control_func(Function *currentFunction);
 void reg_control_block(BasicBlock *cur);
+void reg_control_block_temp(BasicBlock *cur);
+int is_func_param(char * str);
+void live_init_block();
+void visittac();
+void fyreg(int i,int j);
+void init_global(BasicBlock *cur);
+void add_to_global();
+char * find_live_name(int id);
 void reg_inmem_one_ins(int id); // 放到内存中
 int use_type(struct _InstNode *temp);
 int is_Immediate(int type_id);
@@ -122,8 +146,12 @@ void addtoin(BasicBlock *this_block);
 void addtoout(BasicBlock *this_block);
 void create_bian(int i,int j);
 void bian_init(BasicBlock * this_block);
-void bian_init_test();
+void bian_init_test(BasicBlock * this_block);
 void add_to_ir();
+void add_to_echo();
+void echo_to_ir();
 void ir_reg_init(InstNode *instruction_node);
 void clean_reg();//完成后释放内存
+void clean_reg_global();
+void addinout();
 void printf_asm_test(char * filename_test);
