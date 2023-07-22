@@ -12,7 +12,6 @@
 #include "offset.h"
 #include "travel.h"
 #include "ir/opt/utility.h"
-#include "ir/opt/scev.h"
 #include <unistd.h>
 
 /**

@@ -7,7 +7,7 @@
 #include "bblock.h"
 #include "hash_map.h"
 #include "ast.h"
-#include "ir/opt/scev.h"
+#include "ir/opt/utility.h"
 /**
  * @struct  使用哈希表来存放栈帧的信息key=Value*,value=offset*
  * @details regr通用寄存器标号

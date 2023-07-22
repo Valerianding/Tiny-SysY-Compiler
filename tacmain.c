@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -175,6 +175,7 @@ int main(int argc, char* argv[]){
     //先跑一次
     //cse cf
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        dominanceAnalysis(currentFunction);
         loop(currentFunction);
     }
 
@@ -203,9 +204,7 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
-
-    block = temp->inst->Parent;
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
         renameVariables(currentFunction);
         cleanLiveSet(currentFunction);
@@ -215,7 +214,7 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 //
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
         clear_visited_flag(currentFunction->entry);
         printf("after out of SSA!\n");
