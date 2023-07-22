@@ -17,6 +17,7 @@ struct _DomNode{
     BasicBlock *block;
     HashSet *children;  //保存DomNode*
     int flag;
+    int depth; // dom depth
 };
 
 struct _PostDomNode{

@@ -56,6 +56,9 @@ typedef struct _Instruction{
     int _reg_[3];
     int i; //指令的编号
     bool isCritical;
+
+    bool pinned;
+    bool visited;
 }Instruction;
 
 

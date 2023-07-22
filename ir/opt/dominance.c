@@ -270,6 +270,7 @@ void calculate_DomTree(Function *currentFunction){
             block->domTreeNode = (DomTreeNode*)malloc(sizeof(DomTreeNode));
             memset(block->domTreeNode,0,sizeof(DomTreeNode));
             block->domTreeNode->block = block;
+            block->domTreeNode->depth = 0;
             block->domTreeNode->children = HashSetInit();
         }
         curNode = get_next_inst(curNode);
