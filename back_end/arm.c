@@ -7975,7 +7975,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 //            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
 //            printf("\tldr\tr2,=%s\n",arr2);
 //            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
-//            printf("\tcmp\tr1,r2\n");
+            printf("\tcmp\tr1,r2\n");
             fprintf(fp,"\tcmp\tr1,r2\n");
         }
     }
