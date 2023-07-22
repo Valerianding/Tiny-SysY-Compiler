@@ -3398,7 +3398,7 @@ void reg_control_func(Function *currentFunction)
         block_num=0;
         InstNode *currNode = entry->head_node;
         BasicBlock *currNodeParent = currNode->inst->Parent;
-        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*20000);
+        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*40000);
         block_list[block_num++].reg_block=currNode->inst->Parent;
         block_list[0].reg_block->visited=1;
         while(currNode != get_next_inst(end->tail_node)){
@@ -3411,10 +3411,11 @@ void reg_control_func(Function *currentFunction)
         }
         InstNode *headNode = entry->head_node;
         reg_param_num = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
-        // printf("func block_num:%d\n\n",block_num);
+        printf("func block_num:%d\n\n",block_num);
         // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
         clear_visited_flag(entry);
         init_global(block_list[0].reg_block);
+        if(block_num>1000)  mem_temp=1;
         for(int i=0;i<block_num;i++)
         {
             // printf("block:%d\n",i);
@@ -3448,8 +3449,8 @@ void reg_control_func(Function *currentFunction)
             color_removed();
         }
         add_to_echo();
-        if(mem_temp==0)
-            visittac(0);
+        // if(mem_temp==0)
+            // visittac(0);
         echo_to_ir();
         clean_reg_global();
         free(block_list);
