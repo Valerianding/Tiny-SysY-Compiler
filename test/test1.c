@@ -1,17 +1,3 @@
-//int main(){
-//    // int n = getint();
-//    int n = 1000;
-//    int x;
-//    int temp = getint();
-//    int arr[10];
-//    while (n > 0){
-//        if(n == 10){
-//            x = 1 + temp;
-//        }
-//        temp = temp + x;
-//    }
-//    return x;
-//}
 int n;
 int bubblesort(int arr[])
 {

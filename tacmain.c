@@ -204,9 +204,7 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
-
-    block = temp->inst->Parent;
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         SSADeconstruction(currentFunction);
         renameVariables(currentFunction);
         cleanLiveSet(currentFunction);
