@@ -250,10 +250,10 @@ void DomTreeAddChild(DomTreeNode *parent, DomTreeNode *child){
 void calculate_DomTree(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
-    printf("in DomTree!\n");
-    printf("entryBlock : %d",entry->id);
-    printf(" endBlock : %d",end->id);
-    printf("\n");
+    //printf("in DomTree!\n");
+    //printf("entryBlock : %d",entry->id);
+    //printf(" endBlock : %d",end->id);
+    //printf("\n");
     //不动的
     InstNode *head = entry->head_node;
     InstNode *tail = end->tail_node;
@@ -312,16 +312,17 @@ void calculate_DomTree(Function *currentFunction){
         if(parent->visited == false){
             parent->visited = true;
             DomTreeNode *domTreeNode = parent->domTreeNode;
-            printf("b%d ",parent->id);
-            if(parent->iDom != nullptr)
-                printf("idom : b%d ",parent->iDom->id);
+            //printf("b%d ",parent->id);
+            if(parent->iDom != nullptr){
+                //printf("idom : b%d ",parent->iDom->id);
+            }
             HashSet *childSet = domTreeNode->children;
             HashSetFirst(childSet);
-            printf("child: ");
+            //printf("child: ");
             for(DomTreeNode *childNode = HashSetNext(childSet); childNode != NULL; childNode = HashSetNext(childSet)){
-                printf("b%d ",childNode->block->id);
+                //printf("b%d ",childNode->block->id);
             }
-            printf("\n");
+           // printf("\n");
         }
         checkNode = get_next_inst(checkNode);
     }
@@ -334,7 +335,7 @@ void DomTreePrinter(DomTreeNode *root){
     HashSetFirst(root->children);
     for(DomTreeNode *key = HashSetNext(root->children); key != nullptr; key = HashSetNext(root->children)){
         BasicBlock *block = key->block;
-        printf("block:%d",block->id);
+        //printf("block:%d",block->id);
         DomTreePrinter(key);
     }
     return;
@@ -438,13 +439,13 @@ void calculatePostDominance(Function *currentFunction) {
                     changed |= true;
 
 
-                    printf("block %d", block->id);
-                    printf("pdom :");
+                   // printf("block %d", block->id);
+                    //printf("pdom :");
                     HashSetFirst(newSet);
                     for (BasicBlock *block = HashSetNext(newSet); block != NULL; block = HashSetNext(newSet)) {
-                        printf("b%d ", block->id);
+                        //printf("b%d ", block->id);
                     }
-                    printf("\n");
+                    //printf("\n");
                 } else {
                     HashSetDeinit(newSet);
                 }
@@ -456,13 +457,13 @@ void calculatePostDominance(Function *currentFunction) {
     HashSetFirst(allBlocks);
     for (BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)) {
         //打印看看求的对不对
-        printf("block b%d : pdom : ", block->id);
+        //printf("block b%d : pdom : ", block->id);
         HashSetFirst(block->pDom);
         for (BasicBlock *pDomBlock = HashSetNext(block->pDom);
              pDomBlock != NULL; pDomBlock = HashSetNext(block->pDom)) {
-            printf("b%d", pDomBlock->id);
+            //printf("b%d", pDomBlock->id);
         }
-        printf("\n");
+        //printf("\n");
     }
 
     //好好好现在是对的了 我们继续求rdf
@@ -489,14 +490,14 @@ void calculatePostDominance(Function *currentFunction) {
     HashSetFirst(allBlocks);
     for (BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)) {
         //
-        printf("block b%d rdfs:", block->id);
+        //printf("block b%d rdfs:", block->id);
         HashSetFirst(block->rdf);
         for (BasicBlock *rdf = HashSetNext(block->rdf); rdf != NULL; rdf = HashSetNext(block->rdf)) {
             // 这样打印一下reverse dominance frontier
-            printf("b%d", rdf->id);
+            //printf("b%d", rdf->id);
         }
 
-        printf("\n");
+        //printf("\n");
     }
 
 
@@ -542,7 +543,7 @@ void calculatePostDominance(Function *currentFunction) {
     for (BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)){
         if (block->ipDom){
             // 打印一下看看是不是对的
-            printf("current block %d its pDom is %d\n",block->id,block->ipDom->id);
+           // printf("current block %d its pDom is %d\n",block->id,block->ipDom->id);
             PostDomNode *ipDomNode = block->ipDom->postDomNode;
             HashSetAdd(ipDomNode->children,block->postDomNode);
         }
@@ -590,7 +591,7 @@ void removeUnreachable(Function *currentFunction){
         BasicBlock *parent = currNode->inst->Parent;
         if(parent->visited == false){
             //
-            printf("block %d is unreachable!\n",parent->id);
+            //printf("block %d is unreachable!\n",parent->id);
             assert(parent->head_node == currNode);
             InstNode *deleteNode = currNode;
             while(deleteNode != get_next_inst(parent->tail_node)){

@@ -97,6 +97,30 @@ void Schedule_Early(Instruction *ins){
         }
 
         iNode = NULL;
+    }else if(ins->Opcode == Store){
+        Value *stored = ins_get_lhs(ins);
+        Value *storedPlace = ins_get_rhs(ins);
+
+        if(!isImm(stored) && !isParam(stored,paramNum)){
+            Instruction *inputIns = (Instruction *)stored;
+            Schedule_Early(inputIns);
+        }
+
+        if(!isGlobalVar(storedPlace)){
+            Instruction *inputIns = (Instruction *)storedPlace;
+            Schedule_Early(inputIns);
+        }
+
+        iNode = NULL;
+    }else if(ins->Opcode == Return){
+        int numOfOperand = ins->user.value.NumUserOperands;
+        if(numOfOperand == 1){
+            Value *returnValue = ins_get_lhs(ins);
+            if(!isImm(returnValue) && !isParam(returnValue,paramNum)){
+                Instruction *inputIns = (Instruction *)returnValue;
+                Schedule_Early(inputIns);
+            }
+        }
     }
 
 

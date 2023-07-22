@@ -145,13 +145,13 @@ int in_live(char * str)
 
 void minimize_RIG()
 {
-   for(int i = 0; i <rig_num; i++)
-   {
-       if(list_of_variables[i].neighbor_count < KK)
-       {
+    for(int i = 0; i <rig_num; i++)
+    {
+        if(list_of_variables[i].neighbor_count < KK)
+        {
             list_of_variables[i].color = REMOVED;
-       }
-   }
+        }
+    }
 }
 
 void test_minimize_RIG()
@@ -162,7 +162,7 @@ void test_minimize_RIG()
         {
             printf("variable: %s has been removed\n", list_of_variables[i].name);
         }
-    }        
+    }
 }
 
 
@@ -226,7 +226,7 @@ int visit(int index)
         }
     }
 
-    int color = -1; 
+    int color = -1;
     for(int i = 0; i < KK; i++)
     {
         if(!CHECK(i))
@@ -247,7 +247,7 @@ int visit(int index)
         list_of_variables[index].color = color;
     }
     return 0;
-} 
+}
 
 void ir_reg_init(InstNode *instruction_node)
 {
@@ -1256,7 +1256,7 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
                 printf("* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
                        get_array_total_occupy(instruction->user.use_list[1].Val,0));
                 //fpintf(fptr,"* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
-                        // get_array_total_occupy(instruction->user.use_list[1].Val,0));
+                // get_array_total_occupy(instruction->user.use_list[1].Val,0));
                 break;
             case GLOBAL_VAR:
                 if(instruction->user.use_list->Val->VTy->ID!=ArrayTy_INT && instruction->user.use_list->Val->VTy->ID!=ArrayTy_FLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayInt && instruction->user.use_list->Val->VTy->ID!=GlobalArrayFloat && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstINT && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstINT)
@@ -1408,7 +1408,7 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
             if(instruction->_reg_[i]!=0)    printf("reg%d:%d",i,instruction->_reg_[i]);
             printf("\t\t");
         }
-        printf("\n"); 
+        printf("\n");
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)
@@ -1475,49 +1475,49 @@ void travel_ir(InstNode *instruction_node)
 
     //     while (instruction_node!=NULL && instruction_node->inst->Opcode!=FunEnd)
     // #else
-        while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=ALLBEGIN && temp_instruction_node->inst->Opcode!=br
-        && temp_instruction_node->inst->Opcode!=br_i1
-        && temp_instruction_node->inst->Opcode!=br_i1_false && temp_instruction_node->inst->Opcode!=br_i1_true
-        && temp_instruction_node->inst->Opcode!=FunEnd && temp_instruction_node->inst->Opcode!=Return)
+    while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=ALLBEGIN && temp_instruction_node->inst->Opcode!=br
+           && temp_instruction_node->inst->Opcode!=br_i1
+           && temp_instruction_node->inst->Opcode!=br_i1_false && temp_instruction_node->inst->Opcode!=br_i1_true
+           && temp_instruction_node->inst->Opcode!=FunEnd && temp_instruction_node->inst->Opcode!=Return)
         // while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN && instruction_node->inst->Opcode!=br
         // && instruction_node->inst->Opcode!=br_i1_false && instruction_node->inst->Opcode!=br_i1_true
         // && instruction_node->inst->Opcode!=FunEnd)
-        {
-            // Instruction *instruction=temp_instruction_node->inst;
-            temp_cnt++;
-            temp_instruction_node= get_next_inst(temp_instruction_node);
-        }
-        // printf("\n\ntemp_cnt:%d\n\n",temp_cnt);
-        echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
-        instruction_node= get_next_inst(instruction_node);
-        Value *v_cur_array=NULL;
-        for(int i=0;i<temp_cnt+30;i++)
-        {
-            echo_tac[i].dest_name=NULL;
-            echo_tac[i].left_name=NULL;
-            echo_tac[i].right_name=NULL;
-            echo_tac[i].dest_use=-1;
-            echo_tac[i].left_use=-1;
-            echo_tac[i].right_use=-1;
-            echo_tac[i].irnode=NULL;
-            echo_tac[i].give_param=0;
-            echo_tac[i].reg_3[0]=0;
-            echo_tac[i].reg_3[1]=0;
-            echo_tac[i].reg_3[2]=0;
-        }
-        int p=0;
-        int if_br_ir=0;
-        // InstNode* params[1000];
-        // InstNode * one_param[1000];
-        int give_count=0;
-        // for(int i=0;i<1000;i++)
-        //     params[i]=NULL;
-
-        while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN 
-        && instruction_node->inst->Opcode!=FunEnd)
-    // #endif
     {
-        // printf("opcode:%d\t%d\t%d\n", instruction_node->inst->Opcode,__LINE__,instruction_node->inst->i); 
+        // Instruction *instruction=temp_instruction_node->inst;
+        temp_cnt++;
+        temp_instruction_node= get_next_inst(temp_instruction_node);
+    }
+    // printf("\n\ntemp_cnt:%d\n\n",temp_cnt);
+    echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
+    instruction_node= get_next_inst(instruction_node);
+    Value *v_cur_array=NULL;
+    for(int i=0;i<temp_cnt+30;i++)
+    {
+        echo_tac[i].dest_name=NULL;
+        echo_tac[i].left_name=NULL;
+        echo_tac[i].right_name=NULL;
+        echo_tac[i].dest_use=-1;
+        echo_tac[i].left_use=-1;
+        echo_tac[i].right_use=-1;
+        echo_tac[i].irnode=NULL;
+        echo_tac[i].give_param=0;
+        echo_tac[i].reg_3[0]=0;
+        echo_tac[i].reg_3[1]=0;
+        echo_tac[i].reg_3[2]=0;
+    }
+    int p=0;
+    int if_br_ir=0;
+    // InstNode* params[1000];
+    // InstNode * one_param[1000];
+    int give_count=0;
+    // for(int i=0;i<1000;i++)
+    //     params[i]=NULL;
+
+    while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN
+           && instruction_node->inst->Opcode!=FunEnd)
+        // #endif
+    {
+        // printf("opcode:%d\t%d\t%d\n", instruction_node->inst->Opcode,__LINE__,instruction_node->inst->i);
         Instruction *instruction=instruction_node->inst;
         echo_tac[tac_cnt].node_id=instruction->i;
         echo_tac[tac_cnt].irnode=instruction;
@@ -1570,7 +1570,7 @@ void travel_ir(InstNode *instruction_node)
                 }
                 else if(instruction->user.use_list->Val->VTy->ID==Float || instruction->user.use_list->Val->VTy->ID==Const_FLOAT)
                 {
-                   echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
+                    echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                     echo_tac[tac_cnt].right_use=1;
                 }
                 else if(instruction->user.use_list[1].Val->VTy->ID!=AddressTyID)
@@ -1589,33 +1589,33 @@ void travel_ir(InstNode *instruction_node)
                 }
                 break;
             case br:
-                {
-                    if_br_ir = 1;
-                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
-                    break;
-                }
+            {
+                if_br_ir = 1;
+                echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
+                break;
+            }
             case br_i1:
-                {
-                    // echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                    // echo_tac[tac_cnt].dest_use=1;
-                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
-                    echo_tac[tac_cnt].jumpto[1]=instruction->user.value.pdata->instruction_pdata.false_goto_location;
-                    if_br_ir = 1;
-                    break;
-                    // printf(" br i1 %s,label %%%d,label %%%d\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
-                }
+            {
+                // echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                // echo_tac[tac_cnt].dest_use=1;
+                echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
+                echo_tac[tac_cnt].jumpto[1]=instruction->user.value.pdata->instruction_pdata.false_goto_location;
+                if_br_ir = 1;
+                break;
+                // printf(" br i1 %s,label %%%d,label %%%d\n",instruction->user.use_list->Val->name,instruction->user.value.pdata->instruction_pdata.true_goto_location,instruction->user.value.pdata->instruction_pdata.false_goto_location);
+            }
             case br_i1_false:
-                {
-                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
-                    if_br_ir = 1;
-                    break;
-                }
+            {
+                echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
+                if_br_ir = 1;
+                break;
+            }
             case br_i1_true:
-                {
-                    echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
-                    if_br_ir = 1;
-                    break;
-                }
+            {
+                echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
+                if_br_ir = 1;
+                break;
+            }
             case EQ:
                 if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float)
                 {
@@ -2478,7 +2478,7 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int)
                     {
-                        
+
                         echo_tac[tac_cnt].dest_name=instruction->user.value.name;
                         echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s= sdiv i32 %f,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -2610,8 +2610,8 @@ void travel_ir(InstNode *instruction_node)
             case GEP:
                 if(instruction->user.value.alias!=NULL)
                     v_cur_array=instruction->user.value.alias;
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
+                echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                echo_tac[tac_cnt].dest_use=0;
                 //printf("%d...\n",instruction->user.value.pdata->var_pdata.iVal);
                 // printf(" %s=getelementptr inbounds ",instruction->user.value.name);
                 //fpintf(fptr," %s=getelementptr inbounds ",instruction->user.value.name);
@@ -2714,9 +2714,9 @@ void travel_ir(InstNode *instruction_node)
                 //fpintf(fptr," call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %s, i8* align 16 bitcast (",instruction->user.use_list->Val->name);
                 //printf_array(instruction->user.use_list[1].Val,0,fptr);
                 // printf("* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
-                       get_array_total_occupy(instruction->user.use_list[1].Val,0);
+                get_array_total_occupy(instruction->user.use_list[1].Val,0);
                 //fpintf(fptr,"* %s to i8*), i64 %d, i1 false)\n",instruction->user.use_list[1].Val->name,
-                        // get_array_total_occupy(instruction->user.use_list[1].Val,0));
+                // get_array_total_occupy(instruction->user.use_list[1].Val,0));
                 break;
             case GLOBAL_VAR:
                 if(instruction->user.use_list->Val->VTy->ID!=ArrayTy_INT && instruction->user.use_list->Val->VTy->ID!=ArrayTy_FLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayInt && instruction->user.use_list->Val->VTy->ID!=GlobalArrayFloat && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstINT && instruction->user.use_list->Val->VTy->ID!=ArrayTyID_ConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstFLOAT && instruction->user.use_list->Val->VTy->ID!=GlobalArrayConstINT)
@@ -2904,27 +2904,27 @@ void addtolive(char * name,int tacid,int ifuse,int paramid)
     if(ifuse)
     {
         for(int i=0;i<var_num;i++)
-        if(strcmp(name,live[i].name)==0)
-        {
-            if(paramid==0)
+            if(strcmp(name,live[i].name)==0)
             {
-                live[i].last=tacid;
-                live[i].last_is_use=1;
-                return ;
+                if(paramid==0)
+                {
+                    live[i].last=tacid;
+                    live[i].last_is_use=1;
+                    return ;
+                }
+                else
+                {
+                    live[i].last=paramid;
+                    live[i].last_is_use=1;
+                    return ;
+                }
             }
-            else
-            {
-                live[i].last=paramid;
-                live[i].last_is_use=1;
-                return ;
-            }
-        }
         if(paramid==0)
         {
             live[var_num].name=name;
             live[var_num].last=tacid;
-            live[var_num].first=tacid;   
-            live[var_num].first_is_use=1; 
+            live[var_num].first=tacid;
+            live[var_num].first_is_use=1;
             live[var_num].last_is_use=1;
             live[var_num++].first_use=tacid;
         }
@@ -2932,8 +2932,8 @@ void addtolive(char * name,int tacid,int ifuse,int paramid)
         {
             live[var_num].name=name;
             live[var_num].last=paramid;
-            live[var_num].first=tacid;   
-            live[var_num].first_is_use=1; 
+            live[var_num].first=tacid;
+            live[var_num].first_is_use=1;
             live[var_num].last_is_use=1;
             live[var_num++].first_use=tacid;
         }
@@ -2942,16 +2942,16 @@ void addtolive(char * name,int tacid,int ifuse,int paramid)
     else
     {
         for(int i=0;i<var_num;i++)
-        if(strcmp(name,live[i].name)==0)
-        {
-            live[i].last_def=tacid;
-            live[i].last_is_use=0;
-            live[i].last=tacid;
-            return ;
-        }
+            if(strcmp(name,live[i].name)==0)
+            {
+                live[i].last_def=tacid;
+                live[i].last_is_use=0;
+                live[i].last=tacid;
+                return ;
+            }
         live[var_num].last=tacid;
         live[var_num].name=name;
-        live[var_num].first=tacid;  
+        live[var_num].first=tacid;
         live[var_num].first_is_use=0;
         live[var_num].last_is_use=0;
         live[var_num++].last_def=tacid;
@@ -3015,9 +3015,9 @@ void addtoout(BasicBlock *this_block)
             strcpy(live_out_name[block_out_num++].name,liveOutVariable->name);
         }
     }
-        // printf("out:\n");
-        // for(int i=0;i<block_out_num;i++)
-        //     printf("%s\n",live_out_name[i]);
+    // printf("out:\n");
+    // for(int i=0;i<block_out_num;i++)
+    //     printf("%s\n",live_out_name[i]);
     return ;
 }
 
@@ -3079,9 +3079,9 @@ void bian_init(BasicBlock * this_block)
         {
             // printf("now %s %s\n",live[i].name,live[j].name);
             if((live[i].last<live[j].first||live[i].first>live[j].last)||
-                (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
-                (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
-            // if(live[i].last<live[j].first||live[i].first>live[j].last)
+               (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
+               (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
+                // if(live[i].last<live[j].first||live[i].first>live[j].last)
             {
                 // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
                 // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
@@ -3243,8 +3243,8 @@ void bian_init_test(BasicBlock * this_block)
                 if(((live[i].last<live[j].first||live[i].first>live[j].last)||
                     (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
                     (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
-                    &&live[i].isout==0&&live[j].isout==0&&live[i].isin==0&&live[i].isin==0)
-                // if(live[i].last<live[j].first||live[i].first>live[j].last)
+                   &&live[i].isout==0&&live[j].isout==0&&live[i].isin==0&&live[i].isin==0)
+                    // if(live[i].last<live[j].first||live[i].first>live[j].last)
                 {
                     // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
                     // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
@@ -3353,7 +3353,7 @@ void fyreg(int i,int j)
     for(int x=0;x<13;x++)
     {
         if(inwhichreg(echo_tac_global[j].reg_3[0])!=x&&inwhichreg(echo_tac_global[j].reg_3[1])!=x&&inwhichreg(echo_tac_global[j].reg_3[2])!=x)
-        echo_tac_global[j].whoinreg[x]=echo_tac_global[i].whoinreg[x];
+            echo_tac_global[j].whoinreg[x]=echo_tac_global[i].whoinreg[x];
     }
     return ;
 }
@@ -3390,72 +3390,73 @@ void visittac(int tacid)
 
 void reg_control_func(Function *currentFunction)
 {
-    #if reg_alloc_test
-        BasicBlock *entry = currentFunction->entry;
-        BasicBlock *end = currentFunction->tail;
-        tac_cnt_gloabl=0;
-        clear_visited_flag(entry);
-        block_num=0;
-        InstNode *currNode = entry->head_node;
-        BasicBlock *currNodeParent = currNode->inst->Parent;
-        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*20000);
-        block_list[block_num++].reg_block=currNode->inst->Parent;
-        block_list[0].reg_block->visited=1;
-        while(currNode != get_next_inst(end->tail_node)){
-            currNodeParent = currNode->inst->Parent;
-            if(currNodeParent->visited == false){
-                currNodeParent->visited = true;
-                block_list[block_num++].reg_block=currNode->inst->Parent;
-            }
-            currNode = get_next_inst(currNode);
+#if reg_alloc_test
+    BasicBlock *entry = currentFunction->entry;
+    BasicBlock *end = currentFunction->tail;
+    tac_cnt_gloabl=0;
+    clear_visited_flag(entry);
+    block_num=0;
+    InstNode *currNode = entry->head_node;
+    BasicBlock *currNodeParent = currNode->inst->Parent;
+    block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*40000);
+    block_list[block_num++].reg_block=currNode->inst->Parent;
+    block_list[0].reg_block->visited=1;
+    while(currNode != get_next_inst(end->tail_node)){
+        currNodeParent = currNode->inst->Parent;
+        if(currNodeParent->visited == false){
+            currNodeParent->visited = true;
+            block_list[block_num++].reg_block=currNode->inst->Parent;
         }
-        InstNode *headNode = entry->head_node;
-        reg_param_num = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
-        // printf("func block_num:%d\n\n",block_num);
-        // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
-        clear_visited_flag(entry);
-        init_global(block_list[0].reg_block);
-        for(int i=0;i<block_num;i++)
+        currNode = get_next_inst(currNode);
+    }
+    InstNode *headNode = entry->head_node;
+    reg_param_num = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
+    printf("func block_num:%d\n\n",block_num);
+    // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
+    clear_visited_flag(entry);
+    init_global(block_list[0].reg_block);
+    if(block_num>1000)  mem_temp=1;
+    for(int i=0;i<block_num;i++)
+    {
+        // printf("block:%d\n",i);
+        reg_control_block_temp(block_list[i].reg_block);
+    }
+    if(mem_temp)
+    {
+        printf("use mem\n");
+    }
+    else
+    {
+        jumpfromto();
+        // for(int i=0;i<tac_cnt_gloabl;i++)
+        //     printf("%d: %s %s %s\n",i,echo_tac_global[i].dest_name,echo_tac_global[i].left_name,echo_tac_global[i].right_name);
+        // for(int i=0;i<var_num_global;i++)
+        //     printf("%d:%s %d\n",i,live_global[i].name,live_global[i].first);
+        init_RIG();
+        create_RIG();
+        check_edge();
+        //print_info();
+        minimize_RIG();
+        init_non_available_colors();
+        while(first_fit_coloring())
         {
-            // printf("block:%d\n",i);
-            reg_control_block_temp(block_list[i].reg_block);
+            reset_colors();
+            reset_queue();
+            spill_variable();
         }
-        if(mem_temp)
-        {
-            printf("use mem\n");
-        }
-        else
-        {
-            jumpfromto();
-            // for(int i=0;i<tac_cnt_gloabl;i++)
-            //     printf("%d: %s %s %s\n",i,echo_tac_global[i].dest_name,echo_tac_global[i].left_name,echo_tac_global[i].right_name);
-            // for(int i=0;i<var_num_global;i++)
-            //     printf("%d:%s %d\n",i,live_global[i].name,live_global[i].first);
-            init_RIG();
-            create_RIG();
-            check_edge();
-            //print_info();
-            minimize_RIG();
-            init_non_available_colors();
-            while(first_fit_coloring())
-            {
-                reset_colors();
-                reset_queue();
-                spill_variable();
-            }
-            // test_ans();
-            // print_colors();
-            color_removed();
-        }
-        add_to_echo();
-        if(mem_temp==0)
-            visittac(0);
-        echo_to_ir();
-        clean_reg_global();
-        free(block_list);
-        block_list=NULL;
-    #else
-        BasicBlock *entry = currentFunction->entry;
+        // test_ans();
+        // print_colors();
+        color_removed();
+    }
+    add_to_echo();
+    // if(mem_temp==0)
+    // visittac(0);
+    echo_to_ir();
+    clean_reg_global();
+    free(block_list);
+    block_list=NULL;
+#else
+    BasicBlock *entry = currentFunction->entry;
         BasicBlock *end = currentFunction->tail;
 
         clear_visited_flag(entry);
@@ -3487,54 +3488,54 @@ void reg_control_func(Function *currentFunction)
         echo_to_ir();
         free(block_list);
         block_list=NULL;
-    #endif
+#endif
     return ;
 }
 
 void reg_control_block(BasicBlock *cur)
 {
-    #if all_in_memory
+#if all_in_memory
 
-        travel_ir(cur->head_node);
+    travel_ir(cur->head_node);
         for(int j=0;j<tac_cnt;j++)
             reg_inmem_one_ins(j);
         return ;
 
-    #else
-        mem_temp=0;
-        // printf("this blcok start at %d\n",cur->head_node->inst->i);
-        travel_ir(cur->head_node);
-        live_init_block();
-        bian_init(cur);
-        if(mem_temp)
-        {
-            add_to_ir();
-            clean_reg();
-            mem_temp=0;
-            return ;
-        }
-        init_RIG();
-        create_RIG();
-        check_edge();
-        //print_info();
-        minimize_RIG();
-        init_non_available_colors();
-        while(first_fit_coloring())
-        {
-            reset_colors();
-            reset_queue();
-            spill_variable();
-        }
-        // test_ans();
-        // print_colors();
-        color_removed(); 
-        add_to_echo();
-        add_to_global();
-        // add_to_ir();
+#else
+    mem_temp=0;
+    // printf("this blcok start at %d\n",cur->head_node->inst->i);
+    travel_ir(cur->head_node);
+    live_init_block();
+    bian_init(cur);
+    if(mem_temp)
+    {
+        add_to_ir();
         clean_reg();
+        mem_temp=0;
         return ;
+    }
+    init_RIG();
+    create_RIG();
+    check_edge();
+    //print_info();
+    minimize_RIG();
+    init_non_available_colors();
+    while(first_fit_coloring())
+    {
+        reset_colors();
+        reset_queue();
+        spill_variable();
+    }
+    // test_ans();
+    // print_colors();
+    color_removed();
+    add_to_echo();
+    add_to_global();
+    // add_to_ir();
+    clean_reg();
+    return ;
 
-    #endif
+#endif
 }
 
 void add_to_global()
@@ -3568,7 +3569,7 @@ void reg_control_block_temp(BasicBlock *cur)
     // }
     // // test_ans();
     // // print_colors();
-    // color_removed(); 
+    // color_removed();
     // add_to_ir();
     clean_reg();
     return ;
@@ -3599,13 +3600,13 @@ void add_to_echo()
 {
     int var_uid;
     int reg_uid;
-    #if reg_alloc_test
+#if reg_alloc_test
     for(int i=0;i<tac_cnt_gloabl;i++)
     {
         if(mem_temp==0)
         {
             var_uid=find_var_global(echo_tac_global[i].dest_name);
-            if(var_uid>=0 && echo_tac_global[i].dest_use>=0)  
+            if(var_uid>=0 && echo_tac_global[i].dest_use>=0)
             {
                 reg_uid=list_of_variables[var_uid].color;
                 if(echo_tac_global[i].dest_use==0)
@@ -3645,7 +3646,7 @@ void add_to_echo()
 
 
             var_uid=find_var_global(echo_tac_global[i].left_name);
-            if(var_uid>=0 && echo_tac_global[i].left_use>=0)  
+            if(var_uid>=0 && echo_tac_global[i].left_use>=0)
             {
                 reg_uid=list_of_variables[var_uid].color;
                 if(echo_tac_global[i].left_use==0)
@@ -3684,7 +3685,7 @@ void add_to_echo()
                 echo_tac_global[i].whoinreg[inwhichreg(echo_tac_global[i].reg_3[1])]=var_uid;
 
             var_uid=find_var_global(echo_tac_global[i].right_name);
-            if(var_uid>=0 && echo_tac_global[i].right_use>=0)  
+            if(var_uid>=0 && echo_tac_global[i].right_use>=0)
             {
                 reg_uid=list_of_variables[var_uid].color;
                 if(echo_tac_global[i].right_use==0)
@@ -3728,27 +3729,27 @@ void add_to_echo()
                 echo_tac_global[i].reg_3[0]=-4;
             else if(echo_tac_global[i].dest_use==1)
                 echo_tac_global[i].reg_3[0]=104;
-            else 
+            else
                 echo_tac_global[i].reg_3[0]=-4;
             if(echo_tac_global[i].left_use==0)
                 echo_tac_global[i].reg_3[1]=-5;
             else if(echo_tac_global[i].left_use==1)
                 echo_tac_global[i].reg_3[1]=105;
-            else 
+            else
                 echo_tac_global[i].reg_3[1]=0;
             if(echo_tac_global[i].right_use==0)
                 echo_tac_global[i].reg_3[2]=-6;
             else if(echo_tac_global[i].right_use==1)
                 echo_tac_global[i].reg_3[2]=106;
-            else 
+            else
                 echo_tac_global[i].reg_3[2]=0;
         }
-    }   
-    #else
+    }
+#else
     for(int i=0;i<tac_cnt;i++)
     {
         var_uid=find_var(echo_tac[i].dest_name);
-        if(var_uid>=0 && echo_tac[i].dest_use>=0)  
+        if(var_uid>=0 && echo_tac[i].dest_use>=0)
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].reg_3[0]=-4;
@@ -3774,10 +3775,10 @@ void add_to_echo()
         }
         else
             echo_tac[i].reg_3[0]=0;
-        
+
 
         var_uid=find_var(echo_tac[i].left_name);
-        if(var_uid>=0 && echo_tac[i].left_use>=0)  
+        if(var_uid>=0 && echo_tac[i].left_use>=0)
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].reg_3[1]=104;
@@ -3785,7 +3786,7 @@ void add_to_echo()
             {
                 if(reg_uid==5)  reg_uid=12;
                 else    reg_uid+=6;
-            
+
                 if(echo_tac[i].left_use==0)
                 {
                     if(i==live[var_uid].last_def&&live[var_uid].isout)
@@ -3800,14 +3801,14 @@ void add_to_echo()
                     else
                         echo_tac[i].reg_3[1]=reg_uid;
                 }
-                
+
             }
         }
         else
             echo_tac[i].reg_3[1]=0;
 
         var_uid=find_var(echo_tac[i].right_name);
-        if(var_uid>=0 && echo_tac[i].right_use>=0)  
+        if(var_uid>=0 && echo_tac[i].right_use>=0)
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].reg_3[2]=105;
@@ -3834,7 +3835,7 @@ void add_to_echo()
         else
             echo_tac[i].reg_3[2]=0;
     }
-    #endif
+#endif
 }
 
 void echo_to_ir()
@@ -3846,16 +3847,16 @@ void echo_to_ir()
     }
     return ;
 }
- 
+
 void add_to_ir()
 {
-    #if reg_alloc_test
+#if reg_alloc_test
     int var_uid;
     int reg_uid;
     for(int i=0;i<tac_cnt;i++)
     {
         var_uid=find_var(echo_tac[i].dest_name);
-        if(var_uid>=0 && echo_tac[i].dest_use>=0)  
+        if(var_uid>=0 && echo_tac[i].dest_use>=0)
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
@@ -3865,7 +3866,7 @@ void add_to_ir()
                 else    reg_uid+=6;
                 if(echo_tac[i].dest_use==0)
                 {
-                        echo_tac[i].irnode->_reg_[0]=reg_uid;
+                    echo_tac[i].irnode->_reg_[0]=reg_uid;
                 }
                 else
                 {
@@ -3878,10 +3879,10 @@ void add_to_ir()
         }
         else
             echo_tac[i].irnode->_reg_[0]=0;
-        
+
 
         var_uid=find_var(echo_tac[i].left_name);
-        if(var_uid>=0 && echo_tac[i].left_use>=0)  
+        if(var_uid>=0 && echo_tac[i].left_use>=0)
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
@@ -3909,7 +3910,7 @@ void add_to_ir()
             echo_tac[i].irnode->_reg_[1]=0;
 
         var_uid=find_var(echo_tac[i].right_name);
-        if(var_uid>=0 && echo_tac[i].right_use>=0)  
+        if(var_uid>=0 && echo_tac[i].right_use>=0)
         {
             reg_uid=list_of_variables[var_uid].color;
             if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
@@ -3937,7 +3938,7 @@ void add_to_ir()
             echo_tac[i].irnode->_reg_[2]=0;
     }
     return ;
-    #else
+#else
     if(mem_temp)
     {
         int var_uid;
@@ -3948,19 +3949,19 @@ void add_to_ir()
                 echo_tac[i].irnode->_reg_[0]=-4;
             else if(echo_tac[i].dest_use==1)
                 echo_tac[i].irnode->_reg_[0]=104;
-            else 
+            else
                 echo_tac[i].irnode->_reg_[0]=0;
             if(echo_tac[i].left_use==0)
                 echo_tac[i].irnode->_reg_[1]=-5;
             else if(echo_tac[i].left_use==1)
                 echo_tac[i].irnode->_reg_[1]=105;
-            else 
+            else
                 echo_tac[i].irnode->_reg_[1]=0;
             if(echo_tac[i].right_use==0)
                 echo_tac[i].irnode->_reg_[2]=-6;
             else if(echo_tac[i].right_use==1)
                 echo_tac[i].irnode->_reg_[2]=106;
-            else 
+            else
                 echo_tac[i].irnode->_reg_[2]=0;
         }
     }
@@ -3971,7 +3972,7 @@ void add_to_ir()
         for(int i=0;i<tac_cnt;i++)
         {
             var_uid=find_var(echo_tac[i].dest_name);
-            if(var_uid>=0 && echo_tac[i].dest_use>=0)  
+            if(var_uid>=0 && echo_tac[i].dest_use>=0)
             {
                 reg_uid=list_of_variables[var_uid].color;
                 if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
@@ -3997,10 +3998,10 @@ void add_to_ir()
             }
             else
                 echo_tac[i].irnode->_reg_[0]=0;
-            
+
 
             var_uid=find_var(echo_tac[i].left_name);
-            if(var_uid>=0 && echo_tac[i].left_use>=0)  
+            if(var_uid>=0 && echo_tac[i].left_use>=0)
             {
                 reg_uid=list_of_variables[var_uid].color;
                 if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
@@ -4008,7 +4009,7 @@ void add_to_ir()
                 {
                     if(reg_uid==5)  reg_uid=12;
                     else    reg_uid+=6;
-                
+
                     if(echo_tac[i].left_use==0)
                     {
                         if(i==live[var_uid].last_def&&live[var_uid].isout)
@@ -4023,14 +4024,14 @@ void add_to_ir()
                         else
                             echo_tac[i].irnode->_reg_[1]=reg_uid;
                     }
-                    
+
                 }
             }
             else
                 echo_tac[i].irnode->_reg_[1]=0;
 
             var_uid=find_var(echo_tac[i].right_name);
-            if(var_uid>=0 && echo_tac[i].right_use>=0)  
+            if(var_uid>=0 && echo_tac[i].right_use>=0)
             {
                 reg_uid=list_of_variables[var_uid].color;
                 if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
@@ -4059,7 +4060,7 @@ void add_to_ir()
         }
     }
     return ;
-    #endif
+#endif
 }
 
 
@@ -4070,7 +4071,7 @@ void add_to_ir()
 //     for(int i=0;i<tac_cnt;i++)
 //     {
 //         var_uid=find_var(echo_tac[i].dest_name);
-//         if(var_uid>=0)  
+//         if(var_uid>=0)
 //         {
 //             reg_uid=list_of_variables[var_uid].color;
 //             if(reg_uid<0)   echo_tac[i].irnode->_reg_[0]=-4;
@@ -4079,24 +4080,24 @@ void add_to_ir()
 //                 reg_uid+=6;
 //                 if(echo_tac[i].dest_use==0)
 //                 {
-//                     if(i==live[var_uid].last) 
+//                     if(i==live[var_uid].last)
 //                         echo_tac[i].irnode->_reg_[0]=reg_uid*-1;
 //                     else
 //                         echo_tac[i].irnode->_reg_[0]=reg_uid;
 //                 }
 //                 if(echo_tac[i].dest_use==1)
 //                 {
-//                     if(i==live[var_uid].first) 
+//                     if(i==live[var_uid].first)
 //                         echo_tac[i].irnode->_reg_[0]=reg_uid+100;
 //                     else
 //                         echo_tac[i].irnode->_reg_[0]=reg_uid;
 //                 }
 //             }
 //         }
-        
+
 
 //         var_uid=find_var(echo_tac[i].left_name);
-//         if(var_uid>=0)  
+//         if(var_uid>=0)
 //         {
 //             reg_uid=list_of_variables[var_uid].color;
 //             if(reg_uid<0)   echo_tac[i].irnode->_reg_[1]=104;
@@ -4105,14 +4106,14 @@ void add_to_ir()
 //                 reg_uid+=6;
 //                 if(echo_tac[i].left_use==0)
 //                 {
-//                     if(i==live[var_uid].last) 
+//                     if(i==live[var_uid].last)
 //                         echo_tac[i].irnode->_reg_[1]=reg_uid-1;
 //                     else
 //                         echo_tac[i].irnode->_reg_[1]=reg_uid;
 //                 }
 //                 if(echo_tac[i].left_use==1)
 //                 {
-//                     if(i==live[var_uid].first) 
+//                     if(i==live[var_uid].first)
 //                         echo_tac[i].irnode->_reg_[1]=reg_uid+100;
 //                     else
 //                         echo_tac[i].irnode->_reg_[1]=reg_uid;
@@ -4121,7 +4122,7 @@ void add_to_ir()
 //         }
 
 //         var_uid=find_var(echo_tac[i].right_name);
-//         if(var_uid>=0)  
+//         if(var_uid>=0)
 //         {
 //             reg_uid=list_of_variables[var_uid].color;
 //             if(reg_uid<0)   echo_tac[i].irnode->_reg_[2]=105;
@@ -4130,14 +4131,14 @@ void add_to_ir()
 //                 reg_uid+=6;
 //                 if(echo_tac[i].right_use==0)
 //                 {
-//                     if(i==live[var_uid].last) 
+//                     if(i==live[var_uid].last)
 //                         echo_tac[i].irnode->_reg_[2]=reg_uid-1;
 //                     else
 //                         echo_tac[i].irnode->_reg_[2]=reg_uid;
 //                 }
 //                 if(echo_tac[i].right_use==1)
 //                 {
-//                     if(i==live[var_uid].first) 
+//                     if(i==live[var_uid].first)
 //                         echo_tac[i].irnode->_reg_[2]=reg_uid+100;
 //                     else
 //                         echo_tac[i].irnode->_reg_[2]=reg_uid;
@@ -4165,11 +4166,11 @@ void clean_reg()
     live_in_name=NULL;
     live_out_name=NULL;
     live=NULL;
-    #if reg_alloc_test
+#if reg_alloc_test
 
-    #else
+#else
     _bian=NULL;
-    #endif
+#endif
     list_of_variables=NULL;
     RIG=NULL;
     head=NULL;
@@ -4322,17 +4323,17 @@ void color_removed()
             {
                 printf("color removed failed");
                 //需修改
-            } 
+            }
         }
     }
 }
 
 void print_non_available_colors()
 {
-   for(int i = 0; i < KK; i++)
-   {
-       printf("%d ", CHECK(i));
-   }
+    for(int i = 0; i < KK; i++)
+    {
+        printf("%d ", CHECK(i));
+    }
 }
 
 
@@ -4364,26 +4365,26 @@ void print_colors()
     for(i = 0; i < rig_num; i++)
     {
         printf("%d\t", list_of_variables[i].color);
-		for(j = 0; j < rig_num; j++)
-		{
-			int bit = CHECKBIT(i,j);
+        for(j = 0; j < rig_num; j++)
+        {
+            int bit = CHECKBIT(i,j);
             if(bit)
                 printf("1 ");
             else
                 printf("0 ");
-		}
-		printf("\n");
+        }
+        printf("\n");
     }
 }
 
 
 void init_RIG()
 {
-    #if reg_alloc_test
+#if reg_alloc_test
     rig_num=var_num_global;
-    #else
+#else
     rig_num=var_num;
-    #endif
+#endif
     list_of_variables=NULL;
     RIG=NULL;
 }
@@ -4459,11 +4460,11 @@ void create_variable_list()
         // name = (char *)malloc(MAXSTRINGSIZE * sizeof(char));
         // sprintf(name, "%d", i);
         // list_of_variables[i].name = name;
-        #if reg_alloc_test
+#if reg_alloc_test
         list_of_variables[i].name = live_global[i].name;
-        #else
+#else
         list_of_variables[i].name = live[i].name;
-        #endif
+#endif
         list_of_variables[i].color = NO_COLOR;
         list_of_variables[i].neighbor_count = 0;
         // printf("%d - %s\n",i,live[i].name);
@@ -4480,15 +4481,15 @@ void print_RIG()
     printf("\n");
     for(i = 0; i < rig_num; i++)
     {
-		for(j = 0; j < rig_num; j++)
-		{
-			int bit = CHECKBIT(i,j);
+        for(j = 0; j < rig_num; j++)
+        {
+            int bit = CHECKBIT(i,j);
             if(bit)
                 printf("1 ");
             else
                 printf("0 ");
-		}
-		printf("\n");
+        }
+        printf("\n");
     }
 }
 
@@ -4515,7 +4516,7 @@ void spill_variable()
             list_of_variables[i].neighbor_count--;
         }
     }
-}    
+}
 
 void test_ans()
 {
