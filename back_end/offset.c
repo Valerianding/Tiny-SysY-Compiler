@@ -31,6 +31,7 @@ void offset_free(HashMap*hashMap){
 }
 
 void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num,int reg_flag){
+//    reg_flag=-1;
 //    全局变量放在全局变量的global_hashmap里面，因为已经改为了使用 #:upper:16 和 #:lower:16,所以说下面两个保存的信息已经没有用了
 //    if(isGlobalVarFloatType(key->VTy)){
 //
@@ -83,7 +84,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 //            printf("name:%s  keyname:%s\n",name,key->name);
             int name_num= atoi(name+1);
             int key_name_num=-1;
-            if(key->name!=NULL){
+            if(key->name!=NULL && key->name[0]=='%'){ //不加key->name[0]=='%'这个，在判断全局变量@n的时候会出错
                 key_name_num= atoi(key->name+1);
             }
 //            if(strcmp(key->name,name)<0 &&  strlen(key->name) <= strlen(name)){
@@ -98,13 +99,15 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
                 if(ri<=3&&ri>=0){
 //                    当普通局部变量来映射
                     temp->offset_sp=(*add_sp);
+//                    printf("str %s,%d\n",key->name,temp->offset_sp);
                     (*add_sp)+=4;
                 }else{
 //                    最顶部的参数变量来进行映射,被保护的寄存器的变量个数需要传过来
                     temp->offset_sp=(*local_var_num)*4+(reg_save_num*4)+(ri-4)*4;
+//                    printf("str %s,%d\n",key->name,temp->offset_sp);
                 }
 //                offset *temp=offset_node();
-////                printf("sub_sp=%d\n",*sub_sp);
+//                printf("sub_sp=%d\n",*sub_sp);
 //                temp->offset_sp=(*local_var_num)*4+ri*4;
 //                这里还要处理unknow的情况,默认为int
                 if(isLocalVarFloatType(key->VTy)|| isLocalArrayFloatType(key->VTy)){
@@ -133,6 +136,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 //                {
                 offset *temp=(offset*) malloc(sizeof(offset));
                 temp->offset_sp=(*add_sp);
+//                printf("str %s,%d\n",key->name,temp->offset_sp);
 //                printf("add_sp=%d\n",*add_sp);
                 (*add_sp)+=4;
                 if(isLocalVarFloatType(key->VTy)|| isLocalArrayFloatType(key->VTy)){
@@ -325,19 +329,26 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
                 hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
                 break;
             case Call:
-                operandNum=ins->inst->user.value.NumUserOperands;
-                if(operandNum==2){
-                    value0=&ins->inst->user.value;
-                    value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                    if(value0->VTy!=Unknown){
-//                    ==unknow说明回值为void
-                        hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                    }
-                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                }else if(operandNum==1){
-                    value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                }
+//                operandNum=ins->inst->user.value.NumUserOperands;
+//                if(operandNum==2){
+                  if(returnValueNotUsed(ins)){
+                      value1=user_get_operand_use(&ins->inst->user,0)->Val;
+                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                  }else{
+                      value0=&ins->inst->user.value;
+                      value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//                    if(value0->VTy!=Unknown){
+////                    ==unknow说明回值为void
+//                        hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
+//                    }
+                      hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
+                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                  }
+
+//                }else if(operandNum==1){
+//                    value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+//                }
                 break;
             case Store:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
