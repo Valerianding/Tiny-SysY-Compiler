@@ -9,7 +9,7 @@ struct SString * live_in_name;
 struct SString * live_out_name;
 int edge_num,edge_num_global;
 int var_num,var_num_global;
-int KK = 5;
+int KK = 6;
 int rig_num;
 int reg_param_num;
 int block_in_num,block_out_num;
@@ -1596,8 +1596,8 @@ void travel_ir(InstNode *instruction_node)
                 }
             case br_i1:
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].dest_use=1;
+                    // echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                    // echo_tac[tac_cnt].dest_use=1;
                     echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
                     echo_tac[tac_cnt].jumpto[1]=instruction->user.value.pdata->instruction_pdata.false_goto_location;
                     if_br_ir = 1;
@@ -1621,15 +1621,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1640,8 +1640,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1649,8 +1649,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1666,15 +1666,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp slt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1685,8 +1685,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp slt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1694,8 +1694,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1710,15 +1710,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1729,8 +1729,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1738,8 +1738,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1754,15 +1754,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp sgt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1773,8 +1773,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp sgt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1782,8 +1782,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1798,15 +1798,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp sge i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1817,8 +1817,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp sge i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1826,8 +1826,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1842,15 +1842,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp sle i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1861,8 +1861,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp sle i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1870,8 +1870,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        echo_tac[tac_cnt].dest_use=0;
+                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        // echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -2582,10 +2582,10 @@ void travel_ir(InstNode *instruction_node)
                 //第一条bitcast
                 if(instruction->user.value.pdata->var_pdata.iVal==1)
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
-                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].left_use=1;
+                    // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    // echo_tac[tac_cnt].dest_use=0;
+                    // echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    // echo_tac[tac_cnt].left_use=1;
                     //v_cur_array=instruction->user.use_list->Val->alias;
                     // printf(" %s=bitcast ",instruction->user.value.name);
                     //fpintf(fptr," %s=bitcast ",instruction->user.value.name);
@@ -2595,10 +2595,10 @@ void travel_ir(InstNode *instruction_node)
                 }
                 else
                 {
-                    echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                    echo_tac[tac_cnt].dest_use=0;
-                    echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
-                    echo_tac[tac_cnt].left_use=1;
+                    // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                    // echo_tac[tac_cnt].dest_use=0;
+                    // echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
+                    // echo_tac[tac_cnt].left_use=1;
                     // printf(" %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
                     //fpintf(fptr," %s=bitcast i8* %s to ",instruction->user.value.name,instruction->user.use_list->Val->name);
                     //printf_array(instruction->user.use_list->Val->alias,0,fptr);
@@ -2969,7 +2969,7 @@ void create_bian(int i,int j)
             return ;
         }
     }
-    printf("%d %d %s %s在一起了\n",i,j,live_global[i].name,live_global[j].name);
+    // printf("%d %d %s %s在一起了\n",i,j,live_global[i].name,live_global[j].name);
     _bian[edge_num].a=i;
     _bian[edge_num++].b=j;
     // printf("边:%s--%s\n",live[i].name,live[j].name);
@@ -3199,7 +3199,7 @@ void bian_init_test(BasicBlock * this_block)
         if(is_func_param(live[i].name))
             live[i].iffuc=1;
     addtogloballive();
-    if(var_num>900||var_num_global>3000)
+    if(var_num>800||var_num_global>3000)
     {
         mem_temp=1;
     }
@@ -3398,7 +3398,7 @@ void reg_control_func(Function *currentFunction)
         block_num=0;
         InstNode *currNode = entry->head_node;
         BasicBlock *currNodeParent = currNode->inst->Parent;
-        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*10000);
+        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*20000);
         block_list[block_num++].reg_block=currNode->inst->Parent;
         block_list[0].reg_block->visited=1;
         while(currNode != get_next_inst(end->tail_node)){
