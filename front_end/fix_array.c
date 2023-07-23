@@ -256,7 +256,8 @@ void fix_array2(struct _InstNode *instruction_node)
                         //直接从left_user找alloca
                         Value *v_left = &left_user;
                         Instruction *ins_user = (Instruction*)v_left;
-                        if(ins_user->user.use_list!= NULL){
+                        //gep的lhs一定是有name的
+                        if(ins_user->user.use_list!= NULL && ins_user->user.use_list->Val != NULL && ins_user->user.use_list->Val->name != NULL){
                             use_set_value(use_store,get_alloca_alias(&left_user));
                             v_array->alias = get_alloca_alias(&left_user);
                         } else
