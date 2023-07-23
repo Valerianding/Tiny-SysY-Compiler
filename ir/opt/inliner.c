@@ -33,7 +33,7 @@ InstNode *find_func_begin(struct _InstNode* instruction_node,char* func_name)
 
 //particular ir的cost是0, 其他普通ir一条cost为5
 bool is_particular_instr(Opcode opcode) {
-    if(opcode == Alloca || opcode == bitcast || opcode == Phi || opcode == GEP || opcode == Return || opcode == br || opcode == FunBegin || opcode == FunEnd)
+    if(opcode == Alloca || opcode == bitcast || opcode == Phi || opcode == Return || opcode == br || opcode == FunBegin || opcode == FunEnd || opcode == Label)
         return true;
     return false;
 };
@@ -79,7 +79,7 @@ void cal_cost(Function* callee,int threshold)
     //TypeSize;    //arg所占位数 32*
     //PointerSize;  //指针所占位数，即整数位数 ,是32位
     //Num = min((TypeSize+PointerSize-1)/PointerSize , 8); //Num取表达式和8中小的值
-    int Num = min((funcValue->pdata->symtab_func_pdata.param_num*32 + 32 -1),8);
+    int Num = min((funcValue->pdata->symtab_func_pdata.param_num*32 + 32 -1)/32,8);
     *cost -= 2 * Num * Instr_cost;
 
     printf("cost : %d\n",*cost);
@@ -554,6 +554,9 @@ int func_inline(struct _InstNode* instruction_node, int threshold)
                     {
                         InstNode *instNode=instruction_node;
                         if(ins_copy->Opcode==Alloca){
+                            //比如%5的alias是p,此时p的alias也是%5,p的alias也要更新成新左值了
+                            if(begin_func->inst->user.value.alias != NULL && begin_func->inst->user.value.alias->alias!=NULL)
+                                begin_func->inst->user.value.alias->alias = ins_get_dest(ins_copy);
                             while(get_prev_inst(instNode)->inst->Opcode!=Alloca && get_prev_inst(instNode)->inst->Opcode!=FunBegin)
                                 instNode= get_prev_inst(instNode);
                         }else {

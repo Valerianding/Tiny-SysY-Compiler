@@ -1,6 +1,7 @@
 #include "bblock.h"
 #include "stdio.h"
 extern int instruction_uid;
+extern struct _InstNode *instruction_list;
 BasicBlock *bb_create(){
     BasicBlock *this = (BasicBlock*)malloc(sizeof(BasicBlock));
     memset(this,0,sizeof(BasicBlock));
@@ -176,6 +177,26 @@ void ins_insert_before(InstNode *this, InstNode *pos){
     }
     this->list.next = &pos->list;
     pos->list.prev = &this->list;
+}
+
+//返回新建的node
+InstNode *auto_binary_node_insert_before(int Op, Value *S1, Value *S2,int index,BasicBlock *block,InstNode* pos){
+    Instruction *instruction = ins_new_binary_operator(Op,S1,S2);
+    instruction->Parent = block;
+    InstNode *node = new_inst_node(instruction);
+    ins_insert_before(node,pos);
+    ins_get_value_with_name_and_index(instruction,index);
+    return node;
+}
+
+//返回新建的node
+InstNode *auto_binary_node_insert_after(int Op, Value *S1, Value *S2,int index,BasicBlock *block,InstNode* pos){
+    Instruction *instruction = ins_new_binary_operator(Op,S1,S2);
+    instruction->Parent = block;
+    InstNode *node = new_inst_node(instruction);
+    ins_insert_after(node,pos);
+    ins_get_value_with_name_and_index(instruction,index);
+    return node;
 }
 
 InstNode *ins_get_funcHead(InstNode *this){
