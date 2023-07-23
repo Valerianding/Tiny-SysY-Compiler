@@ -9,7 +9,7 @@ struct SString * live_in_name;
 struct SString * live_out_name;
 int edge_num,edge_num_global;
 int var_num,var_num_global;
-int KK = 6;
+int KK = 5;
 int rig_num;
 int reg_param_num;
 int block_in_num,block_out_num;
