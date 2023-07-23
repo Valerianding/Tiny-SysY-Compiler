@@ -5,6 +5,8 @@
 #include "loopunroll.h"
 int tmp_index = 0;
 
+bool first_copy = true;
+
 void adjust_blocks(BasicBlock* head, BasicBlock* new_pre_block){
     //将Head的前驱对应的后继全部指向new_pre_block
     HashSet *preBlocks = head->preBlocks;
@@ -74,21 +76,20 @@ Value *copy_value(Value *v_source,int index)
 void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_valueMap,HashMap* other_new_valueMap){
     HashSetFirst(loop->loopBody);
     for(BasicBlock *body = HashSetNext(loop->loopBody); body != NULL; body = HashSetNext(loop->loopBody)){
-        Instruction *ins_tmp= ins_new_zero_operator(tmp);
-        InstNode *node_tmp = new_inst_node(ins_tmp);
-        if(mod_flag)
-            ins_insert_before(node_tmp,block->tail_node);
-        else
+        if(first_copy && !mod_flag){
+            Instruction *ins_tmp= ins_new_zero_operator(tmp);
+            InstNode *node_tmp = new_inst_node(ins_tmp);
             ins_insert_before(node_tmp,body->tail_node);
+        }
 
         //exit和head块不展开
-        if(body->id!=loop->head->id && body->id!=loop->exit_block->id){
+        if(body!=loop->head && body!=loop->exit_block){
             InstNode *currNode = body->head_node;
             InstNode *bodyTail = get_prev_inst(body->tail_node);
             //留给添加新基本块做准备的
             BasicBlock *curr_block=NULL;
 
-            while(currNode != bodyTail){
+            while(currNode != bodyTail && currNode->inst->Opcode != tmp){
                 if(!hasNoDestOperator(currNode)){
                     Value *lhs= ins_get_lhs(currNode->inst);
                     Value *rhs= ins_get_rhs(currNode->inst);
@@ -137,7 +138,10 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
                         node->inst->Parent=loop->tail;
                     else
                         node->inst->Parent=curr_block;
-                    ins_insert_before(node,body->tail_node);
+                    if(mod_flag)
+                        ins_insert_before(node,block->tail_node);
+                    else
+                        ins_insert_before(node,body->tail_node);
 
                     //左值的对应关系也要存起来了
                     Value *new_dest= ins_get_value_with_name_and_index_(copy_ins,tmp_index++);
@@ -156,10 +160,8 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
                 currNode = get_next_inst(currNode);
             }
         }
-
-        //删除tmp
-        deleteIns(node_tmp);
     }
+    first_copy = false;
 }
 
 
@@ -480,6 +482,7 @@ void LOOP_UNROLL_EACH(Loop* loop)
     BasicBlock *mod_block = NULL;
     if(check_idc(loop->initValue,v_step,v_end)){
         int mod_num = times->pdata->var_pdata.iVal % update_modifier;       //余数是迭代次数对update_modifier取余
+        printf("mod num : %d\n",mod_num);
         if(mod_num != 0){               //无余数的情况不处理
             //来新block
             new_pre_block = bb_create();
@@ -503,6 +506,9 @@ void LOOP_UNROLL_EACH(Loop* loop)
             for(int i=0; i < mod_num ;i++){
                 copy_one_time(loop,1,new_pre_block,v_new_valueMap,other_new_valueMap);
             }
+
+            //更新归纳变量
+            loop->initValue->pdata->var_pdata.iVal += mod_num;
         }
     } else {
         //用ir算余数
@@ -587,13 +593,30 @@ void LOOP_UNROLL_EACH(Loop* loop)
         pair2->define = ins_get_dest(node_plus->inst);
         pair2->from =loop_pre_block;
         HashSetAdd(set,pair2);
+
+        //TODO 更新归纳变量
+
     }
 
+
     //余数处理完毕，开始循环内容的复制
+    //TODO 要保存最初的ir,或者说给block一个alias是自己的副本，最后释放
     for(int i = 0;i < update_modifier-1;i++){
         copy_one_time(loop, 0, NULL, v_new_valueMap,other_new_valueMap);
     }
-
+    //遍历loop, 删去作挡板的tmp
+    HashSetFirst(loop->loopBody);
+    for(BasicBlock* body = HashSetNext(loop->loopBody);body!=NULL;body = HashSetNext(loop->loopBody)){
+        InstNode *curr= body->head_node;
+        InstNode *tail = body->tail_node;
+        while (curr!=tail){
+            if(curr->inst->Opcode == tmp){         //一个block应该只有一条挡板
+                deleteIns(curr);
+                break;
+            }
+            curr = get_next_inst(curr);
+        }
+    }
 }
 
 //进行dfs，从最里层一步步展开
