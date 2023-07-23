@@ -244,10 +244,18 @@ void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp,int reg_save_num){
     return;
 }
 void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value,int reg_save_num){
+//    printf("%p\n",key);
     if(!HashMapContain(hashMap,key)){
         if(HashMapContain(hashMap,value)){
-            offset *node= HashMapGet(hashMap,value);
+            offset *tmp= HashMapGet(hashMap,value);
+            offset *node= offset_node();
+            node->offset_sp=tmp->offset_sp;
+            node->memory=true;
+            node->regs=-1;
+            node->regr=-1;
             HashMapPut(hashMap,key,node);
+        }else{
+            assert(false);
         }
     }
     return;
