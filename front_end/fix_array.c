@@ -18,7 +18,7 @@ int get_dimension(Value* value)
 Value *get_alloca_alias(Value* value)
 {
     Instruction *instruction = (Instruction*)value;
-    while (instruction->Opcode != Alloca){
+    while (instruction->Opcode != Alloca && instruction->Opcode != GLOBAL_VAR){
         //1.找到value1
         Value *v = ins_get_lhs(instruction);
         //2.将instruction换为v的instruction
@@ -254,7 +254,13 @@ void fix_array2(struct _InstNode *instruction_node)
                         use_set_value(use_store,v_array->alias);
                     else{
                         //直接从left_user找alloca
-                        use_set_value(use_store,get_alloca_alias(&left_user));
+                        Value *v_left = &left_user;
+                        Instruction *ins_user = (Instruction*)v_left;
+                        if(ins_user->user.use_list!= NULL){
+                            use_set_value(use_store,get_alloca_alias(&left_user));
+                            v_array->alias = get_alloca_alias(&left_user);
+                        } else
+                            use_set_value(use_store,v_array->alias);
                     }
                     //use_set_value(use_store,v_array->alias);
                     //ir里的第二个use
