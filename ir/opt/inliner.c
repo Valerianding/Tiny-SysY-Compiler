@@ -79,7 +79,7 @@ void cal_cost(Function* callee,int threshold)
     //TypeSize;    //arg所占位数 32*
     //PointerSize;  //指针所占位数，即整数位数 ,是32位
     //Num = min((TypeSize+PointerSize-1)/PointerSize , 8); //Num取表达式和8中小的值
-    int Num = min((funcValue->pdata->symtab_func_pdata.param_num*32 + 32 -1),8);
+    int Num = min((funcValue->pdata->symtab_func_pdata.param_num*32 + 32 -1)/32,8);
     *cost -= 2 * Num * Instr_cost;
 
     printf("cost : %d\n",*cost);
