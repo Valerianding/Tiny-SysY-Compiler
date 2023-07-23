@@ -15,6 +15,18 @@ int get_dimension(Value* value)
     return dimension;
 }
 
+Value *get_alloca_alias(Value* value)
+{
+    Instruction *instruction = (Instruction*)value;
+    while (instruction->Opcode != Alloca){
+        //1.找到value1
+        Value *v = ins_get_lhs(instruction);
+        //2.将instruction换为v的instruction
+        instruction = (Instruction*)v;
+    }
+    return ins_get_dest(instruction);
+}
+
 Value *get_source_value(Value* value)
 {
     Instruction *instruction = (Instruction*)value;
@@ -238,7 +250,13 @@ void fix_array2(struct _InstNode *instruction_node)
                     Use* use_store=use;
                     use=use->Next;
 
-                    use_set_value(use_store,v_array->alias);
+                    if(v_array->VTy->ID == AddressTyID)
+                        use_set_value(use_store,v_array->alias);
+                    else{
+                        //直接从left_user找alloca
+                        use_set_value(use_store,get_alloca_alias(&left_user));
+                    }
+                    //use_set_value(use_store,v_array->alias);
                     //ir里的第二个use
                     use_set_value(&use_store->Parent->use_list[1],v_offset);
                     //user
