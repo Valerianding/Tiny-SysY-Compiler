@@ -38,6 +38,8 @@ typedef struct Loop{
 
     HashSet *latches; //current not used
     bool containMultiBackEdge;
+
+    //often, if the loop has not dedicated exit it means it has "break"
     bool hasDedicatedExit;
 }Loop;
 

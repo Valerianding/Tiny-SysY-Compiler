@@ -24,6 +24,8 @@ void markDominanceDepth(Function *function){
     bfsTravelDomTree(function->root,0);
 }
 
+
+
 bool isPinnedIns(InstNode *instNode){
     int n = sizeof(pinnedOperations) / sizeof(Opcode);
     for(int i = 0; i < n; i++){
@@ -37,6 +39,7 @@ bool isPinnedIns(InstNode *instNode){
 void Schedule_Early(Instruction *ins){
     BasicBlock *curBlock = ins->Parent;
 
+    printf("curIns %d, curBlock %d\n",ins->i,curBlock->id);
     Function *function = curBlock->Parent;
     assert(function != NULL);
 
@@ -52,6 +55,8 @@ void Schedule_Early(Instruction *ins){
     //i.block = root start with shallowest dominator
     DomTreeNode *iNode = function->root;
 
+    bool Limited = false; // true -> 必须放在input block对应node的后面  为false -> 放在最前面
+
     //for all inputs x to i do
     if(ins->Opcode == Phi){
         HashSet *phiSet = ins->user.value.pdata->pairSet;
@@ -59,20 +64,13 @@ void Schedule_Early(Instruction *ins){
         for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)) {
             Value *define = phiInfo->define;
             Instruction *inputIns = NULL;
-            if (define != NULL && !isParam(define, paramNum) && !isImm(define)) {
+            if (define != NULL && !isImm(define) && !isParam(define, paramNum) ) {
                 //now this define must be produced by an instruction in the function
                 inputIns = (Instruction *) define;
                 Schedule_Early(inputIns);
             }
-
-            if(inputIns != NULL){
-                DomTreeNode *xNode = inputIns->Parent->domTreeNode;
-                //if i.block.dom_depth < x.block.dom_depth
-                if(iNode->depth < xNode->depth){
-                    iNode = xNode;
-                }
-            }
         }
+        iNode = NULL;
     }else if(ins->Opcode == Call){
         //we do not want to move this call
         //make iNode to be NULL so we know we can't modify this instruction
@@ -92,6 +90,7 @@ void Schedule_Early(Instruction *ins){
         Value *loadPlace = ins_get_lhs(ins);
         if(!isGlobalVar(loadPlace)){
             //那么一定是gep出来的一条指令
+            printf("load place %s\n",loadPlace->name);
             Instruction *inputIns = (Instruction *)loadPlace;
             Schedule_Early(inputIns);
         }
@@ -121,19 +120,121 @@ void Schedule_Early(Instruction *ins){
                 Schedule_Early(inputIns);
             }
         }
+
+        iNode = NULL;
+    }else if(ins->Opcode == br_i1){
+        Value *cond = ins_get_lhs(ins);
+        Instruction *inputIns = (Instruction *)cond;
+        Schedule_Early(inputIns);
+
+        iNode = NULL;
+    }else if(ins->Opcode == Alloca){
+        //如果是alloca的话 我们就不用分析了
+        iNode = NULL;
+    }else{
+        //not a pinned instruction we can move these instructions forward
+        printf("current ins is %d\n",ins->i);
+        Value *insDest = ins_get_dest(ins);
+
+        int numOfOperand = insDest->NumUserOperands;
+
+        Value *lhs = NULL;
+        Value *rhs = NULL;
+
+        //从中去取出Value1 和 Value2
+        if(numOfOperand == 2){
+            lhs = ins_get_lhs(ins);
+
+            rhs = ins_get_rhs(ins);
+
+            //判断lhs 和 rhs是不是可以溯源 并且还不能是全局数组！！
+            if(lhs != NULL && !isImm(lhs) && !isParam(lhs,paramNum) && !isGlobalArray(lhs)){
+                Instruction *lhsIns = (Instruction *)lhs;
+                Schedule_Early(lhsIns);
+                DomTreeNode *lhsNode = lhsIns->Parent->domTreeNode;
+                if(iNode->depth < lhsNode->depth){
+                    Limited = true;
+                    iNode = lhsNode;
+                }
+                printf("lhs dom depth %d, ",lhsNode->depth);
+            }
+
+            if(rhs != NULL && !isImm(rhs) && !isParam(rhs,paramNum) && !isGlobalArray(rhs)){
+                Instruction *rhsIns = (Instruction *)rhs;
+                Schedule_Early(rhsIns);
+                DomTreeNode *rhsNode = rhsIns->Parent->domTreeNode;
+                if(iNode->depth < rhsNode->depth){
+                    Limited = true;
+                    iNode = rhsNode;
+                }
+                printf("rhs dom depth %d\n",rhsNode->depth);
+            }
+
+
+        }else if(numOfOperand == 1){
+            lhs = ins_get_lhs(ins);
+            if(!isImm(lhs) && !isParam(lhs,paramNum)){
+                Instruction *lhsIns = (Instruction *)lhs ;
+                Schedule_Early(lhsIns);
+                DomTreeNode *lhsNode = lhsIns->Parent->domTreeNode;
+                if(iNode->depth < lhsNode->depth){
+                    Limited = true;
+                    iNode = lhsNode;
+                }
+                printf("lhsNode depth %d\n",lhsNode->depth);
+            }
+        }
     }
 
-
     //after all we can schedule this instruction to the iNode -> block tail ?
+    //we need to
+
+    BasicBlock *originalBlock = ins->Parent;
+    if(iNode != NULL && iNode->block != originalBlock){
+        //we can schedule this instruction now
+        BasicBlock *insertBlock = iNode->block;
+
+        InstNode *insNode = findNode(originalBlock,ins);
+
+        assert(insNode != NULL);
+
+        //remove currNode from curr Block
+
+        removeIns(insNode);
+
+        InstNode *insertPoint = NULL;
+        if(insertBlock->tail_node->inst->Opcode == br_i1){
+            //找到对应的Value *
+            Value *lhs = ins_get_lhs(insertBlock->tail_node->inst);
+            Instruction *icmpIns = (Instruction *)lhs;
+            insertPoint = findNode(insertBlock,icmpIns);
+        }else{
+            insertPoint = insertBlock->tail_node;
+        }
+        //我们是先schedule input 然后再schedule self所以我们每次尾插是可以的
+        assert(insertPoint != NULL);
+        //我们需要跳过
+        if(Limited){
+            //放在最后？
+            ins_insert_before(insNode,insertPoint);
+            insNode->inst->Parent = insertBlock;
+        }else{
+            //not limited -> root
+            ins_insert_before(insNode,insertPoint);
+            insNode->inst->Parent = insertBlock;
+        }
+    }
 }
 
 
-//we should follow a dfs travel over the pinned instructions ?
+//TODO we should follow a dfs travel over the pinned instructions ?
 void ScheduleEarly(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;
     InstNode *pinnedNode = entry->head_node;
     InstNode *tailNode = tail->tail_node;
+
+    markDominanceDepth(currentFunction);
 
     int paramNum = currentFunction->entry->head_node->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
     printf("function %s has %d param!\n",currentFunction->name,paramNum);
@@ -142,6 +243,7 @@ void ScheduleEarly(Function *currentFunction){
     while(pinnedNode != tailNode){
         //if i is pinned
         if(isPinnedIns(pinnedNode)){
+            printf("at pinned instruction %d\n",pinnedNode->inst->i);
             //i.visited = true
             pinnedNode->inst->visited = true;
 
@@ -151,7 +253,7 @@ void ScheduleEarly(Function *currentFunction){
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                     Value *define = phiInfo->define;
-                    if(define != NULL && !isParam(define,paramNum) && !isImm(define)){
+                    if(define != NULL && !isImm(define) && !isParam(define,paramNum)){
                         //now this define must be produced by an instruction in the function
                         Instruction *inputIns = (Instruction *)define;
                         Schedule_Early(inputIns);

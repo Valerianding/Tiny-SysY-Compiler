@@ -299,7 +299,6 @@ void calculateLiveness(Function *currentFunction){
     HashSetAdd(workList,exit);
 
 
-    bool firstTime = false;
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
@@ -399,6 +398,7 @@ void calculateLiveness(Function *currentFunction){
                 Value *def = NULL;
                 Value *rhs = NULL;
                 Value *lhs = NULL;
+                printf("cur ins at %d\n",currNode->inst->i);
 
                 //处理def的计算
                 if(currNode->inst->Opcode == Return || currNode->inst->Opcode == br || currNode->inst->Opcode == br_i1){
@@ -427,7 +427,6 @@ void calculateLiveness(Function *currentFunction){
                     lhs = NULL;
                     rhs = NULL;
                 }else if(currNode->inst->Opcode == GIVE_PARAM){
-                    printf("lhs : %s!!!!\n",lhs->name);
                     rhs = NULL;
                 }else if(currNode->inst->Opcode == Phi){
                     lhs = NULL;
@@ -463,7 +462,11 @@ void calculateLiveness(Function *currentFunction){
             currNode = get_prev_inst(currNode);
         }
 
-        changed |= HashSetCopyValue(block->in, tempSet);
+        if(HashSetDifferent(block->in,tempSet)){
+            changed = true;
+            HashSetClean(block->in);
+            HashSetCopyValue(block->in, tempSet);
+        }
 
         if(changed || (block == currentFunction->tail) || block->visited == false){
             block->visited = true;
