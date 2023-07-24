@@ -412,9 +412,10 @@ int cal_times(int init,Instruction *ins_modifier,Instruction *ins_end_cond,Value
     return times;
 }
 
+//
 InstNode *insert_ir_mod(Value* v_init, Value* v_end, Value* v_step, BasicBlock* preserve1,  BasicBlock* mod_block,BasicBlock *new_pre_block, InstNode* pos){
     //times = ((end - init) % step == 0)? (end - init) / step : (end - init) / step + 1;
-    //给preserve2 block一个label
+    //给preserve block一个label
     Instruction *ins_label = ins_new_zero_operator(Label);
     InstNode *node_label = new_inst_node(ins_label);
     ins_label->Parent = preserve1;
@@ -422,9 +423,10 @@ InstNode *insert_ir_mod(Value* v_init, Value* v_end, Value* v_step, BasicBlock* 
     preserve1->head_node = node_label;
     InstNode *node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,preserve1,node_label);
     InstNode *node_div = auto_binary_node_insert_after(Div,ins_get_dest(node_sub->inst),v_step,tmp_index++,preserve1,node_sub);
-    InstNode *node_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_sub->inst),v_step,tmp_index++,preserve1,node_div);
+    InstNode *node_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_div->inst),v_step,tmp_index++,preserve1,node_div);
 
     preserve1->false_block = new_pre_block;
+    preserve1->true_block = mod_block;
     bb_add_prev(preserve1,new_pre_block);
 
     //icmp和br_i1
@@ -432,6 +434,7 @@ InstNode *insert_ir_mod(Value* v_init, Value* v_end, Value* v_step, BasicBlock* 
     value_init_int(v_zero,0);
     InstNode *node_icmp = auto_binary_node_insert_after(EQ, ins_get_dest(node_mod->inst),v_zero,tmp_index++,preserve1,node_mod);
     Instruction *ins_br_i1 = ins_new_unary_operator(br_i1, ins_get_dest(node_icmp->inst));
+    ins_br_i1->Parent = preserve1;
     InstNode *node_br_i1 = new_inst_node(ins_br_i1);
     ins_insert_after(node_br_i1,node_icmp);
     preserve1->tail_node = node_br_i1;
@@ -460,7 +463,7 @@ InstNode *insert_ir_mod(Value* v_init, Value* v_end, Value* v_step, BasicBlock* 
 
 //如果返回NULL代表确定的一次不走或wrong，返回int类型常数1表示一定走的这种
 //TODO 插入位置得改
-InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_cond,Value *v_step,Value *v_end,BasicBlock *block,BasicBlock *new_pre_block,InstNode* pos,Loop* loop){
+InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_cond,Value *v_step,Value *v_end,BasicBlock *mod_block,BasicBlock *new_pre_block,InstNode* pos,Loop* loop){
     Value *v_mod = (Value*) malloc(sizeof(Value));
     Value *v_update_modifier = (Value*) malloc(sizeof(Value));
     value_init_int(v_update_modifier,update_modifier);
@@ -479,23 +482,23 @@ InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_c
                     node_get_mod = (v_init == v_end) ? node_get_mod : NULL;
                     break;
                 case NOTEQ:  //TODO 我目前就默认没有wrong的情况了
-                    node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,block,node_sub);
-                    node_get_mod = auto_binary_node_insert_after(Mod,ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,block,node_get_times);
+                    node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,mod_block,node_sub);
+                    node_get_mod = auto_binary_node_insert_after(Mod,ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,mod_block,node_get_times);
                     break;
                 case LESSEQ: case GREATEQ:
-                    node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,block,node_sub);
+                    node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,mod_block,node_sub);
                     value_init_int(plus,1);
-                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,block,node_get_times);
-                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,block,node_plus); break;
+                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,mod_block,node_get_times);
+                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,mod_block,node_plus); break;
                 case LESS: case GREAT:
                     //我哭死了，你还要分类讨论, 一个基本块该不会还放不下你吧....还真放不下
                     //来个新block,block在mod_block之前
                     preserve1 = bb_create();
-                    preserve1->Parent = block->Parent;
-                    adjust_blocks(block,preserve1, loop);
-                    node_get_mod = insert_ir_mod(v_init,v_end,v_step,preserve1,block,new_pre_block,pos);
+                    preserve1->Parent = mod_block->Parent;
+                    adjust_blocks(mod_block,preserve1, loop);
+                    node_get_mod = insert_ir_mod(v_init,v_end,v_step,preserve1,mod_block,new_pre_block,pos);
                     break;
             }
             break;
@@ -505,21 +508,21 @@ InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_c
                     node_get_mod = (v_init == v_end) ? node_get_mod : NULL;
                     break;
                 case NOTEQ:
-                    node_sub = auto_binary_node_insert_after(Sub,v_init,v_end,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,block,node_sub);
-                    node_get_mod = auto_binary_node_insert_after(Mod,ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,block,node_get_times);
+                    node_sub = auto_binary_node_insert_after(Sub,v_init,v_end,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,mod_block,node_sub);
+                    node_get_mod = auto_binary_node_insert_after(Mod,ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,mod_block,node_get_times);
                     break;
                 case LESSEQ: case GREATEQ:
-                    node_sub = auto_binary_node_insert_after(Sub,v_init,v_end,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,block,node_sub);
+                    node_sub = auto_binary_node_insert_after(Sub,v_init,v_end,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,mod_block,node_sub);
                     value_init_int(plus,1);
-                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,block,node_get_times);
-                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,block,node_plus); break;
+                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,mod_block,node_get_times);
+                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,mod_block,node_plus); break;
                 case LESS: case GREAT:
                     preserve1 = bb_create();
-                    preserve1->Parent = block->Parent;
-                    adjust_blocks(block,preserve1,loop);
-                    node_get_mod = insert_ir_mod(v_end,v_init,v_step,preserve1,block,new_pre_block,pos);
+                    preserve1->Parent = mod_block->Parent;
+                    adjust_blocks(mod_block,preserve1,loop);
+                    node_get_mod = insert_ir_mod(v_end,v_init,v_step,preserve1,mod_block,new_pre_block,pos);
                     break;
             }
             break;
@@ -532,15 +535,15 @@ InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_c
                     node_get_mod = (v_init == v_end) ? node_get_mod : NULL;
                     break;
                 case NOTEQ:
-                    node_div = auto_binary_node_insert_after(Div,v_end,v_init,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,block,node_div);
-                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,block,node_get_times); break;
+                    node_div = auto_binary_node_insert_after(Div,v_end,v_init,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,mod_block,node_div);
+                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,mod_block,node_get_times); break;
                 case LESSEQ: case GREATEQ:
-                    node_div = auto_binary_node_insert_after(Div,v_end,v_init,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,block,node_div);
+                    node_div = auto_binary_node_insert_after(Div,v_end,v_init,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,mod_block,node_div);
                     value_init_int(plus,1);
-                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,block,node_get_times);
-                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,block,node_plus); break;
+                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,mod_block,node_get_times);
+                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,mod_block,node_plus); break;
                 case LESS: case GREAT:
                     //TODO 先不处理了
                     //times = tag ? (int) val : (int) val + 1
@@ -555,15 +558,15 @@ InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_c
                     node_get_mod = (v_init == v_end) ? node_get_mod : NULL;
                     break;
                 case NOTEQ:
-                    node_div = auto_binary_node_insert_after(Div,v_init,v_end,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,block,node_div);
-                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,block,node_get_times); break;
+                    node_div = auto_binary_node_insert_after(Div,v_init,v_end,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,mod_block,node_div);
+                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,mod_block,node_get_times); break;
                 case LESSEQ: case GREATEQ:
-                    node_div = auto_binary_node_insert_after(Div,v_init,v_end,tmp_index++,block,pos);
-                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,block,node_div);
+                    node_div = auto_binary_node_insert_after(Div,v_init,v_end,tmp_index++,mod_block,pos);
+                    node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_div->inst),v_step,tmp_index++,mod_block,node_div);
                     value_init_int(plus,1);
-                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,block,node_get_times);
-                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,block,node_plus); break;
+                    node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,mod_block,node_get_times);
+                    node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,mod_block,node_plus); break;
                 case LESS: case GREAT:
                     //TODO 先不处理了
                     //times = tag ? (int) val : (int) val + 1
@@ -688,6 +691,11 @@ void LOOP_UNROLL_EACH(Loop* loop)
             //loop->initValue->pdata->var_pdata.iVal += mod_num;
         }
     } else {
+        //* preserv1      : 要分类讨论的余数计算
+        //mod_block       : 算余数
+        //new_pre_block   : 循环变量余数的phi
+        //loop_pre_block  : 装循环体
+
         mod_before = true;
         //用ir算余数
         //肯定有新block
@@ -700,32 +708,34 @@ void LOOP_UNROLL_EACH(Loop* loop)
         adjust_blocks(new_pre_block,mod_block,loop);
 
         //给mod_block建一条head
-        InstNode *pos = loop->head->head_node;
         Instruction *label = ins_new_zero_operator(Label);
         InstNode *node_label = new_inst_node(label);
         label->Parent = mod_block;
+        InstNode *pos = loop->head->head_node;
         ins_insert_before(node_label,pos);
         mod_block->head_node = node_label;         //然后算余数的ir都在这条ir后面
+
+        //给new_pre_block建一条head　　．先弄这个，因为后面get_mod要用
+        Instruction *label2 = ins_new_zero_operator(Label);
+        label2->Parent = new_pre_block;
+        InstNode *node_label2 = new_inst_node(label2);
+        new_pre_block->head_node = node_label2;
 
         InstNode *node_mod = get_mod(loop->initValue,ins_modifier,ins_end_cond,v_step,v_end,mod_block, new_pre_block,node_label, loop);
         //br到下一个block循环mod次
         Instruction *ins_br = ins_new_zero_operator(br);
         ins_br->Parent = mod_block;
-        ins_br->Parent = mod_block;
         InstNode *node_br = new_inst_node(ins_br);
         ins_insert_after(node_br,node_mod);
         mod_block->tail_node = node_br;
 
-        //给new_pre_block建一条head
-        Instruction *label2 = ins_new_zero_operator(Label);
-        label2->Parent = new_pre_block;
-        InstNode *node_label2 = new_inst_node(label2);
         ins_insert_after(node_label2,node_br);
 
         //包装一个phi，初始值为0，每次加1,就专职用来计数这个补充余数的小循环
         Value *v_zero=(Value*) malloc(sizeof (Value));
         value_init_int(v_zero,0);
         Instruction *ins_phi = ins_new_zero_operator(Phi);
+        ins_phi->Parent = new_pre_block;
         HashSet * set = HashSetInit();
         pair *pair1 = (pair*) malloc(sizeof (pair));
         pair1->from = mod_block;
@@ -743,12 +753,13 @@ void LOOP_UNROLL_EACH(Loop* loop)
         ins_insert_after(node_br_i1,node_icmp);
         new_pre_block->tail_node = node_br_i1;
 
-        //基本块内循环 还要再来个block来装循环体
+        //基本块内循环 还要再来个block来装循环体           //TODO 目前还是只考虑了单基本块
         BasicBlock *loop_pre_block = bb_create();
         bb_add_prev(new_pre_block, loop_pre_block);
         new_pre_block->true_block = loop_pre_block;
         new_pre_block->false_block = loop->head;
         loop_pre_block->Parent = new_pre_block->Parent;
+        loop_pre_block->true_block = new_pre_block;
 
         //label
         Instruction *label3 = ins_new_zero_operator(Label);
@@ -758,23 +769,25 @@ void LOOP_UNROLL_EACH(Loop* loop)
         loop_pre_block->head_node = node_label3;
         //br
         Instruction *ins_br2 = ins_new_zero_operator(br);
-        ins_br->Parent = loop_pre_block;
+        ins_br2->Parent = loop_pre_block;
         InstNode *node_br2 = new_inst_node(ins_br2);
         ins_insert_after(node_br2,node_label3);
         loop_pre_block->tail_node = node_br2;
 
         //调用copy内容的函数 一次
-        copy_one_time(loop,1,loop_pre_block,v_new_valueMap,other_new_valueMap);
+        copy_for_mod(loop, loop_pre_block, v_new_valueMap, other_new_valueMap, 1);
         // 一次add +1,然后存进phi_set
         Value *v_one=(Value*) malloc(sizeof (Value));
         value_init_int(v_one,1);
         InstNode *node_plus = auto_binary_node_insert_before(Add, ins_get_dest(node_phi->inst),v_one,tmp_index++,loop_pre_block,loop_pre_block->tail_node);
+
         pair *pair2 = (pair*) malloc(sizeof (pair));
         pair2->define = ins_get_dest(node_plus->inst);
         pair2->from =loop_pre_block;
         HashSetAdd(set,pair2);
 
-        //TODO 更新归纳变量
+        //调整一下head phi中的from
+        adjust_phi_from(loop,new_pre_block,v_new_valueMap);
 
     }
 
