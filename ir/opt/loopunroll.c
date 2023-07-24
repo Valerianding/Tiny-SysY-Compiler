@@ -8,6 +8,21 @@ int tmp_index = 0;
 bool first_copy = true;
 bool mod_before = false;
 
+void adjust_phi_from(Loop *loop,BasicBlock *new_pre_block, HashMap *v_new_valueMap){
+    HashMapFirst(v_new_valueMap);
+    for(Pair *p = HashMapNext(v_new_valueMap); p != NULL; p = HashMapNext(v_new_valueMap)){
+        HashSet *pairSet = p->value;
+        HashSetFirst(pairSet);
+        for(pair* pp= HashSetNext(pairSet);pp!=NULL;pp= HashSetNext(pairSet))
+        {
+            //更新初值的到达块为new_pre_block
+            if(!HashSetFind(loop->loopBody, pp->from)){
+                pp->from = new_pre_block;
+            }
+        }
+    }
+}
+
 void adjust_blocks(BasicBlock* head, BasicBlock* new_pre_block,Loop* loop){
     //将Head的前驱对应的后继全部指向new_pre_block
     HashSet *preBlocks = head->preBlocks;
@@ -22,7 +37,6 @@ void adjust_blocks(BasicBlock* head, BasicBlock* new_pre_block,Loop* loop){
                 block->false_block = new_pre_block;
                 bb_delete_one_prev(head,block);
             }
-            printf("pre %d\n",block->id);
             bb_add_prev(block, new_pre_block);
         }
     }
@@ -98,6 +112,7 @@ void update_replace_value_mod(HashMap* map,Value* v_before,Value* v_replace, Loo
                     HashSetRemove(pairSet,pp);
                     pp->define=v_replace;
                     HashSetAdd(pairSet,pp);
+                    return;
                 }
             }
         }
@@ -160,8 +175,8 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
                         v_l= HashMapGet(other_new_valueMap,lhs);
                     else   //是无所谓的，比如是常数
                         v_l=copy_value(lhs,tmp_index++);
-                    if(v_l->VTy->ID==Int || v_l->VTy->ID==Float)
-                        tmp_index--;
+//                    if(v_l->VTy->ID==Int || v_l->VTy->ID==Float)
+//                        tmp_index--;
 
                     //如果有第二个操作数
                     if(rhs!=NULL)
@@ -176,8 +191,8 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
                             v_r= HashMapGet(other_new_valueMap,rhs);
                         else   //是无所谓的，比如是常数
                             v_r=copy_value(rhs,tmp_index);
-                        if(v_r->VTy->ID==Int || v_r->VTy->ID==Float)
-                            tmp_index--;
+//                        if(v_r->VTy->ID==Int || v_r->VTy->ID==Float)
+//                            tmp_index--;
                         copy_ins= ins_new_binary_operator(currNode->inst->Opcode,v_l,v_r);
                     }
                     else
@@ -210,7 +225,6 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
                     else
                         update_replace_value(v_new_valueMap,v_dest,new_dest);
                     HashMapPut(other_new_valueMap,v_dest ,new_dest);
-                    mod_before = false;
                 }
 
                 currNode = get_next_inst(currNode);
@@ -257,8 +271,8 @@ void copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,HashMap
                         else
                             v_l=copy_value(lhs,tmp_index++);
                     }
-                    if(v_l->VTy->ID==Int || v_l->VTy->ID==Float)
-                        tmp_index--;
+//                    if(v_l->VTy->ID==Int || v_l->VTy->ID==Float)
+//                        tmp_index--;
 
                     //如果有第二个操作数
                     if(rhs!=NULL)
@@ -277,8 +291,8 @@ void copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,HashMap
                             else
                                 v_r=copy_value(rhs,tmp_index++);
                         }
-                        if(v_r->VTy->ID==Int || v_r->VTy->ID==Float)
-                            tmp_index--;
+//                        if(v_r->VTy->ID==Int || v_r->VTy->ID==Float)
+//                            tmp_index--;
                         copy_ins= ins_new_binary_operator(currNode->inst->Opcode,v_l,v_r);
                     }
                     else
@@ -667,8 +681,11 @@ void LOOP_UNROLL_EACH(Loop* loop)
                 copy_for_mod(loop, new_pre_block, v_new_valueMap, other_new_valueMap ,0);
             }
 
+            //调整一下head phi中的from
+            adjust_phi_from(loop,new_pre_block,v_new_valueMap);
+
             //更新归纳变量
-            loop->initValue->pdata->var_pdata.iVal += mod_num;
+            //loop->initValue->pdata->var_pdata.iVal += mod_num;
         }
     } else {
         mod_before = true;
@@ -765,6 +782,7 @@ void LOOP_UNROLL_EACH(Loop* loop)
     //TODO 要保存最初的ir,或者说给block一个alias是自己的副本，最后释放
     for(int i = 0;i < update_modifier-1;i++){
         copy_one_time(loop, 0, NULL, v_new_valueMap,other_new_valueMap);
+        mod_before = false;
     }
     //遍历loop, 删去作挡板的tmp
     HashSetFirst(loop->loopBody);
