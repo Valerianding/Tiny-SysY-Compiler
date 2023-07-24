@@ -419,7 +419,7 @@ InstNode *insert_ir_mod(Value* v_init, Value* v_end, Value* v_step, BasicBlock* 
     Instruction *ins_label = ins_new_zero_operator(Label);
     InstNode *node_label = new_inst_node(ins_label);
     ins_label->Parent = preserve1;
-    ins_insert_after(node_label, pos);
+    ins_insert_before(node_label, pos);
     preserve1->head_node = node_label;
     InstNode *node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,preserve1,node_label);
     InstNode *node_div = auto_binary_node_insert_after(Div,ins_get_dest(node_sub->inst),v_step,tmp_index++,preserve1,node_sub);
@@ -442,22 +442,28 @@ InstNode *insert_ir_mod(Value* v_init, Value* v_end, Value* v_step, BasicBlock* 
     //填充mod块,需要做一个+1,br的话mod_block进来之前就已经有了
     Value *v_one = (Value*) malloc(sizeof (Value));
     value_init_int(v_one,1);
-    InstNode *node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_div->inst),v_one,tmp_index++,mod_block,mod_block->head_node);
+    InstNode *node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_mod->inst),v_one,tmp_index++,mod_block,mod_block->head_node);
+    Instruction *ins_br_mod = ins_new_zero_operator(br);
+    InstNode *node_br_mod = new_inst_node(ins_br_mod);
+    ins_br_mod->Parent = mod_block;
+    ins_insert_after(node_br_mod,node_plus);
+    mod_block->tail_node = node_br_mod;
 
     //new_pre_block生成一条phi,node_mod是一条phi
     Instruction *ins_phi = ins_new_zero_operator(Phi);
+    ins_phi->Parent = new_pre_block;
     HashSet *set = HashSetInit();
     pair *pair1 = (pair*) malloc(sizeof (pair));
     pair *pair2 = (pair*) malloc(sizeof (pair));
     pair1->from =preserve1;
-    pair1->define = ins_get_dest(node_div->inst);
+    pair1->define = ins_get_dest(node_mod->inst);
     pair2->from = mod_block;
     pair2->define = ins_get_dest(node_plus->inst);
     HashSetAdd(set,pair1);
     HashSetAdd(set,pair2);
     ins_get_value_with_name_and_index(ins_phi,tmp_index++)->pdata->pairSet = set;
     InstNode *node_phi = new_inst_node(ins_phi);
-    ins_insert_after(node_phi,new_pre_block->head_node);
+    //ins_insert_after(node_phi,new_pre_block->head_node);            //暂时先不insert, 等new_pre_block的head insert了你再insert
     return node_phi;
 }
 
@@ -723,13 +729,21 @@ void LOOP_UNROLL_EACH(Loop* loop)
 
         InstNode *node_mod = get_mod(loop->initValue,ins_modifier,ins_end_cond,v_step,v_end,mod_block, new_pre_block,node_label, loop);
         //br到下一个block循环mod次
-        Instruction *ins_br = ins_new_zero_operator(br);
-        ins_br->Parent = mod_block;
-        InstNode *node_br = new_inst_node(ins_br);
-        ins_insert_after(node_br,node_mod);
-        mod_block->tail_node = node_br;
+        InstNode *node_br = NULL;
+        if(mod_block->tail_node!=NULL)              //有preserve
+            node_br = mod_block->tail_node;
+        else {           //无preserve
+            Instruction *ins_br = ins_new_zero_operator(br);
+            ins_br->Parent = mod_block;
+            node_br = new_inst_node(ins_br);
+            ins_insert_after(node_br,node_mod);
+            mod_block->tail_node = node_br;
+        }
 
-        ins_insert_after(node_label2,node_br);
+        ins_insert_after(node_label2,node_br);          //new_pre_block的label
+        if(node_mod->inst->Opcode == Phi){
+            ins_insert_after(node_mod,node_label2);
+        }
 
         //包装一个phi，初始值为0，每次加1,就专职用来计数这个补充余数的小循环
         Value *v_zero=(Value*) malloc(sizeof (Value));
@@ -743,7 +757,13 @@ void LOOP_UNROLL_EACH(Loop* loop)
         HashSetAdd(set,pair1);
         ins_get_value_with_name_and_index(ins_phi,tmp_index++)->pdata->pairSet = set;
         InstNode *node_phi = new_inst_node(ins_phi);
-        ins_insert_after(node_phi,node_label2);
+
+
+        if(node_mod->inst->Opcode != Phi)
+            ins_insert_after(node_phi,node_label2);
+        else
+            ins_insert_after(node_phi, node_mod);
+
         //生成一条icmp,在new_pre_block中
         InstNode *node_icmp = auto_binary_node_insert_after(LESS, ins_get_dest(ins_phi), ins_get_dest(node_mod->inst),tmp_index++,new_pre_block,node_phi);
         //生成br_i1
