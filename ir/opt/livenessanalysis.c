@@ -322,7 +322,7 @@ void calculateLiveness(Function *currentFunction){
 
     HashSetAdd(workList,exit);
 
-
+    bool firstTime = true;
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
@@ -491,14 +491,16 @@ void calculateLiveness(Function *currentFunction){
             HashSetCopyValue(block->in, tempSet);
         }
 
-        //printf("now block %d live in:",block->id);
+        printf("block %d live in:\n",block->id);
+        printf("function %s\n",block->Parent->name);
 //        HashSetFirst(block->in);
 //        for(Value *livein = HashSetNext(block->in); livein != NULL; livein = HashSetNext(block->in)){
 //            printf(" %s",livein->name);
 //        }
 //        printf("\n");
 
-        if(changed || (block == currentFunction->tail)){
+        if(changed || firstTime){
+            firstTime = false;
             HashSetFirst(allBlocks);
             for(BasicBlock *blocks = HashSetNext(allBlocks); blocks != NULL; blocks = HashSetNext(allBlocks)){
                 if(blocks != exit)
