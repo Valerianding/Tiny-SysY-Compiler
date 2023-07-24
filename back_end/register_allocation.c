@@ -3716,92 +3716,116 @@ void add_to_echo()
     #else
     for(int i=0;i<tac_cnt;i++)
     {
-        var_uid=find_var(echo_tac[i].dest_name);
-        if(var_uid>=0 && echo_tac[i].dest_use>=0)  
+        if(mem_temp==0)
         {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].reg_3[0]=-4;
-            else
+            var_uid=find_var(echo_tac[i].dest_name);
+            if(var_uid>=0 && echo_tac[i].dest_use>=0)  
             {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
-                if(echo_tac[i].dest_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].reg_3[0]=reg_uid*-1;
-                    else
-                        echo_tac[i].reg_3[0]=reg_uid;
-                }
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].reg_3[0]=-4;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].reg_3[0]=reg_uid+100;
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
+                    if(echo_tac[i].dest_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].reg_3[0]=reg_uid*-1;
+                        else
+                            echo_tac[i].reg_3[0]=reg_uid;
+                    }
                     else
-                        echo_tac[i].reg_3[0]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].reg_3[0]=reg_uid+100;
+                        else
+                            echo_tac[i].reg_3[0]=reg_uid;
+                    }
                 }
             }
-        }
-        else
-            echo_tac[i].reg_3[0]=0;
-        
-
-        var_uid=find_var(echo_tac[i].left_name);
-        if(var_uid>=0 && echo_tac[i].left_use>=0)  
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].reg_3[1]=104;
             else
-            {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
+                echo_tac[i].reg_3[0]=0;
             
-                if(echo_tac[i].left_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].reg_3[1]=reg_uid*-1;
-                    else
-                        echo_tac[i].reg_3[1]=reg_uid;
-                }
-                else
-                {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].reg_3[1]=reg_uid+100;
-                    else
-                        echo_tac[i].reg_3[1]=reg_uid;
-                }
-                
-            }
-        }
-        else
-            echo_tac[i].reg_3[1]=0;
 
-        var_uid=find_var(echo_tac[i].right_name);
-        if(var_uid>=0 && echo_tac[i].right_use>=0)  
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].reg_3[2]=105;
-            else
+            var_uid=find_var(echo_tac[i].left_name);
+            if(var_uid>=0 && echo_tac[i].left_use>=0)  
             {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
-                if(echo_tac[i].left_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].reg_3[2]=reg_uid*-1;
-                    else
-                        echo_tac[i].reg_3[2]=reg_uid;
-                }
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].reg_3[1]=104;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].reg_3[2]=reg_uid+100;
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
+                
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].reg_3[1]=reg_uid*-1;
+                        else
+                            echo_tac[i].reg_3[1]=reg_uid;
+                    }
                     else
-                        echo_tac[i].reg_3[2]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].reg_3[1]=reg_uid+100;
+                        else
+                            echo_tac[i].reg_3[1]=reg_uid;
+                    }
+                    
                 }
             }
+            else
+                echo_tac[i].reg_3[1]=0;
+
+            var_uid=find_var(echo_tac[i].right_name);
+            if(var_uid>=0 && echo_tac[i].right_use>=0)  
+            {
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].reg_3[2]=105;
+                else
+                {
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].reg_3[2]=reg_uid*-1;
+                        else
+                            echo_tac[i].reg_3[2]=reg_uid;
+                    }
+                    else
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].reg_3[2]=reg_uid+100;
+                        else
+                            echo_tac[i].reg_3[2]=reg_uid;
+                    }
+                }
+            }
+            else
+                echo_tac[i].reg_3[2]=0;
         }
         else
-            echo_tac[i].reg_3[2]=0;
+        {
+            if(echo_tac[i].dest_use==0)
+                echo_tac[i].irnode->_reg_[0]=-4;
+            else if(echo_tac[i].dest_use==1)
+                echo_tac[i].irnode->_reg_[0]=104;
+            else 
+                echo_tac[i].irnode->_reg_[0]=0;
+            if(echo_tac[i].left_use==0)
+                echo_tac[i].irnode->_reg_[1]=-5;
+            else if(echo_tac[i].left_use==1)
+                echo_tac[i].irnode->_reg_[1]=105;
+            else 
+                echo_tac[i].irnode->_reg_[1]=0;
+            if(echo_tac[i].right_use==0)
+                echo_tac[i].irnode->_reg_[2]=-6;
+            else if(echo_tac[i].right_use==1)
+                echo_tac[i].irnode->_reg_[2]=106;
+            else 
+                echo_tac[i].irnode->_reg_[2]=0;
+        }
     }
     #endif
 }
