@@ -1444,37 +1444,6 @@ void travel_ir(InstNode *instruction_node)
     // InstNode * temp_instruction_node= get_next_inst(instruction_node);
 
     InstNode * temp_instruction_node= instruction_node;
-    // #if  reg_alloc_test
-    //     while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=FunEnd)
-    //     {
-    //         // Instruction *instruction=temp_instruction_node->inst;
-    //         temp_cnt++;
-    //         temp_instruction_node= get_next_inst(temp_instruction_node);
-    //     }
-    //     echo_tac = (struct reg_now *)malloc(sizeof(struct  reg_now)*(temp_cnt+30));
-    //     instruction_node= get_next_inst(instruction_node);
-    //     Value *v_cur_array=NULL;
-    //     for(int i=0;i<temp_cnt+30;i++)
-    //     {
-    //         echo_tac[i].dest_name=NULL;
-    //         echo_tac[i].left_name=NULL;
-    //         echo_tac[i].right_name=NULL;
-    //         echo_tac[i].dest_use=-1;
-    //         echo_tac[i].left_use=-1;
-    //         echo_tac[i].right_use=-1;
-    //         echo_tac[i].irnode=NULL;
-    //         echo_tac[i].give_param=0;
-    //     }
-    //     int p=0;
-    //     int if_br_ir=0;
-    //     // InstNode* params[1000];
-    //     // InstNode * one_param[1000];
-    //     int give_count=0;
-    //     // for(int i=0;i<1000;i++)
-    //     //     params[i]=NULL;
-
-    //     while (instruction_node!=NULL && instruction_node->inst->Opcode!=FunEnd)
-    // #else
     while (temp_instruction_node!=NULL && temp_instruction_node->inst->Opcode!=ALLBEGIN && temp_instruction_node->inst->Opcode!=br
            && temp_instruction_node->inst->Opcode!=br_i1
            && temp_instruction_node->inst->Opcode!=br_i1_false && temp_instruction_node->inst->Opcode!=br_i1_true
@@ -1515,7 +1484,6 @@ void travel_ir(InstNode *instruction_node)
 
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN
            && instruction_node->inst->Opcode!=FunEnd)
-        // #endif
     {
         // printf("opcode:%d\t%d\t%d\n", instruction_node->inst->Opcode,__LINE__,instruction_node->inst->i);
         Instruction *instruction=instruction_node->inst;
@@ -1596,8 +1564,8 @@ void travel_ir(InstNode *instruction_node)
             }
             case br_i1:
             {
-                // echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
-                // echo_tac[tac_cnt].dest_use=1;
+                echo_tac[tac_cnt].dest_name=instruction->user.use_list->Val->name;
+                echo_tac[tac_cnt].dest_use=1;
                 echo_tac[tac_cnt].jumpto[0]=instruction->user.value.pdata->instruction_pdata.true_goto_location;
                 echo_tac[tac_cnt].jumpto[1]=instruction->user.value.pdata->instruction_pdata.false_goto_location;
                 if_br_ir = 1;
@@ -1621,15 +1589,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp eq i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp eq i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1640,8 +1608,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp eq i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1649,8 +1617,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1666,15 +1634,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp slt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp slt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1685,8 +1653,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp slt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1694,8 +1662,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1710,15 +1678,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp ne i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp ne i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1729,8 +1697,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp ne i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1738,8 +1706,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1754,15 +1722,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp sgt i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp sgt i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1773,8 +1741,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp sgt i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1782,8 +1750,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1798,15 +1766,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp sge i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp sge i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1817,8 +1785,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp sge i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1826,8 +1794,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -1842,15 +1810,15 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         // printf(" %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                         //fpintf(fptr," %s = icmp sle i32 %d,%d\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
                         echo_tac[tac_cnt].right_use=1;
                         // printf(" %s = icmp sle i32 %d,%s\n",instruction->user.value.name,instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
@@ -1861,8 +1829,8 @@ void travel_ir(InstNode *instruction_node)
                 {
                     if(instruction->user.use_list[1].Val->VTy->ID==Int||instruction->user.use_list[1].Val->VTy->ID==Float)
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         // printf(" %s = icmp sle i32 %s,%d\n",instruction->user.value.name,instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->pdata->var_pdata.iVal);
@@ -1870,8 +1838,8 @@ void travel_ir(InstNode *instruction_node)
                     }
                     else
                     {
-                        // echo_tac[tac_cnt].dest_name=instruction->user.value.name;
-                        // echo_tac[tac_cnt].dest_use=0;
+                        echo_tac[tac_cnt].dest_name=instruction->user.value.name;
+                        echo_tac[tac_cnt].dest_use=0;
                         echo_tac[tac_cnt].left_name=instruction->user.use_list->Val->name;
                         echo_tac[tac_cnt].left_use=1;
                         echo_tac[tac_cnt].right_name=instruction->user.use_list[1].Val->name;
@@ -3392,8 +3360,73 @@ void reg_control_func(Function *currentFunction)
 {
 #if reg_alloc_test
     BasicBlock *entry = currentFunction->entry;
+        BasicBlock *end = currentFunction->tail;
+        tac_cnt_gloabl=0;
+        clear_visited_flag(entry);
+        block_num=0;
+        InstNode *currNode = entry->head_node;
+        BasicBlock *currNodeParent = currNode->inst->Parent;
+        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*40000);
+        block_list[block_num++].reg_block=currNode->inst->Parent;
+        block_list[0].reg_block->visited=1;
+        while(currNode != get_next_inst(end->tail_node)){
+            currNodeParent = currNode->inst->Parent;
+            if(currNodeParent->visited == false){
+                currNodeParent->visited = true;
+                block_list[block_num++].reg_block=currNode->inst->Parent;
+            }
+            currNode = get_next_inst(currNode);
+        }
+        InstNode *headNode = entry->head_node;
+        reg_param_num = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
+        printf("func block_num:%d\n\n",block_num);
+        // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
+        clear_visited_flag(entry);
+        init_global(block_list[0].reg_block);
+        if(block_num>1000)  mem_temp=1;
+        for(int i=0;i<block_num;i++)
+        {
+            // printf("block:%d\n",i);
+            reg_control_block_temp(block_list[i].reg_block);
+        }
+        if(mem_temp)
+        {
+            printf("use mem\n");
+        }
+        else
+        {
+            jumpfromto();
+            // for(int i=0;i<tac_cnt_gloabl;i++)
+            //     printf("%d: %s %s %s\n",i,echo_tac_global[i].dest_name,echo_tac_global[i].left_name,echo_tac_global[i].right_name);
+            // for(int i=0;i<var_num_global;i++)
+            //     printf("%d:%s %d\n",i,live_global[i].name,live_global[i].first);
+            init_RIG();
+            create_RIG();
+            check_edge();
+            //print_info();
+            minimize_RIG();
+            init_non_available_colors();
+            while(first_fit_coloring())
+            {
+                reset_colors();
+                reset_queue();
+                spill_variable();
+            }
+            // test_ans();
+            // print_colors();
+            color_removed();
+        }
+        add_to_echo();
+        // if(mem_temp==0)
+            // visittac(0);
+        echo_to_ir();
+        clean_reg_global();
+        free(block_list);
+        block_list=NULL;
+#else
+    BasicBlock *entry = currentFunction->entry;
     BasicBlock *end = currentFunction->tail;
-    tac_cnt_gloabl=0;
+
     clear_visited_flag(entry);
     block_num=0;
     InstNode *currNode = entry->head_node;
@@ -3411,83 +3444,18 @@ void reg_control_func(Function *currentFunction)
     }
     InstNode *headNode = entry->head_node;
     reg_param_num = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
-    printf("func block_num:%d\n\n",block_num);
+    // printf("func block_num:%d\n\n",block_num);
     // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
     clear_visited_flag(entry);
     init_global(block_list[0].reg_block);
-    if(block_num>1000)  mem_temp=1;
     for(int i=0;i<block_num;i++)
     {
         // printf("block:%d\n",i);
-        reg_control_block_temp(block_list[i].reg_block);
+        reg_control_block(block_list[i].reg_block);
     }
-    if(mem_temp)
-    {
-        printf("use mem\n");
-    }
-    else
-    {
-        jumpfromto();
-        // for(int i=0;i<tac_cnt_gloabl;i++)
-        //     printf("%d: %s %s %s\n",i,echo_tac_global[i].dest_name,echo_tac_global[i].left_name,echo_tac_global[i].right_name);
-        // for(int i=0;i<var_num_global;i++)
-        //     printf("%d:%s %d\n",i,live_global[i].name,live_global[i].first);
-        init_RIG();
-        create_RIG();
-        check_edge();
-        //print_info();
-        minimize_RIG();
-        init_non_available_colors();
-        while(first_fit_coloring())
-        {
-            reset_colors();
-            reset_queue();
-            spill_variable();
-        }
-        // test_ans();
-        // print_colors();
-        color_removed();
-    }
-    add_to_echo();
-    // if(mem_temp==0)
-    // visittac(0);
     echo_to_ir();
-    clean_reg_global();
     free(block_list);
     block_list=NULL;
-#else
-    BasicBlock *entry = currentFunction->entry;
-        BasicBlock *end = currentFunction->tail;
-
-        clear_visited_flag(entry);
-        block_num=0;
-        InstNode *currNode = entry->head_node;
-        BasicBlock *currNodeParent = currNode->inst->Parent;
-        block_list = (struct BLOCK_list *)malloc(sizeof(struct BLOCK_list)*10000);
-        block_list[block_num++].reg_block=currNode->inst->Parent;
-        block_list[0].reg_block->visited=1;
-        while(currNode != get_next_inst(end->tail_node)){
-            currNodeParent = currNode->inst->Parent;
-            if(currNodeParent->visited == false){
-                currNodeParent->visited = true;
-                block_list[block_num++].reg_block=currNode->inst->Parent;
-            }
-            currNode = get_next_inst(currNode);
-        }
-        InstNode *headNode = entry->head_node;
-        reg_param_num = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
-        // printf("func block_num:%d\n\n",block_num);
-        // for(int i=0;i<block_num;i++)    printf("start_id:%d\n",block_list[i].reg_block->id);
-        clear_visited_flag(entry);
-        init_global(block_list[0].reg_block);
-        for(int i=0;i<block_num;i++)
-        {
-            // printf("block:%d\n",i);
-            reg_control_block(block_list[i].reg_block);
-        }
-        echo_to_ir();
-        free(block_list);
-        block_list=NULL;
 #endif
     return ;
 }
@@ -3509,9 +3477,9 @@ void reg_control_block(BasicBlock *cur)
     bian_init(cur);
     if(mem_temp)
     {
-        add_to_ir();
+        add_to_echo();
+        add_to_global();
         clean_reg();
-        mem_temp=0;
         return ;
     }
     init_RIG();
@@ -3748,92 +3716,116 @@ void add_to_echo()
 #else
     for(int i=0;i<tac_cnt;i++)
     {
-        var_uid=find_var(echo_tac[i].dest_name);
-        if(var_uid>=0 && echo_tac[i].dest_use>=0)
+        if(mem_temp==0)
         {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].reg_3[0]=-4;
-            else
+            var_uid=find_var(echo_tac[i].dest_name);
+            if(var_uid>=0 && echo_tac[i].dest_use>=0)
             {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
-                if(echo_tac[i].dest_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].reg_3[0]=reg_uid*-1;
-                    else
-                        echo_tac[i].reg_3[0]=reg_uid;
-                }
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].reg_3[0]=-4;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].reg_3[0]=reg_uid+100;
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
+                    if(echo_tac[i].dest_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].reg_3[0]=reg_uid*-1;
+                        else
+                            echo_tac[i].reg_3[0]=reg_uid;
+                    }
                     else
-                        echo_tac[i].reg_3[0]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].reg_3[0]=reg_uid+100;
+                        else
+                            echo_tac[i].reg_3[0]=reg_uid;
+                    }
                 }
             }
-        }
-        else
-            echo_tac[i].reg_3[0]=0;
-
-
-        var_uid=find_var(echo_tac[i].left_name);
-        if(var_uid>=0 && echo_tac[i].left_use>=0)
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].reg_3[1]=104;
             else
-            {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
+                echo_tac[i].reg_3[0]=0;
 
-                if(echo_tac[i].left_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].reg_3[1]=reg_uid*-1;
-                    else
-                        echo_tac[i].reg_3[1]=reg_uid;
-                }
+
+            var_uid=find_var(echo_tac[i].left_name);
+            if(var_uid>=0 && echo_tac[i].left_use>=0)
+            {
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].reg_3[1]=104;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].reg_3[1]=reg_uid+100;
-                    else
-                        echo_tac[i].reg_3[1]=reg_uid;
-                }
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
 
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].reg_3[1]=reg_uid*-1;
+                        else
+                            echo_tac[i].reg_3[1]=reg_uid;
+                    }
+                    else
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].reg_3[1]=reg_uid+100;
+                        else
+                            echo_tac[i].reg_3[1]=reg_uid;
+                    }
+
+                }
             }
-        }
-        else
-            echo_tac[i].reg_3[1]=0;
-
-        var_uid=find_var(echo_tac[i].right_name);
-        if(var_uid>=0 && echo_tac[i].right_use>=0)
-        {
-            reg_uid=list_of_variables[var_uid].color;
-            if(reg_uid<0)   echo_tac[i].reg_3[2]=105;
             else
+                echo_tac[i].reg_3[1]=0;
+
+            var_uid=find_var(echo_tac[i].right_name);
+            if(var_uid>=0 && echo_tac[i].right_use>=0)
             {
-                if(reg_uid==5)  reg_uid=12;
-                else    reg_uid+=6;
-                if(echo_tac[i].left_use==0)
-                {
-                    if(i==live[var_uid].last_def&&live[var_uid].isout)
-                        echo_tac[i].reg_3[2]=reg_uid*-1;
-                    else
-                        echo_tac[i].reg_3[2]=reg_uid;
-                }
+                reg_uid=list_of_variables[var_uid].color;
+                if(reg_uid<0)   echo_tac[i].reg_3[2]=105;
                 else
                 {
-                    if(i==live[var_uid].first_use&&live[var_uid].isin)
-                        echo_tac[i].reg_3[2]=reg_uid+100;
+                    if(reg_uid==5)  reg_uid=12;
+                    else    reg_uid+=6;
+                    if(echo_tac[i].left_use==0)
+                    {
+                        if(i==live[var_uid].last_def&&live[var_uid].isout)
+                            echo_tac[i].reg_3[2]=reg_uid*-1;
+                        else
+                            echo_tac[i].reg_3[2]=reg_uid;
+                    }
                     else
-                        echo_tac[i].reg_3[2]=reg_uid;
+                    {
+                        if(i==live[var_uid].first_use&&live[var_uid].isin)
+                            echo_tac[i].reg_3[2]=reg_uid+100;
+                        else
+                            echo_tac[i].reg_3[2]=reg_uid;
+                    }
                 }
             }
+            else
+                echo_tac[i].reg_3[2]=0;
         }
         else
-            echo_tac[i].reg_3[2]=0;
+        {
+            if(echo_tac[i].dest_use==0)
+                echo_tac[i].reg_3[0]=-4;
+            else if(echo_tac[i].dest_use==1)
+                echo_tac[i].reg_3[0]=104;
+            else
+                echo_tac[i].reg_3[0]=0;
+            if(echo_tac[i].left_use==0)
+                echo_tac[i].reg_3[1]=-5;
+            else if(echo_tac[i].left_use==1)
+                echo_tac[i].reg_3[1]=105;
+            else
+                echo_tac[i].reg_3[1]=0;
+            if(echo_tac[i].right_use==0)
+                echo_tac[i].reg_3[2]=-6;
+            else if(echo_tac[i].right_use==1)
+                echo_tac[i].reg_3[2]=106;
+            else
+                echo_tac[i].reg_3[2]=0;
+        }
     }
 #endif
 }
@@ -3866,7 +3858,7 @@ void add_to_ir()
                 else    reg_uid+=6;
                 if(echo_tac[i].dest_use==0)
                 {
-                    echo_tac[i].irnode->_reg_[0]=reg_uid;
+                        echo_tac[i].irnode->_reg_[0]=reg_uid;
                 }
                 else
                 {

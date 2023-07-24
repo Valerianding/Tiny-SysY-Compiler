@@ -25,7 +25,7 @@
 
 
 #define all_in_memory 0
-#define reg_alloc_test 1
+#define reg_alloc_test 0 //0为块内，1为块间
 struct reg_queue
 {
     int variable_index;

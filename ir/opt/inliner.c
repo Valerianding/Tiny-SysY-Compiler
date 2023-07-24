@@ -140,7 +140,7 @@ void label_func_inline_llvm(struct _InstNode* instNode_list, int threshold)
             Value *func_callee = NULL;
             if(currNode->inst->Opcode==Call)
                 func_callee = symtab_lookup_withmap(this, currNode->inst->user.use_list->Val->name, &this->value_maps->next->map);
-            if(currNode->inst->Opcode==Call && func_callee && (func_callee->name != funcValue->name)){
+            if(currNode->inst->Opcode==Call && func_callee && (strcmp(func_callee->name,funcValue->name)!=0)){
                 //如果被调函数的cost已经超过threshold了, caller---->callee就不加入进内联队列了
                 int *callee_cost = HashMapGet(cost_map,func_callee);
                 if(*callee_cost > threshold){
@@ -406,6 +406,12 @@ int func_inline(struct _InstNode* instruction_node, int threshold)
 
         if(instruction->Opcode==Call)
         {
+            Value *for_clear_params = symtab_lookup_withmap(this, instruction->user.use_list->Val->name,&this->value_maps->next->map);
+            if(!for_clear_params)
+                for_clear_params = symtab_lookup_withmap(this, instruction->user.use_list->Val->name,&this->value_maps->next->next->map);
+            //在one_param里填满参数
+            get_param_list(for_clear_params,&give_count);
+
             int num=0;
             Value *v_func = NULL;
             begin_func=find_func_begin(start,instruction->user.use_list->Val->name);
@@ -420,9 +426,6 @@ int func_inline(struct _InstNode* instruction_node, int threshold)
                 {
                     //记一下参数个数，比它小的都是参数，要区别处理(原value的alias为NULL)
                     num= v_func->pdata->symtab_func_pdata.param_num;
-
-                    //在one_param里填满参数
-                    get_param_list(v_func,&give_count);
                 }
 
                 //无参数直接上手

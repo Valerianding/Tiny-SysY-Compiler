@@ -327,14 +327,19 @@ int array_suffix(Value*array,int which_dimension){
 //}
 bool imm_is_valid(int x)
 {
+    if(x>=0 && x<=255){
+        return true;
+    }
     for (int i = 0; i < 32; i += 2)
     {
         int rotated = (x << i) | (x >> (32 - i));
         if (rotated >= 0 && rotated <= 255)
         {
+//            printf("%d is valid\n",x);
             return true;
         }
     }
+//    printf("%d is not valid\n",x);
     return false;
 }
 //bool imm_is_valid(int x) { //int版本,有问题
@@ -853,14 +858,15 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
     int left_reg_abs;
     int dest_reg_abs=abs(dest_reg);
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
-
-    if(isImmFloatType(value1->VTy)){
-        float fx=value1->pdata->var_pdata.fVal;
-        int x=*(int*)(&fx);
-        handle_illegal_imm1(0,x);
-        left_reg_abs=0;
-    }
-    else if(isLocalVarFloatType(value1->VTy)){
+//    if(isImmFloatType(value1->VTy)){
+//        assert(false);
+//        float fx=value1->pdata->var_pdata.fVal;
+//        int x=*(int*)(&fx);
+//        handle_illegal_imm1(0,x);
+//        left_reg_abs=0;
+//    }
+//    else
+    if(isLocalVarFloatType(value1->VTy)){
         assert(left_reg!=0);
         if(left_reg>100){
             left_reg_abs=left_reg-100;
@@ -870,9 +876,9 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
             left_reg_abs=left_reg;
         }
     }
-    else{
-        assert(false);
-    }
+//    else{
+//        assert(false);
+//    }
     printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
     fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
     printf("\tvcvt.s32.f32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
@@ -895,12 +901,14 @@ InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
     int dest_reg_abs=abs(dest_reg);
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
 
-    if(isImmIntType(value1->VTy)){
-        int x=value1->pdata->var_pdata.iVal;
-        handle_illegal_imm1(0,x);
-        left_reg_abs=0;
-    }
-    else if(isLocalVarIntType(value1->VTy)){
+//    if(isImmIntType(value1->VTy)){
+//        assert(false);
+//        int x=value1->pdata->var_pdata.iVal;
+//        handle_illegal_imm1(0,x);
+//        left_reg_abs=0;
+//    }
+//    else
+    if(isLocalVarIntType(value1->VTy)){
         assert(left_reg!=0);
         if(left_reg>100){
             left_reg_abs=left_reg-100;
@@ -910,9 +918,9 @@ InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
             left_reg_abs=left_reg;
         }
     }
-    else{
-        assert(false);
-    }
+//    else{
+//        assert(false);
+//    }
     printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
     fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
     printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
@@ -7148,12 +7156,13 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             fprintf(fp,"\tsub\tsp,sp,r4\n");
         }
 
-//        调整fp帧指针,在一个函数中fp只需要在FunBegin的时候调整一次就可以了
-//        具体实现的时候，需要将fp改为其对应的具体的寄存器
-        printf("\tmov\tr11,sp\n");
-        fprintf(fp,"\tmov\tr11,sp\n");
+
 
     }
+//        调整fp帧指针,在一个函数中fp只需要在FunBegin的时候调整一次就可以了
+//        具体实现的时候，需要将fp改为其对应的具体的寄存器
+    printf("\tmov\tr11,sp\n");
+    fprintf(fp,"\tmov\tr11,sp\n");
 
     if(param_num>0){
 //        存在参数的传递
