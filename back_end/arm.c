@@ -858,8 +858,8 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
     int left_reg_abs;
     int dest_reg_abs=abs(dest_reg);
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
-
     if(isImmFloatType(value1->VTy)){
+        assert(false);
         float fx=value1->pdata->var_pdata.fVal;
         int x=*(int*)(&fx);
         handle_illegal_imm1(0,x);
@@ -901,6 +901,7 @@ InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
 
     if(isImmIntType(value1->VTy)){
+        assert(false);
         int x=value1->pdata->var_pdata.iVal;
         handle_illegal_imm1(0,x);
         left_reg_abs=0;
