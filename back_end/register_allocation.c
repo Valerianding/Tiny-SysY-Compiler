@@ -3808,23 +3808,23 @@ void add_to_echo()
         else
         {
             if(echo_tac[i].dest_use==0)
-                echo_tac[i].irnode->_reg_[0]=-4;
+                echo_tac[i].reg_3[0]=-4;
             else if(echo_tac[i].dest_use==1)
-                echo_tac[i].irnode->_reg_[0]=104;
+                echo_tac[i].reg_3[0]=104;
             else 
-                echo_tac[i].irnode->_reg_[0]=0;
+                echo_tac[i].reg_3[0]=0;
             if(echo_tac[i].left_use==0)
-                echo_tac[i].irnode->_reg_[1]=-5;
+                echo_tac[i].reg_3[1]=-5;
             else if(echo_tac[i].left_use==1)
-                echo_tac[i].irnode->_reg_[1]=105;
+                echo_tac[i].reg_3[1]=105;
             else 
-                echo_tac[i].irnode->_reg_[1]=0;
+                echo_tac[i].reg_3[1]=0;
             if(echo_tac[i].right_use==0)
-                echo_tac[i].irnode->_reg_[2]=-6;
+                echo_tac[i].reg_3[2]=-6;
             else if(echo_tac[i].right_use==1)
-                echo_tac[i].irnode->_reg_[2]=106;
+                echo_tac[i].reg_3[2]=106;
             else 
-                echo_tac[i].irnode->_reg_[2]=0;
+                echo_tac[i].reg_3[2]=0;
         }
     }
     #endif
