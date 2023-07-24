@@ -327,14 +327,19 @@ int array_suffix(Value*array,int which_dimension){
 //}
 bool imm_is_valid(int x)
 {
+    if(x>=0 && x<=255){
+        return true;
+    }
     for (int i = 0; i < 32; i += 2)
     {
         int rotated = (x << i) | (x >> (32 - i));
         if (rotated >= 0 && rotated <= 255)
         {
+//            printf("%d is valid\n",x);
             return true;
         }
     }
+//    printf("%d is not valid\n",x);
     return false;
 }
 //bool imm_is_valid(int x) { //int版本,有问题
@@ -7148,12 +7153,13 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             fprintf(fp,"\tsub\tsp,sp,r4\n");
         }
 
-//        调整fp帧指针,在一个函数中fp只需要在FunBegin的时候调整一次就可以了
-//        具体实现的时候，需要将fp改为其对应的具体的寄存器
-        printf("\tmov\tr11,sp\n");
-        fprintf(fp,"\tmov\tr11,sp\n");
+
 
     }
+//        调整fp帧指针,在一个函数中fp只需要在FunBegin的时候调整一次就可以了
+//        具体实现的时候，需要将fp改为其对应的具体的寄存器
+    printf("\tmov\tr11,sp\n");
+    fprintf(fp,"\tmov\tr11,sp\n");
 
     if(param_num>0){
 //        存在参数的传递
