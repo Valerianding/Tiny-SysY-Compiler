@@ -283,6 +283,30 @@ void calculateLiveness(Function *currentFunction){
     InstNode *tailNode = tail->tail_node;
 
     clear_visited_flag(entry);
+    HashSet *allBlocks = HashSetInit();
+    HashSet *list = HashSetInit();
+    HashSetAdd(allBlocks, entry);
+    HashSetAdd(list,entry);
+    while(HashSetSize(list) != 0){
+        HashSetFirst(list);
+        BasicBlock *block = HashSetNext(list);
+        HashSetAdd(allBlocks,block);
+        HashSetRemove(list,block);
+        block->visited = true;
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(list,block->true_block);
+        }
+
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(list,block->false_block);
+        }
+    }
+
+    HashSetDeinit(list);
+
+
+
+    clear_visited_flag(entry);
     //we need at least run for all the blocks once use the visited flag to achieve that purpose
     while(tailNode->inst->Opcode != Return){
         //向前查找
@@ -398,7 +422,6 @@ void calculateLiveness(Function *currentFunction){
                 Value *def = NULL;
                 Value *rhs = NULL;
                 Value *lhs = NULL;
-                printf("cur ins at %d\n",currNode->inst->i);
 
                 //处理def的计算
                 if(currNode->inst->Opcode == Return || currNode->inst->Opcode == br || currNode->inst->Opcode == br_i1){
@@ -468,14 +491,20 @@ void calculateLiveness(Function *currentFunction){
             HashSetCopyValue(block->in, tempSet);
         }
 
-        if(changed || (block == currentFunction->tail) || block->visited == false){
-            block->visited = true;
-            HashSetFirst(block->preBlocks);
-            for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
-                HashSetAdd(workList,preBlock);
+        //printf("now block %d live in:",block->id);
+//        HashSetFirst(block->in);
+//        for(Value *livein = HashSetNext(block->in); livein != NULL; livein = HashSetNext(block->in)){
+//            printf(" %s",livein->name);
+//        }
+//        printf("\n");
+
+        if(changed || (block == currentFunction->tail)){
+            HashSetFirst(allBlocks);
+            for(BasicBlock *blocks = HashSetNext(allBlocks); blocks != NULL; blocks = HashSetNext(allBlocks)){
+                if(blocks != exit)
+                    HashSetAdd(workList,blocks);
             }
         }
     }
-
     clear_visited_flag(entry);
 }
