@@ -875,20 +875,21 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
         }else{
             left_reg_abs=left_reg;
         }
+        printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+        fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+        printf("\tvcvt.s32.f32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        printf("\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            handle_illegal_imm(dest_reg_abs,x,0);
+        }
     }
 //    else{
 //        assert(false);
 //    }
-    printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
-    fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
-    printf("\tvcvt.s32.f32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    printf("\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    if(dest_reg<0){
-        int x= get_value_offset_sp(hashMap,value0);
-        handle_illegal_imm(dest_reg_abs,x,0);
-    }
+
     return ins;
 }
 InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
@@ -917,20 +918,21 @@ InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
         }else{
             left_reg_abs=left_reg;
         }
+        printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+        fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
+        printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        printf("\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        if(dest_reg<0){
+            int x= get_value_offset_sp(hashMap,value0);
+            handle_illegal_imm(dest_reg_abs,x,0);
+        }
     }
 //    else{
 //        assert(false);
 //    }
-    printf("\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
-    fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,left_reg_abs);
-    printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    printf("\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,dest_reg_abs);
-    if(dest_reg<0){
-        int x= get_value_offset_sp(hashMap,value0);
-        handle_illegal_imm(dest_reg_abs,x,0);
-    }
+
     return ins;
 }
 InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
