@@ -46,4 +46,6 @@ void valueReplaceWithout(Value *oldValue, Value *newValue, Value *cur, Function 
 Function *ReconstructFunction(InstNode *inst_list);
 bool isLoopInvariant(struct Loop *loop,Value *var);
 bool returnValueNotUsed(InstNode *instNode);
+bool specialValueReplace(Value *old, Value *new, BasicBlock *pos);
+bool isDominated(BasicBlock *block, BasicBlock *target);
 #endif //C22V1_UTILITY_H

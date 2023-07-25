@@ -428,6 +428,7 @@ void HashSetCopy(HashSet *dest,HashSet *src){
     }
 }
 
+//TODO 利用Hash库实现
 unsigned long int hash_values(Vector *valueVector) {
     int count = VectorSize(valueVector);
     unsigned int seed = 0x9747b28c;
@@ -671,4 +672,51 @@ bool returnValueNotUsed(InstNode *instNode){
         return true;
     }
     return false;
+}
+
+//block dominated target or not?
+//if block dominates target return true
+bool isDominated(BasicBlock *block, BasicBlock *target){
+    if(HashSetFind(target->dom,block)){
+        return true;
+    }
+    return false;
+}
+
+//被pos支配的对old的use全部替换为对new的使用
+bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
+    Use *oldUses = old->use_list;
+    while(oldUses != NULL){
+        Use *tempNext = oldUses->Next;
+        //see the user of current
+        Instruction *curIns = (Instruction *)oldUses->Parent;
+        BasicBlock *block = curIns->Parent;
+        if(isDominated(pos,block)){
+            value_add_use(new,oldUses);
+            oldUses->Val = new;
+        }
+        oldUses = tempNext;
+    }
+
+    //还需要判断后续的phi函数是否是被支配的
+    Function *func = pos->Parent;
+    InstNode *phiNode = func->entry->head_node;
+    InstNode *funcTail = func->tail->tail_node;
+
+    while(phiNode != funcTail){
+        if(phiNode->inst->Opcode == Phi){
+            BasicBlock *phiBlock = phiNode->inst->Parent;
+            if(isDominated(pos,phiBlock)){
+                HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
+                HashSetFirst(phiSet);
+                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                    Value *define = phiInfo->define;
+                    if(define == old){
+                        define = new;
+                    }
+                }
+            }
+        }
+        phiNode = get_next_inst(phiNode);
+    }
 }

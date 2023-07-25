@@ -312,4 +312,145 @@ void ScheduleEarly(Function *currentFunction){
     }
 }
 
+DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
+    assert(use != NULL);
+    if(lca == NULL){
+        return use;
+    }
 
+    while(lca->depth < use->depth){
+        lca = lca->parent->domTreeNode;
+    }
+
+    while(use->depth < lca->depth){
+        use = use->parent->domTreeNode;
+    }
+
+    //
+    while(use != lca){
+        use = use->parent->domTreeNode;
+        lca = lca->parent->domTreeNode;
+    }
+
+    assert(use == lca);
+    return use;
+}
+
+void Schedule_Late(Instruction *ins){
+    if(ins->visited == true){
+        return;
+    }
+
+    BasicBlock *block = ins->Parent;
+    Function *function = block->Parent;
+
+    assert(block != NULL);
+    assert(function != NULL);
+
+    //being visited now
+    ins->visited = true;
+
+    //start the lca empty
+    DomTreeNode *lca = NULL;
+
+    DomTreeNode *use = NULL;
+    //for all uses y of ins (Schedule all uses first)
+    Value *insDest = ins_get_dest(ins);
+
+    Use *iUses = insDest->use_list;
+    while(iUses != NULL){
+        User *y = iUses->Parent;
+        Instruction *yIns = (Instruction *)y;
+        Schedule_Late(yIns);
+        use = yIns->Parent->domTreeNode;
+
+        assert(use != NULL);
+        //it can't be phi so we just find the lca
+
+        lca = Find_LCA(lca,use);
+        iUses = iUses->Next;
+    }
+
+    BasicBlock *entry = function->entry;
+    BasicBlock *tail = function->tail;
+
+    //find the phi's uses
+    InstNode *phiNode = entry->head_node;
+    InstNode *funcTail = tail->tail_node;
+    while(phiNode != funcTail){
+        if(phiNode->inst->Opcode == Phi){
+
+        }
+        phiNode = get_next_inst(phiNode);
+    }
+
+}
+
+void ScheduleLate(Function *function){
+    BasicBlock *entry = function->entry;
+    BasicBlock *tail = function->tail;
+    //for all instructions i do
+    InstNode *pinnedNode = entry->head_node;
+    InstNode *funcTail = tail->tail_node;
+
+    while(pinnedNode != funcTail){
+        if(isPinnedIns(pinnedNode)){
+            pinnedNode->inst->visited = true;
+
+            //for uses y of i do:
+            Value *pinnedDest = ins_get_dest(pinnedNode->inst);
+
+            //not count for phi
+            Use *uses = pinnedDest->use_list;
+
+            while(uses != NULL){
+                User *yUser = uses->Parent;
+
+                Instruction *yIns = (Instruction *)yUser;
+
+                Schedule_Late(yIns);
+
+                uses = uses->Next;
+            }
+
+
+            //special count for phi
+            InstNode *tempNode = entry->head_node;
+            while(tempNode != funcTail){
+                if(tempNode->inst->Opcode == Phi){
+                    HashSet *phiSet = tempNode->inst->user.value.pdata->pairSet;
+                    bool usedInPhi = false;
+                    HashSetFirst(phiSet);
+                    for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                        Value *define = phiInfo->define;
+                        if(define != NULL && define == pinnedDest){
+                            //
+                            usedInPhi = true;
+                        }
+                    }
+
+                    if(usedInPhi){
+                        Schedule_Late(tempNode->inst);
+                    }
+                }
+                tempNode = get_next_inst(tempNode);
+            }
+        }
+        pinnedNode = get_next_inst(pinnedNode);
+    }
+}
+
+void clearInsVisited(Function *function){
+    BasicBlock *entry = function->entry;
+    BasicBlock *tail = function->tail;
+
+    InstNode *funcHead = entry->head_node;
+    InstNode *funcTail = tail->tail_node;
+
+    //从头到尾
+    InstNode *tempNode = funcHead;
+    while(tempNode != funcTail){
+        tempNode->inst->visited = false;
+        tempNode = get_next_inst(tempNode);
+    }
+}
