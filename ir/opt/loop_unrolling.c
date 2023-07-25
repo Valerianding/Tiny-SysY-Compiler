@@ -234,9 +234,9 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
     }
 
     //TODO 先做LESS的情况
-    Value *v_icmp = ins_get_dest(ins_end);
-    Instruction *icmp = (Instruction*)v_icmp;
-    Value *compare = ins_get_lhs(icmp);
+//    Value *v_icmp = ins_get_dest(ins_end);
+//    Instruction *icmp = (Instruction*)v_icmp;
+    Value *compare = loop->inductionVariable;
 
     if(HashMapContain(exit_phi_map, compare)){
         HashSet* pairSet = HashMapGet(exit_phi_map,compare);
@@ -256,7 +256,19 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
             }
         }
     }
-    Instruction *ins_icmp = ins_new_binary_operator(LESS, compare, ins_get_rhs(ins_end));
+    Instruction *ins_icmp = NULL;
+    if(ins_end->Opcode == LESS)
+        ins_icmp = ins_new_binary_operator(LESS, compare, ins_get_rhs(ins_end));
+    else if(ins_end->Opcode == LESSEQ)
+        ins_icmp = ins_new_binary_operator(LESSEQ,compare, ins_get_rhs(ins_end));
+    else if(ins_end->Opcode == GREAT)
+        ins_icmp = ins_new_binary_operator(GREAT,compare, ins_get_rhs(ins_end));
+    else if(ins_end->Opcode == GREATEQ)
+        ins_icmp = ins_new_binary_operator(GREATEQ,compare, ins_get_rhs(ins_end));
+    else if(ins_end->Opcode == EQ)
+        ins_icmp = ins_new_binary_operator(EQ,compare, ins_get_rhs(ins_end));
+    else
+        ins_icmp = ins_new_binary_operator(NOTEQ,compare, ins_get_rhs(ins_end));
     ins_get_value_with_name_and_index(ins_icmp,tmp_index++);
     InstNode * node_icmp = new_inst_node(ins_icmp);
 
@@ -672,11 +684,14 @@ int cal_times(int init,Instruction *ins_modifier,Instruction *ins_end_cond,Value
     return times;
 }
 
-void LOOP_UNROLL_EACH(Loop* loop)
+bool LOOP_UNROLL_EACH(Loop* loop)
 {
     //TODO 目前不做基本块间
-    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0)
-        return;
+    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0 || !loop->hasDedicatedExit)
+        return false;
+
+    if(!loop->initValue || !loop->modifier || !loop->end_cond)
+        return false;
 
     Instruction *ins_end_cond=(Instruction*)loop->end_cond;
     Instruction *ins_modifier=(Instruction*)loop->modifier;
@@ -692,7 +707,7 @@ void LOOP_UNROLL_EACH(Loop* loop)
 
     //步长为0就return
     if(v_step->VTy->ID == Int && v_step->pdata->var_pdata.iVal==0)
-        return;
+        return false;
 
     int cnt=cal_ir_cnt(loop->loopBody);
     //如果是常数，就能计算迭代次数，然后进行一个判断,TODO 非常数就不判断了吗
@@ -701,7 +716,7 @@ void LOOP_UNROLL_EACH(Loop* loop)
         value_init_int(times, cal_times(loop->initValue->pdata->var_pdata.iVal,ins_modifier,ins_end_cond,v_step,v_end));
         //超出一定长度的循环，不进行展开
         if((long)times*cnt>loop_unroll_up_lines)
-            return;
+            return false;
     }
 
     //一个map用来保存header中变量与最新值的对应关系
@@ -833,16 +848,19 @@ void LOOP_UNROLL_EACH(Loop* loop)
             curr = get_next_inst(curr);
         }
     }
+    return true;
 }
 
 //进行dfs，从最里层一步步展开
-void dfsLoop(Loop *loop){
+bool dfsLoop(Loop *loop){
+    bool effective = false;
     HashSetFirst(loop->child);
     for(Loop *childLoop = HashSetNext(loop->child); childLoop != NULL; childLoop = HashSetNext(loop->child)){
         /*内层循环先处理*/
-        dfsLoop(childLoop);
+        effective |= dfsLoop(childLoop);
     }
-    LOOP_UNROLL_EACH(loop);
+    effective |= LOOP_UNROLL_EACH(loop);
+    return effective;
 }
 
 void loop_unroll(Function *currentFunction)
