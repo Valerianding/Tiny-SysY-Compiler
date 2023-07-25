@@ -30,10 +30,33 @@ void bfsTravelLoopTree(Loop *loop,int nest){
     for(BasicBlock *loopBlock = HashSetNext(loop->loopBody); loopBlock != NULL; loopBlock = HashSetNext(loop->loopBody)){
         loopBlock->domTreeNode->loopNest =  nest;
     }
+
+    HashSetFirst(loop->child);
+    for(Loop *child = HashSetNext(loop->child); child != NULL; child = HashSetNext(loop->child)){
+        bfsTravelLoopTree(child,nest + 1);
+    }
 }
 
 void markLoopNest(Function *function){
+    HashSetFirst(function->loops);
+    for(Loop *root = HashSetNext(function->loops); root != NULL; root = HashSetNext(function->loops)){
+        bfsTravelLoopTree(root,1);
+    }
+}
 
+void printALLInfo(Function *function){
+    BasicBlock *entry = function->entry;
+
+
+    clear_visited_flag(entry);
+
+    HashSet *workList = HashSetInit();
+    HashSetAdd(workList,entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList);
+    }
 }
 
 bool isPinnedIns(InstNode *instNode){

@@ -712,7 +712,7 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
                     Value *define = phiInfo->define;
                     if(define == old){
-                        define = new;
+                        phiInfo->define = new;
                     }
                 }
             }
