@@ -10,6 +10,7 @@ void value_init(Value* this){
     memset(this, 0, sizeof(Value));
     this->VTy = (Type*)malloc(sizeof(Type));
     this->VTy->ID = Unknown;
+    this->name = NULL;
     this->pdata = (PData*)malloc(sizeof(PData));
     this->visitedObjects = HashSetInit();
     this->containInput = false;

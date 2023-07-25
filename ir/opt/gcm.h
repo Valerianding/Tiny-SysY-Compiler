@@ -8,4 +8,5 @@
 #include "function.h"
 #include "dominance.h"
 void markDominanceDepth(Function *function);
+void ScheduleEarly(Function *currentFunction);
 #endif //C22V1_GCM_H

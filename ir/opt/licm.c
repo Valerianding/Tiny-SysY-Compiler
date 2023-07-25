@@ -185,6 +185,7 @@ bool LICM_EACH(Loop *loop){
                 //如果除开循环前驱大于1
                 if(HashSetSize(newBlockPrev) > 1){
                     newPrevBlock = newBlock(newBlockPrev,head);
+                    newPrevBlock->Parent = loop->head->Parent;
                 }else{
                     //找到唯一不属于循环的前驱节点
                     assert(HashSetSize(newBlockPrev) == 1);

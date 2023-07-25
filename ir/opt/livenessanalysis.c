@@ -283,6 +283,30 @@ void calculateLiveness(Function *currentFunction){
     InstNode *tailNode = tail->tail_node;
 
     clear_visited_flag(entry);
+    HashSet *allBlocks = HashSetInit();
+    HashSet *list = HashSetInit();
+    HashSetAdd(allBlocks, entry);
+    HashSetAdd(list,entry);
+    while(HashSetSize(list) != 0){
+        HashSetFirst(list);
+        BasicBlock *block = HashSetNext(list);
+        HashSetAdd(allBlocks,block);
+        HashSetRemove(list,block);
+        block->visited = true;
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(list,block->true_block);
+        }
+
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(list,block->false_block);
+        }
+    }
+
+    HashSetDeinit(list);
+
+
+
+    clear_visited_flag(entry);
     //we need at least run for all the blocks once use the visited flag to achieve that purpose
     while(tailNode->inst->Opcode != Return){
         //向前查找
@@ -298,8 +322,12 @@ void calculateLiveness(Function *currentFunction){
 
     HashSetAdd(workList,exit);
 
+    bool firstTime = true;
 
-    bool firstTime = false;
+    //for the first time we put all the blocks into the workList
+    HashSetCopy(workList,allBlocks);
+
+
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
@@ -427,7 +455,6 @@ void calculateLiveness(Function *currentFunction){
                     lhs = NULL;
                     rhs = NULL;
                 }else if(currNode->inst->Opcode == GIVE_PARAM){
-                    printf("lhs : %s!!!!\n",lhs->name);
                     rhs = NULL;
                 }else if(currNode->inst->Opcode == Phi){
                     lhs = NULL;
@@ -463,16 +490,29 @@ void calculateLiveness(Function *currentFunction){
             currNode = get_prev_inst(currNode);
         }
 
-        changed |= HashSetCopyValue(block->in, tempSet);
+        if(HashSetDifferent(block->in,tempSet)){
+            changed = true;
+            HashSetClean(block->in);
+            HashSetCopyValue(block->in, tempSet);
+        }
 
-        if(changed || (block == currentFunction->tail) || block->visited == false){
-            block->visited = true;
+        HashSetDeinit(tempSet);
+//        printf("block %d live in:\n",block->id);
+//        printf("function %s\n",block->Parent->name);
+//        HashSetFirst(block->in);
+//        for(Value *livein = HashSetNext(block->in); livein != NULL; livein = HashSetNext(block->in)){
+//            printf(" %s",livein->name);
+//        }
+//        printf("\n");
+
+        if(changed){
             HashSetFirst(block->preBlocks);
-            for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
-                HashSetAdd(workList,preBlock);
+            for(BasicBlock *blocks = HashSetNext(block->preBlocks); blocks != NULL; blocks = HashSetNext(block->preBlocks)){
+                if(blocks != exit){
+                    HashSetAdd(workList,blocks);
+                }
             }
         }
     }
-
     clear_visited_flag(entry);
 }

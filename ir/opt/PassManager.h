@@ -17,6 +17,7 @@
 #include "inscomb.h"
 #include "other.h"
 #include "loopconv.h"
+#include "gcm.h"
 void RunBasicPasses(Function *currentFunction);
 void RunOptimizePasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H
