@@ -7656,87 +7656,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         int i;
         int k=num-1;
         int temp=k;
-        // 可以考虑一下，把这一部分代码放在后面，就是先传超出的参数，再去传前四个参数
-        for(i=1;i<4;++i){
 
-            tmp=one_param[i];
-            int left_reg= tmp->inst->_reg_[1];
-            Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
-            if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
-                assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
-                if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
-                    fprintf(fp,"\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
-                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
-//                        传入为int,接受为float
-                        int_to_float(i,i);
-                    }
-                } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-                    handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
-                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
-//                        传入为int,接受为float
-                        int_to_float(i,i);
-                    }
-                } else if(isImmFloatType(value1->VTy)){
-                    handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
-//                    char arr[12]="0x";
-//                    sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
-//                    printf("\tldr\tr%d,=%s\n",i,arr);
-//                    fprintf(fp,"\tldr\tr%d,=%s\n",i,arr);
-                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
-                        printf("\tvmov\ts%d,r%d\n",i,i);
-                        fprintf(fp,"\tvmov\ts%d,r%d\n",i,i);
-                    }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
-                        float_to_int(i,i);
-                    }
-                }
-            }else{
-//                变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
-                if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
-                    assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
-                    if(left_reg>100){
-                        int x= get_value_offset_sp(hashMap,value1);
-                        handle_illegal_imm(left_reg,x,1);
-                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
-                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
-                    }else{
-                        printf("\tmov\tr%d,r%d\n",i,left_reg);
-                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
-                    }
-                    if(isLocalVarIntType(value1->VTy)){
-                        if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
-                            int_to_float(i,i);
-                        }
-                    }else if(isLocalVarFloatType(value1->VTy)){
-                        if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
-                            printf("\tvmov\ts%d,r%d\n",i,i);
-                            fprintf(fp,"\tvmov\ts%d,r%d\n",i,i);
-                        }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
-                            float_to_int(i,i);
-                        }
-                    }
-                }
-//                else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-////                    这个需要另外处理
-//                    int x= get_value_offset_sp(hashMap,value1);
-//                    printf("\tadd\tr%d,r11,#%d\n",i,x);
-//                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
-//                }
-                else if(value1->VTy->ID==AddressTyID){
-                    if(left_reg>100){
-                        int x= get_value_offset_sp(hashMap,value1);
-                        handle_illegal_imm(left_reg,x,1);
-
-                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
-                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
-                    }else{
-                        printf("\tmov\tr%d,r%d\n",i,left_reg);
-                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
-                    }
-                }
-            }
-            give_param_flag[i]=1;
-        }
         for (int j = num-4; j > 0; j--) {
 //            原因好像是在这里，应该逆序压栈，所以之前的tmp=one_param[i++]是有问题的，
 //            和之前不同的是one_param里面的参数是从0-(num-1)排布的，并不是说帮我修改为应该压栈的顺序
@@ -7847,7 +7767,87 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //            printf("    ldr r0,[sp,#%d]\n",x);
 //            printf("    str r0,[sp,#-%d]\n",i*4);
         }
+        // 可以考虑一下，把这一部分代码放在后面，就是先传超出的参数，再去传前四个参数
+        for(i=1;i<4;++i){
 
+            tmp=one_param[i];
+            int left_reg= tmp->inst->_reg_[1];
+            Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+            if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
+                assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
+                    printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
+                    fprintf(fp,"\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
+                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+//                        传入为int,接受为float
+                        int_to_float(i,i);
+                    }
+                } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
+                    handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
+                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+//                        传入为int,接受为float
+                        int_to_float(i,i);
+                    }
+                } else if(isImmFloatType(value1->VTy)){
+                    handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
+//                    char arr[12]="0x";
+//                    sprintf(arr+2,"%0x",value1->pdata->var_pdata.iVal);
+//                    printf("\tldr\tr%d,=%s\n",i,arr);
+//                    fprintf(fp,"\tldr\tr%d,=%s\n",i,arr);
+                    if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                        printf("\tvmov\ts%d,r%d\n",i,i);
+                        fprintf(fp,"\tvmov\ts%d,r%d\n",i,i);
+                    }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
+                        float_to_int(i,i);
+                    }
+                }
+            }else{
+//                变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
+                if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
+                    assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",i,left_reg);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
+                    }
+                    if(isLocalVarIntType(value1->VTy)){
+                        if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                            int_to_float(i,i);
+                        }
+                    }else if(isLocalVarFloatType(value1->VTy)){
+                        if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                            printf("\tvmov\ts%d,r%d\n",i,i);
+                            fprintf(fp,"\tvmov\ts%d,r%d\n",i,i);
+                        }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
+                            float_to_int(i,i);
+                        }
+                    }
+                }
+//                else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
+////                    这个需要另外处理
+//                    int x= get_value_offset_sp(hashMap,value1);
+//                    printf("\tadd\tr%d,r11,#%d\n",i,x);
+//                    fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
+//                }
+                else if(value1->VTy->ID==AddressTyID){
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+
+                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",i,left_reg);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
+                    }
+                }
+            }
+            give_param_flag[i]=1;
+        }
 
 //        填充r0
         tmp=one_param[0];
