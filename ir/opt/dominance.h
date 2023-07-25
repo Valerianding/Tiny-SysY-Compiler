@@ -18,6 +18,8 @@ struct _DomNode{
     HashSet *children;  //保存DomNode*
     int flag;
     int depth; // dom depth
+
+    int loopNest; // nest depth
 };
 
 struct _PostDomNode{

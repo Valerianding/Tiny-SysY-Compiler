@@ -271,6 +271,7 @@ void calculate_DomTree(Function *currentFunction){
             memset(block->domTreeNode,0,sizeof(DomTreeNode));
             block->domTreeNode->block = block;
             block->domTreeNode->depth = 0;
+            block->domTreeNode->loopNest = 0;
             block->domTreeNode->children = HashSetInit();
         }
         curNode = get_next_inst(curNode);
