@@ -24,7 +24,40 @@ void markDominanceDepth(Function *function){
     bfsTravelDomTree(function->root,0);
 }
 
+void bfsTravelLoopTree(Loop *loop,int nest){
+    //对loop里面
+    HashSetFirst(loop->loopBody);
+    for(BasicBlock *loopBlock = HashSetNext(loop->loopBody); loopBlock != NULL; loopBlock = HashSetNext(loop->loopBody)){
+        loopBlock->domTreeNode->loopNest =  nest;
+    }
 
+    HashSetFirst(loop->child);
+    for(Loop *child = HashSetNext(loop->child); child != NULL; child = HashSetNext(loop->child)){
+        bfsTravelLoopTree(child,nest + 1);
+    }
+}
+
+void markLoopNest(Function *function){
+    HashSetFirst(function->loops);
+    for(Loop *root = HashSetNext(function->loops); root != NULL; root = HashSetNext(function->loops)){
+        bfsTravelLoopTree(root,1);
+    }
+}
+
+void printALLInfo(Function *function){
+    BasicBlock *entry = function->entry;
+
+
+    clear_visited_flag(entry);
+
+    HashSet *workList = HashSetInit();
+    HashSetAdd(workList,entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList);
+    }
+}
 
 bool isPinnedIns(InstNode *instNode){
     int n = sizeof(pinnedOperations) / sizeof(Opcode);
@@ -315,9 +348,10 @@ void ScheduleEarly(Function *currentFunction){
 DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
     assert(use != NULL);
     if(lca == NULL){
+        printf("use %d\n",use->block->id);
         return use;
     }
-
+    printf("lca %d use %d\n",lca->block->id,use->block->id);
     while(lca->depth < use->depth){
         lca = lca->parent->domTreeNode;
     }
@@ -340,7 +374,7 @@ void Schedule_Late(Instruction *ins){
     if(ins->visited == true){
         return;
     }
-
+    printf("now ins %d\n",ins->i);
     BasicBlock *block = ins->Parent;
     Function *function = block->Parent;
 
@@ -368,6 +402,8 @@ void Schedule_Late(Instruction *ins){
         //it can't be phi so we just find the lca
 
         lca = Find_LCA(lca,use);
+
+        assert(lca != NULL);
         iUses = iUses->Next;
     }
 
@@ -379,12 +415,36 @@ void Schedule_Late(Instruction *ins){
     InstNode *funcTail = tail->tail_node;
     while(phiNode != funcTail){
         if(phiNode->inst->Opcode == Phi){
-
+            bool hasUse = false;
+            HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                Value *define = phiInfo->define;
+                if(define == insDest){
+                    //
+                    use = phiInfo->from->domTreeNode;
+                    hasUse = true;
+                }
+            }
+            if(hasUse){
+                lca = Find_LCA(lca,use);
+            }
         }
         phiNode = get_next_inst(phiNode);
     }
+    printf("current ins %d\n",ins->i);
 
+    InstNode *insNode = findNode(ins->Parent,ins);
+    if(lca != NULL){
+        printf("lca is %d\n",lca->block->id);
+    }
+
+
+    //selecting the best block for this instruction
+    //also we need to count loop depth nest first;
 }
+
+
 
 void ScheduleLate(Function *function){
     BasicBlock *entry = function->entry;

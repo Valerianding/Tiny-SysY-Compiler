@@ -9,4 +9,6 @@
 #include "dominance.h"
 void markDominanceDepth(Function *function);
 void ScheduleEarly(Function *currentFunction);
+void clearInsVisited(Function *function);
+void ScheduleLate(Function *function);
 #endif //C22V1_GCM_H

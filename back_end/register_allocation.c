@@ -109,8 +109,8 @@ void init_global(BasicBlock *cur)
         echo_tac_global[i].visited=0;
     }
     _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((temp_cnt+10)*(temp_cnt+10)/2));
-    live_global=(struct name_num *)malloc(sizeof(struct name_num)*((temp_cnt+20)*3));
-    for(int i=0;i<(temp_cnt+20)*3;i++)
+    live_global=(struct name_num *)malloc(sizeof(struct name_num)*((temp_cnt+20)*3+reg_param_num));
+    for(int i=0;i<(temp_cnt+20)*3+reg_param_num;i++)
     {
         live_global[i].num=i;
         live_global[i].name=(char *)malloc(MAXSTRINGSIZE);
