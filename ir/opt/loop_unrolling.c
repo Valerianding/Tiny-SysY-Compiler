@@ -236,7 +236,27 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
     //TODO 先做LESS的情况
     Value *v_icmp = ins_get_dest(ins_end);
     Instruction *icmp = (Instruction*)v_icmp;
-    Instruction *ins_icmp = ins_new_binary_operator(LESS, ins_get_lhs(icmp), ins_get_rhs(ins_end));
+    Value *compare = ins_get_lhs(icmp);
+
+    if(HashMapContain(exit_phi_map, compare)){
+        HashSet* pairSet = HashMapGet(exit_phi_map,compare);
+        HashSetFirst(pairSet);
+        for(pair* check = HashSetNext(pairSet); check!=NULL; check = HashSetNext(pairSet)){
+            if(!first_copy){
+                if(check->from == block){
+                    compare = check->define;
+                    break;
+                }
+            }
+            else{
+                if(check->from == loop->head->true_block){
+                    compare = check->define;
+                    break;
+                }
+            }
+        }
+    }
+    Instruction *ins_icmp = ins_new_binary_operator(LESS, compare, ins_get_rhs(ins_end));
     ins_get_value_with_name_and_index(ins_icmp,tmp_index++);
     InstNode * node_icmp = new_inst_node(ins_icmp);
 
@@ -789,11 +809,15 @@ void LOOP_UNROLL_EACH(Loop* loop)
             else
                 cur_block = copy_one_time_icmp(loop,cur_block, v_new_valueMap,other_new_valueMap,ins_end_cond,false,exit_phi_map);
         }
-        first_copy = true;
-
         //给exit_block加上一些Phi
         HashMap *match_phi_map = insert_exit_phi(loop->exit_block,exit_phi_map,loop);
         //TODO 进行value的替换
+        HashMapFirst(match_phi_map);
+        for(Pair* p = HashMapNext(match_phi_map); p!=NULL; p = HashMapNext(match_phi_map)){
+            specialValueReplace(p->key, p->value, loop->exit_block);
+        }
+
+        first_copy = true;
     }
 
     //遍历loop, 删去作挡板的tmp
