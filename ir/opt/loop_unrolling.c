@@ -8,6 +8,7 @@ int tmp_index = 0;
 bool first_copy = true;
 bool mod_before = false;
 
+//head前面如果插入了新基本块，更新初值的到达块为新加入的new_pre_block
 void adjust_phi_from(Loop *loop,BasicBlock *new_pre_block, HashMap *v_new_valueMap){
     HashMapFirst(v_new_valueMap);
     for(Pair *p = HashMapNext(v_new_valueMap); p != NULL; p = HashMapNext(v_new_valueMap)){
@@ -23,6 +24,7 @@ void adjust_phi_from(Loop *loop,BasicBlock *new_pre_block, HashMap *v_new_valueM
     }
 }
 
+//在head块前插入new_pre_block块，调整块间信息
 void adjust_blocks(BasicBlock* head, BasicBlock* new_pre_block,Loop* loop){
     //将Head的前驱对应的后继全部指向new_pre_block
     HashSet *preBlocks = head->preBlocks;
@@ -44,6 +46,7 @@ void adjust_blocks(BasicBlock* head, BasicBlock* new_pre_block,Loop* loop){
     bb_add_prev(new_pre_block,head);
 }
 
+//在phi_set中拿到指定block为from的value
 Value *get_replace_value(HashSet* set,BasicBlock* block)
 {
     HashSetFirst(set);
@@ -56,6 +59,7 @@ Value *get_replace_value(HashSet* set,BasicBlock* block)
 
 
 //更新的是初值，不知道具体block,但是block肯定不在循环内
+//在phi_set中拿到初值
 Value *get_replace_value_first(HashSet* set,Loop* loop){
 
     HashSetFirst(set);
@@ -66,6 +70,7 @@ Value *get_replace_value_first(HashSet* set,Loop* loop){
     return NULL;
 }
 
+//这种head后加基本块，更新的phi中的value是后面从tail过来的value
 void update_replace_value(HashMap* map,Value* v_before,Value* v_replace)
 {
     HashMapFirst(map);
@@ -85,6 +90,7 @@ void update_replace_value(HashMap* map,Value* v_before,Value* v_replace)
     }
 }
 
+//在head前加基本块(余数模式),更新的phi中的Value是从初值过来的value
 void update_replace_value_mod(HashMap* map,Value* v_before,Value* v_replace, Loop* loop)
 {
     HashMapFirst(map);
@@ -119,6 +125,7 @@ void update_replace_value_mod(HashMap* map,Value* v_before,Value* v_replace, Loo
     }
 }
 
+//每复制完一次，将跳转前的value和block生成一个pair,保存进对应的exit_phi_map
 void update_exit_phi(BasicBlock *curr_block, HashMap *v_new_valueMap,HashMap *exit_phi_map, Loop* loop){
     HashMapFirst(exit_phi_map);
     for(Pair* p = HashMapNext(exit_phi_map); p!=NULL; p = HashMapNext(exit_phi_map)){
@@ -141,6 +148,7 @@ void update_exit_phi(BasicBlock *curr_block, HashMap *v_new_valueMap,HashMap *ex
 }
 
 //返回一个map,有所有对应信息，比如原来的%4对应Phi后的%27
+//在exit_block中生成往后走的phi
 HashMap *insert_exit_phi(BasicBlock *exit_block,HashMap *exit_phi_map, Loop* loop){
     HashMap *match_phi_map = HashMapInit();
 
@@ -168,6 +176,7 @@ HashMap *insert_exit_phi(BasicBlock *exit_block,HashMap *exit_phi_map, Loop* loo
     return match_phi_map;
 }
 
+//更新loop head的phi中从原先tail到达的，改为从更新后的tail到达的
 void update_head_phi(BasicBlock *prev_tail,BasicBlock* head, BasicBlock* new_tail){
     InstNode *curr = get_next_inst(head->head_node);
     while(curr->inst->Opcode == Phi){
@@ -196,7 +205,7 @@ Value *copy_value(Value *v_source,int index)
     return ins_get_new_value(v_new,index);
 }
 
-//一次循环展开
+//一次循环展开, 是icmp的模式
 //返回新建立的，下一次使用的基本块
 BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valueMap,HashMap* other_new_valueMap, Instruction* ins_end,bool last, HashMap* exit_phi_map){
     BasicBlock *curr_block=NULL;
@@ -371,7 +380,6 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
 
     return curr_block;
 }
-
 
 //一次循环展开
 //mod_flag表示是不是mod的地方需要复制，如果是mod那边需要，就必须给插入位置block
