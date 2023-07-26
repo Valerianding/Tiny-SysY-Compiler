@@ -31,8 +31,6 @@ void RunOptimizePasses(Function *currentFunction){
 
     instruction_combination(currentFunction);
 
-    DVNT(currentFunction);
-
     postDominanceAnalysis(currentFunction);
 
     Mark(currentFunction);

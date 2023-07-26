@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -169,47 +169,32 @@ int main(int argc, char* argv[]){
     }
 
     //OK 现在开始我们不会对
-    printf_llvm_ir(instruction_list,argv[4],1);
+    //printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //先跑一次
     //cse cf
     //如果要fuc inline一定要dom一下
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        //RunBasicPasses(currentFunction);
-        loop(currentFunction);
-        dominanceAnalysis(currentFunction);
-        markDominanceDepth(currentFunction);
-        markLoopNest(currentFunction);
-        ScheduleEarly(currentFunction);
+        RunBasicPasses(currentFunction);
     }
 
-//    if(Optimize) {
-//        travel();
-//        for (Function *currentFunction = start;
-//             currentFunction != NULL; currentFunction = currentFunction->Next) {
-//            dominanceAnalysis(currentFunction);
-//             RunOptimizePasses(currentFunction);
-//        }
-//
+    if(Optimize) {
+        travel();
+        for (Function *currentFunction = start;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+            dominanceAnalysis(currentFunction);
+             RunOptimizePasses(currentFunction);
+        }
+
+    }
+
+//    printf_llvm_ir(instruction_list,argv[4],0);
+
+//    for (Function *currentFunction = start;
+//         currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        DVNT(currentFunction);
 //    }
-
-    printf_llvm_ir(instruction_list,argv[4],0);
-
-    for (Function *currentFunction = start;
-         currentFunction != NULL; currentFunction = currentFunction->Next) {
-        DVNT(currentFunction);
-    }
-
-    printf_llvm_ir(instruction_list,argv[4],0);
-
-    for (Function *currentFunction = start;
-         currentFunction != NULL; currentFunction = currentFunction->Next) {
-        clearInsVisited(currentFunction);
-        ScheduleLate(currentFunction);
-        renameVariables(currentFunction);
-    }
-    printf_llvm_ir(instruction_list,argv[4],0);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -219,13 +204,13 @@ int main(int argc, char* argv[]){
     }
 
     //请注释掉我跑llvm脚本 phi函数消除
-    printf_llvm_ir(instruction_list,argv[4],1);
+    //printf_llvm_ir(instruction_list,argv[4],1);
 
 //
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
+        //printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
         clear_visited_flag(currentFunction->entry);
-        printf("after out of SSA!\n");
+        //printf("after out of SSA!\n");
         calculateLiveness(currentFunction);
         printLiveness(currentFunction);
     }
@@ -249,9 +234,9 @@ int main(int argc, char* argv[]){
 //    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
 //    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 
-//    arm_open_file(argv[3]);
-//    arm_translate_ins(instruction_list,argv[3]);
-//    arm_close_file(argv[3]);
+    arm_open_file(argv[3]);
+    arm_translate_ins(instruction_list,argv[3]);
+    arm_close_file(argv[3]);
     //    ljf_end
 
 #endif
