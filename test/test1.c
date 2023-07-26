@@ -1,11 +1,16 @@
-int j = 0;
-int test(){
-    int b[16];
-    int i = getint();
-    j = getint();
-    while(i > j){
-        b[i] = i % 10 + j;
-        j = 1;
+//test continue
+int main(){
+    int i;
+    i = 0;
+    int sum;
+    sum = 0;
+    while(i < 100){
+        if(i == 50){
+            i = i + 1;
+            continue;
+        }
+        sum = sum + i;
         i = i + 1;
     }
+    return sum;
 }

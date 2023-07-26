@@ -720,3 +720,7 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
         phiNode = get_next_inst(phiNode);
     }
 }
+
+bool isIcmpOperator(InstNode *node){
+
+}

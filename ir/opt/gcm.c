@@ -9,7 +9,7 @@
 
 
 //当前还没有考虑memset 和 sysymemset
-const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_PARAM};
+const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_PARAM,EQ,NOTEQ,GREAT,GREATEQ,LESS,LESSEQ,Div,Mod};
 
 void bfsTravelDomTree(DomTreeNode *root,int level){
     root->depth = level;
@@ -97,6 +97,9 @@ void Schedule_Early(Instruction *ins){
     //i.block = root start with shallowest dominator
     DomTreeNode *iNode = function->root;
 
+    BasicBlock *originalBlock = ins->Parent;
+    InstNode *insNode = findNode(originalBlock,ins);
+
     bool Limited = false; // true -> 必须放在input block对应node的后面  为false -> 放在最前面
 
     //for all inputs x to i do
@@ -132,7 +135,7 @@ void Schedule_Early(Instruction *ins){
         Value *loadPlace = ins_get_lhs(ins);
         if(!isGlobalVar(loadPlace)){
             //那么一定是gep出来的一条指令
-            printf("load place %s\n",loadPlace->name);
+            //printf("load place %s\n",loadPlace->name);
             Instruction *inputIns = (Instruction *)loadPlace;
             Schedule_Early(inputIns);
         }
@@ -173,9 +176,34 @@ void Schedule_Early(Instruction *ins){
     }else if(ins->Opcode == Alloca){
         //如果是alloca的话 我们就不用分析了
         iNode = NULL;
+    }else if(isCompareOperator(insNode)){
+        Value *lhs = ins_get_lhs(ins);
+        Value *rhs = ins_get_rhs(ins);
+        if(!isImm(lhs) && !isParam(lhs,paramNum)){
+            Instruction *inputIns = (Instruction *)lhs;
+            Schedule_Early(inputIns);
+        }
+        if(!isImm(rhs) && !isParam(rhs,paramNum)){
+            Instruction *inputIns = (Instruction *)rhs;
+            Schedule_Early(inputIns);
+        }
+        iNode = NULL;
+    }else if(ins->Opcode == Div || ins->Opcode == Mod){
+        //避免 / 0 或者 % 0的情况出现
+        Value *lhs = ins_get_lhs(ins);
+        Value *rhs = ins_get_rhs(ins);
+        if(!isImm(lhs) && !isParam(lhs,paramNum)){
+            Instruction *inputIns = (Instruction *)lhs;
+            Schedule_Early(inputIns);
+        }
+        if(!isImm(rhs) && !isParam(rhs,paramNum)){
+            Instruction *inputIns = (Instruction *)rhs;
+            Schedule_Early(inputIns);
+        }
+        iNode = NULL;
     }else{
         //not a pinned instruction we can move these instructions forward
-        printf("current ins is %d\n",ins->i);
+        //printf("current ins is %d\n",ins->i);
         Value *insDest = ins_get_dest(ins);
 
         int numOfOperand = insDest->NumUserOperands;
@@ -189,7 +217,7 @@ void Schedule_Early(Instruction *ins){
 
             rhs = ins_get_rhs(ins);
 
-            //判断lhs 和 rhs是不是可以溯源 并且还不能是全局数组！！
+            //判断lhs 和 rhs是不是可以溯源 并且还不能是全局数组！
             if(lhs != NULL && !isImm(lhs) && !isParam(lhs,paramNum) && !isGlobalArray(lhs)){
                 Instruction *lhsIns = (Instruction *)lhs;
                 Schedule_Early(lhsIns);
@@ -198,7 +226,7 @@ void Schedule_Early(Instruction *ins){
                     Limited = true;
                     iNode = lhsNode;
                 }
-                printf("lhs dom depth %d, ",lhsNode->depth);
+                //printf("lhs dom depth %d, ",lhsNode->depth);
             }
 
             if(rhs != NULL && !isImm(rhs) && !isParam(rhs,paramNum) && !isGlobalArray(rhs)){
@@ -209,7 +237,7 @@ void Schedule_Early(Instruction *ins){
                     Limited = true;
                     iNode = rhsNode;
                 }
-                printf("rhs dom depth %d\n",rhsNode->depth);
+                //("rhs dom depth %d\n",rhsNode->depth);
             }
 
 
@@ -223,20 +251,17 @@ void Schedule_Early(Instruction *ins){
                     Limited = true;
                     iNode = lhsNode;
                 }
-                printf("lhsNode depth %d\n",lhsNode->depth);
+                //printf("lhsNode depth %d\n",lhsNode->depth);
             }
         }
     }
-
     //after all we can schedule this instruction to the iNode -> block tail ?
     //we need to
 
-    BasicBlock *originalBlock = ins->Parent;
     if(iNode != NULL && iNode->block != originalBlock){
         //we can schedule this instruction now
         BasicBlock *insertBlock = iNode->block;
 
-        InstNode *insNode = findNode(originalBlock,ins);
 
         assert(insNode != NULL);
 
@@ -279,13 +304,13 @@ void ScheduleEarly(Function *currentFunction){
     markDominanceDepth(currentFunction);
 
     int paramNum = currentFunction->entry->head_node->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
-    printf("function %s has %d param!\n",currentFunction->name,paramNum);
+    //printf("function %s has %d param!\n",currentFunction->name,paramNum);
 
     //for all instructions i
     while(pinnedNode != tailNode){
         //if i is pinned
         if(isPinnedIns(pinnedNode)){
-            printf("at pinned instruction %d\n",pinnedNode->inst->i);
+            //printf("at pinned instruction %d\n",pinnedNode->inst->i);
             //i.visited = true
             pinnedNode->inst->visited = true;
 
@@ -348,6 +373,34 @@ void ScheduleEarly(Function *currentFunction){
                 Value *cond = ins_get_lhs(pinnedNode->inst);
                 Instruction *inputIns = (Instruction *)cond;
                 Schedule_Early(inputIns);
+            }else if(isCompareOperator(pinnedNode)){
+                Value *lhs = ins_get_lhs(pinnedNode->inst);
+
+                Value *rhs = ins_get_rhs(pinnedNode->inst);
+
+                if(!isImm(lhs) && !isParam(lhs,paramNum)){
+                    Instruction *intputIns = (Instruction *)lhs;
+                    Schedule_Early(intputIns);
+                }
+
+                if(!isImm(rhs) && !isParam(rhs,paramNum)){
+                    Instruction *inputIns = (Instruction *)rhs;
+                    Schedule_Early(inputIns);
+                }
+            }else if(pinnedNode->inst->Opcode == Mod || pinnedNode->inst->Opcode == Div){
+                Value *lhs = ins_get_lhs(pinnedNode->inst);
+
+                Value *rhs = ins_get_rhs(pinnedNode->inst);
+
+                if(!isImm(lhs) && !isParam(lhs,paramNum)){
+                    Instruction *intputIns = (Instruction *)lhs;
+                    Schedule_Early(intputIns);
+                }
+
+                if(!isImm(rhs) && !isParam(rhs,paramNum)){
+                    Instruction *inputIns = (Instruction *)rhs;
+                    Schedule_Early(inputIns);
+                }
             }
         }
         pinnedNode = get_next_inst(pinnedNode);
@@ -357,15 +410,15 @@ void ScheduleEarly(Function *currentFunction){
 DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
     assert(use != NULL);
     if(lca == NULL){
-        printf("use %d\n",use->block->id);
+        //printf("use %d\n",use->block->id);
         return use;
     }
-    printf("lca %d use %d\n",lca->block->id,use->block->id);
-    while(lca->depth < use->depth){
+    //printf("lca %d use %d\n",lca->block->id,use->block->id);
+    while(lca->depth > use->depth){
         lca = lca->parent->domTreeNode;
     }
 
-    while(use->depth < lca->depth){
+    while(use->depth > lca->depth){
         use = use->parent->domTreeNode;
     }
 
@@ -380,10 +433,11 @@ DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
 }
 
 void Schedule_Late(Instruction *ins){
+    printf("ins %d\n",ins->i);
     if(ins->visited == true){
         return;
     }
-    printf("now ins %d\n",ins->i);
+    //printf("now ins %d\n",ins->i);
     BasicBlock *block = ins->Parent;
     Function *function = block->Parent;
 
@@ -432,25 +486,52 @@ void Schedule_Late(Instruction *ins){
                 if(define == insDest){
                     //
                     use = phiInfo->from->domTreeNode;
-                    hasUse = true;
+                    lca = Find_LCA(lca,use);
                 }
-            }
-            if(hasUse){
-                lca = Find_LCA(lca,use);
             }
         }
         phiNode = get_next_inst(phiNode);
     }
-    printf("current ins %d\n",ins->i);
 
+    //只有不是pinned的insNode值得我们去移动，但是pinnedNode 的uses我们还是希望能够Schedule Late
     InstNode *insNode = findNode(ins->Parent,ins);
-    if(lca != NULL){
-        printf("lca is %d\n",lca->block->id);
+    printf("insNode %d\n",insNode->inst->i);
+    if(!isPinnedIns(insNode)){
+
+        if(lca == NULL) return;
+
+        //selecting the best block for this instruction
+        //also we need to count loop depth nest first;
+        //
+        DomTreeNode *best = lca; // indicates the best place at the lca
+        //printf("lca %d\n",lca->block->id);
+        while(lca != ins->Parent->domTreeNode){ // not to the earliest
+            if(lca->loopNest < best->loopNest){
+                best = lca;
+            }
+            lca = lca->parent->domTreeNode;
+        }
+        //printf("best %d\n",best->block->id);
+        if(best != ins->Parent->domTreeNode){
+            //insert at front but we need to insert
+
+            removeIns(insNode);
+
+            BasicBlock *bestBlock = best->block;
+
+            InstNode *blockHead = get_next_inst(bestBlock->head_node);
+
+
+            while(blockHead->inst->Opcode == Phi){
+                blockHead = get_next_inst(blockHead);
+            }
+
+            ins_insert_before(insNode,blockHead);
+
+
+            insNode->inst->Parent = bestBlock;
+        }
     }
-
-
-    //selecting the best block for this instruction
-    //also we need to count loop depth nest first;
 }
 
 
@@ -522,4 +603,20 @@ void clearInsVisited(Function *function){
         tempNode->inst->visited = false;
         tempNode = get_next_inst(tempNode);
     }
+}
+
+void GCM(Function *currentFunction){
+    dominanceAnalysis(currentFunction);
+
+    markDominanceDepth(currentFunction);
+
+    markLoopNest(currentFunction);
+
+    ScheduleEarly(currentFunction);
+
+    DVNT(currentFunction);
+
+    clearInsVisited(currentFunction);
+
+    ScheduleLate(currentFunction);
 }

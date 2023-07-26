@@ -174,40 +174,41 @@ int main(int argc, char* argv[]){
 
     //先跑一次
     //cse cf
+    //如果要fuc inline一定要dom一下
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        dominanceAnalysis(currentFunction);
+        //RunBasicPasses(currentFunction);
         loop(currentFunction);
-        LICM(currentFunction);
-//        ScheduleEarly(currentFunction);
+        dominanceAnalysis(currentFunction);
+        markDominanceDepth(currentFunction);
+        markLoopNest(currentFunction);
+        ScheduleEarly(currentFunction);
     }
 
-    if(Optimize) {
-
-
-        //IPO
+//    if(Optimize) {
 //        travel();
 //        for (Function *currentFunction = start;
 //             currentFunction != NULL; currentFunction = currentFunction->Next) {
 //            dominanceAnalysis(currentFunction);
 //             RunOptimizePasses(currentFunction);
 //        }
+//
+//    }
 
+    printf_llvm_ir(instruction_list,argv[4],0);
+
+    for (Function *currentFunction = start;
+         currentFunction != NULL; currentFunction = currentFunction->Next) {
+        DVNT(currentFunction);
     }
 
     printf_llvm_ir(instruction_list,argv[4],0);
 
     for (Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        clearInsVisited(currentFunction);
-//        ScheduleLate(currentFunction);
-//        commonSubexpressionElimination(currentFunction);
-        markDominanceDepth(currentFunction);
-        markLoopNest(currentFunction);
-        printALLInfo(currentFunction);
-        //renameVariables(currentFunction);
+        clearInsVisited(currentFunction);
+        ScheduleLate(currentFunction);
+        renameVariables(currentFunction);
     }
-
-//phi上的优
     printf_llvm_ir(instruction_list,argv[4],0);
 #if ALL
     //phi上的优化
