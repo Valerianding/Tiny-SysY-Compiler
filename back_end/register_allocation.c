@@ -15,6 +15,7 @@ int reg_param_num;
 int block_in_num,block_out_num;
 struct  reg_now * echo_tac;
 struct  reg_now * echo_tac_global;
+struct  reg_now * echo_tac_temp;
 // BasicBlock * block_list[1000];
 struct BLOCK_list * block_list;
 int block_num;
@@ -1953,6 +1954,18 @@ void travel_ir(InstNode *instruction_node)
                 for(int i=0;i<give_param_ir_num;i++)
                 {
                     echo_tac[give_param_ir[i]].give_param=tac_cnt;
+                    // give_param_ir[i]=0;
+                }
+                echo_tac_temp=(struct  reg_now *)malloc(sizeof(struct  reg_now));
+                for(int i=0;i<give_param_ir_num/2;i++)
+                {   
+                    echo_tac_temp[0]=echo_tac[give_param_ir[i]];
+                    echo_tac[give_param_ir[i]]=echo_tac[give_param_ir[give_param_ir_num -i-1]];
+                    echo_tac[give_param_ir[give_param_ir_num -i-1]]=echo_tac_temp[0];
+                }
+                for(int i=0;i<give_param_ir_num;i++)
+                {
+                    // echo_tac[give_param_ir[i]].give_param=tac_cnt;
                     give_param_ir[i]=0;
                 }
                 give_param_ir_num=0;
