@@ -50,12 +50,21 @@ void printALLInfo(Function *function){
 
     clear_visited_flag(entry);
 
+
     HashSet *workList = HashSetInit();
     HashSetAdd(workList,entry);
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
-        HashSetRemove(workList);
+        HashSetRemove(workList,block);
+        block->visited = true;
+        printf("block %d dom_depth : %d, nest: %d\n",block->id,block->domTreeNode->depth,block->domTreeNode->loopNest);
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
+        }
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
+        }
     }
 }
 

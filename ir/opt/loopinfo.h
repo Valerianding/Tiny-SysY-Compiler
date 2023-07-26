@@ -41,6 +41,9 @@ typedef struct Loop{
 
     //often, if the loop has not dedicated exit it means it has "break"
     bool hasDedicatedExit;
+
+    //it is true if the condition changes during the iteration of execution
+    bool conditionChangeWithinLoop;
 }Loop;
 
 
