@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]){
     combineZext(instruction_list);
 
 
-    func_inline(instruction_list,255);
+    //func_inline(instruction_list,255);
 
 
     //重新构建Function
@@ -176,10 +176,9 @@ int main(int argc, char* argv[]){
     //cse cf
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
         dominanceAnalysis(currentFunction);
-//        loop(currentFunction);
-//        LICM(currentFunction);
-        //ScheduleEarly(currentFunction);
-        renameVariables(currentFunction);
+        loop(currentFunction);
+        LICM(currentFunction);
+//        ScheduleEarly(currentFunction);
     }
 
     if(Optimize) {
@@ -195,11 +194,17 @@ int main(int argc, char* argv[]){
 
     }
 
+    printf_llvm_ir(instruction_list,argv[4],0);
 
-//
     for (Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
-        bool eff = commonSubexpressionElimination(currentFunction);
+//        clearInsVisited(currentFunction);
+//        ScheduleLate(currentFunction);
+//        commonSubexpressionElimination(currentFunction);
+        markDominanceDepth(currentFunction);
+        markLoopNest(currentFunction);
+        printALLInfo(currentFunction);
+        //renameVariables(currentFunction);
     }
 
 //phi上的优
@@ -230,12 +235,12 @@ int main(int argc, char* argv[]){
 
     //lsy_begin
 //    printf("=================fix===================\n");
-//    fix_array(instruction_list);
+    fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
     //ljw_begin
-//    reg_control(instruction_list,start);
+    reg_control(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
