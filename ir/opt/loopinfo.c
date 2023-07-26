@@ -362,6 +362,54 @@ void findInductionVariable(Loop *loop){
         }
         printf("initValue %s, modifier %s\n",loop->initValue->name,loop->modifier->name);
     }
+
+
+    //check if the condition changes over the iterations
+
+    //找到 end_cond -> 找lhs 、 rhs Instruction -> 如果还是在entry基本块内就加入workList 一旦读到load -> gg
+    assert(cond != NULL);
+    Instruction *endIns = (Instruction *)cond;
+
+    Function *func = loop->head->Parent;
+    int paramNum = func->entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
+    bool changeOverIteration = false;
+    HashSet *workList = HashSetInit();
+    HashSetAdd(workList,endIns);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        Instruction *ins = HashSetNext(workList);
+        HashSetRemove(workList,ins);
+        if(ins->Opcode == Load){
+            changeOverIteration = true;
+            break;
+        }
+        Value *dest = ins_get_dest(ins);
+        Value *lhs = NULL;
+        Value *rhs = NULL;
+        int numOfOperand = dest->NumUserOperands;
+        if(numOfOperand == 1){
+            lhs = ins_get_lhs(ins);
+        }else{
+            lhs = ins_get_lhs(ins);
+            rhs = ins_get_rhs(ins);
+        }
+        if(lhs && !isImm(lhs) && !isParam(lhs,paramNum)){
+            Instruction *lhsIns = (Instruction *)lhs;
+            if(lhsIns->Parent == loop->head){
+                HashSetAdd(workList,lhsIns);
+            }
+        }
+        if(rhs && !isImm(rhs) && !isParam(rhs,paramNum)){
+            Instruction *rhsIns = (Instruction *)rhs;
+            if(rhsIns->Parent == loop->head){
+                HashSetAdd(workList,rhsIns);
+            }
+        }
+    }
+
+    loop->conditionChangeWithinLoop = changeOverIteration;
+    printf("loop change %d\n",changeOverIteration);
+    HashSetDeinit(workList);
 }
 
 
