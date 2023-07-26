@@ -69,6 +69,18 @@ bool isGlobalArrayFloatType(Type *type){
     return false;
 }
 
+bool isGlobalType(Type* type){
+    if(type->ID == GlobalArrayConstINT || type->ID == GlobalArrayInt || type->ID ==GlobalVarInt || type->ID ==GlobalVarFloat || type->ID ==GlobalArrayFloat || type->ID ==GlobalArrayConstFLOAT)
+        return true;
+    return false;
+}
+
+bool isConstant(Type* type){
+    if(type->ID == Int || type->ID == Float)
+        return true;
+    return false;
+}
+
 void typePrinter(Type *type){
     switch (type->ID) {
         case Unknown:{

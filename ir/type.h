@@ -58,5 +58,7 @@ bool isGlobalVarIntType(Type *type);
 bool isGlobalVarFloatType(Type *type);
 bool isGlobalArrayIntType(Type *type);
 bool isGlobalArrayFloatType(Type *type);
+bool isGlobalType(Type* type);
+bool isConstant(Type* type);
 void typePrinter(Type *type);
 #endif

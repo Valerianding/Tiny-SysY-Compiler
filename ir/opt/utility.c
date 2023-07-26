@@ -691,7 +691,7 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
         //see the user of current
         Instruction *curIns = (Instruction *)oldUses->Parent;
         BasicBlock *block = curIns->Parent;
-        if(isDominated(pos,block)){
+        if(block->dom!=NULL && isDominated(pos,block)){
             value_add_use(new,oldUses);
             oldUses->Val = new;
         }
@@ -706,7 +706,7 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
     while(phiNode != funcTail){
         if(phiNode->inst->Opcode == Phi){
             BasicBlock *phiBlock = phiNode->inst->Parent;
-            if(isDominated(pos,phiBlock)){
+            if((isDominated(pos,phiBlock) && phiBlock != pos) || HashSetFind(phiBlock->preBlocks, pos)){
                 HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
