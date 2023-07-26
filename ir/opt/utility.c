@@ -721,6 +721,7 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
     }
 }
 
-bool isIcmpOperator(InstNode *node){
-
+//reverse post order
+void RPOCfg(Function *currentFunction){
+    BasicBlock *entry = currentFunction->entry;
 }

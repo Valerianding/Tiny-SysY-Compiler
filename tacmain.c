@@ -236,7 +236,7 @@ int main(int argc, char* argv[]){
 
     arm_open_file(argv[3]);
     arm_translate_ins(instruction_list,argv[3]);
-    arm_close_file(argv[3]);
+    arm_close_file();
     //    ljf_end
 
 #endif
