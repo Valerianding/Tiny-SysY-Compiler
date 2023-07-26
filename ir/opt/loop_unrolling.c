@@ -740,6 +740,10 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     if(!loop->initValue || !loop->modifier || !loop->end_cond)
         return false;
 
+    //全局为条件的也不做
+    if(loop->conditionChangeWithinLoop)
+        return false;
+
     Instruction *ins_end_cond=(Instruction*)loop->end_cond;
     Instruction *ins_modifier=(Instruction*)loop->modifier;
     Value *v_step=NULL,*v_end=NULL;
