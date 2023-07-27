@@ -18,6 +18,7 @@
 #include "container/hash_set.h"
 #include "ir/opt/utility.h"
 
+
 typedef struct _live_range{
     int start;
     int end;
@@ -28,6 +29,9 @@ typedef struct _value_live_range{
     int end;
 }value_live_range;
 
+#define MAX(a,b) ((a)>(b)? (a) : (b))
+#define MIN(a,b) ((a)>(b)? (b) : (a))
+
 int CompareNumerics(const void* lhs, const void* rhs);
 void init_PriorityQueue(PriorityQueue*queue);
 void init_HashMap(HashMap*hashMap);
@@ -37,5 +41,6 @@ void analyze_ins(InstNode *ins);
 void handle_def(Value*dvalue,int ins_id);
 void handle_use(Value*uvalue,int ins_id);
 bool value_is_in_liveout(Value*tvalue);
+bool value_is_in_livein(Value*tvalue);
 void print_live_interval();
 #endif //C22V1_LIVE_INTERVAL_H
