@@ -7,5 +7,5 @@
 #include "live_interval.h"
 PriorityQueue *get_function_live_interval(InstNode*ins);
 void line_scan(InstNode*ins);
-void line_scan_alloca();
+void line_scan_alloca(InstNode*ins,PriorityQueue*queue);
 #endif //C22V1_LINE_SCAN_H

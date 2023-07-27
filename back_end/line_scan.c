@@ -16,7 +16,7 @@ PriorityQueue *get_function_live_interval(InstNode*ins){
     return queue;
 }
 
-void line_scan_alloca(){
+void line_scan_alloca(InstNode*ins,PriorityQueue*queue){
 
 }
 
@@ -25,7 +25,7 @@ void line_scan(InstNode*ins){
     while (ins!=NULL){
         if(ins->inst->Opcode==FunBegin){
             queue= get_function_live_interval(ins);
-            line_scan_alloca();
+            line_scan_alloca(ins,queue);
         }
         ins= get_next_inst(ins);
     }

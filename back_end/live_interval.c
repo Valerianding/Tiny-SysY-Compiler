@@ -7,6 +7,9 @@ HashMap *hashmap;
 BasicBlock *block;
 InstNode *ins_end;
 InstNode *ins_head;
+
+
+
 int CompareNumerics(const void* lhs, const void* rhs){
     value_live_range * x1=(value_live_range *)lhs;
     value_live_range * x2=(value_live_range *)rhs;
@@ -35,6 +38,7 @@ PriorityQueue *build_live_interval(Vector* vector){
     VectorFirst(vector,false);
     while (VectorNext(vector,&elem)){
         block=(BasicBlock*)elem;
+        printf("block %d\n",block->id);
         analyze_block();
     }
     Pair *ptr_pair;
@@ -55,6 +59,30 @@ void analyze_block(){
     ins_end=block->tail_node;
     ins_head=block->head_node;
     InstNode *ins=ins_end;
+
+    printf("block%d:\n",block->id);
+//    变量in基本块的LiveOut集合中
+    void *elem;
+    Value *v;
+    HashSetFirst(block->out);
+    while ((elem= HashSetNext(block->out))!=NULL){
+        v=(Value*)elem;
+        live_range *range= HashMapGet(hashmap,v);
+        if(range==NULL){ //添加新range
+            range=(live_range*) malloc(sizeof(live_range));
+            memset(range,0, sizeof(live_range));
+            range->start=ins_head->inst->i;
+            range->end=ins_end->inst->i;
+            HashMapPut(hashmap,(Value*) elem, range);
+            printf("%s %d %d\n",v->name,range->start,range->end);
+        }else{ //延长range
+            range->start=MIN(range->start,ins_head->inst->i);
+            range->end=MAX(range->end,ins_end->inst->i);
+            printf("%s %d %d\n",v->name,range->start,range->end);
+        }
+    }
+
+
     while (ins!=block->head_node){
 //        printf("curr at %d opcode %d\n",ins->inst->i,ins->inst->Opcode);
         analyze_ins(ins);
@@ -72,44 +100,106 @@ bool value_is_in_liveout(Value*tvalue){
         return false;
     }
 }
-
+bool value_is_in_livein(Value*tvalue){
+    if(HashSetFind(block->in,tvalue)==true){
+        return true;
+    }else{
+        return false;
+    }
+}
 void handle_def(Value*dvalue,int ins_id){
 //    printf("handle_def %d\n",ins_id);
     assert(dvalue!=NULL);
-    int flag=0;
-    if(value_is_in_liveout(dvalue)){
-        live_range *range= HashMapGet(hashmap,dvalue);
-        if(range==NULL){
-            flag=1;
-            range=(live_range*) malloc(sizeof(live_range));
-            range->start=ins_head->inst->i;
-            range->end=ins_end->inst->i;
-        }
-        range->start=ins_id;
-        if(flag==1){
-            HashMapPut(hashmap,dvalue,range);
+    if(isImmIntType(dvalue->VTy) || isImmFloatType(dvalue->VTy)){
+        return;
+    }
+    live_range *range= HashMapGet(hashmap,dvalue);
+    if(range!=NULL){
+        if(range->start==ins_head->inst->i){
+            range->start=ins_id;
         }
     }
+
+//    if(value_is_in_liveout(dvalue)){
+//        live_range *range= HashMapGet(hashmap,dvalue);
+//        if(range==NULL){
+//            range=(live_range*) malloc(sizeof(live_range));
+//            range->start=ins_head->inst->i;
+//            range->end=ins_end->inst->i;
+//            printf("%s -> %d\n",dvalue->name,ins_id);
+//            range->start=ins_id;
+//            HashMapPut(hashmap,dvalue,range);
+//        } else{
+//            if(range->start==ins_head->inst->i){
+//                range->start=ins_id;
+//                range->end=MAX(range->end,ins_end->inst->i);
+//            }else{
+//                range->start=MIN(range->start,ins_id);
+//                range->end=MAX(range->end,ins_end->inst->i);
+//            }
+//        }
+//    }else if(value_is_in_livein(dvalue)){
+//        live_range *range= HashMapGet(hashmap,dvalue);
+//        if(range==NULL){
+//            range=(live_range*) malloc(sizeof(live_range));
+//            range->start=ins_head->inst->i;
+//            range->end=ins_end->inst->i;
+//            HashMapPut(hashmap,dvalue,range);
+//        } else{
+//            range->start=MIN(range->start,ins_head->inst->i);
+//            range->end=MAX(range->end,ins_end->inst->i);
+//        }
+//    }
 }
 
 void handle_use(Value*uvalue,int ins_id){
 //    printf("handle_use %d\n",ins_id);
     assert(uvalue!=NULL);
-    int flag=0;
-    if(value_is_in_liveout(uvalue)){
-        live_range *range= HashMapGet(hashmap,uvalue);
-        if(range==NULL){
-            flag=1;
-            range=(live_range*) malloc(sizeof(live_range));
-            range->start=ins_head->inst->i;
-            range->end=ins_end->inst->i;
-        }else{
-            range->start=ins_head->inst->i;
-        }
-        if(flag==1){
-            HashMapPut(hashmap,uvalue,range);
-        }
+    if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
+        return;
     }
+    live_range *range= HashMapGet(hashmap,uvalue);
+    if(range==NULL){
+        range=(live_range*) malloc(sizeof(live_range));
+        memset(range,0,sizeof(live_range));
+        range->start=ins_head->inst->i;
+        range->end=ins_id;
+        HashMapPut(hashmap,uvalue,range);
+    }else{
+        range->start=MIN(range->start,ins_head->inst->i);
+        range->end=MAX(range->end,ins_id);
+    }
+
+//    int flag=0;
+//    if(value_is_in_liveout(uvalue)){
+//        live_range *range= HashMapGet(hashmap,uvalue);
+//        if(range==NULL){
+//            flag=1;
+//            range=(live_range*) malloc(sizeof(live_range));
+//            range->start=ins_head->inst->i;
+//            range->end=ins_end->inst->i;
+//        }else{
+//            range->start=MIN(range->start,ins_head->inst->i);
+//            range->end=MAX(range->end,ins_end->inst->i);
+//        }
+//        if(flag==1){
+//            HashMapPut(hashmap,uvalue,range);
+//        }
+//    }else if(value_is_in_livein(uvalue)){
+//        live_range *range= HashMapGet(hashmap,uvalue);
+//        if(range==NULL){
+//            flag=1;
+//            range=(live_range*) malloc(sizeof(live_range));
+//            range->start=ins_head->inst->i;
+//            range->end=ins_end->inst->i;
+//        }else{
+//            range->start=MIN(range->start,ins_head->inst->i);
+//            range->end=MAX(range->end,ins_id);
+//        }
+//        if(flag==1){
+//            HashMapPut(hashmap,uvalue,range);
+//        }
+//    }
 }
 
 void analyze_ins(InstNode *ins){
@@ -163,7 +253,9 @@ void analyze_ins(InstNode *ins){
         case Call:
 //            printf("call %d\n",ins->inst->i);
             if(!returnValueNotUsed(ins)){
+
                 value0=&ins->inst->user.value;
+                printf("%s call def\n",value0->name);
                 handle_def(value0,ins->inst->i);
             }
 //            printf("call\n");
@@ -254,8 +346,11 @@ void analyze_ins(InstNode *ins){
             handle_use(value2,ins->inst->i);
 //            printf("noteq\n");
             break;
-//        case br_i1:
-//            break;
+        case br_i1:
+//            value0=&ins->inst->user.value;
+            value1=user_get_operand_use(&ins->inst->user,0)->Val; //真值
+            handle_use(value1,ins->inst->i);
+            break;
 //        case br:
 //            break;
 //        case Label:
@@ -339,15 +434,6 @@ void print_live_interval(){
 //        printf("%d\n",PriorityQueueSize(pqueue));
         cur=(value_live_range*)elem;
         printf("%s start %d    end %d\n",cur->value->name,cur->start,cur->end);
-//        assert(cur->value->name!=NULL);
-//        printf("%s\t\t:",cur->value->name);
-//        for (int i=0;i<cur->start;i++){
-//            printf(" ");
-//        }
-//        printf("|");
-//        for(int i=cur->start;i!=cur->end;i++){
-//            printf("-");
-//        }
     }
     printf("/********************live interval*************************/\n\n");
 }
