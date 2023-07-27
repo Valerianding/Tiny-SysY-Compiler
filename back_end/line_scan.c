@@ -11,7 +11,7 @@ PriorityQueue *get_function_live_interval(InstNode*ins){
     function=block->Parent;
 
     PriorityQueue *queue;
-    queue= build_live_interval(function->RPOBlocks);
+    queue= build_live_interval(function->ToPoBlocks);
     print_live_interval();
     return queue;
 }
