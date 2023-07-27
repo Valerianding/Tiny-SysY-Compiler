@@ -48,4 +48,5 @@ bool isLoopInvariant(struct Loop *loop,Value *var);
 bool returnValueNotUsed(InstNode *instNode);
 bool specialValueReplace(Value *old, Value *new, BasicBlock *pos);
 bool isDominated(BasicBlock *block, BasicBlock *target);
+void RPOCfg(Function *currentFunction);
 #endif //C22V1_UTILITY_H

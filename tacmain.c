@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -188,12 +188,13 @@ int main(int argc, char* argv[]){
         }
     }
 
-//    printf_llvm_ir(instruction_list,argv[4],0);
 
-//    for (Function *currentFunction = start;
-//         currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        DVNT(currentFunction);
-//    }
+    for (Function *currentFunction = start;
+         currentFunction != NULL; currentFunction = currentFunction->Next) {
+        RPOCfg(currentFunction);
+    }
+
+    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
