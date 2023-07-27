@@ -721,7 +721,11 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
     }
 }
 
-//reverse post order
+//reverse post order travel the cfg
+//reverse post order == depth first
 void RPOCfg(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
+    clear_visited_flag(entry);
+    currentFunction->RPOBlocks = VectorInit(10);
+
 }

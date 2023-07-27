@@ -186,7 +186,6 @@ int main(int argc, char* argv[]){
             dominanceAnalysis(currentFunction);
              RunOptimizePasses(currentFunction);
         }
-
     }
 
 //    printf_llvm_ir(instruction_list,argv[4],0);
