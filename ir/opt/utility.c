@@ -706,7 +706,7 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
     while(phiNode != funcTail){
         if(phiNode->inst->Opcode == Phi){
             BasicBlock *phiBlock = phiNode->inst->Parent;
-            if((isDominated(pos,phiBlock) && phiBlock != pos) || HashSetFind(phiBlock->preBlocks, pos)){
+            if((phiBlock->dom!=NULL && isDominated(pos,phiBlock) && phiBlock != pos) || HashSetFind(phiBlock->preBlocks, pos)){
                 HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
                 for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
