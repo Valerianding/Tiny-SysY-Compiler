@@ -24,6 +24,7 @@ void line_scan(InstNode*ins){
     PriorityQueue *queue;
     while (ins!=NULL){
         if(ins->inst->Opcode==FunBegin){
+            printf("%s:\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
             queue= get_function_live_interval(ins);
             line_scan_alloca(ins,queue);
         }

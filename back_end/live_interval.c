@@ -38,7 +38,7 @@ PriorityQueue *build_live_interval(Vector* vector){
     VectorFirst(vector,false);
     while (VectorNext(vector,&elem)){
         block=(BasicBlock*)elem;
-        printf("block %d\n",block->id);
+//        printf("block %d\n",block->id);
         analyze_block();
     }
     Pair *ptr_pair;
@@ -60,7 +60,7 @@ void analyze_block(){
     ins_head=block->head_node;
     InstNode *ins=ins_end;
 
-    printf("block%d:\n",block->id);
+//    printf("block%d:\n",block->id);
 //    变量in基本块的LiveOut集合中
     void *elem;
     Value *v;
@@ -74,15 +74,13 @@ void analyze_block(){
             range->start=ins_head->inst->i;
             range->end=ins_end->inst->i;
             HashMapPut(hashmap,(Value*) elem, range);
-            printf("%s %d %d\n",v->name,range->start,range->end);
+//            printf("new %s %d %d\n",v->name,range->start,range->end);
         }else{ //延长range
             range->start=MIN(range->start,ins_head->inst->i);
             range->end=MAX(range->end,ins_end->inst->i);
-            printf("%s %d %d\n",v->name,range->start,range->end);
+//            printf("extend %s %d %d\n",v->name,range->start,range->end);
         }
     }
-
-
     while (ins!=block->head_node){
 //        printf("curr at %d opcode %d\n",ins->inst->i,ins->inst->Opcode);
         analyze_ins(ins);
@@ -203,6 +201,7 @@ void handle_use(Value*uvalue,int ins_id){
 }
 
 void analyze_ins(InstNode *ins){
+    int opNum;
     Value *value0,*value1,*value2;
     switch (ins->inst->Opcode) {
         case Add:
@@ -255,7 +254,7 @@ void analyze_ins(InstNode *ins){
             if(!returnValueNotUsed(ins)){
 
                 value0=&ins->inst->user.value;
-                printf("%s call def\n",value0->name);
+//                printf("%s call def\n",value0->name);
                 handle_def(value0,ins->inst->i);
             }
 //            printf("call\n");
@@ -263,8 +262,11 @@ void analyze_ins(InstNode *ins){
 //        case FunBegin:
 //            break;
         case Return:
-            value1= user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_use(value1,ins->inst->i);
+            opNum=ins->inst->user.value.NumUserOperands;
+            if(opNum!=0){
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                handle_use(value1,ins->inst->i);
+            }
 //            printf("return\n");
             break;
         case Store:
