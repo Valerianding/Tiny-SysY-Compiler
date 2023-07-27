@@ -28,8 +28,9 @@ void init_HashMap(HashMap*hashMap){
 
 //每个function建立一张live_interval,会从vector数组中，取出每个block
 PriorityQueue *build_live_interval(Vector* vector){
-    init_PriorityQueue(pqueue);
-    init_HashMap(hashmap);
+    pqueue=PriorityQueueInit();
+    pqueue->set_compare(pqueue,CompareNumerics);
+    hashmap=HashMapInit();
     void *elem;
     VectorFirst(vector,false);
     while (VectorNext(vector,&elem)){
@@ -55,6 +56,7 @@ void analyze_block(){
     ins_head=block->head_node;
     InstNode *ins=ins_end;
     while (ins!=block->head_node){
+//        printf("curr at %d opcode %d\n",ins->inst->i,ins->inst->Opcode);
         analyze_ins(ins);
         ins= get_prev_inst(ins);
     }
@@ -72,6 +74,8 @@ bool value_is_in_liveout(Value*tvalue){
 }
 
 void handle_def(Value*dvalue,int ins_id){
+//    printf("handle_def %d\n",ins_id);
+    assert(dvalue!=NULL);
     int flag=0;
     if(value_is_in_liveout(dvalue)){
         live_range *range= HashMapGet(hashmap,dvalue);
@@ -89,6 +93,8 @@ void handle_def(Value*dvalue,int ins_id){
 }
 
 void handle_use(Value*uvalue,int ins_id){
+//    printf("handle_use %d\n",ins_id);
+    assert(uvalue!=NULL);
     int flag=0;
     if(value_is_in_liveout(uvalue)){
         live_range *range= HashMapGet(hashmap,uvalue);
@@ -116,6 +122,7 @@ void analyze_ins(InstNode *ins){
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
             handle_use(value2,ins->inst->i);
+//            printf("add\n");
             break;
         case Sub:
             value0=&ins->inst->user.value;
@@ -124,6 +131,7 @@ void analyze_ins(InstNode *ins){
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
             handle_use(value2,ins->inst->i);
+//            printf("sub\n");
             break;
         case Mul:
             value0=&ins->inst->user.value;
@@ -132,6 +140,7 @@ void analyze_ins(InstNode *ins){
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
             handle_use(value2,ins->inst->i);
+//            printf("mul\n");
             break;
         case Div:
             value0=&ins->inst->user.value;
@@ -140,6 +149,7 @@ void analyze_ins(InstNode *ins){
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
             handle_use(value2,ins->inst->i);
+//            printf("div\n");
             break;
         case Mod:
             value0=&ins->inst->user.value;
@@ -148,40 +158,47 @@ void analyze_ins(InstNode *ins){
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
             handle_use(value2,ins->inst->i);
+//            printf("mod\n");
             break;
         case Call:
+//            printf("call %d\n",ins->inst->i);
             if(!returnValueNotUsed(ins)){
                 value0=&ins->inst->user.value;
                 handle_def(value0,ins->inst->i);
             }
+//            printf("call\n");
             break;
-        case FunBegin:
-            break;
+//        case FunBegin:
+//            break;
         case Return:
             value1= user_get_operand_use(&ins->inst->user,0)->Val;
             handle_use(value1,ins->inst->i);
+//            printf("return\n");
             break;
         case Store:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_use(value1,ins->inst->i);
             handle_use(value2,ins->inst->i);
+//            printf("store\n");
             break;
         case Load:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
+//            printf("load\n");
             break;
-        case Alloca:
-            value0 = &ins->inst->user.value;
-            break;
+//        case Alloca:
+//            value0 = &ins->inst->user.value;
+//            break;
         case GIVE_PARAM:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_use(value1,ins->inst->i);
+//            printf("give_param\n");
             break;
-        case ALLBEGIN:
-            break;
+//        case ALLBEGIN:
+//            break;
         case LESS:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -189,7 +206,8 @@ void analyze_ins(InstNode *ins){
 //            value0可能不需要分配
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
-            handle_def(value2,ins->inst->i);
+            handle_use(value2,ins->inst->i);
+//            printf("less\n");
             break;
         case GREAT:
             value0=&ins->inst->user.value;
@@ -197,7 +215,8 @@ void analyze_ins(InstNode *ins){
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
-            handle_def(value2,ins->inst->i);
+            handle_use(value2,ins->inst->i);
+//            printf("great\n");
             break;
         case LESSEQ:
             value0=&ins->inst->user.value;
@@ -205,7 +224,8 @@ void analyze_ins(InstNode *ins){
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
-            handle_def(value2,ins->inst->i);
+            handle_use(value2,ins->inst->i);
+//            printf("lesseq\n");
             break;
         case GREATEQ:
             value0=&ins->inst->user.value;
@@ -213,7 +233,8 @@ void analyze_ins(InstNode *ins){
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
-            handle_def(value2,ins->inst->i);
+            handle_use(value2,ins->inst->i);
+//            printf("greateq\n");
             break;
         case EQ:
             value0=&ins->inst->user.value;
@@ -221,7 +242,8 @@ void analyze_ins(InstNode *ins){
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
-            handle_def(value2,ins->inst->i);
+            handle_use(value2,ins->inst->i);
+//            printf("eq\n");
             break;
         case NOTEQ:
             value0=&ins->inst->user.value;
@@ -229,73 +251,79 @@ void analyze_ins(InstNode *ins){
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
-            handle_def(value2,ins->inst->i);
+            handle_use(value2,ins->inst->i);
+//            printf("noteq\n");
             break;
-        case br_i1:
-            break;
-        case br:
-            break;
-        case Label:
-            break;
+//        case br_i1:
+//            break;
+//        case br:
+//            break;
+//        case Label:
+//            break;
         case XOR:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
+//            printf("xor\n");
             break;
-        case zext:
-            value0=&ins->inst->user.value;
-            value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            break;
-        case bitcast:
-            value0=&ins->inst->user.value;
-            value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            break;
+//        case zext:
+//            value0=&ins->inst->user.value;
+//            value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//            break;
+//        case bitcast:
+//            value0=&ins->inst->user.value;
+//            value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//            break;
         case GEP:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
-            handle_def(value2,ins->inst->i);
+            handle_use(value2,ins->inst->i);
+//            printf("gep\n");
             break;
-        case MEMCPY:
-            value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            break;
-        case MEMSET:
-            value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            break;
-        case zeroinitializer:
-            break;
-        case GLOBAL_VAR:
-            value0=&ins->inst->user.value;
-            value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            break;
-        case FunEnd:
-            break;
+//        case MEMCPY:
+//            value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//            value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//            break;
+//        case MEMSET:
+//            value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//            value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//            break;
+//        case zeroinitializer:
+//            break;
+//        case GLOBAL_VAR:
+//            value0=&ins->inst->user.value;
+//            value1=user_get_operand_use(&ins->inst->user,0)->Val;
+//            value2= user_get_operand_use(&ins->inst->user,1)->Val;
+//            break;
+//        case FunEnd:
+//            break;
         case CopyOperation:
             value0=ins->inst->user.value.alias;//这里是需要进到alias里面的
             value1= user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
+//            printf("copy\n");
             break;
         case fptosi:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
+//            printf("fptosi\n");
             break;
         case sitofp:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def(value0,ins->inst->i);
             handle_use(value1,ins->inst->i);
+//            printf("sitofp\n");
             break;
-        case SysYMemset:
-            break;
+//        case SysYMemset:
+//            break;
         default:
             break;
     }
@@ -304,19 +332,22 @@ void analyze_ins(InstNode *ins){
 void print_live_interval(){
     void *elem;
     value_live_range *cur;
+    printf("/********************live interval*************************/\n");
     while (PriorityQueueSize(pqueue)!=0){
         PriorityQueueTop(pqueue,&elem);
         PriorityQueuePop(pqueue);
+//        printf("%d\n",PriorityQueueSize(pqueue));
         cur=(value_live_range*)elem;
-        assert(cur->value->name!=NULL);
-        printf("%s\t\t:",cur->value->name);
-        for (int i=0;i<cur->start;i++){
-            printf(" ");
-        }
-        printf("|");
-        for(int i=cur->start;i!=cur->end;i++){
-            printf("-");
-        }
-        printf("\n");
+        printf("%s start %d    end %d\n",cur->value->name,cur->start,cur->end);
+//        assert(cur->value->name!=NULL);
+//        printf("%s\t\t:",cur->value->name);
+//        for (int i=0;i<cur->start;i++){
+//            printf(" ");
+//        }
+//        printf("|");
+//        for(int i=cur->start;i!=cur->end;i++){
+//            printf("-");
+//        }
     }
+    printf("/********************live interval*************************/\n\n");
 }
