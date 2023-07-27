@@ -1,0 +1,32 @@
+//
+// Created by Administrator on 2023/7/27.
+//
+#include "line_scan.h"
+
+//传入的是FuncBegin的ins
+PriorityQueue *get_function_live_interval(InstNode*ins){
+    BasicBlock *block;
+    Function *function;
+    block=ins->inst->Parent;
+    function=block->Parent;
+
+    PriorityQueue *queue;
+    queue= build_live_interval(function->RPOBlocks);
+    print_live_interval();
+    return queue;
+}
+
+void line_scan_alloca(){
+
+}
+
+void line_scan(InstNode*ins){
+    PriorityQueue *queue;
+    while (ins!=NULL){
+        if(ins->inst->Opcode==FunBegin){
+            queue= get_function_live_interval(ins);
+            line_scan_alloca();
+        }
+        ins= get_next_inst(ins);
+    }
+}
