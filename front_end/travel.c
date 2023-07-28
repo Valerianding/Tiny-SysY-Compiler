@@ -1,4 +1,5 @@
 #include "travel.h"
+#include "tree_balancing.h"
 
 extern Symtab *this;
 extern struct _InstNode *instruction_list;
@@ -2936,6 +2937,12 @@ void create_func_def(past root) {
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
 struct _Value *cal_expr(past expr,int type,int* real) {
+    Queue *queue=QueueInit();
+    past ret = NULL;
+    ret = tree_balancing(expr);
+    if(ret!=NULL)
+        expr = ret;
+
     //最后从栈中弹出的
     Value *final_result = (Value*) malloc(sizeof (Value));
     value_init(final_result);
@@ -4136,8 +4143,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
-        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
+//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        if(instruction->user.value.alias!= NULL && instruction->user.value.alias->name!= NULL && instruction->user.value.alias->alias!= NULL && instruction->user.value.alias->alias->name!= NULL)
+//            printf("%s . ",instruction->user.value.alias->name);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -5258,8 +5267,8 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 Value *insValue = ins_get_dest(instruction);
                 HashSet *phiSet = instruction->user.value.pdata->pairSet;
                 HashSetFirst(phiSet);
-                printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
-                //printf(" %s = phi i32",instruction->user.value.name);
+                //printf(" %s( %s) = phi i32",instruction->user.value.name, instruction->user.value.alias->name);
+                printf(" %s = phi i32",instruction->user.value.name);
                 fprintf(fptr," %s = phi i32",instruction->user.value.name);
                 unsigned int size=HashSetSize(phiSet);
                 int i=0;
@@ -5328,6 +5337,22 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
 //            printf("value1:%s,\t",type_str[vl->VTy->ID]);
 //        if(vr!=NULL)
 //            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n\n");
+////
+////        if(instruction->isCritical){
+////            printf("isCritical\n\n");
+////        }
+//
+////        Value *v,*vl,*vr;
+////        v= ins_get_dest(instruction_node->inst);
+////        vl= ins_get_lhs(instruction_node->inst);
+////        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%p,\t",v);
+//        if(vl!=NULL)
+//            printf("value1:%p,\t",vl);
+//        if(vr!=NULL)
+//            printf("value2:%p,\t",vr);
 //        printf("\n\n");
 
 //        if(instruction->isCritical){

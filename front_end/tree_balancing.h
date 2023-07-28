@@ -10,6 +10,6 @@
 #include "value_stack.h"
 #include "queue.h"
 #include "hash_set.h"
-void balance(past root, HashMap* rank_map, HashSet* root_set);
-void tree_balancing(past expr);
+past balance(past root, HashMap* rank_map, HashSet* root_set);
+past tree_balancing(past expr);
 #endif //C22V1_TREE_BALANCING_H

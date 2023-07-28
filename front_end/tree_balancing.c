@@ -16,7 +16,7 @@ bool find_roots(past expr, Queue* queue, HashMap* rank_map,HashSet* root_set)
     return true;
 }
 
-void Rebuild(Queue* q, past expr,HashMap* rank_map, int Op){
+past Rebuild(Queue* q, past expr,HashMap* rank_map, int Op){
     while(QueueSize(q) != 0){
         past nl , nr;
         QueueFront(q, (void **) &nl);
@@ -32,10 +32,10 @@ void Rebuild(Queue* q, past expr,HashMap* rank_map, int Op){
             //即最终可化简成一个常数
             if(QueueSize(q) == 0){
                 //emit "root" <--- fold result 将整个root(expr)用最后算出的常值代替
-                expr = fold;
                 int *rank = malloc(4);
                 *rank = 0;
-                HashMapPut(rank_map,expr,rank);
+                HashMapPut(rank_map,fold,rank);
+                return fold;
             } else {
                 int *rank = malloc(4);
                 *rank = 0;
@@ -43,12 +43,11 @@ void Rebuild(Queue* q, past expr,HashMap* rank_map, int Op){
                 QueuePush(q, fold);
             }
         } else {
-            //TODO 默认是+
             past NT = newExpr(nl,Op,nr);
 
             if(QueueSize(q) == 0){
                 // NT <--- root
-                expr = NT;
+                return NT;
             }
             //rank(NT) <--rank(nl) + rank(nr)
             int *rank = malloc(4);
@@ -77,7 +76,7 @@ int flatten(past var, Queue* q,HashMap* rank_map,HashSet* root_set){
         HashMapPut(rank_map,var,rank);
         QueuePush(q,var);
     }
-    else if(strcmp(bstr2cstr(var->nodeType, '\0'), "expr") == 0 && HashSetFind(root_set, var)){     //TODO 怪
+    else if(strcmp(bstr2cstr(var->nodeType, '\0'), "expr") == 0 && HashSetFind(root_set, var)){
         //root
         balance(var,rank_map,root_set);
         QueuePush(q,var);
@@ -89,20 +88,20 @@ int flatten(past var, Queue* q,HashMap* rank_map,HashSet* root_set){
     return *rank;
 }
 
-void balance(past root, HashMap* rank_map,HashSet* root_set){
+past balance(past root, HashMap* rank_map,HashSet* root_set){
     int *rank = HashMapGet(rank_map,root);
     if(*rank >= 0)
-        return;
+        return root;
 
     //1. first flatten the tree
     //new queue of names
     Queue *q = QueueInit();
     *rank = flatten(root->left,q, rank_map,root_set) + flatten(root->right,q,rank_map,root_set);
 
-    Rebuild(q,root,rank_map,root->iVal);
+    return Rebuild(q,root,rank_map,root->iVal);
 }
 
-void tree_balancing(past expr)
+past tree_balancing(past expr)
 {
     //这个queue用来保存expr中定的root
     Queue *queue_root  = QueueInit();
@@ -113,12 +112,17 @@ void tree_balancing(past expr)
     //用于保存每个root的rank值,初始都是-1
     HashMap* rank_map = HashMapInit();
 
+    past ret = NULL;
     if(find_roots(expr,queue_root,rank_map,root_set)){
         while(QueueSize(queue_root)!=0){
             past root ;
             QueueFront(queue_root,(void**)&root);
             QueuePop(queue_root);
-            balance(root,rank_map,root_set);
+            ret = balance(root,rank_map,root_set);
         }
     }
+
+    if(ret!=NULL)
+        showAst(ret,0);
+    return ret;
 }
