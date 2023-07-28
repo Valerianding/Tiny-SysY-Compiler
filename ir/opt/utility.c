@@ -838,7 +838,6 @@ void topCfg(Function *currentFunction){
             }
         }
     }
-    printf("over\n");
     VectorPushBack(vector,exit);
 
     int n = VectorSize(vector);

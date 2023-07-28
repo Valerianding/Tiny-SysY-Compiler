@@ -7,6 +7,7 @@
 bool LICM(Function *currentFunction){
     bool effective = false;
     HashSetFirst(currentFunction->loops);
+    printf("current func %d\n", HashSetSize(currentFunction->loops));
     for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
         //对于每一颗子树 对其进行深度优先遍历
         dfsLoopTree(root);
@@ -16,6 +17,7 @@ bool LICM(Function *currentFunction){
 
 bool dfsLoopTree(Loop *loop){
     bool effective = false;
+    printf("child %d\n", HashSetSize(loop->child));
     HashSetFirst(loop->child);
     for(Loop *childLoop = HashSetNext(loop->child); childLoop != NULL; childLoop = HashSetNext(loop->child)){
         /*内层循环先处理*/
@@ -30,7 +32,7 @@ bool LICM_EACH(Loop *loop){
     bool effective = false;
 
     // reconstruct the loop body since it can have change due to its child loop
-    reconstructLoop(loop);
+    //reconstructLoop(loop);
 
     //first find all def in loop
     HashSet *def = HashSetInit();
@@ -177,13 +179,19 @@ bool LICM_EACH(Loop *loop){
                 for(BasicBlock *preBlock = HashSetNext(head->preBlocks); preBlock != NULL; preBlock = HashSetNext(head->preBlocks)){
                     //看它是不是在我们的loop里面
                     if(!HashSetFind(loop->loopBody,preBlock)){
+                        printf("not block %d\n",preBlock->id);
                         HashSetAdd(newBlockPrev,preBlock);
                     }
                 }
+
+                printf("loop head %d loop body %d\n",loop->head->id, HashSetSize(loop->loopBody));
                 BasicBlock *newPrevBlock = NULL;
                 //需要判断是否需要新的基本块
                 //如果除开循环前驱大于1
+
+                //TODO examine this condtion
                 if(HashSetSize(newBlockPrev) > 1){
+                    assert(false);
                     newPrevBlock = newBlock(newBlockPrev,head);
                     newPrevBlock->Parent = loop->head->Parent;
                 }else{

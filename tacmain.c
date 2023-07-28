@@ -169,29 +169,27 @@ int main(int argc, char* argv[]){
     }
 
     //OK 现在开始我们不会对
-    //printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //先跑一次
     //cse cf
     //如果要fuc inline一定要dom一下
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
-    }
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        RunBasicPasses(currentFunction);
+//    }
+//
 
-    if(Optimize) {
-        travel();
-        for (Function *currentFunction = start;
-             currentFunction != NULL; currentFunction = currentFunction->Next) {
-            dominanceAnalysis(currentFunction);
-             RunOptimizePasses(currentFunction);
-        }
-    }
+//    if(Optimize) {
+//        travel();
+//        for (Function *currentFunction = start;
+//             currentFunction != NULL; currentFunction = currentFunction->Next) {
+//            dominanceAnalysis(currentFunction);
+//             RunOptimizePasses(currentFunction);
+//        }
+//    }
 
-
-
-
-    //printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -200,10 +198,6 @@ int main(int argc, char* argv[]){
         cleanLiveSet(currentFunction);
     }
 
-    //请注释掉我跑llvm脚本 phi函数消除
-    //printf_llvm_ir(instruction_list,argv[4],1);
-
-//
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //printf("function: %s\n",currentFunction->entry->head_node->inst->user.use_list[0].Val->name);
         clear_visited_flag(currentFunction->entry);
@@ -212,13 +206,13 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 //
+//    printf_llvm_ir(instruction_list,argv[4],0);
+
 //    for (Function *currentFunction = start;
 //         currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        dominanceAnalysis(currentFunction);
 //        topCfg(currentFunction);
 //    }
-
-    // Liveness 计算之后请注释掉我跑llvm
-//    printf_llvm_ir(instruction_list,argv[4],0);
 
 
     //lsy_begin
