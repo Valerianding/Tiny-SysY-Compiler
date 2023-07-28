@@ -169,6 +169,15 @@ void update_replace_value_mod(HashMap* map,Value* v_before,Value* v_replace, Loo
     }
 }
 
+bool have_phi_from_block(HashSet* set, BasicBlock* block,HashMap* block_map){
+    HashSetFirst(set);
+    for(pair* phiInfo = HashSetNext(set);phiInfo!=NULL; phiInfo = HashSetNext(set)){
+        if(HashMapGet(block_map,block) == block)
+            return true;
+    }
+    return false;
+}
+
 //将phi的信息补充完整
 void reduce_phi_(HashMap* phi_map,HashMap* other_value_map,HashMap* block_map,HashMap* v_new_valueMap,Loop* loop){
     HashMapFirst(phi_map);
@@ -180,7 +189,7 @@ void reduce_phi_(HashMap* phi_map,HashMap* other_value_map,HashMap* block_map,Ha
         HashSetFirst(v_key->pdata->pairSet);
         for(pair *pp = HashSetNext(v_key->pdata->pairSet); pp!=NULL ;pp = HashSetNext(v_key->pdata->pairSet)){
             //块a对块b具有支配关系的才新加，因为别的之前的都加过了
-            if(isDominated(ins_key->Parent, pp->from)){
+            if(!have_phi_from_block(v_value->pdata->pairSet, pp->from,block_map)){
                 pair* pair1 = (pair*) malloc(sizeof (pair));
                 pair1->from = HashMapGet(block_map,pp->from);
 
@@ -272,7 +281,7 @@ void update_head_phi(BasicBlock *prev_tail,BasicBlock* head, BasicBlock* new_tai
 
 //一次循环展开, 是icmp的模式
 //返回新建立的，下一次使用的基本块
-BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valueMap,HashMap* other_new_valueMap, Instruction* ins_end,bool last, HashMap* exit_phi_map,HashMap* phi_map){
+BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valueMap,HashMap* other_new_valueMap, Instruction* ins_end,bool last, HashMap* exit_phi_map,HashMap* phi_map, HashMap* block_map){
     BasicBlock *curr_block=NULL;
     BasicBlock *tail_curr_block = NULL;
     BasicBlock *prev_block = NULL;
@@ -317,7 +326,8 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
                 }
             }
             else{
-                if(check->from == loop->head->true_block){
+                //TODO 感觉有点奇怪
+                if(check->from == loop->head->true_block || check->from == loop->tail){
                     compare = check->define;
                     break;
                 }
@@ -383,7 +393,7 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
     ins_insert_after(node_tail,node_label);
 
     //和内联一样，准备一个map保存原block与现在block的对应关系
-    HashMap *block_map = HashMapInit();
+    HashMapClean(block_map);
 
     //不能遍历loop body的set, set出来的顺序不对!!!
     InstNode *currNode = loop->head->true_block->head_node;
@@ -420,7 +430,7 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
                 if (rhs != NULL) {
                     if (HashMapContain(v_new_valueMap, rhs)) {
                         HashSet *set_replace = HashMapGet(v_new_valueMap, rhs);
-                        v_r = get_replace_value(set_replace, body);
+                        v_r = get_replace_value(set_replace, loop->tail);
                     }
                         //变化过的中间变量
                     else if (HashMapContain(other_new_valueMap, rhs))
@@ -584,6 +594,8 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
     //将新块都加入loop body, 改变loop tail, 并改变head phi中的from
     if(last){
         BasicBlock *prev_tail = loop->tail;
+        tail_curr_block->true_block = loop->head;
+        bb_add_prev(tail_curr_block,loop->head);
 
         HashMapFirst(block_map);
         for(Pair* p = HashMapNext(block_map); p!=NULL; p= HashMapNext(block_map)){
@@ -593,7 +605,6 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
             HashSetAdd(loop->loopBody, b_new);
         }
 
-        //TODO 目前只打算修改head的，可能多基本块之后还要改别的
         update_head_phi(prev_tail,loop->head,loop->tail);
     }
 
@@ -648,7 +659,7 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
                         if(HashMapContain(v_new_valueMap,rhs))
                         {
                             HashSet *set_replace=HashMapGet(v_new_valueMap,rhs);
-                            v_r=get_replace_value(set_replace,body);
+                            v_r=get_replace_value(set_replace,loop->tail);
                         }
                             //变化过的中间变量
                         else if(HashMapContain(other_new_valueMap,rhs))
@@ -707,7 +718,7 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
     first_copy = false;
 }
 
-//TODO 目前还是基本块内, 完全一样地复制
+//目前还是基本块内, 完全一样地复制
 //返回一个map,表明每个value的更新情况
 void copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,HashMap* other_new_valueMap,bool first_time){
     HashSetFirst(loop->loopBody);
@@ -891,11 +902,10 @@ int cal_times(int init,Instruction *ins_modifier,Instruction *ins_end_cond,Value
 
 bool LOOP_UNROLL_EACH(Loop* loop)
 {
-    //TODO 目前不做基本块间
 //    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0 || !loop->hasDedicatedExit)
 //        return false;
 
-    if(!loop->hasDedicatedExit)
+    if(!loop->hasDedicatedExit  || HashSetSize(loop->child) != 0)
         return false;
 
     if(!loop->initValue || !loop->modifier || !loop->end_cond)
@@ -912,7 +922,9 @@ bool LOOP_UNROLL_EACH(Loop* loop)
         v_end= ins_get_rhs(ins_end_cond);
     else
         v_end= ins_get_lhs(ins_end_cond);
-    if(ins_get_lhs(ins_modifier)==loop->inductionVariable)
+    if(loop->modifier->IsPhi)
+        v_step = loop->modifier;
+    else if(ins_get_lhs(ins_modifier)==loop->inductionVariable)
         v_step= ins_get_rhs(ins_modifier);
     else
         v_step= ins_get_lhs(ins_modifier);
@@ -943,6 +955,8 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     HashMap *other_new_valueMap=HashMapInit();
 
     HashMap* phi_map = HashMapInit();
+
+    HashMap * block_map = HashMapInit();
 
     //扫head
     //head块保存一下初始中map中变量与最新更新值的对应关系
@@ -983,9 +997,9 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     //2. 归纳变量从无余数的起点开始跑
 
     //1. 如果是常数,可以直接算出有没有余数
-    //TODO 新块的head,tail
     BasicBlock *new_pre_block = NULL;
-    if(check_idc(loop->initValue,v_step,v_end)){
+    //目前常数情况多基本块的没有单独做了，就按icmp的方式走了
+    if(check_idc(loop->initValue,v_step,v_end) && HashSetSize(loop->loopBody) <= 2){
         int mod_num = times->pdata->var_pdata.iVal % update_modifier;       //余数是迭代次数对update_modifier取余
         printf("mod num : %d\n",mod_num);
         if(mod_num != 0){               //无余数的情况不处理
@@ -1032,15 +1046,15 @@ bool LOOP_UNROLL_EACH(Loop* loop)
         BasicBlock *cur_block = NULL;
         for(int i = 0;i < update_modifier-1;i++){
             if(i==0)
-                cur_block = copy_one_time_icmp(loop,NULL, v_new_valueMap,other_new_valueMap,ins_end_cond,false,exit_phi_map,phi_map);
+                cur_block = copy_one_time_icmp(loop,NULL, v_new_valueMap,other_new_valueMap,ins_end_cond,false,exit_phi_map,phi_map,block_map);
             else if(i+1 == update_modifier-1)
-                cur_block = copy_one_time_icmp(loop,cur_block, v_new_valueMap,other_new_valueMap,ins_end_cond,true,exit_phi_map,phi_map);
+                cur_block = copy_one_time_icmp(loop,cur_block, v_new_valueMap,other_new_valueMap,ins_end_cond,true,exit_phi_map,phi_map,block_map);
             else
-                cur_block = copy_one_time_icmp(loop,cur_block, v_new_valueMap,other_new_valueMap,ins_end_cond,false,exit_phi_map,phi_map);
+                cur_block = copy_one_time_icmp(loop,cur_block, v_new_valueMap,other_new_valueMap,ins_end_cond,false,exit_phi_map,phi_map,block_map);
         }
         //给exit_block加上一些Phi
         HashMap *match_phi_map = insert_exit_phi(loop->exit_block,exit_phi_map,loop);
-        //TODO 进行value的替换
+
         HashMapFirst(match_phi_map);
         for(Pair* p = HashMapNext(match_phi_map); p!=NULL; p = HashMapNext(match_phi_map)){
             specialValueReplace(p->key, p->value, loop->exit_block);
