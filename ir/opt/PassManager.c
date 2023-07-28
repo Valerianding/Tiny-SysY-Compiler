@@ -27,6 +27,8 @@ void RunOptimizePasses(Function *currentFunction){
     loop(currentFunction);
     LICM(currentFunction);
 
+    LoopConversion(currentFunction);
+
     GCM(currentFunction);
 
     instruction_combination(currentFunction);

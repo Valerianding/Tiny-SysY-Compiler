@@ -18,12 +18,25 @@ void CheckGlobalVariable(InstNode *list){
     }
 
     //go through all first delete not used global variable
+    InstNode *globalNode = list;
+    while(globalNode->inst->Opcode != FunBegin){
+        assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
+        Value *dest = ins_get_dest(globalNode->inst);
+        Use *destUses = dest->use_list;
+        if(destUses == NULL){
+            InstNode *tempNode = get_next_inst(globalNode);
+            deleteIns(globalNode);
+            globalNode = tempNode;
+        }else{
+            globalNode = get_next_inst(globalNode);
+        }
+    }
 
     constant_ = VectorInit(10);
 
     //go through all the global variables see if it is initialized
 
-    InstNode *globalNode = list;
+    globalNode = list;
     while(globalNode->inst->Opcode != FunBegin){
         // only consider variables not arrays
         // TODO add array form
@@ -115,6 +128,18 @@ void CheckGlobalVariable(InstNode *list){
                 }
             }
             uses = uses->Next;
+        }
+    }
+
+    InstNode *tempNode = instruction_list;
+    printf("here\n");
+    while(tempNode != NULL){
+        if(tempNode->inst->isCritical == true){
+            InstNode *nextNode = get_next_inst(tempNode);
+            deleteIns(tempNode);
+            tempNode = nextNode;
+        }else{
+            tempNode = get_next_inst(tempNode);
         }
     }
 

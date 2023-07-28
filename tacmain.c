@@ -180,15 +180,18 @@ int main(int argc, char* argv[]){
 //    }
 //
 
-//    if(Optimize) {
-//        travel();
-//        for (Function *currentFunction = start;
-//             currentFunction != NULL; currentFunction = currentFunction->Next) {
-//            dominanceAnalysis(currentFunction);
-//             RunOptimizePasses(currentFunction);
-//        }
-//    }
+    if(Optimize) {
+        travel();
+        for (Function *currentFunction = start;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+            dominanceAnalysis(currentFunction);
+             RunOptimizePasses(currentFunction);
+        }
+    }
 
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+        Clean(currentFunction);
+    }
 //    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化

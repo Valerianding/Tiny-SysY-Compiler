@@ -169,7 +169,11 @@ void loop(Function *currentFunction){
         }
     }
 
-    printf("current Function %d\n", HashSetSize(currentFunction->loops));
+    //检查是否是所有loop都有preHeader
+    HashSetFirst(currentFunction->loops);
+    for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
+
+    }
     HashSetDeinit(tempSet);
 }
 
@@ -213,6 +217,9 @@ Loop *constructLoop(BasicBlock *head,BasicBlock *tail){
         printf("b%d",block->id);
     }
     printf("\n");
+
+
+
     return loop;
 }
 
