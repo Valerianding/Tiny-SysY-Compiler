@@ -1,65 +1,60 @@
-int n;
-//int meanless_calculation(int x, int y){
-//    int i = 0;
-//    int ret = 0;
-//    while (i < x && i < y){
-//        i = i + 1;
-//        ret = ret + x + i;
-//    }
-//    return ret;
-//}
+int x[600][600][600];
+int y[600][600][600];
 
-int swap(int arr[], int l, int r){
-    int curr = arr[l];
-    arr[l] = arr[r];
-    arr[r] = curr;
-//    return meanless_calculation(l, r);
+int main()
+{
+    int i,j,k;
+    int f;
+    int N;
+
+    N = getint ();
+    f = getint ();
+
+    starttime();
+
+    i = 0;
+    j = 0;
+    k = 0;
+
+    while (i<N) {
+        j = 0;
+        k = 0;
+        while (j<N) {
+            k = 0;
+            while (k<N) {
+                x[i][j][k] = 1;
+                y[i][j][k] = 0;
+                k = k + 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+
+    i = 1;
+    j = 1;
+    k = 1;
+
+    while (i<N - 1) {
+        j = 1;
+        k = 1;
+        while (j<N - 1) {
+            k = 1;
+            while (k<N - 1) {
+                x[i][j][k] =  ( x[i-1][j][k] + x[i+1][j][k] + x[i][j-1][k] +
+                                x[i][j+1][k] + x[i][j][k-1] + x[i][j][k+1]	) / f;
+                k = k + 1;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+
+    stoptime();
+
+    putarray (N, x[0][0]);
+    putarray (N, x[N/2][N/2]);
+    putarray (N, x[i-1][j-1]);
+
     return 0;
 }
-
-int median(int arr[], int begin, int end, int pos){
-    int pivot = arr[begin];
-
-    int l = begin;
-    int r = end + 1;
-    int xx = 0;
-    while (1 == 1){
-        while (l < r){
-            r = r - 1;
-            if(arr[r] < pivot){
-                break;
-            }
-            xx = xx + 1;
-        }
-        while (l < r){
-            l = l + 1;
-            if(arr[l] >= pivot){
-                break;
-            }
-            xx = xx - 1;
-        }
-
-        if (l == r) break;
-        else {
-            swap(arr, l, r);
-        }
-    }
-    arr[begin] = pivot;
-    swap(arr, begin, l);
-
-    if (l > pos) return median(arr, begin, l, pos);
-    if (l < pos) return median(arr, l + 1, end, pos);
-
-    return xx;:
-}
-
-//int a[10000000];
-//
-//int main(){
-//    n = getarray(a);
-//    starttime();
-//    median(a, 0, n-1, n/2);
-//    stoptime();
-//    putarray(n, a);
-//    return a[n/2] % 256;
-//}
