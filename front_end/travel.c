@@ -2938,10 +2938,7 @@ void create_func_def(past root) {
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
 struct _Value *cal_expr(past expr,int type,int* real) {
     Queue *queue=QueueInit();
-    past ret = NULL;
-    ret = tree_balancing(expr);
-    if(ret!=NULL)
-        expr = ret;
+    tree_balancing(&expr);
 
     //最后从栈中弹出的
     Value *final_result = (Value*) malloc(sizeof (Value));
