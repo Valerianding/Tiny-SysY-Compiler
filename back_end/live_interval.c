@@ -2,7 +2,6 @@
 // Created by ljf on 2023/7/26.
 //
 #include "live_interval.h"
-PriorityQueue *pqueue;
 HashMap *hashmap;
 BasicBlock *block;
 InstNode *ins_end;
@@ -30,9 +29,7 @@ void init_HashMap(HashMap*hashMap){
 }
 
 //每个function建立一张live_interval,会从vector数组中，取出每个block
-PriorityQueue *build_live_interval(Vector* vector){
-    pqueue=PriorityQueueInit();
-    pqueue->set_compare(pqueue,CompareNumerics);
+PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
     hashmap=HashMapInit();
     void *elem;
     VectorFirst(vector,false);
@@ -430,7 +427,7 @@ void analyze_ins(InstNode *ins){
     }
 }
 
-void print_live_interval(){
+void print_live_interval(PriorityQueue*pqueue){
     HashSet *tmp;
     tmp=HashSetInit();
     void *elem;
