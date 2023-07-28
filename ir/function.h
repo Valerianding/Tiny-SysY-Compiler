@@ -15,6 +15,7 @@ struct _Function{
     HashSet *loops; // 存储loop结构
     Function *Next;
     Vector *ToPoBlocks; //拓扑遍历出来的block
+    HashMap *lineScanReg; //line scan产生的寄存器分配方案，后端翻译的时候用到
     char *name;
 };
 
