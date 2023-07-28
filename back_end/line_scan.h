@@ -12,6 +12,8 @@ typedef struct _value_register{
 PriorityQueue *get_function_live_interval(InstNode*ins);
 void line_scan(InstNode*ins);
 void line_scan_alloca(PriorityQueue*queue);
+
+
 int CompareNumerics2(const void* lhs, const void* rhs);
 int get_an_availabel_register();
 void free_register(int i);
@@ -19,4 +21,6 @@ void expire_old_intervals(value_live_range *i);
 void spill_at_interval(value_live_range *i);
 value_live_range* get_last_interval_in_active();
 void pop_last_interval_in_active();
+void label_the_result_of_linescan_register(InstNode * ins);
+void label_register(InstNode*ins,Value *value,int i);
 #endif //C22V1_LINE_SCAN_H
