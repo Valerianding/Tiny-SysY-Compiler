@@ -9,18 +9,23 @@ typedef struct _value_register{
     int reg;
 }value_register;
 
-PriorityQueue *get_function_live_interval(InstNode*ins);
-void line_scan(InstNode*ins);
-void line_scan_alloca(PriorityQueue*queue);
+void get_function_live_interval(Function*curFunction);
+void line_scan(InstNode*ins,Function* start);
+void line_scan_alloca(Function *curFunction,PriorityQueue*queue);
 
-
+int CompareNumerics(const void* lhs, const void* rhs);
 int CompareNumerics2(const void* lhs, const void* rhs);
 int get_an_availabel_register();
 void free_register(int i);
-void expire_old_intervals(value_live_range *i);
-void spill_at_interval(value_live_range *i);
+
+void expire_old_intervals(Function *curFunction,value_live_range *i);
+void spill_at_interval(Function *curFunction,value_live_range *i);
+
+//当变量的end是一样的时候，二者操作的不一定是同一个value，所以会出错
 value_live_range* get_last_interval_in_active();
-void pop_last_interval_in_active();
-void label_the_result_of_linescan_register(InstNode * ins);
-void label_register(InstNode*ins,Value *value,int i);
+void pop_last_interval_in_active(value_live_range*spill);
+
+
+void label_the_result_of_linescan_register(Function *curFunction,InstNode * ins);
+void label_register(Function *curFunction,InstNode*ins,Value *value,int i);
 #endif //C22V1_LINE_SCAN_H

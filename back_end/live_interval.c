@@ -2,34 +2,17 @@
 // Created by ljf on 2023/7/26.
 //
 #include "live_interval.h"
+
+
 HashMap *hashmap;
 BasicBlock *block;
 InstNode *ins_end;
 InstNode *ins_head;
 
-
-
-int CompareNumerics(const void* lhs, const void* rhs){
-    value_live_range * x1=(value_live_range *)lhs;
-    value_live_range * x2=(value_live_range *)rhs;
-    if(x1->start==x2->start){
-        return 0;
-    }
-    return x1->start>=x2->start ? 1 : (-1);
-
-}
-
-void init_PriorityQueue(PriorityQueue*queue){
-    queue=PriorityQueueInit();
-    queue->set_compare(queue,CompareNumerics);
-}
-
-void init_HashMap(HashMap*hashMap){
-    hashMap=HashMapInit();
-}
-
 //每个function建立一张live_interval,会从vector数组中，取出每个block
 PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
+    assert(vector!=NULL);
+    assert(pqueue!=NULL);
     hashmap=HashMapInit();
     void *elem;
     VectorFirst(vector,false);
@@ -40,6 +23,7 @@ PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
     }
     Pair *ptr_pair;
     HashMapFirst(hashmap);
+    int k=0;
     while ((ptr_pair= HashMapNext(hashmap))!=NULL){
         Value *key=(Value*)ptr_pair->key;
         live_range *range=(live_range*)ptr_pair->value;
@@ -51,6 +35,17 @@ PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
     }
     return pqueue;
 }
+
+
+
+//void init_PriorityQueue(PriorityQueue*queue){
+//    queue=PriorityQueueInit();
+//    queue->set_compare(queue,CompareNumerics);
+//}
+//
+//void init_HashMap(HashMap*hashMap){
+//    hashMap=HashMapInit();
+//}
 
 void analyze_block(){
     ins_end=block->tail_node;
@@ -114,37 +109,6 @@ void handle_def(Value*dvalue,int ins_id){
             range->start=ins_id;
         }
     }
-
-//    if(value_is_in_liveout(dvalue)){
-//        live_range *range= HashMapGet(hashmap,dvalue);
-//        if(range==NULL){
-//            range=(live_range*) malloc(sizeof(live_range));
-//            range->start=ins_head->inst->i;
-//            range->end=ins_end->inst->i;
-//            printf("%s -> %d\n",dvalue->name,ins_id);
-//            range->start=ins_id;
-//            HashMapPut(hashmap,dvalue,range);
-//        } else{
-//            if(range->start==ins_head->inst->i){
-//                range->start=ins_id;
-//                range->end=MAX(range->end,ins_end->inst->i);
-//            }else{
-//                range->start=MIN(range->start,ins_id);
-//                range->end=MAX(range->end,ins_end->inst->i);
-//            }
-//        }
-//    }else if(value_is_in_livein(dvalue)){
-//        live_range *range= HashMapGet(hashmap,dvalue);
-//        if(range==NULL){
-//            range=(live_range*) malloc(sizeof(live_range));
-//            range->start=ins_head->inst->i;
-//            range->end=ins_end->inst->i;
-//            HashMapPut(hashmap,dvalue,range);
-//        } else{
-//            range->start=MIN(range->start,ins_head->inst->i);
-//            range->end=MAX(range->end,ins_end->inst->i);
-//        }
-//    }
 }
 
 void handle_use(Value*uvalue,int ins_id){
@@ -168,37 +132,6 @@ void handle_use(Value*uvalue,int ins_id){
         range->start=MIN(range->start,ins_head->inst->i);
         range->end=MAX(range->end,ins_id);
     }
-
-//    int flag=0;
-//    if(value_is_in_liveout(uvalue)){
-//        live_range *range= HashMapGet(hashmap,uvalue);
-//        if(range==NULL){
-//            flag=1;
-//            range=(live_range*) malloc(sizeof(live_range));
-//            range->start=ins_head->inst->i;
-//            range->end=ins_end->inst->i;
-//        }else{
-//            range->start=MIN(range->start,ins_head->inst->i);
-//            range->end=MAX(range->end,ins_end->inst->i);
-//        }
-//        if(flag==1){
-//            HashMapPut(hashmap,uvalue,range);
-//        }
-//    }else if(value_is_in_livein(uvalue)){
-//        live_range *range= HashMapGet(hashmap,uvalue);
-//        if(range==NULL){
-//            flag=1;
-//            range=(live_range*) malloc(sizeof(live_range));
-//            range->start=ins_head->inst->i;
-//            range->end=ins_end->inst->i;
-//        }else{
-//            range->start=MIN(range->start,ins_head->inst->i);
-//            range->end=MAX(range->end,ins_id);
-//        }
-//        if(flag==1){
-//            HashMapPut(hashmap,uvalue,range);
-//        }
-//    }
 }
 
 void analyze_ins(InstNode *ins){
