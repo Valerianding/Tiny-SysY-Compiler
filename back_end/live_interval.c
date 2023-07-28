@@ -103,6 +103,13 @@ void handle_def(Value*dvalue,int ins_id){
     if(isImmIntType(dvalue->VTy) || isImmFloatType(dvalue->VTy)){
         return;
     }
+    if(isGlobalArrayFloatType(dvalue->VTy)|| isGlobalArrayIntType(dvalue->VTy) || isGlobalVarFloatType(dvalue->VTy) ||
+       isGlobalVarIntType(dvalue->VTy)){
+        return;
+    }
+    if(isLocalArrayFloatType(dvalue->VTy) || isLocalArrayIntType(dvalue->VTy)){
+        return;
+    }
     live_range *range= HashMapGet(hashmap,dvalue);
     if(range!=NULL){
         if(range->start==ins_head->inst->i){
@@ -118,7 +125,10 @@ void handle_use(Value*uvalue,int ins_id){
         return;
     }
     if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
-            isGlobalArrayIntType(uvalue->VTy)){
+            isGlobalVarIntType(uvalue->VTy)){
+        return;
+    }
+    if(isLocalArrayFloatType(uvalue->VTy) || isLocalArrayIntType(uvalue->VTy)){
         return;
     }
     live_range *range= HashMapGet(hashmap,uvalue);

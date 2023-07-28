@@ -403,6 +403,16 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
     assert(curFunction->lineScanReg!=NULL);
     value_register *node= HashMapGet(curFunction->lineScanReg,value);
     if(node==NULL){
+        if(isImmIntType(value->VTy) || isImmFloatType(value->VTy)){
+            return;
+        }
+        if(isGlobalArrayFloatType(value->VTy)|| isGlobalArrayIntType(value->VTy) || isGlobalVarFloatType(value->VTy) ||
+           isGlobalVarIntType(value->VTy)){
+            return;
+        }
+        if(isLocalArrayFloatType(value->VTy) || isLocalArrayIntType(value->VTy)){
+            return;
+        }
         if(i==0){
             ins->inst->_reg_[i]=-10;
         }else if(i==1){
