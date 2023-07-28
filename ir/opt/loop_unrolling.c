@@ -169,10 +169,11 @@ void update_replace_value_mod(HashMap* map,Value* v_before,Value* v_replace, Loo
     }
 }
 
-bool have_phi_from_block(HashSet* set, BasicBlock* block,HashMap* block_map){
-    HashSetFirst(set);
-    for(pair* phiInfo = HashSetNext(set);phiInfo!=NULL; phiInfo = HashSetNext(set)){
-        if(HashMapGet(block_map,block) == block)
+
+bool have_phi_from_block(HashSet *curr_pair_set,BasicBlock* block,HashMap* block_map){
+    HashSetFirst(curr_pair_set);
+    for(pair* phiInfo = HashSetNext(curr_pair_set); phiInfo!=NULL; phiInfo = HashSetNext(curr_pair_set)){
+        if(HashMapGet(block_map,block) == phiInfo->from)
             return true;
     }
     return false;
@@ -184,12 +185,11 @@ void reduce_phi_(HashMap* phi_map,HashMap* other_value_map,HashMap* block_map,Ha
     for(Pair* p = HashMapNext(phi_map); p!=NULL; p = HashMapNext(phi_map)){
         Value *v_key = p->key;
         Value *v_value = p->value;
-        Instruction *ins_key = (Instruction*)v_key;
 
         HashSetFirst(v_key->pdata->pairSet);
         for(pair *pp = HashSetNext(v_key->pdata->pairSet); pp!=NULL ;pp = HashSetNext(v_key->pdata->pairSet)){
             //块a对块b具有支配关系的才新加，因为别的之前的都加过了
-            if(!have_phi_from_block(v_value->pdata->pairSet, pp->from,block_map)){
+            if(!have_phi_from_block(v_value->pdata->pairSet,pp->from,block_map)){
                 pair* pair1 = (pair*) malloc(sizeof (pair));
                 pair1->from = HashMapGet(block_map,pp->from);
 
@@ -626,8 +626,6 @@ void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_va
         if(body!=loop->head && body!=loop->exit_block){
             InstNode *currNode = body->head_node;
             InstNode *bodyTail = get_prev_inst(body->tail_node);
-            //留给添加新基本块做准备的
-            BasicBlock *curr_block=NULL;
 
             while(currNode != bodyTail && currNode->inst->Opcode != tmp){
                 if(!hasNoDestOperator(currNode) || currNode->inst->Opcode == Store  || currNode->inst->Opcode == GIVE_PARAM){
@@ -728,8 +726,6 @@ void copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,HashMap
         if(body!=loop->head && body!=loop->exit_block){
             InstNode *currNode = body->head_node;
             InstNode *bodyTail = body->tail_node;
-            //留给添加新基本块做准备的
-            BasicBlock *curr_block=NULL;
 
             while(currNode != bodyTail){
                 if(!hasNoDestOperator(currNode) || currNode->inst->Opcode == Store || currNode->inst->Opcode == GIVE_PARAM){
@@ -831,11 +827,12 @@ bool check_idc(Value* initValue,Value* step,Value* end)
 int cal_ir_cnt(HashSet *loopBody)
 {
     int ir_cnt=0;
+    HashSetFirst(loopBody);
     for(BasicBlock *body = HashSetNext(loopBody); body != NULL; body = HashSetNext(loopBody)){
         InstNode *currNode = body->head_node;
         InstNode *bodyTail = body->tail_node;
         while(currNode != bodyTail){
-            if(!hasNoDestOperator(currNode) || currNode->inst->Opcode == Store){
+            if(!hasNoDestOperator(currNode) || currNode->inst->Opcode == Store || currNode->inst->Opcode == GEP){
                 ir_cnt++;
             }
             currNode = get_next_inst(currNode);
@@ -905,7 +902,7 @@ bool LOOP_UNROLL_EACH(Loop* loop)
 //    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0 || !loop->hasDedicatedExit)
 //        return false;
 
-    if(!loop->hasDedicatedExit  || HashSetSize(loop->child) != 0)
+    if(!loop->hasDedicatedExit)
         return false;
 
     if(!loop->initValue || !loop->modifier || !loop->end_cond)
@@ -940,6 +937,9 @@ bool LOOP_UNROLL_EACH(Loop* loop)
         value_init_int(times, cal_times(loop->initValue->pdata->var_pdata.iVal,ins_modifier,ins_end_cond,v_step,v_end));
         //超出一定长度的循环，不进行展开
         if((long)times*cnt>loop_unroll_up_lines)
+            return false;
+    } else {
+        if(cnt > 66)
             return false;
     }
 
