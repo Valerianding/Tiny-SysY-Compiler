@@ -156,6 +156,10 @@ void handle_use(Value*uvalue,int ins_id){
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
         return;
     }
+    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
+            isGlobalArrayIntType(uvalue->VTy)){
+        return;
+    }
     live_range *range= HashMapGet(hashmap,uvalue);
     if(range==NULL){
         range=(live_range*) malloc(sizeof(live_range));
@@ -427,6 +431,8 @@ void analyze_ins(InstNode *ins){
 }
 
 void print_live_interval(){
+    HashSet *tmp;
+    tmp=HashSetInit();
     void *elem;
     value_live_range *cur;
     printf("/********************live interval*************************/\n");
@@ -436,6 +442,12 @@ void print_live_interval(){
 //        printf("%d\n",PriorityQueueSize(pqueue));
         cur=(value_live_range*)elem;
         printf("%s start %d    end %d\n",cur->value->name,cur->start,cur->end);
+        HashSetAdd(tmp,cur);
     }
     printf("/********************live interval*************************/\n\n");
+
+    HashSetFirst(tmp);
+    while ((elem= HashSetNext(tmp))!=NULL){
+        PriorityQueuePush(pqueue,elem);
+    }
 }
