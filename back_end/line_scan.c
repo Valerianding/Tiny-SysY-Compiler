@@ -58,7 +58,7 @@ void get_function_live_interval(Function*curFunction){
     assert(curFunction->ToPoBlocks!=NULL);
     build_live_interval(curFunction->ToPoBlocks,curFunction->live_interval);
 //    printf("pqueuesize =%d\n", PriorityQueueSize(queue));
-//    print_live_interval(queue);
+    print_live_interval(curFunction->live_interval);
 }
 
 value_live_range* get_last_interval_in_active(){
@@ -203,7 +203,7 @@ void line_scan_alloca(Function *curFunction,PriorityQueue*queue){
         PriorityQueuePop(queue);
 
         i=(value_live_range*)elem;
-        printf("analyze %s\n",i->value->name);
+//        printf("analyze %s\n",i->value->name);
         expire_old_intervals(curFunction,i);
         if(PriorityQueueSize(active)==R){
             spill_at_interval(curFunction,i);
@@ -212,7 +212,7 @@ void line_scan_alloca(Function *curFunction,PriorityQueue*queue){
             r->reg=get_an_availabel_register();
             assert(r->reg!=-1);
             HashMapPut(curFunction->lineScanReg,i->value,r);
-            printf("put curFunction->lineScanReg %s\n",i->value->name);
+//            printf("put curFunction->lineScanReg %s\n",i->value->name);
 //            printf("%s\n",i->value->name);
             PriorityQueuePush(active,i);
         }
