@@ -14,7 +14,7 @@ struct _Function{
     HashMap *storeSet;
     HashSet *loops; // 存储loop结构
     Function *Next;
-    Vector *RPOBlocks; //逆后续遍历出来的block
+    Vector *ToPoBlocks; //拓扑遍历出来的block
     char *name;
 };
 

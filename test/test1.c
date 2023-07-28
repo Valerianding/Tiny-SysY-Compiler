@@ -74,7 +74,8 @@ int max_flow(int s, int t)
     }
 }
 
-int main() {
+int main()
+{
     int V, E;
     V = getint();
     E = getint();
