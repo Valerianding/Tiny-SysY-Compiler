@@ -41,6 +41,7 @@ PriorityQueue *get_function_live_interval(InstNode*ins){
     Function *function;
     block=ins->inst->Parent;
     function=block->Parent;
+    assert(function->ToPoBlocks!=NULL);
     PriorityQueue *queue;
     queue= build_live_interval(function->ToPoBlocks);
 //    printf("pqueuesize =%d\n", PriorityQueueSize(queue));
