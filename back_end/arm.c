@@ -7,7 +7,9 @@
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 
-#define liveScan 0 //使用线性扫描寄存器分配
+#define lineScan 1 //使用线性扫描寄存器分配
+HashMap * lineScan_param;
+
 
 //ri
 int regi=0;
@@ -55,7 +57,26 @@ int stm_num; //8字节对齐
 //现在reg1，reg2会出现负数的情况，就是说右边的寄存器在用完之后就回存到内存，腾出寄存器
 
 
-
+void handle_lineScan_extra_reg(InstNode*ins,int param_num){
+    Function *curFunction=ins->inst->Parent->Parent;
+    Pair *ptr_pair;
+    HashMapFirst(curFunction->lineScanReg);
+    while ((ptr_pair= HashMapNext(curFunction->lineScanReg))!=NULL){
+        Value *value=(Value*)ptr_pair->key;
+        value_register *r=(value_register*)ptr_pair->value;
+        int num=-1;
+        assert(value->name!=NULL);
+        if(value->name[0]=='%'){
+            num=atoi(value->name+1);
+            if(num>=4 && num<param_num){
+//                多余的参数被分配了寄存器,需要在函数开始前就ldr到相应的寄存器
+                offset *node= HashMapGet(lineScan_param,value);
+                assert(node!=NULL);
+                handle_illegal_imm(r->reg+100,node->offset_sp,1);
+            }
+        }
+    }
+}
 //eabi不会保存r12
 void printf_stmfd_rlist(){
 //    printf();
@@ -813,6 +834,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
 //  所以说当前这个逻辑和FuncBegin函数的实现逻辑都得大改。
             stm_num=0;
             global_hashmap=HashMapInit();
+            lineScan_param=HashMapInit();
             regi=0;
             regs=0;
             stack_size=0;
@@ -832,7 +854,13 @@ void arm_translate_ins(InstNode *ins,char argv[]){
             if(func_call_func>0){
                 k++;
             }
-            hashMap=offset_init(ins,&local_var_num,k);
+            hashMap=offset_init(ins,&local_var_num,k,lineScan_param);
+
+//            如果使用了线性扫描，需要处理多余的寄存器,将多余的寄存器提前加载到给对应参数分配的寄存器中
+            if(lineScan==1){
+                handle_lineScan_extra_reg(ins,param_num);
+            }
+
             int hashsize= HashMapSize(hashMap)*4;
 //            printf("hashsize=%d\n",hashsize);
 
@@ -846,6 +874,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
 //            将全局变量的使用打印
 //            usage_of_global_variables();
             HashMapDeinit(global_hashmap);
+            HashMapDeinit(lineScan_param);
             global_hashmap=NULL;
             hashMap=NULL;
         }
@@ -7191,7 +7220,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     printf("\tmov\tr11,sp\n");
     fprintf(fp,"\tmov\tr11,sp\n");
 
-    if(param_num>0){
+    if(param_num>0 && lineScan==0){
 //        存在参数的传递
 //        int local_stack=mystack;
         for(int j=0;j<param_num && j<4;j++){
@@ -7210,8 +7239,39 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 
             }
         }
-    } else{
-        ;
+    }else if(lineScan==1){
+        Function *curFunction=ins->inst->Parent->Parent;
+        char arr[3]="%";
+        for(int j=0;j<param_num && j<4 ;j++){
+            sprintf(arr+1,"%d",j);
+            int flag=0;
+            Pair *ptr_pair;
+            HashMapFirst(curFunction->lineScanReg);
+            while ((ptr_pair= HashMapNext(curFunction->lineScanReg))!=NULL){
+                Value *value=(Value*)ptr_pair->key;
+                value_register *r=(value_register*)ptr_pair->value;
+                if(strcmp(arr,value->name)==0){
+                    printf("\tmov\tr%d,r%d\n",r->reg,j);
+                    fprintf(fp,"\tmov\tr%d,r%d\n",r->reg,j);
+                    flag=1;
+                    break;
+                }
+            }
+            if(flag==0){
+//                说明%j参数没有被分配到寄存器，所以说需要回存到内存中
+                if(param_off[j]!=-1){
+//                如果传递过来的参数没有被用到的话，就不需要存了
+                    if(imm_is_valid2(param_off[j])){
+                        printf("\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                        fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
+                    }else{
+                        handle_illegal_imm1(4,param_off[j]);
+                        printf("\tstr\tr%d,[r11,r4]\n",j);
+                        fprintf(fp,"\tstr\tr%d,[r11,r4]\n",j);
+                    }
+                }
+            }
+        }
     }
 
 //    printf("localstack=%d\n",local_stack);
