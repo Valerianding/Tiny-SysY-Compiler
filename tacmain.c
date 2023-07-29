@@ -152,7 +152,7 @@ int main(int argc, char* argv[]){
     printf_llvm_ir(instruction_list,argv[4],1);
 
 
-    //CheckGlobalVariable(instruction_list);
+    CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
 
@@ -215,11 +215,11 @@ int main(int argc, char* argv[]){
 
 //    printf_llvm_ir(instruction_list,argv[4],0);
 
-//    for (Function *currentFunction = start;
-//         currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        dominanceAnalysis(currentFunction);
-//        topCfg(currentFunction);
-//    }
+    for (Function *currentFunction = start;
+         currentFunction != NULL; currentFunction = currentFunction->Next) {
+        dominanceAnalysis(currentFunction);
+        topCfg(currentFunction);
+    }
 
     //lsy_begin
 //    printf("=================fix===================\n");
@@ -228,10 +228,11 @@ int main(int argc, char* argv[]){
     //lsy_end
 
 
-    //line_scan(instruction_list);
+//    线性扫描
+    line_scan(instruction_list,start);
 
     //ljw_begin
-    reg_control(instruction_list,start);
+//    reg_control(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 

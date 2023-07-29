@@ -3,6 +3,9 @@
 //
 
 #include "offset.h"
+
+
+
 HashMap *global_hashmap;
 int func_num=0;
 int in_func_num=0;
@@ -30,7 +33,7 @@ void offset_free(HashMap*hashMap){
     return;
 }
 
-void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num,int reg_flag){
+void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,int *local_var_num,int reg_save_num,int reg_flag,HashMap*lineScan_param){
 //    reg_flag=-1;
 //    全局变量放在全局变量的global_hashmap里面，因为已经改为了使用 #:upper:16 和 #:lower:16,所以说下面两个保存的信息已经没有用了
 //    if(isGlobalVarFloatType(key->VTy)){
@@ -120,6 +123,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
                 temp->regs=-1;
 //                printf("haspmapsize:%d name:%s  keyname:%s address%p\n",HashMapSize(hashMap),name,key->name,key);
                 HashMapPut(hashMap,key,temp);
+                HashMapPut(lineScan_param,key,temp);
             }else if(reg_flag<0){ //寄存器为负数表示需要回存内存
 //                if(isLocalArrayIntType(key->VTy)||isLocalArrayFloatType(key->VTy)||isGlobalArrayIntType(key->VTy)||isGlobalArrayFloatType(key->VTy)){
 ////                    处理数组
@@ -261,7 +265,7 @@ void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value,int reg_save_num
     return;
 }
 
-HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
+HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *lineScan_param){
 //    printf("local var num=%d\n",*local_var_num);
     HashMap *hashMap=HashMapInit();
     int sub_sp=0;
@@ -300,48 +304,48 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case Sub:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case Mul:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case Div:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case Mod:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case Call:
 //                operandNum=ins->inst->user.value.NumUserOperands;
 //                if(operandNum==2){
                   if(returnValueNotUsed(ins)){
                       value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
                   }else{
                       value0=&ins->inst->user.value;
                       value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -349,8 +353,8 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
 ////                    ==unknow说明回值为void
 //                        hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
 //                    }
-                      hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                      hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
                   }
 
 //                }else if(operandNum==1){
@@ -361,79 +365,79 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
             case Store:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case Load:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
 
                 break;
             case GIVE_PARAM:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
                 break;
             case LESS:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case GREAT:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case LESSEQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case GREATEQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case EQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case NOTEQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
             case XOR:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
                 break;
             case zext:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
                 break;
             case bitcast:
                 value0=&ins->inst->user.value;
@@ -447,9 +451,9 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
 //                hashmap_bitcast_add(hashMap,value0,value1,reg_save_num);
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
 //            case MEMCPY:
 //                value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -461,9 +465,9 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
                 break;
 
 //            case MEMSET:
@@ -475,8 +479,8 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
             case CopyOperation:
                 value0=ins->inst->user.value.alias;//这里是需要进到alias里面的
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
                 break;
             default:
                 break;
@@ -487,7 +491,7 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num){
         int operandNum=ins->inst->user.value.NumUserOperands;
         if(operandNum!=0){
             Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1]);
+            hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
         }
 
     }
