@@ -180,186 +180,206 @@ Value *copy_value(Value *v_source,int index)
 //一次循环展开
 //mod_flag表示是不是mod的地方需要复制，如果是mod那边需要，就必须给插入位置block
 void copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v_new_valueMap,HashMap* other_new_valueMap){
-    HashSetFirst(loop->loopBody);
-    for(BasicBlock *body = HashSetNext(loop->loopBody); body != NULL; body = HashSetNext(loop->loopBody)){
-        if(first_copy && !mod_flag){
-            Instruction *ins_tmp= ins_new_zero_operator(tmp);
-            InstNode *node_tmp = new_inst_node(ins_tmp);
-            ins_insert_before(node_tmp,body->tail_node);
-        }
+    if(first_copy && !mod_flag){
+        Instruction *ins_tmp= ins_new_zero_operator(tmp);
+        InstNode *node_tmp = new_inst_node(ins_tmp);
+        ins_insert_before(node_tmp,loop->tail->tail_node);
+    }
+
+    //不能遍历loop body的set, set出来的顺序不对!!!
+    InstNode *currNode = loop->head->true_block->head_node;
+    InstNode *Tail = get_prev_inst(loop->tail->tail_node);
+    while(currNode != Tail && currNode->inst->Opcode != tmp) {
+        BasicBlock *body = currNode->inst->Parent;
 
         //exit和head块不展开
         if(body!=loop->head && body!=loop->exit_block){
-            InstNode *currNode = body->head_node;
-            InstNode *bodyTail = get_prev_inst(body->tail_node);
-            //留给添加新基本块做准备的
-            BasicBlock *curr_block=NULL;
-
-            while(currNode != bodyTail && currNode->inst->Opcode != tmp){
-                if(!hasNoDestOperator(currNode)){
-                    Value *lhs= ins_get_lhs(currNode->inst);
-                    Value *rhs= ins_get_rhs(currNode->inst);
-                    Value *v_r=NULL;
-                    Value *v_l=NULL;
-                    Instruction *copy_ins=NULL;
-                    //如果v_new_valueMap中有，则要替换成最后使用值，而不能用原值
-                    if(HashMapContain(v_new_valueMap,lhs))
-                    {
-                        HashSet *set_replace=HashMapGet(v_new_valueMap,lhs);
-                        v_l=get_replace_value(set_replace,loop->tail);           //CHECK: 更新值一定在最后吗,应该是吧，phi的话
-                    }
+            if((!hasNoDestOperator(currNode) || currNode->inst->Opcode == Store ||
+                currNode->inst->Opcode == GIVE_PARAM) && currNode->inst->Opcode != Phi){
+                Value *lhs= ins_get_lhs(currNode->inst);
+                Value *rhs= ins_get_rhs(currNode->inst);
+                Value *v_r=NULL;
+                Value *v_l=NULL;
+                Instruction *copy_ins=NULL;
+                //如果v_new_valueMap中有，则要替换成最后使用值，而不能用原值
+                if(HashMapContain(v_new_valueMap,lhs))
+                {
+                    HashSet *set_replace=HashMapGet(v_new_valueMap,lhs);
+                    v_l=get_replace_value(set_replace,loop->tail);           //CHECK: 更新值一定在最后吗,应该是吧，phi的话
+                }
                     //变化过的中间变量
                     //比如%6= add nsw i32 %2,1，复制第一次后变为%8 = add nsw i32 %6,1
                     //做一个%6-----%8                                                       //CHECK: 这个地方应该是不用考虑参数的吧
-                    else if(HashMapContain(other_new_valueMap,lhs))
-                        v_l= HashMapGet(other_new_valueMap,lhs);
-                    else   //是无所谓的，比如是常数
-                        v_l=copy_value(lhs,tmp_index++);
-//                    if(v_l->VTy->ID==Int || v_l->VTy->ID==Float)
-//                        tmp_index--;
+                else if(HashMapContain(other_new_valueMap,lhs))
+                    v_l= HashMapGet(other_new_valueMap,lhs);
+                if(!v_l)
+                    v_l = lhs;
 
-                    //如果有第二个操作数
-                    if(rhs!=NULL)
+                //如果有第二个操作数
+                if(rhs!=NULL)
+                {
+                    if(HashMapContain(v_new_valueMap,rhs))
                     {
-                        if(HashMapContain(v_new_valueMap,rhs))
-                        {
-                            HashSet *set_replace=HashMapGet(v_new_valueMap,rhs);
-                            v_r=get_replace_value(set_replace,body);
-                        }
-                            //变化过的中间变量
-                        else if(HashMapContain(other_new_valueMap,rhs))
-                            v_r= HashMapGet(other_new_valueMap,rhs);
-                        else   //是无所谓的，比如是常数
-                            v_r=copy_value(rhs,tmp_index);
-//                        if(v_r->VTy->ID==Int || v_r->VTy->ID==Float)
-//                            tmp_index--;
-                        copy_ins= ins_new_binary_operator(currNode->inst->Opcode,v_l,v_r);
+                        HashSet *set_replace=HashMapGet(v_new_valueMap,rhs);
+                        v_r=get_replace_value(set_replace,body);
                     }
-                    else
-                        copy_ins= ins_new_unary_operator(currNode->inst->Opcode,v_l);
+                        //变化过的中间变量
+                    else if(HashMapContain(other_new_valueMap,rhs))
+                        v_r= HashMapGet(other_new_valueMap,rhs);
+                    if(!v_r)
+                        v_r = rhs;
+                    copy_ins= ins_new_binary_operator(currNode->inst->Opcode,v_l,v_r);
+                }
+                else
+                    copy_ins= ins_new_unary_operator(currNode->inst->Opcode,v_l);
 
-                    //TODO 其实还没考虑多基本块
-                    InstNode *node = new_inst_node(copy_ins);
-//                    if(curr_block==NULL)
-//                        node->inst->Parent=loop->tail;
-//                    else
-//                        node->inst->Parent=curr_block;
-                    if(mod_flag){
-                        node->inst->Parent = block;
-                        ins_insert_before(node,block->tail_node);
-                    }
-                    else{
-                        node->inst->Parent=loop->tail;
-                        ins_insert_before(node,body->tail_node);
-                    }
+                //TODO 其实还没考虑多基本块
+                InstNode *node = new_inst_node(copy_ins);
 
-                    //左值的对应关系也要存起来了
-                    Value *new_dest= ins_get_value_with_name_and_index(copy_ins,tmp_index++);
-                    Value *v_dest=ins_get_dest(currNode->inst);
+                if(mod_flag){
+                    node->inst->Parent = block;
+                    ins_insert_before(node,block->tail_node);
+                }
+                else{
+                    node->inst->Parent=loop->tail;
+                    ins_insert_before(node,body->tail_node);
+                }
 
-                    //如果在另两个表中的对应value里有v_dest，要更新
-                    //如果v_new_valueMap有了新对应关系,比如本来记录了%2( %3) = phi i32[0 , %0], [%6 , %5]
-                    //然后other_new_valueMap中%6与它复制的下一条左值%8有了%6----%8对应，进行替换
+                //左值的对应关系也要存起来了
+                bool has_dest = true;
+                if (currNode->inst->Opcode == Call) {
+                    Value *v_func = currNode->inst->user.use_list->Val;
+                    if (v_func->pdata->symtab_func_pdata.return_type.ID == VoidTyID)
+                        has_dest = false;
+                }
+
+                Value *new_dest = NULL;
+                if (currNode->inst->Opcode != Store && currNode->inst->Opcode != GIVE_PARAM && has_dest)
+                    new_dest = ins_get_value_with_name_and_index(copy_ins, tmp_index++);
+                Value *v_dest = ins_get_dest(currNode->inst);
+
+                //如果在另两个表中的对应value里有v_dest，要更新
+                //如果v_new_valueMap有了新对应关系,比如本来记录了%2( %3) = phi i32[0 , %0], [%6 , %5]
+                //然后other_new_valueMap中%6与它复制的下一条左值%8有了%6----%8对应，进行替换
+                if(currNode->inst->Opcode != Store && currNode->inst->Opcode != GIVE_PARAM && has_dest) {
+                    new_dest->alias = v_dest->alias;
+                    new_dest->pdata = v_dest->pdata;
+                    new_dest->VTy = v_dest->VTy;
+
                     if(HashMapContain(other_new_valueMap,v_dest) && !mod_before)
                         update_replace_value(v_new_valueMap, HashMapGet(other_new_valueMap,v_dest),new_dest);
                     else
                         update_replace_value(v_new_valueMap,v_dest,new_dest);
                     HashMapPut(other_new_valueMap,v_dest ,new_dest);
                 }
-
-                currNode = get_next_inst(currNode);
             }
+
+            currNode = get_next_inst(currNode);
         }
     }
+
     first_copy = false;
 }
 
 //TODO 目前还是基本块内, 完全一样地复制
 //返回一个map,表明每个value的更新情况
 void copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,HashMap* other_new_valueMap,bool first_time,HashMap* v_new_phiMap,HashMap* v_match_phi_map){
-    HashSetFirst(loop->loopBody);
-    for(BasicBlock *body = HashSetNext(loop->loopBody); body != NULL; body = HashSetNext(loop->loopBody)){
+
+    if(first_copy){
+        Instruction *ins_tmp= ins_new_zero_operator(tmp);
+        InstNode *node_tmp = new_inst_node(ins_tmp);
+        ins_insert_before(node_tmp,loop->tail->tail_node);
+    }
+
+    //不能遍历loop body的set, set出来的顺序不对!!!
+    InstNode *currNode = loop->head->true_block->head_node;
+    InstNode *Tail = get_prev_inst(loop->tail->tail_node);
+    while(currNode != Tail && currNode->inst->Opcode != tmp) {
+        BasicBlock *body = currNode->inst->Parent;
 
         //exit和head块不展开
         if(body!=loop->head && body!=loop->exit_block){
-            InstNode *currNode = body->head_node;
-            InstNode *bodyTail = body->tail_node;
-            //留给添加新基本块做准备的
-            BasicBlock *curr_block=NULL;
+            if((!hasNoDestOperator(currNode) || currNode->inst->Opcode == Store ||
+                currNode->inst->Opcode == GIVE_PARAM) && currNode->inst->Opcode != Phi){
+                Value *lhs= ins_get_lhs(currNode->inst);
+                Value *rhs= ins_get_rhs(currNode->inst);
+                Value *v_r=NULL;
+                Value *v_l=NULL;
+                Instruction *copy_ins=NULL;
+                //如果v_new_valueMap中有，则要替换成最后使用值，而不能用原值
+                if(v_new_phiMap == NULL && HashMapContain(v_new_valueMap,lhs))
+                {
+                    HashSet *set_replace=HashMapGet(v_new_valueMap,rhs);
+                    v_l=get_replace_value_first(set_replace,loop);
+                }
+                else if(HashMapContain(v_match_phi_map,lhs))
+                    v_l = HashMapGet(v_match_phi_map,lhs);
+                else if(v_new_phiMap && HashMapContain(v_new_phiMap,lhs)){
+                    HashSet *set_replace=HashMapGet(v_new_phiMap,lhs);
+                    v_l=get_replace_value_first(set_replace,loop);
+                }
+                    //变化过的中间变量
+                    //比如%6= add nsw i32 %2,1，复制第一次后变为%8 = add nsw i32 %6,1
+                    //做一个%6-----%8                                                       //CHECK: 这个地方应该是不用考虑参数的吧
+                else if(HashMapContain(other_new_valueMap,lhs))
+                    v_l= HashMapGet(other_new_valueMap,lhs);
 
-            while(currNode != bodyTail){
-                if(!hasNoDestOperator(currNode)){
-                    Value *lhs= ins_get_lhs(currNode->inst);
-                    Value *rhs= ins_get_rhs(currNode->inst);
-                    Value *v_r=NULL;
-                    Value *v_l=NULL;
-                    Instruction *copy_ins=NULL;
-                    //如果v_new_valueMap中有，则要替换成最后使用值，而不能用原值
-                    if(v_new_phiMap == NULL && HashMapContain(v_new_valueMap,lhs))
+                if(v_l == NULL)
+                    v_l = lhs;
+
+                //如果有第二个操作数
+                if(rhs!=NULL)
+                {
+                    if(v_new_phiMap == NULL && HashMapContain(v_new_valueMap,rhs))
                     {
                         HashSet *set_replace=HashMapGet(v_new_valueMap,rhs);
-                        v_l=get_replace_value_first(set_replace,loop);
+                        v_r=get_replace_value_first(set_replace,loop);
                     }
-                    else if(HashMapContain(v_match_phi_map,lhs))
-                        v_l = HashMapGet(v_match_phi_map,lhs);
-                    else if(v_new_phiMap && HashMapContain(v_new_phiMap,lhs)){
-                        HashSet *set_replace=HashMapGet(v_new_phiMap,lhs);
-                        v_l=get_replace_value_first(set_replace,loop);
+                    else if(HashMapContain(v_match_phi_map,rhs))
+                        v_r = HashMapGet(v_match_phi_map,rhs);
+                    else if(v_new_phiMap && HashMapContain(v_new_phiMap,rhs)){
+                        HashSet *set_replace=HashMapGet(v_new_phiMap,rhs);
+                        v_r=get_replace_value_first(set_replace,loop);
                     }
                         //变化过的中间变量
-                        //比如%6= add nsw i32 %2,1，复制第一次后变为%8 = add nsw i32 %6,1
-                        //做一个%6-----%8                                                       //CHECK: 这个地方应该是不用考虑参数的吧
-                    else if(HashMapContain(other_new_valueMap,lhs))
-                        v_l= HashMapGet(other_new_valueMap,lhs);
+                    else if(HashMapContain(other_new_valueMap,rhs))
+                        v_r= HashMapGet(other_new_valueMap,rhs);
 
-                    if(v_l == NULL)
-                        v_l = lhs;
-//                    if(v_l->VTy->ID==Int || v_l->VTy->ID==Float)
-//                        tmp_index--;
+                    if(v_r == NULL)
+                        v_r = rhs;
 
-                    //如果有第二个操作数
-                    if(rhs!=NULL)
-                    {
-                        if(v_new_phiMap == NULL && HashMapContain(v_new_valueMap,rhs))
-                        {
-                            HashSet *set_replace=HashMapGet(v_new_valueMap,rhs);
-                            v_r=get_replace_value_first(set_replace,loop);
-                        }
-                        else if(HashMapContain(v_match_phi_map,rhs))
-                            v_r = HashMapGet(v_match_phi_map,rhs);
-                        else if(v_new_phiMap && HashMapContain(v_new_phiMap,rhs)){
-                            HashSet *set_replace=HashMapGet(v_new_phiMap,rhs);
-                            v_r=get_replace_value_first(set_replace,loop);
-                        }
-                            //变化过的中间变量
-                        else if(HashMapContain(other_new_valueMap,rhs))
-                            v_r= HashMapGet(other_new_valueMap,rhs);
+                    copy_ins= ins_new_binary_operator(currNode->inst->Opcode,v_l,v_r);
+                }
+                else
+                    copy_ins= ins_new_unary_operator(currNode->inst->Opcode,v_l);
 
-                        if(v_r == NULL)
-                            v_r = rhs;
+                //TODO 其实还没考虑多基本块
+                InstNode *node = new_inst_node(copy_ins);
 
-//                        if(v_r->VTy->ID==Int || v_r->VTy->ID==Float)
-//                            tmp_index--;
-                        copy_ins= ins_new_binary_operator(currNode->inst->Opcode,v_l,v_r);
-                    }
-                    else
-                        copy_ins= ins_new_unary_operator(currNode->inst->Opcode,v_l);
+                node->inst->Parent = block;
+                ins_insert_before(node,block->tail_node);
 
-                    //TODO 其实还没考虑多基本块
-                    InstNode *node = new_inst_node(copy_ins);
+                //左值的对应关系也要存起来了
+                bool has_dest = true;
+                if (currNode->inst->Opcode == Call) {
+                    Value *v_func = currNode->inst->user.use_list->Val;
+                    if (v_func->pdata->symtab_func_pdata.return_type.ID == VoidTyID)
+                        has_dest = false;
+                }
 
-                     node->inst->Parent = block;
-                     ins_insert_before(node,block->tail_node);            //TODO 插不插tmp
+                Value *new_dest = NULL;
+                if (currNode->inst->Opcode != Store && currNode->inst->Opcode != GIVE_PARAM && has_dest)
+                    new_dest = ins_get_value_with_name_and_index(copy_ins, tmp_index++);
+                Value *v_dest = ins_get_dest(currNode->inst);
 
-
-                    //左值的对应关系也要存起来了
-                    Value *new_dest= ins_get_value_with_name_and_index(copy_ins,tmp_index++);
-                    Value *v_dest=ins_get_dest(currNode->inst);
-
-                    //如果在另两个表中的对应value里有v_dest，要更新
-                    //如果v_new_valueMap有了新对应关系,比如本来记录了%2( %3) = phi i32[0 , %0], [%6 , %5]
-                    //然后other_new_valueMap中%6与它复制的下一条左值%8有了%6----%8对应，进行替换
-                    //TODO 其他v_new_phiMap的使用
+                //如果在另两个表中的对应value里有v_dest，要更新
+                //如果v_new_valueMap有了新对应关系,比如本来记录了%2( %3) = phi i32[0 , %0], [%6 , %5]
+                //然后other_new_valueMap中%6与它复制的下一条左值%8有了%6----%8对应，进行替换
+                //TODO 其他v_new_phiMap的使用
+                if(currNode->inst->Opcode != Store && currNode->inst->Opcode != GIVE_PARAM && has_dest){
+                    new_dest->alias = v_dest->alias;
+                    new_dest->pdata = v_dest->pdata;
+                    new_dest->VTy = v_dest->VTy;
                     if(v_new_phiMap == NULL){
                         if(HashMapContain(other_new_valueMap,v_dest)){
                             update_replace_value(v_new_valueMap, HashMapGet(other_new_valueMap,v_dest),new_dest);
@@ -375,12 +395,12 @@ void copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,HashMap
                             update_replace_value_with_block(v_new_phiMap,v_dest,new_dest,block);
                         }
                     }
-
-                    HashMapPut(other_new_valueMap,v_dest ,new_dest);
                 }
 
-                currNode = get_next_inst(currNode);
+                HashMapPut(other_new_valueMap,v_dest ,new_dest);
             }
+
+            currNode = get_next_inst(currNode);
         }
     }
 }
@@ -397,6 +417,7 @@ bool check_idc(Value* initValue,Value* step,Value* end)
 int cal_ir_cnt(HashSet *loopBody)
 {
     int ir_cnt=0;
+    HashSetFirst(loopBody);
     for(BasicBlock *body = HashSetNext(loopBody); body != NULL; body = HashSetNext(loopBody)){
         InstNode *currNode = body->head_node;
         InstNode *bodyTail = body->tail_node;
@@ -657,11 +678,21 @@ InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_c
     return node_get_mod;
 }
 
-void LOOP_UNROLL_EACH(Loop* loop)
+bool LOOP_UNROLL_EACH(Loop* loop)
 {
     //TODO 目前不做基本块间
-    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0)
-        return;
+    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0 || !loop->hasDedicatedExit)
+        return false;
+
+    if(!loop->hasDedicatedExit)
+        return false;
+
+    if(!loop->initValue || !loop->modifier || !loop->end_cond)
+        return false;
+
+    //全局为条件的也不做
+    if(loop->conditionChangeWithinLoop)
+        return false;
 
     Instruction *ins_end_cond=(Instruction*)loop->end_cond;
     Instruction *ins_modifier=(Instruction*)loop->modifier;
@@ -677,7 +708,7 @@ void LOOP_UNROLL_EACH(Loop* loop)
 
     //步长为0就return
     if(v_step->VTy->ID == Int && v_step->pdata->var_pdata.iVal==0)
-        return;
+        return false;
 
     int cnt=cal_ir_cnt(loop->loopBody);
     //如果是常数，就能计算迭代次数，然后进行一个判断,TODO 非常数就不判断了吗
@@ -686,7 +717,7 @@ void LOOP_UNROLL_EACH(Loop* loop)
         value_init_int(times, cal_times(loop->initValue->pdata->var_pdata.iVal,ins_modifier,ins_end_cond,v_step,v_end));
         //超出一定长度的循环，不进行展开
         if((long)times*cnt>loop_unroll_up_lines)
-            return;
+            return false;
     }
 
     //一个map用来保存header中变量与最新值的对应关系
@@ -932,7 +963,7 @@ void LOOP_UNROLL_EACH(Loop* loop)
         while (curr!=tail){
             if(curr->inst->Opcode == tmp){         //一个block应该只有一条挡板
                 deleteIns(curr);
-                break;
+                //break;
             }
             curr = get_next_inst(curr);
         }
@@ -940,13 +971,16 @@ void LOOP_UNROLL_EACH(Loop* loop)
 }
 
 //进行dfs，从最里层一步步展开
-void dfsLoop(Loop *loop){
+bool dfsLoop(Loop *loop){
+    bool effective = false;
     HashSetFirst(loop->child);
     for(Loop *childLoop = HashSetNext(loop->child); childLoop != NULL; childLoop = HashSetNext(loop->child)){
         /*内层循环先处理*/
-        dfsLoop(childLoop);
+        effective |= dfsLoop(childLoop);
     }
-    LOOP_UNROLL_EACH(loop);
+    first_copy = true;
+    effective |= LOOP_UNROLL_EACH(loop);
+    return effective;
 }
 
 void loop_unroll(Function *currentFunction)
