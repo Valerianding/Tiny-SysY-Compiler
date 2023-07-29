@@ -3261,12 +3261,12 @@ void reg_control(struct _InstNode *instruction_node,Function *start)
 {
     printf("/*******************reg_start******************/\n");
     // while(temp->inst->Parent->Parent == NULL)   temp = get_next_inst(temp);]
-    ir_reg_init(instruction_node);
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next)
-    {
-        // printf("now_func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
-        reg_control_func(currentFunction);
-    }
+//    ir_reg_init(instruction_node);
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next)
+//    {
+//        // printf("now_func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
+//        reg_control_func(currentFunction);
+//    }
     printf_llvm_ir_withreg(instruction_node);
     printf("/*******************reg_end******************/\n");
     return ;

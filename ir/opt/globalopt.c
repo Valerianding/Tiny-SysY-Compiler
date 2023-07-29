@@ -273,11 +273,11 @@ void replaceGlobal(Function *currentFunction,Value *globalVar){
 
     switch (globalVar->VTy->ID) {
         case GlobalVarFloat:{
-            dest->VTy->ID = Var_INT;
+            dest->VTy->ID = Var_FLOAT;
             break;
         }
         case GlobalVarInt:{
-            dest->VTy->ID = Var_FLOAT;
+            dest->VTy->ID = Var_INT;
             break;
         }
         default:

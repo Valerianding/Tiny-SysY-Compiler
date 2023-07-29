@@ -50,12 +50,14 @@ void printALLInfo(Function *function){
 
     clear_visited_flag(entry);
 
+    HashSet *all = HashSetInit();
     HashSet *workList = HashSetInit();
     HashSetAdd(workList,entry);
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
-//        HashSetRemove(workList);
+        HashSetRemove(workList,block);
+
     }
 }
 
