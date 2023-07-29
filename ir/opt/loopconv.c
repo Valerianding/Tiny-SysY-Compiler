@@ -102,9 +102,6 @@ void cleanBlock(BasicBlock *block){
 bool LoopConv(Loop *loop){
 
     printf("now is loop %d!\n",loop->head->id);
-    //reconstruct loop
-    //TODO how to fix this
-    reconstructLoop(loop);
 
     if(!LoopConvCheckLoop(loop)){
         printf("one loop is not satisfy for remove!\n");

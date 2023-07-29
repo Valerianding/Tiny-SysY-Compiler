@@ -18,16 +18,19 @@ void CheckGlobalVariable(InstNode *list){
     }
 
     //go through all first delete not used global variable
-    InstNode *globalNode = list;
+    InstNode *globalNode = get_next_inst(list);
     while(globalNode->inst->Opcode != FunBegin){
         assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
         Value *dest = ins_get_dest(globalNode->inst);
+        printf("dest is %s\n",dest->name);
         Use *destUses = dest->use_list;
         if(destUses == NULL){
+
             InstNode *tempNode = get_next_inst(globalNode);
             deleteIns(globalNode);
             globalNode = tempNode;
         }else{
+            printf("value is not nul!");
             globalNode = get_next_inst(globalNode);
         }
     }

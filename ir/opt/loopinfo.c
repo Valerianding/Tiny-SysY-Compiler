@@ -3,6 +3,26 @@
 //
 //
 #include "loopinfo.h"
+void examineLoop(Loop *loop){
+    HashSetFirst(loop->child);
+    for(Loop *child = HashSetNext(loop->child); child != NULL; child = HashSetNext(loop->child)){
+        examineLoop(child);
+    }
+
+    //examineLoop now
+    int preSize = HashSetSize(loop->head->preBlocks);
+    HashSetFirst(loop->head->preBlocks);
+    int count = 0;
+    for(BasicBlock *preBlock = HashSetNext(loop->head->preBlocks); preBlock != NULL; preBlock = HashSetNext(loop->head->preBlocks)){
+        if(HashSetFind(loop->loopBody,preBlock)){
+            count++;
+        }
+    }
+
+    assert(preSize - count == 1);
+}
+
+
 // get all the loop info
 void loop(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
@@ -172,7 +192,7 @@ void loop(Function *currentFunction){
     //检查是否是所有loop都有preHeader
     HashSetFirst(currentFunction->loops);
     for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
-
+        examineLoop(root);
     }
     HashSetDeinit(tempSet);
 }
@@ -429,10 +449,3 @@ void findInductionVariable(Loop *loop){
     HashSetDeinit(workList);
 }
 
-
-//during reconstruct loop we'd better make all
-void reconstructLoop(Loop *loop){
-    findBody(loop);
-    findExit(loop);
-    findInductionVariable(loop);
-}

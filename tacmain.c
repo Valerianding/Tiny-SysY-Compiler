@@ -15,7 +15,7 @@
 #include "mem2reg.h"
 #include "sideeffect.h"
 #include "fix_array.h"
-
+#include "line_scan.h"
 #define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
@@ -149,10 +149,10 @@ int main(int argc, char* argv[]){
     }
 
 //    //mem2reg之后，优化前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
-    CheckGlobalVariable(instruction_list);
+    //CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
 
@@ -189,10 +189,11 @@ int main(int argc, char* argv[]){
         }
     }
 
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
-    }
-//    printf_llvm_ir(instruction_list,argv[4],1);
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        Clean(currentFunction);
+//    }
+
+    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -208,7 +209,7 @@ int main(int argc, char* argv[]){
         calculateLiveness(currentFunction);
         printLiveness(currentFunction);
     }
-//
+
 //    printf_llvm_ir(instruction_list,argv[4],0);
 
 //    for (Function *currentFunction = start;
@@ -217,12 +218,14 @@ int main(int argc, char* argv[]){
 //        topCfg(currentFunction);
 //    }
 
-
     //lsy_begin
 //    printf("=================fix===================\n");
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
+
+
+    //line_scan(instruction_list);
 
     //ljw_begin
     reg_control(instruction_list,start);
@@ -237,7 +240,6 @@ int main(int argc, char* argv[]){
     arm_translate_ins(instruction_list,argv[3]);
     arm_close_file();
     //    ljf_end
-
 #endif
     return 0;
 }
