@@ -9,8 +9,12 @@ BasicBlock *block;
 InstNode *ins_end;
 InstNode *ins_head;
 
+#define vfpFlag 0 //启用浮点寄存器分配
+int vfp_flag;//计算Var_Float的活跃变量表时需要置1，否则置0
+
 //每个function建立一张live_interval,会从vector数组中，取出每个block
 PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
+    vfp_flag=0;
     assert(vector!=NULL);
     assert(pqueue!=NULL);
     hashmap=HashMapInit();
@@ -18,7 +22,6 @@ PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
     VectorFirst(vector,false);
     while (VectorNext(vector,&elem)){
         block=(BasicBlock*)elem;
-//        printf("block %d\n",block->id);
         analyze_block();
     }
     Pair *ptr_pair;
@@ -35,7 +38,31 @@ PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
     }
     return pqueue;
 }
-
+PriorityQueue *build_vfp_live_interval(Vector* vector,PriorityQueue*pqueue){
+    vfp_flag=1;
+    assert(vector!=NULL);
+    assert(pqueue!=NULL);
+    hashmap=HashMapInit();
+    void *elem;
+    VectorFirst(vector,false);
+    while (VectorNext(vector,&elem)){
+        block=(BasicBlock*)elem;
+        analyze_block();
+    }
+    Pair *ptr_pair;
+    HashMapFirst(hashmap);
+    int k=0;
+    while ((ptr_pair= HashMapNext(hashmap))!=NULL){
+        Value *key=(Value*)ptr_pair->key;
+        live_range *range=(live_range*)ptr_pair->value;
+        value_live_range *vlr=(value_live_range*) malloc(sizeof(value_live_range));
+        vlr->value=key;
+        vlr->start=range->start;
+        vlr->end=range->end;
+        PriorityQueuePush(pqueue,vlr);
+    }
+    return pqueue;
+}
 
 
 //void init_PriorityQueue(PriorityQueue*queue){
@@ -60,18 +87,56 @@ void analyze_block(){
     while ((elem= HashSetNext(block->out))!=NULL){
         v=(Value*)elem;
         live_range *range= HashMapGet(hashmap,v);
-        if(range==NULL){ //添加新range
-            range=(live_range*) malloc(sizeof(live_range));
-            memset(range,0, sizeof(live_range));
-            range->start=ins_head->inst->i;
-            range->end=ins_end->inst->i;
-            HashMapPut(hashmap,(Value*) elem, range);
+        if(vfp_flag==1 && vfpFlag==1){ //只计算浮点数
+            if(isLocalVarFloatType(v->VTy)){
+                if(range==NULL){ //添加新range
+                    range=(live_range*) malloc(sizeof(live_range));
+                    memset(range,0, sizeof(live_range));
+                    range->start=ins_head->inst->i;
+                    range->end=ins_end->inst->i;
+                    HashMapPut(hashmap,(Value*) elem, range);
 //            printf("new %s %d %d\n",v->name,range->start,range->end);
-        }else{ //延长range
-            range->start=MIN(range->start,ins_head->inst->i);
-            range->end=MAX(range->end,ins_end->inst->i);
+                }else{ //延长range
+                    range->start=MIN(range->start,ins_head->inst->i);
+                    range->end=MAX(range->end,ins_end->inst->i);
 //            printf("extend %s %d %d\n",v->name,range->start,range->end);
+                }
+            }
+        } else{
+            if(vfpFlag==0){ //都算
+                if(range==NULL){ //添加新range
+                    range=(live_range*) malloc(sizeof(live_range));
+                    memset(range,0, sizeof(live_range));
+                    range->start=ins_head->inst->i;
+                    range->end=ins_end->inst->i;
+                    HashMapPut(hashmap,(Value*) elem, range);
+//            printf("new %s %d %d\n",v->name,range->start,range->end);
+                }else{ //延长range
+                    range->start=MIN(range->start,ins_head->inst->i);
+                    range->end=MAX(range->end,ins_end->inst->i);
+//            printf("extend %s %d %d\n",v->name,range->start,range->end);
+                }
+            } else if(vfpFlag==1 && vfp_flag==0 ){ //只计算非浮点数
+                if(!isLocalVarFloatType(v->VTy)){
+                    if(range==NULL){ //添加新range
+                        range=(live_range*) malloc(sizeof(live_range));
+                        memset(range,0, sizeof(live_range));
+                        range->start=ins_head->inst->i;
+                        range->end=ins_end->inst->i;
+                        HashMapPut(hashmap,(Value*) elem, range);
+//            printf("new %s %d %d\n",v->name,range->start,range->end);
+                    }else{ //延长range
+                        range->start=MIN(range->start,ins_head->inst->i);
+                        range->end=MAX(range->end,ins_end->inst->i);
+//            printf("extend %s %d %d\n",v->name,range->start,range->end);
+                    }
+                }
+            }
+
         }
+
+
+
     }
     while (ins!=block->head_node){
 //        printf("curr at %d opcode %d\n",ins->inst->i,ins->inst->Opcode);
@@ -110,6 +175,17 @@ void handle_def(Value*dvalue,int ins_id){
     if(isLocalArrayFloatType(dvalue->VTy) || isLocalArrayIntType(dvalue->VTy)){
         return;
     }
+    if(vfpFlag==1 && vfp_flag==1){ //只计算浮点数，非浮点数直接返回
+        if(!isLocalVarFloatType(dvalue->VTy)){
+            return;
+        }
+    }
+    if(vfpFlag==1 && vfp_flag==0){ //只计算非浮点数，浮点数直接返回
+        if(isLocalVarFloatType(dvalue->VTy)){
+            return;
+        }
+    }
+//    vfpFlag==0,计算所有变量
     live_range *range= HashMapGet(hashmap,dvalue);
     if(range!=NULL){
         if(range->start==ins_head->inst->i){
@@ -131,6 +207,17 @@ void handle_use(Value*uvalue,int ins_id){
     if(isLocalArrayFloatType(uvalue->VTy) || isLocalArrayIntType(uvalue->VTy)){
         return;
     }
+    if(vfpFlag==1 && vfp_flag==1){ //只计算浮点数，非浮点数直接返回
+        if(!isLocalVarFloatType(uvalue->VTy)){
+            return;
+        }
+    }
+    if(vfpFlag==1 && vfp_flag==0){ //只计算非浮点数，浮点数直接返回
+        if(isLocalVarFloatType(uvalue->VTy)){
+            return;
+        }
+    }
+//    vfpFlag==0,计算所有变量
     live_range *range= HashMapGet(hashmap,uvalue);
     if(range==NULL){
         range=(live_range*) malloc(sizeof(live_range));

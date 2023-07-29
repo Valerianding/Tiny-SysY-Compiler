@@ -52,7 +52,8 @@ typedef struct _Instruction{
     User user;
     int Opcode;
     struct _BasicBlock *Parent;
-    int _reg_[3];
+    int _reg_[3];    //存放通用寄存器分配的结果
+    int _vfpReg_[3]; //存放浮点寄存器分配的结果
     int i; //指令的编号
     bool isCritical;
 
