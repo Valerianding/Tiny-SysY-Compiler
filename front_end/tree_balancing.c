@@ -3,7 +3,7 @@
 //1. 定root,在语法树上做的话，其实最终队列里只有一个大root,主要是要将其他定下的root加到root_set里
 
 bool add_roots(past* child,past* parent, HashSet* root_set, HashMap* rank_map){
-    if((*child)->iVal == '-' || (*child)->iVal == '/' || (*child)->iVal == '%')
+    if((*child)->iVal == '-' || (*child)->iVal == '/' || (*child)->iVal == '%' || (*child)->iVal == '!')
         return false;
 
     if((*child)->iVal != (*parent)->iVal){
@@ -24,7 +24,7 @@ bool add_roots(past* child,past* parent, HashSet* root_set, HashMap* rank_map){
 //bool为1代表没有遍历到-或/, +与*具有结合律与交换律，可以balance。不能balance则返回0
 bool find_roots(past* expr, Queue* queue, HashMap* rank_map,HashSet* root_set)
 {
-    if((*expr)->iVal == '-' || (*expr)->iVal == '/' || (*expr)->iVal == '%')
+    if((*expr)->iVal == '-' || (*expr)->iVal == '/' || (*expr)->iVal == '%' || (*expr)->iVal == '!')
         return false;
 
     //先让expr进入root队列
@@ -54,7 +54,23 @@ void Rebuild(Queue* q, past* expr,HashMap* rank_map, int Op){
         //if nl and nr are both constant
         if((strcmp(bstr2cstr(nl->nodeType, '\0'), "num_int") == 0 || strcmp(bstr2cstr(nl->nodeType, '\0'), "num_float") == 0) && (strcmp(bstr2cstr(nr->nodeType, '\0'), "num_int") == 0 || strcmp(bstr2cstr(nr->nodeType, '\0'), "num_float") == 0)){
             //fold
-            past fold = newNumInt(nl->iVal + nr->iVal);
+            past fold = NULL;
+            if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_int") == 0 && Op == '+')       //整数加法
+                fold = newNumInt(nl->iVal + nr->iVal);
+            else if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_int") == 0)            //整数乘法
+                fold = newNumInt(nl->iVal * nr->iVal);
+            else if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_float") == 0 && Op == '+')      //小数加法
+                fold = newNumFloat(nl->fVal + nr->fVal);
+            else if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_float") == 0)        //乘法
+                fold = newNumFloat(nl->fVal * nr->fVal);
+            else if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_int") == 0 && Op == '+')      //小数加法
+                fold = newNumFloat(nl->fVal + (float)nr->iVal);
+            else if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_float") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_int") == 0)        //乘法
+                fold = newNumFloat(nl->fVal * (float)nr->iVal);
+            else if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_float") == 0 && Op == '+')      //小数加法
+                fold = newNumFloat((float)nl->iVal + nr->fVal);
+            else if(strcmp(bstr2cstr(nl->nodeType, '\0'), "num_int") == 0 && strcmp(bstr2cstr(nr->nodeType, '\0'), "num_float") == 0)        //乘法
+                fold = newNumFloat((float)nl->iVal * nr->fVal);
 
             //即最终可化简成一个常数
             if(QueueSize(q) == 0){
@@ -66,7 +82,7 @@ void Rebuild(Queue* q, past* expr,HashMap* rank_map, int Op){
             } else {
                 int *rank = malloc(4);
                 *rank = 0;
-                HashMapPut(rank_map, fold,0);
+                HashMapPut(rank_map, fold,rank);
                 QueuePush(q, fold);
             }
         } else {
