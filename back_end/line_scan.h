@@ -1,5 +1,5 @@
 //
-// Created by Administrator on 2023/7/27.
+// Created by ljf on 2023/7/27.
 //
 
 #ifndef C22V1_LINE_SCAN_H
@@ -25,7 +25,7 @@ void spill_at_interval(Function *curFunction,value_live_range *i);
 value_live_range* get_last_interval_in_active();
 void pop_last_interval_in_active(value_live_range*spill);
 
-
+//将分配好的结果标在每条ir的_reg_[]数组中
 void label_the_result_of_linescan_register(Function *curFunction,InstNode * ins);
 void label_register(Function *curFunction,InstNode*ins,Value *value,int i);
 #endif //C22V1_LINE_SCAN_H

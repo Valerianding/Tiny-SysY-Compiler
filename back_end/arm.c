@@ -16,12 +16,12 @@ int regi=0;
 //si
 int regs=0;
 //优化开关1打开
-int optimization=0;  //优化总开关
-int opt_div2=0;      //除以2幂次
-int opt_mod2=0;      //取余2幂次
-int opt_mul=0;       //乘法优化
+int optimization=1;  //优化总开关
+int opt_div2=1;      //除以2幂次
+int opt_mod2=1;      //取余2幂次
+int opt_mul=1;       //乘法优化
 int opt_copy=0 ;     //copy_operation优化，注意这个只能在使用块内寄存器分配时使用
-int opt_label=0 ;    //label优化
+int opt_label=1 ;    //label优化
 
 
 //记录本函数调用的函数个数

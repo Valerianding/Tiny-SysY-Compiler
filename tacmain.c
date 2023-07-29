@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
     }
 
 //    //mem2reg之后，优化前
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     CheckGlobalVariable(instruction_list);
@@ -184,16 +184,18 @@ int main(int argc, char* argv[]){
         travel();
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
-//            dominanceAnalysis(currentFunction);
-//             RunOptimizePasses(currentFunction);
+            dominanceAnalysis(currentFunction);
+             RunOptimizePasses(currentFunction);
+        }
+
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+            Clean(currentFunction);
         }
     }
 
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
-    }
 
     printf_llvm_ir(instruction_list,argv[4],0);
+
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
