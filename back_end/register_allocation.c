@@ -1297,9 +1297,9 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
                 if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float)
-                    printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    printf("give param %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
                 else
-                    printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    printf("give param %s\n",instruction->user.use_list->Val->name);
                 break;
             case FunEnd:
                 printf("}\n\n");

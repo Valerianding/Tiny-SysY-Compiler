@@ -15,6 +15,7 @@ BasicBlock *bb_create(){
 // 将instruction放在instnode里面
 InstNode* new_inst_node(Instruction* inst){
     InstNode* n = malloc(sizeof(InstNode));
+    memset(n,0,sizeof(InstNode));
     assert(n != NULL && " out of memory");
     n->inst = inst;
     // 初始化结点

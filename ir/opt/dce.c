@@ -3,7 +3,7 @@
 //
 
 #include "dce.h"
-const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label};
+const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label,SysYMemset};
 BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
     BasicBlock *parent = postDomNode->parent;
     InstNode *currNode = parent->head_node;

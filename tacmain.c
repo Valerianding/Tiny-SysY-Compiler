@@ -185,13 +185,16 @@ int main(int argc, char* argv[]){
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             dominanceAnalysis(currentFunction);
-             RunOptimizePasses(currentFunction);
+             //RunOptimizePasses(currentFunction);
+            loop(currentFunction);
+            LICM(currentFunction);
+            LoopConversion(currentFunction);
         }
     }
 
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        Clean(currentFunction);
-//    }
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+        Clean(currentFunction);
+    }
 
     printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL

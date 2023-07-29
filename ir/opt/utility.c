@@ -8,7 +8,7 @@
 const Opcode invalidOpcodes[] = {FunBegin, Label, ALLBEGIN, Alloca, tmp, zext, MEMCPY, zeroinitializer, GLOBAL_VAR, FunEnd};
 const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
 const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label,GIVE_PARAM};
-const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET};
+const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET,SysYMemset};
 const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
 const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
 //TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
