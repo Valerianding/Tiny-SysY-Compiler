@@ -19,6 +19,8 @@ struct _Function{
     Vector *ToPoBlocks; //拓扑遍历出来的block
     HashMap *lineScanReg; //line scan产生的寄存器分配方案，后端翻译的时候用到
     PriorityQueue *live_interval;
+    HashMap *lineScanVFPReg; //存放浮点寄存器分配的结果
+    PriorityQueue *vfp_live_interval;//浮点数的活跃周期表
     char *name;
 };
 
