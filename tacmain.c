@@ -227,10 +227,10 @@ int main(int argc, char* argv[]){
 
 
 //    线性扫描
-//    line_scan(instruction_list,start);
+    line_scan(instruction_list,start);
 
     //ljw_begin
-    reg_control(instruction_list,start);
+//    reg_control(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
