@@ -30,7 +30,6 @@ void CheckGlobalVariable(InstNode *list){
             deleteIns(globalNode);
             globalNode = tempNode;
         }else{
-            printf("value is not nul!");
             globalNode = get_next_inst(globalNode);
         }
     }
@@ -239,5 +238,104 @@ void CheckGlobalVariable(InstNode *list){
         }else{
             globalNode = get_next_inst(globalNode);
         }
+    }
+}
+
+void replaceGlobal(Function *currentFunction,Value *globalVar){
+    BasicBlock *entry = currentFunction->entry;
+    InstNode *entryHead = entry->head_node;
+    Instruction *newAlloca = ins_new_zero_operator(Alloca);
+    newAlloca->Parent = entry;
+    InstNode *newAllocaNode = new_inst_node(newAlloca);
+    //give it a name so rename phrase can actually knows
+    newAlloca->user.value.name = (char *)malloc(sizeof(char) * 10);
+    strcpy(newAlloca->user.value.name,"%alloca");
+    ins_insert_after(newAllocaNode,entryHead);
+
+    //对全局变量进行初始化
+    Instruction *globalIns = (Instruction *)globalVar;
+    Value *initValue = ins_get_rhs(globalIns);
+    assert(isImm(initValue));
+    Value *dest = ins_get_dest(newAlloca);
+    //insert a store instruction
+    //alloca
+    InstNode *tempNode = get_next_inst(entryHead);
+    while(tempNode->inst->Opcode == Alloca){
+        tempNode = get_next_inst(tempNode);
+    }
+
+    Instruction *newStore = ins_new_binary_operator(Store,initValue,dest);
+    newStore->Parent = entry;
+    InstNode *newStoreNode = new_inst_node(newStore);
+    ins_insert_before(newStoreNode,tempNode);
+
+    //对于这个alloca设置Type
+
+    switch (globalVar->VTy->ID) {
+        case GlobalVarFloat:{
+            dest->VTy->ID = Var_INT;
+            break;
+        }
+        case GlobalVarInt:{
+            dest->VTy->ID = Var_FLOAT;
+            break;
+        }
+        default:
+            assert(false);
+    }
+    valueReplaceAll(globalVar,dest,currentFunction);
+}
+
+//This pass will performs global 2 local
+void global2local(InstNode *list){
+    InstNode *globalNode = get_next_inst(list);
+    while(globalNode->inst->Opcode != FunBegin){
+        assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
+        Value *dest = ins_get_dest(globalNode->inst);
+        printf("dest is %s\n",dest->name);
+        Use *destUses = dest->use_list;
+        if(destUses == NULL){
+            InstNode *tempNode = get_next_inst(globalNode);
+            deleteIns(globalNode);
+            globalNode = tempNode;
+        }else{
+            globalNode = get_next_inst(globalNode);
+        }
+    }
+
+    globalNode = list;
+    while(globalNode->inst->Opcode != FunBegin){
+        if(globalNode->inst->Opcode == GLOBAL_VAR){
+            Value *dest = ins_get_dest(globalNode->inst);
+            if(isGlobalVar(dest)){
+                //check if it is only used in one function
+                Use *uses = dest->use_list;
+                bool OnlyUsedInOneFunction = true;
+                Function *prevFunction = NULL;
+                while(uses != NULL){
+                    Instruction *useIns = (Instruction *)uses->Parent;
+                    BasicBlock *block = useIns->Parent;
+                    Function *current = block->Parent;
+                    if(prevFunction != NULL && prevFunction != current){
+                        OnlyUsedInOneFunction = false;
+                        break;
+                    }
+                    prevFunction = current;
+                    uses = uses->Next;
+                }
+
+                if(OnlyUsedInOneFunction){
+                    //let it become the local variable in this function
+
+                    //insert a alloca instruction
+                    //replace all the global var with this alloca
+                    printf("var %s is only used!\n",dest->name);
+                    //TODO because there is no used global variable
+                    if(prevFunction != NULL)
+                        replaceGlobal(prevFunction,dest);
+                }
+            }
+        }
+        globalNode = get_next_inst(globalNode);
     }
 }
