@@ -310,21 +310,21 @@ void global2local(InstNode *list){
             if(isGlobalVar(dest)){
                 //check if it is only used in one function
                 Use *uses = dest->use_list;
-                bool OnlyUsedInOneFunction = true;
+                bool OnlyUsedInMainFunction = true;
                 Function *prevFunction = NULL;
                 while(uses != NULL){
                     Instruction *useIns = (Instruction *)uses->Parent;
                     BasicBlock *block = useIns->Parent;
                     Function *current = block->Parent;
-                    if(prevFunction != NULL && prevFunction != current){
-                        OnlyUsedInOneFunction = false;
+                    if((prevFunction != NULL && prevFunction != current) || (strcmp(current->name,"main") != 0)){
+                        OnlyUsedInMainFunction= false;
                         break;
                     }
                     prevFunction = current;
                     uses = uses->Next;
                 }
 
-                if(OnlyUsedInOneFunction){
+                if(OnlyUsedInMainFunction){
                     //let it become the local variable in this function
 
                     //insert a alloca instruction

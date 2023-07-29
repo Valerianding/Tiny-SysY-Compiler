@@ -369,6 +369,7 @@ bool OnePass(Vector* vector) {
                 //删除这个inst
                 deleteIns(block->tail_node);
                 block->tail_node = jumpNode;
+                block->false_block = NULL;
 
                 processed = true;
             }

@@ -808,15 +808,16 @@ void topCfg(Function *currentFunction){
     BasicBlock *exit = currentFunction->tail;
     HashMapRemove(indegree,exit);
     while(HashMapSize(indegree) != 0){
+        printf("one time!\n");
         //find the
         HashMapFirst(indegree);
         for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
             BasicBlock *block = pair->key;
-            printf("now block %d\n",block->id);
             int indeg = (int)pair->value;
-            printf("indegree %d\n",indeg);
+            printf("block %d in degree is %d\n",block->id,indeg);
             if(indeg == 0){
-                printf("now block %d\n",block->id);
+                //sleep(1);
+                printf("block %d in degree is 0!!\n",block->id);
                 VectorPushBack(vector,block);
                 //OK now we remove this Block from HashMap
                 HashMapRemove(indegree,block);
@@ -827,6 +828,7 @@ void topCfg(Function *currentFunction){
                     HashMapRemove(indegree,block->true_block);
                     n = n - 1;
                     HashMapPut(indegree,block->true_block,(void *)n);
+                    printf("true is %d inde : %d\n",block->true_block->id,n);
                 }
 
                 if(block->false_block && block->false_block != exit && !HashSetFind(block->dom,block->false_block)){
@@ -834,7 +836,9 @@ void topCfg(Function *currentFunction){
                     HashMapRemove(indegree,block->false_block);
                     n = n - 1;
                     HashMapPut(indegree,block->false_block,(void *)n);
+                    printf("true is %d inde : %d\n",block->false_block->id,n);
                 }
+                break;
             }
         }
     }

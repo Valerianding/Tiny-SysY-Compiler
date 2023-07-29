@@ -150,10 +150,10 @@ int main(int argc, char* argv[]){
     }
 
 //    //mem2reg之后，优化前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
-    CheckGlobalVariable(instruction_list);
+    //CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
 
@@ -194,7 +194,7 @@ int main(int argc, char* argv[]){
     }
 
 
-    //printf_llvm_ir(instruction_list,argv[4],0);
+    printf_llvm_ir(instruction_list,argv[4],0);
 
 #if ALL
     //phi上的优化
