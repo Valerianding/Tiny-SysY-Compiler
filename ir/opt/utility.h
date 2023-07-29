@@ -6,6 +6,7 @@
 #define C22V1_UTILITY_H
 #include "function.h"
 #include "loopinfo.h"
+#include "time.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -48,4 +49,6 @@ bool isLoopInvariant(struct Loop *loop,Value *var);
 bool returnValueNotUsed(InstNode *instNode);
 bool specialValueReplace(Value *old, Value *new, BasicBlock *pos);
 bool isDominated(BasicBlock *block, BasicBlock *target);
+void RPOCfg(Function *currentFunction);
+void topCfg(Function *currentFunction);
 #endif //C22V1_UTILITY_H

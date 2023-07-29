@@ -5,6 +5,9 @@
 #include "globalopt.h"
 Vector *constant_;
 
+//we only considered -> if it is only been read
+//more case: only stored but never used
+//TODO for array & global variable
 void CheckGlobalVariable(InstNode *list){
 
     //first of all we go through all the node to see if the initValue actually is uncritical for all
@@ -13,6 +16,8 @@ void CheckGlobalVariable(InstNode *list){
         assert(node->inst->isCritical == false);
         node = get_next_inst(node);
     }
+
+    //go through all first delete not used global variable
 
     constant_ = VectorInit(10);
 
@@ -33,6 +38,7 @@ void CheckGlobalVariable(InstNode *list){
             }
             bool flag = true;
             Value *dest = ins_get_dest(globalNode->inst);
+
             //see if it is only been read
             Use *uses = dest->use_list;
             while(uses != NULL){
@@ -80,7 +86,7 @@ void CheckGlobalVariable(InstNode *list){
             //TODO remember thar true is useless
             Instruction *curIns = (Instruction *)user;
 
-         curIns->isCritical = true;
+            curIns->isCritical = true;
 
             //change the dest value type and it's pdata of load
             Value *insDest = ins_get_dest(curIns);
@@ -113,16 +119,97 @@ void CheckGlobalVariable(InstNode *list){
     }
 
 
-    //OK now we can delete all the isCritical == True
-    InstNode *tempNode = instruction_list;
-    printf("here\n");
-    while(tempNode != NULL){
-        if(tempNode->inst->isCritical == true){
-            InstNode *nextNode = get_next_inst(tempNode);
-            deleteIns(tempNode);
-            tempNode = nextNode;
+    //global array only store
+    //%1 = gep @arr
+    //... = gep % 1
+    // ..
+    //store or load
+    globalNode = list;
+    while(globalNode->inst->Opcode != FunBegin){
+        printf("here! %d\n",globalNode->inst->i);
+        Value *dest = ins_get_dest(globalNode->inst);
+        if(globalNode->inst->Opcode == GLOBAL_VAR && isGlobalArray(dest)){
+            bool OnlyStore = true;
+            Value *dest = ins_get_dest(globalNode->inst);
+
+            //see if it is only stored
+            Use *uses = dest->use_list;
+            while(uses != NULL){
+                User *user = uses->Parent;
+                Instruction *ins = (Instruction *)user;
+                if(ins->Opcode == GEP){
+                    HashSet *workList = HashSetInit();
+                    Value *insDest = ins_get_dest(ins);
+                    HashSetAdd(workList,insDest);
+                    while(HashSetSize(workList) != 0){
+                        HashSetFirst(workList);
+                        Value *gep = HashSetNext(workList);
+                        HashSetRemove(workList,gep);
+                        Use *gepUses = gep->use_list;
+                        while(gepUses != NULL){
+                            Instruction *userIns = (Instruction *)gepUses->Parent;
+                            if(userIns->Opcode == Load){
+                                OnlyStore = false;
+                                break;
+                            }else if(userIns->Opcode == GEP){
+                                Value *userDest = ins_get_dest(userIns);
+                                HashSetAdd(workList,userDest);
+                            }else if(userIns->Opcode == GIVE_PARAM){
+                                OnlyStore = false;
+                                break;
+                            }
+                            gepUses = gepUses->Next;
+                        }
+                        if(OnlyStore == false){
+                            break;
+                        }
+                    }
+                    HashSetDeinit(workList);
+                }
+                if(OnlyStore == false){
+                    break;
+                }
+                uses = uses->Next;
+            }
+
+            if(OnlyStore){
+                uses = dest->use_list;
+                assert(uses != NULL);
+                //所有对于这个global array的gep和gep产生的及gep产生的所有instruction都会被remove
+                while(uses != NULL){
+                    Instruction *userIns = (Instruction *)uses->Parent;
+                    InstNode *instNode = findNode(userIns->Parent, userIns);
+                    HashSet *workList = HashSetInit();
+                    Value *userDest = ins_get_dest(userIns);
+                    deleteIns(instNode);
+                    HashSetAdd(workList,userDest);
+                    while(HashSetSize(workList) != 0){
+                        HashSetFirst(workList);
+                        Value *other = HashSetNext(workList);
+                        HashSetRemove(workList,other);
+                        Use *otherUses = other->use_list;
+                        while(otherUses != NULL){
+                            Instruction *ins = (Instruction *)otherUses->Parent;
+                            InstNode *node = findNode(ins->Parent,ins);
+                            Value *dest = ins_get_dest(ins);
+                            HashSetAdd(workList,dest);
+                            deleteIns(node);
+                            otherUses = otherUses->Next;
+                        }
+                    }
+                    uses = uses->Next;
+                }
+
+                InstNode *tempNext= get_next_inst(globalNode);
+                printf("tempNext %d\n",tempNext->inst->i);
+                deleteIns(globalNode);
+                globalNode = tempNext;
+            }else{
+                globalNode = get_next_inst(globalNode);
+                printf("globalNext %d\n",globalNode->inst->i);
+            }
         }else{
-            tempNode = get_next_inst(tempNode);
+            globalNode = get_next_inst(globalNode);
         }
     }
 }

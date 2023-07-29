@@ -720,3 +720,144 @@ bool specialValueReplace(Value *old, Value *new, BasicBlock *pos){
         phiNode = get_next_inst(phiNode);
     }
 }
+
+void dfsTravelCfg(Vector *vector, BasicBlock *block){
+    block->visited = true;
+    VectorPushBack(vector,block);
+    if(block->true_block && block->true_block->visited == false){
+        dfsTravelCfg(vector,block->true_block);
+    }
+    if(block->false_block && block->false_block->visited == false){
+        dfsTravelCfg(vector,block->false_block);
+    }
+}
+
+//reverse post order travel the cfg
+//reverse post order == depth first
+//void RPOCfg(Function *currentFunction){
+//    BasicBlock *entry = currentFunction->entry;
+//    clear_visited_flag(entry);
+//    currentFunction->RPOBlocks = VectorInit(10);
+//    dfsTravelCfg(currentFunction->RPOBlocks,entry);
+//
+//    //
+//    int count = 0;
+//    printf("rpo of %s:",currentFunction->name);
+//    int n = VectorSize(currentFunction->RPOBlocks);
+//    BasicBlock *block = NULL;
+//    for(int i = 0; i < n; i++){
+//        VectorGet(currentFunction->RPOBlocks,i,(void *)&block);
+//        InstNode *headNode = block->head_node;
+//        InstNode *tailNode = get_next_inst(block->tail_node);
+//        while(headNode != tailNode){
+//            headNode->inst->i = count;
+//            count++;
+//            headNode = get_next_inst(headNode);
+//        }
+//        assert(block != NULL);
+//        printf(" block %d",block->id);
+//    }
+//    printf("\n");
+//}
+
+//top sort
+void topCfg(Function *currentFunction){
+    //首先我们计算每一个BasicBlock的Indegree HashMap BasicBlock -> int
+    //对当前block
+    HashMap *indegree = HashMapInit();
+
+
+    HashSet *workList = HashSetInit();
+    BasicBlock *entry = currentFunction->entry;
+    clear_visited_flag(entry);
+    HashSetAdd(workList,entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+        block->visited = true;
+        int n = HashSetSize(block->preBlocks);
+
+        //计算indegree的时候不能计算回边
+        HashSetFirst(block->preBlocks);
+        for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
+            if(HashSetFind(preBlock->dom,block)){
+                n = n - 1;
+            }
+        }
+
+        HashMapPut(indegree,block,(void *)n);
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
+        }
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
+        }
+    }
+    HashSetDeinit(workList);
+
+    HashMapFirst(indegree);
+    for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
+        BasicBlock *block = pair->key;
+        int in = (int)pair->value;
+        printf("b %d indegree %d\n",block->id, in);
+    }
+
+    currentFunction->ToPoBlocks = VectorInit(10);
+    Vector *vector = currentFunction->ToPoBlocks;
+    BasicBlock *exit = currentFunction->tail;
+    HashMapRemove(indegree,exit);
+    while(HashMapSize(indegree) != 0){
+        //find the
+        HashMapFirst(indegree);
+        for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
+            BasicBlock *block = pair->key;
+            printf("now block %d\n",block->id);
+            int indeg = (int)pair->value;
+            printf("indegree %d\n",indeg);
+            if(indeg == 0){
+                printf("now block %d\n",block->id);
+                VectorPushBack(vector,block);
+                //OK now we remove this Block from HashMap
+                HashMapRemove(indegree,block);
+
+                //minus indegree for it's successors;
+                if(block->true_block && block->true_block != exit && !HashSetFind(block->dom,block->true_block)){
+                    int n = (int) HashMapGet(indegree,block->true_block);
+                    HashMapRemove(indegree,block->true_block);
+                    n = n - 1;
+                    HashMapPut(indegree,block->true_block,(void *)n);
+                }
+
+                if(block->false_block && block->false_block != exit && !HashSetFind(block->dom,block->false_block)){
+                    int n = (int) HashMapGet(indegree,block->false_block);
+                    HashMapRemove(indegree,block->false_block);
+                    n = n - 1;
+                    HashMapPut(indegree,block->false_block,(void *)n);
+                }
+            }
+        }
+    }
+    VectorPushBack(vector,exit);
+
+    int n = VectorSize(vector);
+    BasicBlock *block = NULL;
+    printf("topo:");
+
+    int count = 0;
+    for(int i = 0; i < n; i++){
+        VectorGet(vector,i,(void *)&block);
+
+        InstNode *blockHead = block->head_node;
+        InstNode *blockTail = block->tail_node;
+        InstNode *nextNode = get_next_inst(blockTail);
+        while(blockHead != nextNode){
+            blockHead->inst->i = count;
+            count++;
+            blockHead = get_next_inst(blockHead);
+        }
+
+        printf(" %d",block->id);
+    }
+    printf("\n");
+}

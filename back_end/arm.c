@@ -6,6 +6,9 @@
 
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
+
+#define liveScan 0 //使用线性扫描寄存器分配
+
 //ri
 int regi=0;
 //si
@@ -17,6 +20,7 @@ int opt_mod2=1;      //取余2幂次
 int opt_mul=1;       //乘法优化
 int opt_copy=0 ;     //copy_operation优化，注意这个只能在使用块内寄存器分配时使用
 int opt_label=1 ;    //label优化
+
 
 //记录本函数调用的函数个数
 int func_call_func;

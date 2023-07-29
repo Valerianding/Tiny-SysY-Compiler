@@ -76,6 +76,14 @@ void loop(Function *currentFunction){
                     HashSetAdd(l1->loopBody,l2Body);
                 }
 
+
+                //also for reconstruct use we need to push
+                if(l1->latches == NULL){
+                    l1->latches = HashSetInit();
+                }
+
+                HashSetAdd(l1->latches,l2->tail);
+
                 //remove l2 from Loops
                 HashSetRemove(tempSet,l2);
                 HashSetRemove(allLoops,l2);
@@ -132,13 +140,14 @@ void loop(Function *currentFunction){
 
 
 
-
+    printf("loop size %d\n", HashSetSize(allLoops));
     HashSetFirst(allLoops);
     for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
         //找到一个头节点
         BasicBlock *head = l->head;
         //寻找包含它的最小body数的Loop
 
+        printf("loop info body size %d\n", HashSetSize(l->loopBody));
         Loop *parent = NULL;
         HashSetFirst(tempSet);
         unsigned int minSize = 0xffffffff;
@@ -160,6 +169,7 @@ void loop(Function *currentFunction){
         }
     }
 
+    printf("current Function %d\n", HashSetSize(currentFunction->loops));
     HashSetDeinit(tempSet);
 }
 
@@ -413,6 +423,7 @@ void findInductionVariable(Loop *loop){
 }
 
 
+//during reconstruct loop we'd better make all
 void reconstructLoop(Loop *loop){
     findBody(loop);
     findExit(loop);

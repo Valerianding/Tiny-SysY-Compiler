@@ -48,6 +48,9 @@ void calculate_dominance(Function *currentFunction) {
     HashSetFirst(allNode);
     for(BasicBlock *tempBlock = HashSetNext(allNode); tempBlock != NULL; tempBlock = HashSetNext(allNode)){
         if(tempBlock != entry){
+            if(tempBlock->dom != NULL){
+                HashSetDeinit(tempBlock->dom);
+            }
             tempBlock->dom = HashSetInit();
             HashSetCopy(tempBlock->dom,tempSet);
         }

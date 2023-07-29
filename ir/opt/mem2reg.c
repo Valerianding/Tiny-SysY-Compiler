@@ -627,9 +627,13 @@ void correctPhiNode(Function *currentFunction){
             HashSetFirst(pairSet);
             unsigned int phiSize = HashSetSize(pairSet);
             unsigned int repeatSize = 0;
+            unsigned int nullSize = 0;
             for(pair *phiInfo = HashSetNext(pairSet); phiInfo != NULL; phiInfo = HashSetNext(pairSet)){
                 if(phiInfo->define == insValue){
                     repeatSize++;
+                }
+                if(phiInfo->define == NULL){
+                    nullSize++;
                 }
             }
             if(phiSize - repeatSize == 1){

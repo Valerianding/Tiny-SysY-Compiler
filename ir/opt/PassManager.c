@@ -19,17 +19,17 @@ void RunBasicPasses(Function *currentFunction){
 void RunOptimizePasses(Function *currentFunction){
     sideEffect(currentFunction);
 
-    //DVNT(currentFunction);
+    DVNT(currentFunction);
 
-    //memlvn(currentFunction);
+    memlvn(currentFunction);
 
     //for loop
     loop(currentFunction);
     LICM(currentFunction);
 
-    instruction_combination(currentFunction);
+    GCM(currentFunction);
 
-    //DVNT(currentFunction);
+    instruction_combination(currentFunction);
 
     postDominanceAnalysis(currentFunction);
 
