@@ -1,4 +1,11 @@
-int a[10][10];
+int loopcount;
+int n = 10;
 int main(){
-    return 0;
+    loopcount = getint();
+    int result = 0;
+    while(loopcount < n){
+        result = result + 1;
+        loopcount = loopcount + 1;
+    }
+    return result;
 }

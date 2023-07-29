@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -135,7 +135,8 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    global2local(instruction_list);
+
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -179,7 +180,6 @@ int main(int argc, char* argv[]){
         RunBasicPasses(currentFunction);
     }
 
-
     if(Optimize) {
         travel();
         for (Function *currentFunction = start;
@@ -194,7 +194,8 @@ int main(int argc, char* argv[]){
     }
 
 
-    //printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],0);
+
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){

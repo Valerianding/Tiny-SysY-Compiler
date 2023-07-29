@@ -21,13 +21,11 @@ void RunOptimizePasses(Function *currentFunction){
 
     DVNT(currentFunction);
 
-    memlvn(currentFunction);
-
     //for loop
     loop(currentFunction);
     LICM(currentFunction);
 
-//    LoopConversion(currentFunction);
+    //LoopConversion(currentFunction);
 
     GCM(currentFunction);
 
