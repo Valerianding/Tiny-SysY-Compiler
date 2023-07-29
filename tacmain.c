@@ -175,20 +175,16 @@ int main(int argc, char* argv[]){
     //先跑一次
     //cse cf
     //如果要fuc inline一定要dom一下
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        RunBasicPasses(currentFunction);
-//    }
-//
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        RunBasicPasses(currentFunction);
+    }
 
     if(Optimize) {
         travel();
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             dominanceAnalysis(currentFunction);
-             //RunOptimizePasses(currentFunction);
-            loop(currentFunction);
-            LICM(currentFunction);
-            LoopConversion(currentFunction);
+             RunOptimizePasses(currentFunction);
         }
     }
 

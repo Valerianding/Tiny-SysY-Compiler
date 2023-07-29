@@ -588,6 +588,15 @@ void ScheduleLate(Function *function){
         }
         pinnedNode = get_next_inst(pinnedNode);
     }
+
+    //Schedule late the rest instructions -> avoid
+    pinnedNode = entry->head_node;
+    while(pinnedNode != funcTail){
+        if(pinnedNode->inst->visited == false){
+            Schedule_Late(pinnedNode->inst);
+        }
+        pinnedNode = get_next_inst(pinnedNode);
+    }
 }
 
 void clearInsVisited(Function *function){
@@ -614,7 +623,7 @@ void GCM(Function *currentFunction){
 
     ScheduleEarly(currentFunction);
 
-    //DVNT(currentFunction);
+    DVNT(currentFunction);
 
     clearInsVisited(currentFunction);
 

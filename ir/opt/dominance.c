@@ -78,7 +78,7 @@ void calculate_dominance(Function *currentFunction) {
 
             if(parent->visited != true && parent != entry){
                 //
-                printf("current at : b%d",parent->id);
+               // printf("current at : b%d",parent->id);
                 parent->visited = true;
 
                 //新建一个hashset
@@ -95,7 +95,7 @@ void calculate_dominance(Function *currentFunction) {
 
                 HashSet *newSet = NULL;
                 //对于所有前驱节点
-                printf(" prevBlocks:");
+                //printf(" prevBlocks:");
                 for(BasicBlock *prevBlock = HashSetNext(prevBlocks); prevBlock != NULL; prevBlock = HashSetNext(prevBlocks)){
                     printf(" b%d",prevBlock->id);
                     HashSet *prevDom = prevBlock->dom;
