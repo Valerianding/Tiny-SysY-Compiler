@@ -9,6 +9,7 @@
 #include "symtab.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include "tree_balancing.h"
 
 //void test_travel_type(struct _InstNode *instruction_node);
 void travel_finish_type(struct _InstNode *instruction_node);

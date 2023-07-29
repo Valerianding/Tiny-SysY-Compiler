@@ -32,7 +32,7 @@ typedef struct _value_live_range{
 #define MAX(a,b) ((a)>(b)? (a) : (b))
 #define MIN(a,b) ((a)>(b)? (b) : (a))
 
-int CompareNumerics(const void* lhs, const void* rhs);
+
 void init_PriorityQueue(PriorityQueue*queue);
 void init_HashMap(HashMap*hashMap);
 PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue);
