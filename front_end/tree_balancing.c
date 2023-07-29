@@ -164,5 +164,5 @@ void tree_balancing(past* expr)
         }
     }
 
-    showAst(*expr,0);
+   // showAst(*expr,0);
 }
