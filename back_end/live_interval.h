@@ -33,14 +33,19 @@ typedef struct _value_live_range{
 #define MIN(a,b) ((a)>(b)? (b) : (a))
 
 
-void init_PriorityQueue(PriorityQueue*queue);
-void init_HashMap(HashMap*hashMap);
+
 PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue);
+PriorityQueue *build_vfp_live_interval(Vector* vector,PriorityQueue*pqueue);
 void analyze_block();
 void analyze_ins(InstNode *ins);
 void handle_def(Value*dvalue,int ins_id);
 void handle_use(Value*uvalue,int ins_id);
+void print_live_interval(PriorityQueue*pqueue);
+
+
+void init_PriorityQueue(PriorityQueue*queue);
+void init_HashMap(HashMap*hashMap);
 bool value_is_in_liveout(Value*tvalue);
 bool value_is_in_livein(Value*tvalue);
-void print_live_interval(PriorityQueue*pqueue);
+
 #endif //C22V1_LIVE_INTERVAL_H
