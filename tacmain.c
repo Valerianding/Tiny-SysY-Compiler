@@ -170,7 +170,7 @@ int main(int argc, char* argv[]){
     }
 
     //OK 现在开始我们不会对
-    printf_llvm_ir(instruction_list,argv[4],1);
+    //printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //先跑一次
@@ -180,21 +180,21 @@ int main(int argc, char* argv[]){
         RunBasicPasses(currentFunction);
     }
 
-//    if(Optimize) {
-//        travel();
-//        for (Function *currentFunction = start;
-//             currentFunction != NULL; currentFunction = currentFunction->Next) {
-//            dominanceAnalysis(currentFunction);
-//             RunOptimizePasses(currentFunction);
-//        }
-//
-//        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-//            Clean(currentFunction);
-//        }
-//    }
+    if(Optimize) {
+        travel();
+        for (Function *currentFunction = start;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+            dominanceAnalysis(currentFunction);
+             RunOptimizePasses(currentFunction);
+        }
+
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+            Clean(currentFunction);
+        }
+    }
 
 
-    printf_llvm_ir(instruction_list,argv[4],0);
+    //printf_llvm_ir(instruction_list,argv[4],0);
 
 #if ALL
     //phi上的优化
@@ -231,7 +231,7 @@ int main(int argc, char* argv[]){
     line_scan(instruction_list,start);
 
     //ljw_begin
-    reg_control(instruction_list,start);
+//    reg_control(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
