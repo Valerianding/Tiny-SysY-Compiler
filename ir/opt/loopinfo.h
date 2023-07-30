@@ -53,5 +53,4 @@ Loop *constructLoop(BasicBlock *head,BasicBlock *tail);
 void findBody(Loop *loop);
 void findExit(Loop *loop);
 void findInductionVariable(Loop *loop);
-void reconstructLoop(Loop *loop);
 #endif //C22V1_LOOPINFO_H

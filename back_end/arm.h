@@ -1,5 +1,5 @@
 //
-// Created by ljf on 23-2-25.
+// Created by ljf on 2023/2/25.
 //
 #ifndef C22V1_ARM_H
 #define C22V1_ARM_H
@@ -13,6 +13,7 @@
 #include "travel.h"
 #include "ir/opt/utility.h"
 #include <unistd.h>
+#include "line_scan.h"
 /**
  * 判断立即数int是否有效
  * @param value
@@ -140,4 +141,5 @@ void printf_ldmfd_rlist();
 int count_bit(int value); //输入正数
 //返回0优化失败（不符合优化条件），返回1成功优化.
 int optimization_mul(int dest_reg,int left_reg,int imm); //进入函数之前先把其加载到寄存器
+void handle_lineScan_extra_reg(InstNode*ins,int param_num);
 #endif //C22V1_ARM_H

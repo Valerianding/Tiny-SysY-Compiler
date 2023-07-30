@@ -7,11 +7,11 @@
 #include "function.h"
 #include "utility.h"
 
-
-extern Vector *constant_;
 //mark all global variables to be constant if only have been read
+extern Vector *constant_;
 extern InstNode *instruction_list;
 void CheckGlobalVariable(InstNode *list);
 
-
+//perform before mem2reg
+void global2local(InstNode *list);
 #endif //C22V1_GLOBALOPT_H

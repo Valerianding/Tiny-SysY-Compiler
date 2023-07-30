@@ -14,7 +14,7 @@ Instruction* ins_new(int op_num){
     unsigned int use_size = user_size - sizeof(User);
     // use 是额外的，所以要单独计算大小 
     uint8_t *storage = (uint8_t *)malloc(sizeof(Instruction) + use_size);
-    memset(storage, 0 , use_size);
+    memset(storage, 0 , use_size + sizeof(Instruction));
     /* 为Instruction的Value初始化 */
     Instruction* ins = (Instruction*)(storage+use_size);
     ins->Parent = NULL;

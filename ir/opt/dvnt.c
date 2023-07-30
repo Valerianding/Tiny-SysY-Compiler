@@ -44,7 +44,7 @@ unsigned long getHashValueNumber(Opcode opcode,unsigned int lhsValueNumber, unsi
 }
 
 bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *currentFunction) {
-    printf("DVNT in block: %d\n",block->id);
+    //printf("DVNT in block: %d\n",block->id);
     bool changed = false;
     //allocate a new scope for B
     //我们使用一个hash set记录一下
@@ -290,7 +290,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         }
                     }
 
-                    printf("currNode LhsValueNumber %d RhsValueNumber %d\n",LhsNumber,RhsNumber);
+                    //printf("currNode LhsValueNumber %d RhsValueNumber %d\n",LhsNumber,RhsNumber);
 
                     //然后去table里面查有没有
                     //table里面
@@ -361,7 +361,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                 break;
                             }
                             case GEP:{
-                                printf("in gep lhsValueNumber is %d\n",LhsNumber);
+                               // printf("in gep lhsValueNumber is %d\n",LhsNumber);
 
                                 if((expression->op == currNode->inst->Opcode) &&  (expression->lhsValueNumber == LhsNumber) && (expression->rhsValueNumber == RhsNumber)){
 
@@ -412,7 +412,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         newExpression->op = currNode->inst->Opcode;
                         newExpression->lhsValueNumber = LhsNumber;
                         newExpression->rhsValueNumber = RhsNumber;
-                        printf("Lhs value number %d Rhs value number %d dest value number is %d\n",LhsNumber,RhsNumber,hashValueNumber);
+                        //printf("Lhs value number %d Rhs value number %d dest value number is %d\n",LhsNumber,RhsNumber,hashValueNumber);
                         HashMapPut(table,dest,newExpression);
 
                         //记录当前基本块新产生的
@@ -440,11 +440,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
     //debug 一下我们push了哪些参数进去
     HashSetFirst(newScope);
-    printf("pushed:");
-    for(Value *pushed = HashSetNext(newScope); pushed != NULL; pushed = HashSetNext(newScope)){
-        printf(" %s",pushed->name);
-    }
-    printf("\n");
+
 
     //for each child c of B in the dominator tree
     //不存在回边不需要额外考虑
@@ -455,7 +451,6 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
     }
 
 
-    printf("\n");
     //deallocate the scope for B
     HashSetFirst(newScope);
     for(Value *pushed = HashSetNext(newScope); pushed != NULL; pushed = HashSetNext(newScope)){

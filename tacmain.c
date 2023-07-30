@@ -15,7 +15,7 @@
 #include "mem2reg.h"
 #include "sideeffect.h"
 #include "fix_array.h"
-
+#include "line_scan.h"
 #define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
@@ -135,7 +135,8 @@ int main(int argc, char* argv[]){
     }
 
     //建立phi之前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    global2local(instruction_list);
+
 
     for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
         calculateNonLocals(currentFunction);
@@ -169,27 +170,32 @@ int main(int argc, char* argv[]){
     }
 
     //OK 现在开始我们不会对
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    //printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //先跑一次
     //cse cf
     //如果要fuc inline一定要dom一下
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        RunBasicPasses(currentFunction);
-//    }
-//
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        RunBasicPasses(currentFunction);
+    }
 
-//    if(Optimize) {
-//        travel();
-//        for (Function *currentFunction = start;
-//             currentFunction != NULL; currentFunction = currentFunction->Next) {
-//            dominanceAnalysis(currentFunction);
-//             RunOptimizePasses(currentFunction);
-//        }
-//    }
+    if(Optimize) {
+        travel();
+        for (Function *currentFunction = start;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+            dominanceAnalysis(currentFunction);
+             RunOptimizePasses(currentFunction);
+        }
 
-//    printf_llvm_ir(instruction_list,argv[4],1);
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+            Clean(currentFunction);
+        }
+    }
+
+
+//    printf_llvm_ir(instruction_list,argv[4],0);
+
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -205,15 +211,14 @@ int main(int argc, char* argv[]){
         calculateLiveness(currentFunction);
         printLiveness(currentFunction);
     }
-//
+
 //    printf_llvm_ir(instruction_list,argv[4],0);
 
-//    for (Function *currentFunction = start;
-//         currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        dominanceAnalysis(currentFunction);
-//        topCfg(currentFunction);
-//    }
-
+    for (Function *currentFunction = start;
+         currentFunction != NULL; currentFunction = currentFunction->Next) {
+        dominanceAnalysis(currentFunction);
+        topCfg(currentFunction);
+    }
 
     //lsy_begin
 //    printf("=================fix===================\n");
@@ -221,8 +226,12 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
 
+
+//    线性扫描
+    line_scan(instruction_list,start);
+
     //ljw_begin
-    reg_control(instruction_list,start);
+//    reg_control(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
@@ -234,7 +243,6 @@ int main(int argc, char* argv[]){
     arm_translate_ins(instruction_list,argv[3]);
     arm_close_file();
     //    ljf_end
-
 #endif
     return 0;
 }

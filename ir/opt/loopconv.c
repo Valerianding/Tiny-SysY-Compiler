@@ -102,8 +102,6 @@ void cleanBlock(BasicBlock *block){
 bool LoopConv(Loop *loop){
 
     printf("now is loop %d!\n",loop->head->id);
-    //reconstruct loop
-    reconstructLoop(loop);
 
     if(!LoopConvCheckLoop(loop)){
         printf("one loop is not satisfy for remove!\n");
@@ -287,10 +285,6 @@ bool LoopConv(Loop *loop){
     ins_insert_after(jumpNode,memsetNode);
     jumpNode->inst->Parent = loopEntry;
 
-    //let's see if the pre-Header terminator is a single jump instruction
-    HashSetFirst(loop->head->preBlocks);
-    BasicBlock *preHeader = HashSetNext(loop->head->preBlocks);
-
     //change the entry's successors
     assert(loop->exit_block != NULL);
 
@@ -303,6 +297,9 @@ bool LoopConv(Loop *loop){
 
     //我们还需要移除这个loop 以保证parent不会再访问这个loop了
     //并且parent的loop还需要重构避免bug的出现
+    //TODO may have bug here
+
+
     if(loop->parent != NULL){
         Loop *parent = loop->parent;
         HashSetRemove(parent->child,loop);

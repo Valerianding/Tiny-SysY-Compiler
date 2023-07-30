@@ -5221,12 +5221,14 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 break;
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
-                if(instruction->user.use_list->Val->VTy->ID==Int)
-                    printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
-                else if(instruction->user.use_list->Val->VTy->ID==Float)
-                    printf("give param %f,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.fVal,instruction->user.use_list[1].Val->name);
-                else
-                    printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                if(instruction->user.use_list->Val->VTy->ID==Int){
+                    //printf("give param %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    printf("give param %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
+                }else if(instruction->user.use_list->Val->VTy->ID==Float) {
+                    printf("give param %f\n", instruction->user.use_list->Val->pdata->var_pdata.fVal);
+                }else{
+                    printf("give param %s\n",instruction->user.use_list->Val->name);
+                }
                 break;
             case FunEnd:
                 printf("}\n\n");
@@ -5313,8 +5315,6 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 }else{
                     printf(" %s(%s) = %s\n", dest->name,dest->alias->name,src->name);
                 }
-
-                //printf("a copy operation\n");
                 break;
             }
             case SysYMemset:{

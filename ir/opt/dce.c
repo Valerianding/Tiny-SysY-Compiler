@@ -3,7 +3,7 @@
 //
 
 #include "dce.h"
-const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label};
+const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label,SysYMemset};
 BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
     BasicBlock *parent = postDomNode->parent;
     InstNode *currNode = parent->head_node;
@@ -51,7 +51,7 @@ void combine(BasicBlock *i, BasicBlock *j){
 
     InstNode *iHeadNode = i->head_node;
     InstNode *jHeadNode = j->head_node;
-    printf("combine block %d, %d  each headnode is %d,  %d\n",i->id,j->id,iHeadNode->inst->i,jHeadNode->inst->i);
+    //printf("combine block %d, %d  each headnode is %d,  %d\n",i->id,j->id,iHeadNode->inst->i,jHeadNode->inst->i);
 
 
     //delete labelNode
@@ -68,8 +68,6 @@ void combine(BasicBlock *i, BasicBlock *j){
 
         currNode->inst->Parent = i;
         InstNode *tempNode = get_next_inst(currNode);
-        if(tempNode != NULL)
-            printf("b%d\n",tempNode->inst->Parent->id);
 
         removeIns(currNode);
         ins_insert_after(currNode,i->tail_node);
@@ -347,7 +345,7 @@ bool OnePass(Vector* vector) {
         }
         bool processed = false;
         assert(block != NULL);
-        printf("block %d\n",block->id);
+        //printf("block %d\n",block->id);
         // if i ends in a conditional branch
         if (block->tail_node->inst->Opcode == br_i1) {
             Value *insValue = ins_get_dest(block->tail_node->inst);
@@ -371,6 +369,7 @@ bool OnePass(Vector* vector) {
                 //删除这个inst
                 deleteIns(block->tail_node);
                 block->tail_node = jumpNode;
+                block->false_block = NULL;
 
                 processed = true;
             }
@@ -452,7 +451,7 @@ bool OnePass(Vector* vector) {
                 //
                 if(removeAble == true && processed == false){
                     processed = true;
-                    printf("remove empty!\n");
+                    //printf("remove empty!\n");
                     //符合先决条件
                     //如果block里面有phi函数
                     bool iHasPhi = false;
@@ -565,22 +564,22 @@ bool OnePass(Vector* vector) {
                 processed = true;
                 HashSetFirst(j->preBlocks);
                 BasicBlock *jPrev = HashSetNext(j->preBlocks);
-                printf("block is %d, jPrev is %d\n",block->id,jPrev->id);
+                //printf("block is %d, jPrev is %d\n",block->id,jPrev->id);
 
                 assert(jPrev == block);
 
 
-                printf("combine blocks! suc: %d\n",j->id);
+                //printf("combine blocks! suc: %d\n",j->id);
 
                 if(j->true_block){
-                    printf("suc true: %d, ",j->true_block->id);
+                    //printf("suc true: %d, ",j->true_block->id);
                 }
 
                 if(j->false_block){
-                    printf("suc false: %d, ",j->false_block->id);
+                    //printf("suc false: %d, ",j->false_block->id);
                 }
 
-                printf("\n");
+                //printf("\n");
 
                 HashSetFirst(j->preBlocks);
 
@@ -628,7 +627,6 @@ bool OnePass(Vector* vector) {
                 }
 
                 // TODO 解决如果包含phi函数的问题
-
                 // TODO为什么
                 if(countPhi <= 1 && removeAble){
                     changed = true;
@@ -703,10 +701,10 @@ void Clean(Function *currentFunction){
 
         BasicBlock *temp = NULL;
 
-        for(int i = size - 1; i >= 0; i--){
-            VectorGet(vector,i,(void *)&temp);
-            printf("%d is b%d\n",i,temp->id);
-        }
+//        for(int i = size - 1; i >= 0; i--){
+//            VectorGet(vector,i,(void *)&temp);
+//            printf("%d is b%d\n",i,temp->id);
+//        }
 
         printf("before one pass!\n");
 

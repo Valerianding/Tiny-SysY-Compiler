@@ -1297,9 +1297,9 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
             case GIVE_PARAM:
                 params[give_count++]=instruction_node;
                 if(instruction->user.use_list->Val->VTy->ID==Int||instruction->user.use_list->Val->VTy->ID==Float)
-                    printf("give param %d,func:%s\n",instruction->user.use_list->Val->pdata->var_pdata.iVal,instruction->user.use_list[1].Val->name);
+                    printf("give param %d\n",instruction->user.use_list->Val->pdata->var_pdata.iVal);
                 else
-                    printf("give param %s,func:%s\n",instruction->user.use_list->Val->name,instruction->user.use_list[1].Val->name);
+                    printf("give param %s\n",instruction->user.use_list->Val->name);
                 break;
             case FunEnd:
                 printf("}\n\n");
@@ -3261,12 +3261,12 @@ void reg_control(struct _InstNode *instruction_node,Function *start)
 {
     printf("/*******************reg_start******************/\n");
     // while(temp->inst->Parent->Parent == NULL)   temp = get_next_inst(temp);]
-    ir_reg_init(instruction_node);
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next)
-    {
-        // printf("now_func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
-        reg_control_func(currentFunction);
-    }
+//    ir_reg_init(instruction_node);
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next)
+//    {
+//        // printf("now_func:%s\n",currentFunction->entry->head_node->inst->user.use_list->Val->name);
+//        reg_control_func(currentFunction);
+//    }
     printf_llvm_ir_withreg(instruction_node);
     printf("/*******************reg_end******************/\n");
     return ;
