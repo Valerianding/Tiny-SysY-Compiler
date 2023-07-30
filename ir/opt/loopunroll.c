@@ -703,17 +703,19 @@ InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_c
                     value_init_int(v_mod,1);
                     node_get_mod = (v_init == v_end) ? node_get_mod : NULL;
                     break;
-                case NOTEQ:  //TODO 我目前就默认没有wrong的情况了
+                case NOTEQ:
                     node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,mod_block,pos);
                     node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,mod_block,node_sub);
                     node_get_mod = auto_binary_node_insert_after(Mod,ins_get_dest(node_get_times->inst),v_update_modifier,tmp_index++,mod_block,node_get_times);
                     break;
                 case LESSEQ: case GREATEQ:
+                    node_sub = NULL;
                     node_sub = auto_binary_node_insert_after(Sub,v_end,v_init,tmp_index++,mod_block,pos);
                     node_get_times = auto_binary_node_insert_after(Div, ins_get_dest(node_sub->inst),v_step,tmp_index++,mod_block,node_sub);
                     value_init_int(plus,1);
                     node_plus = auto_binary_node_insert_after(Add, ins_get_dest(node_get_times->inst),plus,tmp_index++,mod_block,node_get_times);
                     node_get_mod = auto_binary_node_insert_after(Mod, ins_get_dest(node_plus->inst),v_update_modifier,tmp_index++,mod_block,node_plus); break;
+
                 case LESS: case GREAT:
                     //我哭死了，你还要分类讨论, 一个基本块该不会还放不下你吧....还真放不下
                     //来个新block,block在mod_block之前
@@ -750,7 +752,7 @@ InstNode *get_mod(Value* v_init,Instruction *ins_modifier,Instruction *ins_end_c
                     (*phi_block)->Parent = mod_block->Parent;
                     adjust_blocks(mod_block,preserve1, loop);
                     adjust_blocks(new_pre_block,*phi_block,loop);
-                    node_get_mod = insert_ir_mod(v_init,v_end,v_step,preserve1,*phi_block,mod_block,pos);
+                    node_get_mod = insert_ir_mod(v_end,v_init,v_step,preserve1,*phi_block,mod_block,pos);
                     break;
             }
             break;
@@ -828,7 +830,7 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     if(ins_modifier->Opcode == Mul || ins_modifier->Opcode == Div)
         return false;
     //只做小于和小于等于的情况，否则负数的时候算余数又复杂一点了
-    if(ins_end_cond->Opcode != LESS && ins_end_cond->Opcode != LESSEQ )
+    if(ins_end_cond->Opcode != LESS && ins_end_cond->Opcode != LESSEQ && ins_end_cond->Opcode != GREAT && ins_end_cond->Opcode != GREATEQ)
         return false;
 
 
