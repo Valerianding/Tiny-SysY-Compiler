@@ -10,7 +10,7 @@
 #include "bblock.h"
 #include <math.h>
 
-#define update_modifier 1
+#define update_modifier 4
 #define loop_unroll_up_lines 3000
 
 void loop_unroll(Function *currentFunction);

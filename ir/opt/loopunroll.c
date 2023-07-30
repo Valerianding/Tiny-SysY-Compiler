@@ -665,7 +665,7 @@ InstNode *insert_ir_mod(Value* v_init, Value* v_end, Value* v_step, BasicBlock* 
     pair *pair1 = (pair*) malloc(sizeof (pair));
     pair *pair2 = (pair*) malloc(sizeof (pair));
     pair1->from =preserve1;
-    pair1->define = ins_get_dest(node_mod->inst);
+    pair1->define = ins_get_dest(node_ret->inst);
     pair2->from = mod_block;
     pair2->define = ins_get_dest(node_plus->inst);
     HashSetAdd(set,pair1);
@@ -828,7 +828,7 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     if(ins_modifier->Opcode == Mul || ins_modifier->Opcode == Div)
         return false;
     //只做小于和小于等于的情况，否则负数的时候算余数又复杂一点了
-    if(ins_end_cond->Opcode != LESS && ins_end_cond->Opcode != LESSEQ)
+    if(ins_end_cond->Opcode != LESS && ins_end_cond->Opcode != LESSEQ )
         return false;
 
 
@@ -842,10 +842,15 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     if(v_end->IsPhi || (end_before && (end_before->Opcode == Add || end_before->Opcode == Sub || end_before->Opcode == Mul || end_before->Opcode == Div)))
         return false;
 
-    if(ins_get_lhs(ins_modifier)==loop->inductionVariable)
+    if(loop->modifier->IsPhi)
+        v_step = loop->modifier;
+    else if(ins_get_lhs(ins_modifier)==loop->inductionVariable)
         v_step= ins_get_rhs(ins_modifier);
     else
         v_step= ins_get_lhs(ins_modifier);
+
+    if(v_step->IsPhi)
+        return false;
 
     //步长为0就return
     if(v_step->VTy->ID == Int && v_step->pdata->var_pdata.iVal==0)
