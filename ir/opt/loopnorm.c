@@ -88,4 +88,5 @@ void LoopNormalize(Function *currentFunction){
     for(Loop *loop = HashSetNext(loops); loop != NULL; loop = HashSetNext(loops)){
         dfsTravelLoop(loop);
     }
+    renameVariables(currentFunction);
 }

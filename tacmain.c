@@ -191,7 +191,7 @@ int main(int argc, char* argv[]){
 //            LICM(currentFunction);
 //            LoopConversion(currentFunction);
             LoopNormalize(currentFunction);
-            renameVariables(currentFunction);
+
         }
     }
 
