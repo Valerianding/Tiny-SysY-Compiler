@@ -191,7 +191,8 @@ int main(int argc, char* argv[]){
 //            LICM(currentFunction);
 //            LoopConversion(currentFunction);
             LoopNormalize(currentFunction);
-
+            dominanceAnalysis(currentFunction);
+            loopAnalysis(currentFunction);
         }
     }
 
@@ -199,14 +200,10 @@ int main(int argc, char* argv[]){
         //OK 现在开始我们不会对
         printf_llvm_ir(instruction_list,argv[4],1);
 
-//        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-//            clear_visited_flag(currentFunction->entry);
-//            Clean(currentFunction);
-//        }
-//    }
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+            Clean(currentFunction);
+        }
 
-
-   printf_llvm_ir(instruction_list,argv[4],0);
 
 #if ALL
     //phi上的优化
