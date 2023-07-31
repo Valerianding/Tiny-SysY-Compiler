@@ -3,8 +3,8 @@
 //
 
 #include "loopconv.h"
-//this pass will try to convert store constant to a array in a loop into memset
-//try to run it after LICM
+//this pass will try to convert store zero to a array in a loopAnalysis into memset
+//need to run it after LICM
 InstNode *newMemset(Value *ptr, Value *stored, Value *length){
     Instruction *memsetIns = ins_new(3);
 
@@ -101,10 +101,10 @@ void cleanBlock(BasicBlock *block){
 
 bool LoopConv(Loop *loop){
 
-    printf("now is loop %d!\n",loop->head->id);
+    printf("now is loopAnalysis %d!\n",loop->head->id);
 
     if(!LoopConvCheckLoop(loop)){
-        printf("one loop is not satisfy for remove!\n");
+        printf("one loopAnalysis is not satisfy for remove!\n");
         return false;
     }
 
@@ -169,8 +169,11 @@ bool LoopConv(Loop *loop){
 
                 //let's see the stored value
                 stored = ins_get_lhs(bodyHead->inst);
-                //it can be constant and also be a variable at least it is what i think
+                //it can only be zero
 
+                if(!isImm(stored) || stored->pdata->var_pdata.iVal != 0){
+                    return false;
+                }
 
                 //pointer must be the last access instruction
                 Value *storePtr = ins_get_rhs(bodyHead->inst);
@@ -202,10 +205,10 @@ bool LoopConv(Loop *loop){
         printf("stored %s to gep %s base %s!\n",stored->name,gepValue->name,basePtr->name);
     }
 
-    //ok now we can remove loop body
+    //ok now we can remove loopAnalysis body
 
 
-    //at to this point we know that the loop has a dedicated exist
+    //at to this point we know that the loopAnalysis has a dedicated exist
     assert(loop->containMultiBackEdge == false);
 
     //update the predecessors of entry block
@@ -223,7 +226,7 @@ bool LoopConv(Loop *loop){
     HashSetRemove(loop->head->preBlocks,loop->tail);
     assert(HashSetSize(loop->head->preBlocks) == 1);
 
-    //remove loop body
+    //remove loopAnalysis body
     cleanBlock(loop->body_block);
 
     //replace induction variable
@@ -255,7 +258,7 @@ bool LoopConv(Loop *loop){
     lengthNode->inst->user.value.name = (char *)malloc(sizeof(char) * 10);
     strcpy(lengthNode->inst->user.value.name,"%length");
     //create give param
-    //insert function call on loop entry
+    //insert function call on loopAnalysis entry
     Instruction *giveparam1 = ins_new_unary_operator(GIVE_PARAM,basePtr);
     InstNode *paramPtr = new_inst_node(giveparam1);
     ins_insert_after(paramPtr,lengthNode);
@@ -288,7 +291,7 @@ bool LoopConv(Loop *loop){
     //change the entry's successors
     assert(loop->exit_block != NULL);
 
-    printf("loop exit block is %d!\n",loop->exit_block->id);
+    printf("loopAnalysis exit block is %d!\n",loop->exit_block->id);
     BasicBlock *exit_block = loop->exit_block;
     loopEntry->true_block = exit_block;
     loopEntry->false_block = NULL;
@@ -298,22 +301,11 @@ bool LoopConv(Loop *loop){
     //我们还需要移除这个loop 以保证parent不会再访问这个loop了
     //并且parent的loop还需要重构避免bug的出现
     //TODO may have bug here
-
-
     if(loop->parent != NULL){
         Loop *parent = loop->parent;
         HashSetRemove(parent->child,loop);
     }
     return true;
-//    InstNode *preHeaderTail = preHeader->tail_node;
-//    if(preHeaderTail->inst->Opcode == br){
-//        //can simplify
-//
-//        //put memset into this block
-
-//    }
-
-    //right now we just put it into entry
 }
 
 bool LoopConversion(Function *currentFunction){

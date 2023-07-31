@@ -274,7 +274,7 @@ void calculateLiveness1(Function *currentFunction){
 }
 
 // 包含phi函数的 活跃变量分析
-//用作 loop invariant等地方
+//用作 loopAnalysis invariant等地方
 void calculateLiveness(Function *currentFunction){
 
 

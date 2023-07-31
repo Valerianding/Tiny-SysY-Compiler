@@ -164,7 +164,7 @@
 // clang-format off
 
 /**
- * Foreach loop
+ * Foreach loopAnalysis
  *
  * char *key, *value;
  * struct sc_map_str map;
@@ -180,7 +180,7 @@
 		     _b = 0)
 
 /**
- * Foreach loop for keys
+ * Foreach loopAnalysis for keys
  *
  * char *key;
  * struct sc_map_str map;
@@ -196,7 +196,7 @@
 		     _b = 0)
 
 /**
- * Foreach loop for values
+ * Foreach loopAnalysis for values
  *
  * char *value;
  * struct sc_map_str map;

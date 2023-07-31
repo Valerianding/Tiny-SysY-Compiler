@@ -31,10 +31,10 @@ bool dfsLoopTree(Loop *loop){
 bool LICM_EACH(Loop *loop){
     bool effective = false;
 
-    // reconstruct the loop body since it can have change due to its child loop
-    //reconstructLoop(loop);
+    // reconstruct the loop body since it can have change due to its child loopAnalysis
+    //reconstructLoop(loopAnalysis);
 
-    //first find all def in loop
+    //first find all def in loopAnalysis
     HashSet *def = HashSetInit();
     HashSetFirst(loop->loopBody);
     for(BasicBlock *body = HashSetNext(loop->loopBody); body != NULL; body = HashSetNext(loop->loopBody)){
@@ -163,7 +163,7 @@ bool LICM_EACH(Loop *loop){
                 HashSetRemove(loopInvariantVariable,var);
 
 
-                //we need to see if the loop can perform at least once
+                //we need to see if the loopAnalysis can perform at least once
                 Value *cond = loop->end_cond;
                 Value *initValue = loop->initValue;
 
@@ -184,7 +184,7 @@ bool LICM_EACH(Loop *loop){
                     }
                 }
 
-                printf("loop head %d loop body %d\n",loop->head->id, HashSetSize(loop->loopBody));
+                printf("loop head %d loopAnalysis body %d\n",loop->head->id, HashSetSize(loop->loopBody));
                 BasicBlock *newPrevBlock = NULL;
                 //需要判断是否需要新的基本块
                 //如果除开循环前驱大于1

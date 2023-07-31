@@ -23,8 +23,8 @@ void examineLoop(Loop *loop){
 }
 
 
-// get all the loop info
-void loop(Function *currentFunction){
+// get all the loopAnalysis info
+void loopAnalysis(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
 
     HashSet *workList = HashSetInit();  // 先把所有的基本块放在这里面 bfs
@@ -88,9 +88,9 @@ void loop(Function *currentFunction){
         for(Loop *l2 = HashSetNext(tempSet); l2 != NULL; l2 = HashSetNext(tempSet)){
             BasicBlock *l2Head = l2->head;
             if(l1Head == l2Head && l1 != l2){
-                //it means loop with multi back-edge
+                //it means loopAnalysis with multi back-edge
                 l1->containMultiBackEdge = true;
-                //copy loop body
+                //copy loopAnalysis body
                 HashSetFirst(l2->loopBody);
                 for(BasicBlock *l2Body = HashSetNext(l2->loopBody); l2Body != NULL; l2Body = HashSetNext(l2->loopBody)){
                     HashSetAdd(l1->loopBody,l2Body);
@@ -160,14 +160,14 @@ void loop(Function *currentFunction){
 
 
 
-    printf("loop size %d\n", HashSetSize(allLoops));
+    printf("loopAnalysis size %d\n", HashSetSize(allLoops));
     HashSetFirst(allLoops);
     for(Loop *l = HashSetNext(allLoops); l != NULL; l = HashSetNext(allLoops)){
         //找到一个头节点
         BasicBlock *head = l->head;
         //寻找包含它的最小body数的Loop
 
-        printf("loop info body size %d\n", HashSetSize(l->loopBody));
+        printf("loopAnalysis info body size %d\n", HashSetSize(l->loopBody));
         Loop *parent = NULL;
         HashSetFirst(tempSet);
         unsigned int minSize = 0xffffffff;
@@ -224,14 +224,14 @@ Loop *constructLoop(BasicBlock *head,BasicBlock *tail){
     HashSet *exit = loop->exitingBlock;
     // 打印看看循环找的对不对
     HashSetFirst(loopBody);
-    printf("loop body: ");
+    printf("loopAnalysis body: ");
     for(BasicBlock *block = HashSetNext(loopBody); block != NULL; block = HashSetNext(loopBody)){
         printf("b%d",block->id);
     }
     printf("\n");
 
 
-    printf("loop exiting:");
+    printf("loopAnalysis exiting:");
     HashSetFirst(exit);
     for(BasicBlock *block = HashSetNext(exit); block != NULL; block = HashSetNext(exit)){
         printf("b%d",block->id);
@@ -246,8 +246,8 @@ Loop *constructLoop(BasicBlock *head,BasicBlock *tail){
 
 
 void findBody(Loop *loop){
-    //reconstruct loop after optimize
-    //clean current loop body
+    //reconstruct loopAnalysis after optimize
+    //clean current loopAnalysis body
     HashSetClean(loop->loopBody);
 
     //
@@ -305,11 +305,11 @@ void findInductionVariable(Loop *loop){
     BasicBlock *head = loop->head;
     HashSet *exit = loop->exitingBlock;
 
-    // the entry of loop must have only two predecessors
+    // the entry of loopAnalysis must have only two predecessors
     if(HashSetSize(head->preBlocks) != 2) return;
 
 
-    //the loop must have only one exitingBlock
+    //the loopAnalysis must have only one exitingBlock
     if(HashSetSize(exit) != 1) return;
 
    // and it must be the entry block
@@ -333,7 +333,7 @@ void findInductionVariable(Loop *loop){
     loop->exit_block = HashSetFind(loop->loopBody,trueBlock) ? falseBlock : trueBlock;
 
 
-    printf("loop body block %d exit block %d\n",loop->body_block->id,loop->exit_block->id);
+    printf("loopAnalysis body block %d exit block %d\n",loop->body_block->id,loop->exit_block->id);
     //get the induction variable
     BasicBlock *tail = loop->tail;
     InstNode *currNode = exitBlock->head_node;
@@ -445,7 +445,7 @@ void findInductionVariable(Loop *loop){
     }
 
     loop->conditionChangeWithinLoop = changeOverIteration;
-    printf("loop change %d\n",changeOverIteration);
+    printf("loopAnalysis change %d\n",changeOverIteration);
     HashSetDeinit(workList);
 }
 

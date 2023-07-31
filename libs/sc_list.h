@@ -173,7 +173,7 @@ void sc_list_del(struct sc_list *l, struct sc_list *elem);
  *
  * struct container *container; // User object
  * struct sc_list *list;        // List pointer, should already be initialized.
- * struct sc_list *tmp;         // Variable for loop, user should not use this.
+ * struct sc_list *tmp;         // Variable for loopAnalysis, user should not use this.
  * struct sc_list *it;          // Iterator
  *
  * sc_list_foreach_safe (list, it) {
@@ -215,7 +215,7 @@ void sc_list_del(struct sc_list *l, struct sc_list *elem);
  *
  * struct container *container; // User object
  * struct sc_list *list;        // List pointer, should already be initialized.
- * struct sc_list *tmp;         // Variable for loop, user should not use this.
+ * struct sc_list *tmp;         // Variable for loopAnalysis, user should not use this.
  * struct sc_list *it;          // Iterator
  *
  * sc_list_foreach_safe_r (list, tmp, it) {

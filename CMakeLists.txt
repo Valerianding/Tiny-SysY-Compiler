@@ -49,7 +49,7 @@ add_executable(compiler
         ${DIR_LIB}
         ${DIR_CONTAINER}
         ${DIR_BACK}
-        tacmain.c)
+        tacmain.c ir/opt/loopnorm.c ir/opt/loopnorm.h)
 
 
 

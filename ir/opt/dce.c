@@ -631,8 +631,6 @@ bool OnePass(Vector* vector) {
                 if(countPhi <= 1 && removeAble){
                     changed = true;
                     processed = true;
-                    assert(false);
-                    printf("hoist a branch!\n");
 
                     InstNode *jNode = j->head_node;
                     InstNode *jTailNode = j->tail_node;

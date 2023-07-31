@@ -237,29 +237,29 @@ void HashSetClean(HashSet *set){
     }
 }
 
-BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block){
+BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *suc){
     BasicBlock *newBlock = bb_create();
     HashSetFirst(prevBlocks);
     BasicBlock *prevBlock = NULL;
     for(prevBlock = HashSetNext(prevBlocks); prevBlock != NULL; prevBlock = HashSetNext(prevBlocks)){
-        if(prevBlock->true_block == block){
+        if(prevBlock->true_block == suc){
             prevBlock->true_block = newBlock;
-        }else if(prevBlock->false_block == block){
+        }else if(prevBlock->false_block == suc){
             prevBlock->false_block = newBlock;
         }
         HashSetAdd(newBlock->preBlocks,prevBlock);
     }
 
-    newBlock->true_block = block;
+    newBlock->true_block = suc;
     //
-    HashSetClean(block->preBlocks);
+    HashSetClean(suc->preBlocks);
 
     //然后block添加唯一的一个前驱为newBloc
-    HashSetAdd(block->preBlocks,newBlock);
+    HashSetAdd(suc->preBlocks,newBlock);
 
 
-    InstNode *prevTail = get_prev_inst(block->head_node);
-    InstNode *prevNext = block->head_node;
+    InstNode *prevTail = get_prev_inst(suc->head_node);
+    InstNode *prevNext = suc->head_node;
 
     // 创建两个语句
     Instruction *newBlockLabel = ins_new_zero_operator(Label);
@@ -800,48 +800,57 @@ void topCfg(Function *currentFunction){
     for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
         BasicBlock *block = pair->key;
         int in = (int)pair->value;
-        printf("b %d indegree %d\n",block->id, in);
+        //printf("b %d indegree %d\n",block->id, in);
     }
 
     currentFunction->ToPoBlocks = VectorInit(10);
     Vector *vector = currentFunction->ToPoBlocks;
     BasicBlock *exit = currentFunction->tail;
     HashMapRemove(indegree,exit);
+
+    //只有可能是现在修改的后继
+    HashSet *modified = HashSetInit();
+    HashSetAdd(modified,entry);
+
+    //
     while(HashMapSize(indegree) != 0){
-        printf("one time!\n");
+        //printf("one time!\n");
         //find the
-        HashMapFirst(indegree);
-        for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
-            BasicBlock *block = pair->key;
-            int indeg = (int)pair->value;
-            printf("block %d in degree is %d\n",block->id,indeg);
-            if(indeg == 0){
+        HashSetFirst(modified);
+        for(BasicBlock *modifiedBlock = HashSetNext(modified); modifiedBlock != NULL; modifiedBlock = HashSetNext(modified)){
+            int in = (int)HashMapGet(indegree,modifiedBlock);
+            if(in == 0){
                 //sleep(1);
-                printf("block %d in degree is 0!!\n",block->id);
-                VectorPushBack(vector,block);
+                printf("block %d in degree is 0!!\n",modifiedBlock->id);
+                VectorPushBack(vector,modifiedBlock);
                 //OK now we remove this Block from HashMap
-                HashMapRemove(indegree,block);
+                HashMapRemove(indegree,modifiedBlock);
+                HashSetRemove(modified,modifiedBlock);
 
                 //minus indegree for it's successors;
-                if(block->true_block && block->true_block != exit && !HashSetFind(block->dom,block->true_block)){
-                    int n = (int) HashMapGet(indegree,block->true_block);
-                    HashMapRemove(indegree,block->true_block);
+                if(modifiedBlock->true_block && modifiedBlock->true_block != exit && !HashSetFind(modifiedBlock->dom,modifiedBlock->true_block)){
+                    int n = (int) HashMapGet(indegree,modifiedBlock->true_block);
+                    HashMapRemove(indegree,modifiedBlock->true_block);
                     n = n - 1;
-                    HashMapPut(indegree,block->true_block,(void *)n);
-                    printf("true is %d inde : %d\n",block->true_block->id,n);
+                    HashMapPut(indegree,modifiedBlock->true_block,(void *)n);
+                    HashSetAdd(modified,modifiedBlock->true_block);
+                    //printf("true is %d inde : %d\n",block->true_block->id,n);
                 }
 
-                if(block->false_block && block->false_block != exit && !HashSetFind(block->dom,block->false_block)){
-                    int n = (int) HashMapGet(indegree,block->false_block);
-                    HashMapRemove(indegree,block->false_block);
+                if(modifiedBlock->false_block && modifiedBlock->false_block != exit && !HashSetFind(modifiedBlock->dom,modifiedBlock->false_block)){
+                    int n = (int) HashMapGet(indegree,modifiedBlock->false_block);
+                    HashMapRemove(indegree,modifiedBlock->false_block);
                     n = n - 1;
-                    HashMapPut(indegree,block->false_block,(void *)n);
-                    printf("true is %d inde : %d\n",block->false_block->id,n);
+                    HashMapPut(indegree,modifiedBlock->false_block,(void *)n);
+                    HashSetAdd(modified,modifiedBlock->false_block);
                 }
                 break;
             }
         }
     }
+
+    HashSetDeinit(modified);
+    HashMapDeinit(indegree);
     VectorPushBack(vector,exit);
 
     int n = VectorSize(vector);

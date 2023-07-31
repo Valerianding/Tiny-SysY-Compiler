@@ -16,9 +16,11 @@ typedef struct Loop{
     BasicBlock *head;
     //tail block (tail of back edge)
     BasicBlock *tail;
+    //preHeader of the loop(predecessor is the only guard, successors is the loop entry)
+    BasicBlock *preHeader;
     // exiting Block(it is actually called exiting Block)
     HashSet *exitingBlock;
-    //all blocks of loop containing entry and tail
+    //all blocks of loopAnalysis containing entry and tail
     HashSet *loopBody;
     //inductionVariable may be NULL also for the initValue and modifier
     Value *inductionVariable;
@@ -27,19 +29,19 @@ typedef struct Loop{
     //modifier is the dest of the instruction that change the inductionVariable
     //for example %3 if %3 = %ind_var + c
     Value *modifier;
-    //the end condition of loop
+    //the end condition of loopAnalysis
     //the dest of a icmp
     Value *end_cond;
 
-    //block to jump when leaving loop entry
+    //block to jump when leaving loopAnalysis entry
     BasicBlock *body_block;
-    //block to jump to when the loop exits (it looks like to be the entry's false block ??)
+    //block to jump to when the loopAnalysis exits (it looks like to be the entry's false block ??)
     BasicBlock *exit_block;
 
     HashSet *latches; //current not used
     bool containMultiBackEdge;
 
-    //often, if the loop has not dedicated exit it means it has "break"
+    //often, if the loopAnalysis has not dedicated exit it means it has "break"
     bool hasDedicatedExit;
 
     //it is true if the condition changes during the iteration of execution
@@ -48,7 +50,7 @@ typedef struct Loop{
 
 
 // 每次需要对循环做优化的时候就再计算
-void loop(Function *currentFunction);
+void loopAnalysis(Function *currentFunction);
 Loop *constructLoop(BasicBlock *head,BasicBlock *tail);
 void findBody(Loop *loop);
 void findExit(Loop *loop);

@@ -57,7 +57,7 @@ void calculate_dominance(Function *currentFunction) {
     }
     HashSetDeinit(tempSet);
 
-    printf("right before all\n");
+    //printf("right before all\n");
 
     //全集计算完毕
     bool changed = true;
@@ -67,11 +67,11 @@ void calculate_dominance(Function *currentFunction) {
         InstNode *cur = currentFunction->entry->head_node;
         InstNode *end = currentFunction->tail->tail_node;
 
-        printf("iterate begin!\n");
+        //printf("iterate begin!\n");
 
         clear_visited_flag(cur->inst->Parent);
 
-        printf("cleared all visited flag!\n");
+        //printf("cleared all visited flag!\n");
         while(cur != end){
             BasicBlock *parent = cur->inst->Parent;
             //除了头节点
@@ -97,7 +97,7 @@ void calculate_dominance(Function *currentFunction) {
                 //对于所有前驱节点
                 //printf(" prevBlocks:");
                 for(BasicBlock *prevBlock = HashSetNext(prevBlocks); prevBlock != NULL; prevBlock = HashSetNext(prevBlocks)){
-                    printf(" b%d",prevBlock->id);
+                    //printf(" b%d",prevBlock->id);
                     HashSet *prevDom = prevBlock->dom;
                     newSet = HashSetIntersect(tempAllSet,prevDom);
                     assert(newSet != NULL);
@@ -105,17 +105,17 @@ void calculate_dominance(Function *currentFunction) {
                     tempAllSet = newSet;
                 }
 
-                printf(" ");
+                //printf(" ");
 
                 HashSetFirst(tempAllSet);
 
                 //并自己
                 HashSetAdd(newSet,parent);
 
-                printf("newSet contain:");
-                for(BasicBlock *key = HashSetNext(tempAllSet);key != NULL; key = HashSetNext(tempAllSet)){
-                    printf(" b%d",key->id);
-                }
+                //printf("newSet contain:");
+//                for(BasicBlock *key = HashSetNext(tempAllSet);key != NULL; key = HashSetNext(tempAllSet)){
+//                    printf(" b%d",key->id);
+//                }
 
                 //判断跟现在的集合是否有差别
                 changed = HashSetDifferent(tempAllSet,parent->dom);
@@ -126,13 +126,13 @@ void calculate_dominance(Function *currentFunction) {
                 }else{
                     HashSetDeinit(tempAllSet);
                 }
-                printf(" changed : %d\n",changed);
+                //printf(" changed : %d\n",changed);
             }
             cur = get_next_inst(cur);
         }
-        printf("This round changed : %d\n",changed);
+        //printf("This round changed : %d\n",changed);
     }
-    printf("after dominance!\n");
+    //printf("after dominance!\n");
     HashSetDeinit(allNode);
 }
 
@@ -186,11 +186,11 @@ void calculate_dominance_frontier(Function *currentFunction){
     HashSetFirst(allBlocks);
     for(BasicBlock *block = HashSetNext(allBlocks); block != NULL; block = HashSetNext(allBlocks)){
         HashSetFirst(block->df);
-        printf("b%d df : ",block->id);
-        for(BasicBlock *df = HashSetNext(block->df); df != NULL; df = HashSetNext(block->df)){
-            printf("b%d ",df->id);
-        }
-        printf("\n");
+//        printf("b%d df : ",block->id);
+//        for(BasicBlock *df = HashSetNext(block->df); df != NULL; df = HashSetNext(block->df)){
+//            printf("b%d ",df->id);
+//        }
+//        printf("\n");
     }
     HashSetDeinit(allBlocks);
     HashSetDeinit(tempSet);
@@ -235,7 +235,7 @@ void calculate_iDominator(Function *currentFunction){
             HashSetFirst(tempSet);
             curBlock->iDom = NULL;
             for(BasicBlock *key = HashSetNext(tempSet); key != NULL; key = HashSetNext(tempSet)){
-                printf("b%d, idom: b%d\n",curBlock->id,key->id);
+                //printf("b%d, idom: b%d\n",curBlock->id,key->id);
                 curBlock->iDom = key;
             }
 

@@ -899,7 +899,7 @@ int cal_times(int init,Instruction *ins_modifier,Instruction *ins_end_cond,Value
 
 bool LOOP_UNROLL_EACH(Loop* loop)
 {
-//    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0 || !loop->hasDedicatedExit)
+//    if(HashSetSize(loop->loopBody) > 2 || HashSetSize(loop->child) != 0 || !loopAnalysis->hasDedicatedExit)
 //        return false;
 
     if(!loop->hasDedicatedExit)
