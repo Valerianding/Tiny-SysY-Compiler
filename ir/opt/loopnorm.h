@@ -6,5 +6,7 @@
 #define C22V1_LOOPNORM_H
 #include "function.h"
 #include "utility.h"
+//requires dominance & loopinfo before
+//requires recompute dominance & loopinfo after
 void LoopNormalize(Function *currentFunction);
 #endif //C22V1_LOOPNORM_H
