@@ -3,13 +3,9 @@ int main(){
     int b = getint();
     int i = getint();
     int result = 0;
-    while(i < 100){
-        i = i + 1;
-    }
-    if(result > 0){
-        result = a + b;
-    }else{
-        result = a + b;
+    while(a < 10){
+        result = result + 1;
+        a = a + 1;
     }
     return result;
 }

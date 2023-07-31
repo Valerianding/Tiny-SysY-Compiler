@@ -187,6 +187,9 @@ int main(int argc, char* argv[]){
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             dominanceAnalysis(currentFunction);
             //RunOptimizePasses(currentFunction);
+            loopAnalysis(currentFunction);
+            LoopNormalize(currentFunction);
+            dominanceAnalysis(currentFunction);
             calculatePostDominance(currentFunction);
             Mark(currentFunction);
             Sweep(currentFunction);
@@ -196,14 +199,12 @@ int main(int argc, char* argv[]){
     }
 
 
-        //OK 现在开始我们不会对
-        printf_llvm_ir(instruction_list,argv[4],1);
+    //OK 现在开始我们不会对
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+        Clean(currentFunction);
+    }
 
-        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-            Clean(currentFunction);
-        }
-
-
+    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
