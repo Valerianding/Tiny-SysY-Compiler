@@ -3,7 +3,7 @@
 //
 #include "line_scan.h"
 
-#define S 26
+#define S 14
 #define R 6
 #define enable_vfp 0 //浮点寄存器分配开关
 
@@ -474,7 +474,7 @@ void free_register(int i){
     myreg[i]=0;
 }
 int get_an_availabel_VFPregister(){
-    for(int i=4;i<30;i++){
+    for(int i=16;i<30;i++){
         if(VFPreg[i]==0){
             VFPreg[i]=1;
             free_VFPreg_num--;
