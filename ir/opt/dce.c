@@ -114,6 +114,12 @@ void combine(BasicBlock *i, BasicBlock *j){
             jFalseNode = get_next_inst(jFalseNode);
         }
     }
+
+    Function *currentFunction = j->Parent;
+    //如果j是exit修改的
+    if(j == currentFunction->tail){
+        currentFunction->tail = i;
+    }
 }
 
 bool isEssentialOperator(InstNode *inst){
@@ -631,8 +637,6 @@ bool OnePass(Vector* vector) {
                 if(countPhi <= 1 && removeAble){
                     changed = true;
                     processed = true;
-                    assert(false);
-                    printf("hoist a branch!\n");
 
                     InstNode *jNode = j->head_node;
                     InstNode *jTailNode = j->tail_node;

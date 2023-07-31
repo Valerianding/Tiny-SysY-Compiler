@@ -12,6 +12,8 @@ HashSet *ExecutedEdge; // Executed Edge
 
 
 void EvaluateAllPhisInBlock(BasicBlock *target){
+    InstNode *blockHead = target->head_node;
+    InstNode *blockTail = target->tail_node;
 
 }
 

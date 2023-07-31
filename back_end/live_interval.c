@@ -3,13 +3,13 @@
 //
 #include "live_interval.h"
 
+#define vfpFlag 0 //启用浮点寄存器分配
 
 HashMap *hashmap;
 BasicBlock *block;
 InstNode *ins_end;
 InstNode *ins_head;
 
-#define vfpFlag 0 //启用浮点寄存器分配
 int vfp_flag;//计算Var_Float的活跃变量表时需要置1，否则置0
 
 //每个function建立一张live_interval,会从vector数组中，取出每个block

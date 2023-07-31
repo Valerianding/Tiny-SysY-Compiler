@@ -21,8 +21,8 @@ void RunOptimizePasses(Function *currentFunction){
 
     DVNT(currentFunction);
 
-    //for loop
-    loop(currentFunction);
+    //for loopAnalysis
+    loopAnalysis(currentFunction);
     LICM(currentFunction);
 
     //LoopConversion(currentFunction);

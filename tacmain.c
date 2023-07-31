@@ -16,6 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
+#include "loopnorm.h"
 #define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
@@ -170,31 +171,39 @@ int main(int argc, char* argv[]){
     }
 
     //OK 现在开始我们不会对
-    //printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //先跑一次
     //cse cf
     //如果要fuc inline一定要dom一下
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
-    }
-
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        RunBasicPasses(currentFunction);
+//    }
+//
     if(Optimize) {
         travel();
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             dominanceAnalysis(currentFunction);
-             RunOptimizePasses(currentFunction);
-        }
-
-        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-            Clean(currentFunction);
+            //RunOptimizePasses(currentFunction);
+            loopAnalysis(currentFunction);
+//            LICM(currentFunction);
+//            LoopConversion(currentFunction);
+            LoopNormalize(currentFunction);
+            dominanceAnalysis(currentFunction);
+            loopAnalysis(currentFunction);
         }
     }
 
 
-//    printf_llvm_ir(instruction_list,argv[4],0);
+        //OK 现在开始我们不会对
+        printf_llvm_ir(instruction_list,argv[4],1);
+
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+            Clean(currentFunction);
+        }
+
 
 #if ALL
     //phi上的优化
@@ -214,7 +223,7 @@ int main(int argc, char* argv[]){
 
 //    printf_llvm_ir(instruction_list,argv[4],0);
 
-    for (Function *currentFunction = start;
+    for(Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
         dominanceAnalysis(currentFunction);
         topCfg(currentFunction);

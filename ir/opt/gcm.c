@@ -44,23 +44,6 @@ void markLoopNest(Function *function){
     }
 }
 
-void printALLInfo(Function *function){
-    BasicBlock *entry = function->entry;
-
-
-    clear_visited_flag(entry);
-
-    HashSet *all = HashSetInit();
-    HashSet *workList = HashSetInit();
-    HashSetAdd(workList,entry);
-    while(HashSetSize(workList) != 0){
-        HashSetFirst(workList);
-        BasicBlock *block = HashSetNext(workList);
-        HashSetRemove(workList,block);
-
-    }
-}
-
 bool isPinnedIns(InstNode *instNode){
     int n = sizeof(pinnedOperations) / sizeof(Opcode);
     for(int i = 0; i < n; i++){
@@ -494,7 +477,7 @@ void Schedule_Late(Instruction *ins){
         if(lca == NULL) return;
 
         //selecting the best block for this instruction
-        //also we need to count loop depth nest first;
+        //also we need to count loopAnalysis depth nest first;
         //
         DomTreeNode *best = lca; // indicates the best place at the lca
         //printf("lca %d\n",lca->block->id);
@@ -585,7 +568,7 @@ void ScheduleLate(Function *function){
     //Schedule late the rest instructions -> avoid
     pinnedNode = entry->head_node;
     while(pinnedNode != funcTail){
-        if(pinnedNode->inst->visited == false){
+        if(pinnedNode->inst->visited == false && pinnedNode->inst->Opcode != Alloca){
             Schedule_Late(pinnedNode->inst);
         }
         pinnedNode = get_next_inst(pinnedNode);
