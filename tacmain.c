@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "loopnorm.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -187,12 +187,11 @@ int main(int argc, char* argv[]){
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             dominanceAnalysis(currentFunction);
             //RunOptimizePasses(currentFunction);
-            loopAnalysis(currentFunction);
-//            LICM(currentFunction);
-//            LoopConversion(currentFunction);
-            LoopNormalize(currentFunction);
-            dominanceAnalysis(currentFunction);
-            loopAnalysis(currentFunction);
+            calculatePostDominance(currentFunction);
+            Mark(currentFunction);
+            Sweep(currentFunction);
+            removeUnreachable(currentFunction);
+            renameVariables(currentFunction);
         }
     }
 

@@ -5336,9 +5336,9 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             printf("value2:%s,\t",type_str[vr->VTy->ID]);
         printf("\n\n");
 ////
-////        if(instruction->isCritical){
-////            printf("isCritical\n\n");
-////        }
+        if(instruction->isCritical){
+            printf("isCritical\n\n");
+        }
 //
 ////        Value *v,*vl,*vr;
 ////        v= ins_get_dest(instruction_node->inst);

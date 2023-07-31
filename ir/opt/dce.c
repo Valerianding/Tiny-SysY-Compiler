@@ -240,7 +240,7 @@ void Mark(Function *currentFunction){
         }
 
         // 我还是觉得br不能算
-        if(instNode->Opcode != br_i1){
+//        if(instNode->Opcode != br_i1){
             //计算每条
             BasicBlock *block = instNode->Parent;
 
@@ -258,7 +258,7 @@ void Mark(Function *currentFunction){
                     HashSetAdd(workList, rdfTail->inst);
                 }
             }
-        }
+//        }
     }
 }
 
@@ -305,14 +305,15 @@ bool Sweep(Function *currentFunction) {
                 //先delete吧，这样也释放了内存
                 deleteIns(branchNode);
                 currNode = nextNode;
+
                 // TODO 解决掉后面可能会引起的phi函数的冲突问题
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
-                assert(false);
+                currNode = get_next_inst(currNode);
+
             } else {
                 changed = true;
                 // 除了br不变的话其他的
-                // TODO 解决delete_inst相关的问题
                 InstNode *nextNode = get_next_inst(currNode);
                 deleteIns(currNode);
                 currNode = nextNode;
