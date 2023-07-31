@@ -1786,7 +1786,7 @@ bool LOOP_UNROLL_EACH(Loop* loop)
         if(times->pdata->var_pdata.iVal*cnt>loop_unroll_up_lines)
             return false;
     } else {
-        if(cnt > 130)          //130行，感觉不能再大了
+        if(cnt > 80)          //130行，感觉不能再大了
             return false;
     }
 
@@ -1846,7 +1846,7 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     //进行展开方式的选择
     //1. 余数: 单基本块等一系列条件
     Instruction *end_before = (Instruction*)v_end;
-    if((HashSetSize(loop->loopBody) <= 2 && loop->parent == NULL) &&                //单基本块无parent
+    if(0 && (HashSetSize(loop->loopBody) <= 2 && loop->parent == NULL) &&                //单基本块无parent
             (ins_modifier->Opcode != Mul && ins_modifier->Opcode != Div) &&         //余数情况下*/为modifier的不考虑
             (ins_end_cond->Opcode != EQ && ins_end_cond->Opcode != NOTEQ) &&        //结束条件为==或者!=的不处理
             (!v_end->IsPhi) && (end_before == NULL || (end_before && end_before->Opcode!=Add && end_before->Opcode!=Sub && end_before->Opcode!=Div && end_before->Opcode!=Mul)) &&  //特殊end条件不考虑
@@ -1918,6 +1918,7 @@ void loop_unroll(Function *currentFunction)
         check_mod_type(root);
     }
 
+    HashSetFirst(currentFunction->loops);
     //遍历每个loop
     for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
         dfsLoop(root);
