@@ -11,7 +11,7 @@
 #include <math.h>
 
 #define update_modifier 4
-#define loop_unroll_up_lines 3000
+#define loop_unroll_up_lines 2000
 
 void loop_unroll(Function *currentFunction);
 

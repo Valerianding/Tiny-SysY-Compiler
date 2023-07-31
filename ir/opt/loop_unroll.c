@@ -6,6 +6,7 @@ bool first_copy = true;
 bool mod_before = false;
 
 bool have_more_block = false;
+int cur_level = 1;
 
 HashSet* funcSet; //暂定同一个func只用一种方式
 
@@ -95,9 +96,7 @@ int cal_ir_cnt(HashSet *loopBody)
         InstNode *currNode = body->head_node;
         InstNode *bodyTail = body->tail_node;
         while(currNode != bodyTail){
-            if(!hasNoDestOperator(currNode) || currNode->inst->Opcode == Store || currNode->inst->Opcode == GEP){
-                ir_cnt++;
-            }
+            ir_cnt++;
             currNode = get_next_inst(currNode);
         }
     }
@@ -811,9 +810,25 @@ BasicBlock *copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v
             if(p->key == loop->tail)
                 loop->tail = b_new;
             HashSetAdd(loop->loopBody, b_new);
+            Loop *trans = loop->parent;
+            while (trans){
+                HashSetAdd(trans->loopBody, b_new);
+                trans = trans->parent;
+            }
         }
 
         update_head_phi(prev_tail,loop->head,loop->tail);
+    } else {
+        HashMapFirst(block_map);
+        for(Pair* p = HashMapNext(block_map); p!=NULL; p= HashMapNext(block_map)){
+            BasicBlock *b_new = p->value;
+            HashSetAdd(loop->loopBody, b_new);
+            Loop *trans = loop->parent;
+            while (trans){
+                HashSetAdd(trans->loopBody, b_new);
+                trans = trans->parent;
+            }
+        }
     }
     return curr_block;
 }
@@ -1065,13 +1080,18 @@ BasicBlock *copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,
     }
 
     //多次复制感觉没做完
-    if(curr_block!=NULL){
+    if(HashSetSize(loop->loopBody) > 2){
 //        curr_block->true_block = loop->head;
 //        bb_add_prev(curr_block,loop->head);
         HashMapFirst(block_map);
         for(Pair* p = HashMapNext(block_map); p!=NULL; p= HashMapNext(block_map)){
             BasicBlock *b_new = p->value;
             HashSetAdd(loop->loopBody, b_new);
+            Loop *trans = loop->parent;
+            while (trans){
+                HashSetAdd(trans->loopBody, b_new);
+                trans = trans->parent;
+            }
         }
     }
     return curr_block;
@@ -1401,6 +1421,11 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
             if(p->key == loop->tail)
                 loop->tail = b_new;
             HashSetAdd(loop->loopBody, b_new);
+            Loop *trans = loop->parent;
+            while (trans){
+                HashSetAdd(trans->loopBody, b_new);
+                trans = trans->parent;
+            }
         }
 
         update_head_phi(prev_tail,loop->head,loop->tail);
@@ -1409,6 +1434,11 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
         for(Pair* p = HashMapNext(block_map); p!=NULL; p= HashMapNext(block_map)){
             BasicBlock *b_new = p->value;
             HashSetAdd(loop->loopBody, b_new);
+            Loop *trans = loop->parent;
+            while (trans){
+                HashSetAdd(trans->loopBody, b_new);
+                trans = trans->parent;
+            }
         }
     }
 
@@ -1688,10 +1718,38 @@ bool handle_mod(Loop* loop,Value* v_step, Value* v_end, Value* times,Instruction
     return true;
 }
 
+//在map里的代表只能用icmp版本
+void check_mod_type(Loop* loop){
+    Instruction *ins_end_cond=(Instruction*)loop->end_cond;
+    Instruction *ins_modifier=(Instruction*)loop->modifier;
+    if(!ins_modifier || !ins_end_cond)
+        return;
+    Value *v_step=NULL,*v_end=NULL;
+    if(ins_get_lhs(ins_end_cond)==loop->inductionVariable)
+        v_end= ins_get_rhs(ins_end_cond);
+    else
+        v_end= ins_get_lhs(ins_end_cond);
+    if(loop->modifier->IsPhi)
+        v_step = loop->modifier;
+    else if(ins_get_lhs(ins_modifier)==loop->inductionVariable)
+        v_step= ins_get_rhs(ins_modifier);
+    else
+        v_step= ins_get_lhs(ins_modifier);
+
+    Instruction *end_before = (Instruction*)v_end;
+    if(!((HashSetSize(loop->loopBody) <= 2 && loop->parent == NULL) &&                //单基本块无parent
+       (ins_modifier->Opcode != Mul && ins_modifier->Opcode != Div) &&         //余数情况下*/为modifier的不考虑
+       (ins_end_cond->Opcode != EQ && ins_end_cond->Opcode != NOTEQ) &&        //结束条件为==或者!=的不处理
+       (!v_end->IsPhi) && (end_before == NULL || (end_before && end_before->Opcode!=Add && end_before->Opcode!=Sub && end_before->Opcode!=Div && end_before->Opcode!=Mul)) &&  //特殊end条件不考虑
+       (!v_step->IsPhi)))
+        HashSetAdd(funcSet,ins_modifier->Parent->Parent);
+}
+
 bool LOOP_UNROLL_EACH(Loop* loop)
 {
+
     //全都不能开的条件
-    if(!loop->hasDedicatedExit)
+    if(!loop->hasDedicatedExit || cur_level>=4)
         return false;
 
     if(!loop->initValue || !loop->modifier || !loop->end_cond)
@@ -1723,12 +1781,13 @@ bool LOOP_UNROLL_EACH(Loop* loop)
     //非常数的话进行一个指令条数的判断
     Value *times = (Value*) malloc(sizeof (Value));
     if(check_idc(loop->initValue,v_step,v_end)){
-        value_init_int(times, cal_times(loop->initValue->pdata->var_pdata.iVal,ins_modifier,ins_end_cond,v_step,v_end));
+        int t = cal_times(loop->initValue->pdata->var_pdata.iVal,ins_modifier,ins_end_cond,v_step,v_end);
+        value_init_int(times, t);
         //超出一定长度的循环，不进行展开
-        if((long)times*cnt>loop_unroll_up_lines)
+        if(times->pdata->var_pdata.iVal*cnt>loop_unroll_up_lines)
             return false;
     } else {
-        if(cnt > 100)
+        if(cnt > 130)          //130行，感觉不能再大了
             return false;
     }
 
@@ -1817,7 +1876,6 @@ bool LOOP_UNROLL_EACH(Loop* loop)
         }
 
         first_copy = true;
-        HashSetAdd(funcSet,ins_modifier->Parent->Parent);
     }
 
     //遍历loop, 删去作挡板的tmp
@@ -1842,8 +1900,10 @@ bool dfsLoop(Loop *loop){
     HashSetFirst(loop->child);
     for(Loop *childLoop = HashSetNext(loop->child); childLoop != NULL; childLoop = HashSetNext(loop->child)){
         /*内层循环先处理*/
+        cur_level++;
         effective |= dfsLoop(childLoop);
     }
+    cur_level--;
     first_copy = true;
     mod_before = false;
     have_more_block = false;
@@ -1855,6 +1915,12 @@ void loop_unroll(Function *currentFunction)
 {
     funcSet = HashSetInit();
     HashSetFirst(currentFunction->loops);
+
+    ///先遍历一遍func,一个函数内如果余数情况用在icmp版本之后会有问题(因为dom还未建立,而loop因为是set中拿出来，又可能是先做了下面的loop再做上面的loop)
+    for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
+        check_mod_type(root);
+    }
+
     //遍历每个loop
     for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
         dfsLoop(root);
