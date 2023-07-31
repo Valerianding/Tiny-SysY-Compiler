@@ -6,7 +6,6 @@ bool first_copy = true;
 bool mod_before = false;
 
 bool have_more_block = false;
-int cur_level = 1;
 
 HashSet* funcSet; //暂定同一个func只用一种方式
 
@@ -1749,7 +1748,7 @@ bool LOOP_UNROLL_EACH(Loop* loop)
 {
 
     //全都不能开的条件
-    if(!loop->hasDedicatedExit || cur_level>=4)
+    if(!loop->hasDedicatedExit)
         return false;
 
     if(!loop->initValue || !loop->modifier || !loop->end_cond)
@@ -1900,10 +1899,8 @@ bool dfsLoop(Loop *loop){
     HashSetFirst(loop->child);
     for(Loop *childLoop = HashSetNext(loop->child); childLoop != NULL; childLoop = HashSetNext(loop->child)){
         /*内层循环先处理*/
-        cur_level++;
         effective |= dfsLoop(childLoop);
     }
-    cur_level--;
     first_copy = true;
     mod_before = false;
     have_more_block = false;
