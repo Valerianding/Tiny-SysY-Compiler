@@ -6859,7 +6859,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
-//    int flag=0,reflag=0;
+    int flag=0;
 //    还需要进行返回值类型的转化
 
 //    现在的话，参数传递是在call指令bl之前来处理的，
@@ -6880,6 +6880,11 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 
     func_param_type=value1;
     int param_num_=value1->pdata->symtab_func_pdata.param_num;
+    if(param_num_>4 && (((param_num_)-4)%2)!=0){
+        printf("\tsub\tsp,sp,#4\n");
+        fprintf(fp,"\tsub\tsp,sp,#4\n");
+        flag=1;
+    }
 //    if((param_num_%2)!=0){
 //        printf("\tstr\tr0,[sp,#-4]!\n");
 //        fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
@@ -6929,7 +6934,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //        fprintf(fp,"\tvmov\tr0,s0\n");
 //    }
 //    这里还需要调整sp,去掉压入栈的参数，这里可以使用add直接调整sp，也可以使用mov sp,fp直接调整
-    if(param_num_>4){
+    if(param_num_>4 || flag==1){
         int x=param_num_-4;
 //        printf("\tadd\tsp,sp,#%d\n",x*4);
 //        fprintf(fp,"\tadd\tsp,sp,#%d\n",x*4);
