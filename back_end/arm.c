@@ -7,8 +7,8 @@
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 
-#define lineScan 1 //使用线性扫描寄存器分配
-#define ARM_enable_vfp 0  //支持浮点寄存器分配,现在暂时使用s16-s29
+int lineScan=1; //使用线性扫描寄存器分配
+int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
 //如果说使用浮点寄存器分配的话，Var_Float放在_vfpReg_寄存器中，其对应的所有Var_Float分配结果在lineScanVFPReg,遍历取出
 HashMap * lineScan_param;
 

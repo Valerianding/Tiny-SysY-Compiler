@@ -5,7 +5,7 @@
 #include "offset.h"
 
 
-#define offset_enable_vfp 0 //启用浮点寄存器分配开关
+int offset_enable_vfp=0; //启用浮点寄存器分配开关
 
 HashMap *global_hashmap;
 int func_num=0;
