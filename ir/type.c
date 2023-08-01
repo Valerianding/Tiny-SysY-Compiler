@@ -82,7 +82,13 @@ bool isConstant(Type* type){
 }
 
 bool isFloatType(int type){
-    if(type == Float || type == Var_FLOAT || type == GlobalArrayConstFLOAT || type == GlobalArrayFloat || type == GlobalVarFloat || type == ArrayTy_FLOAT || type == ArrayTyID_ConstFLOAT)
+    if(type == Float || type == Var_FLOAT || type == Const_FLOAT || type == GlobalArrayConstFLOAT || type == GlobalArrayFloat || type == GlobalVarFloat || type == ArrayTy_FLOAT || type == ArrayTyID_ConstFLOAT)
+        return true;
+    return false;
+}
+
+bool isIntType(int type){
+    if(type == Int || type == Var_INT || type == Const_INT || type == GlobalArrayConstINT || type == GlobalArrayInt || type == GlobalVarInt || type == ArrayTy_INT || type == ArrayTyID_ConstINT)
         return true;
     return false;
 }
