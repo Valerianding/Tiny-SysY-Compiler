@@ -1406,7 +1406,14 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
         printf("\n");
         for(int i=0;i<3;i++)
         {
-            if(instruction->_reg_[i]!=0)    printf("reg%d:%d",i,instruction->_reg_[i]);
+            if(instruction->_reg_[i]!=0)    printf("reg%d:r%d",i,instruction->_reg_[i]);
+            printf("\t\t");
+        }
+        printf("\n");
+//        printf("Var_Float ans:\t");
+        for(int i=0;i<3;i++)
+        {
+            if(instruction->_vfpReg_[i]!=0)    printf("VFPreg%d:s%d",i,instruction->_vfpReg_[i]);
             printf("\t\t");
         }
         printf("\n");
