@@ -63,5 +63,6 @@ bool isConstant(Type* type);
 
 //lsy
 bool isFloatType(int type);
+bool isIntType(int type);
 void typePrinter(Type *type);
 #endif
