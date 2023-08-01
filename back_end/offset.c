@@ -5,6 +5,7 @@
 #include "offset.h"
 
 
+#define offset_enable_vfp 0 //启用浮点寄存器分配开关
 
 HashMap *global_hashmap;
 int func_num=0;
@@ -301,60 +302,50 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *l
                 hashmap_alloca_add(hashMap,value0,&add_sp,reg_save_num);
                 break;
             case Add:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case Sub:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case Mul:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case Div:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case Mod:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value2->VTy)){
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[2],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                }
                 break;
             case Call:
-//                operandNum=ins->inst->user.value.NumUserOperands;
-//                if(operandNum==2){
                   if(returnValueNotUsed(ins)){
                       value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                      if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                          hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                      }else{
+                          hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                      }
                   }else{
                       value0=&ins->inst->user.value;
                       value1=user_get_operand_use(&ins->inst->user,0)->Val;
-//                    if(value0->VTy!=Unknown){
-////                    ==unknow说明回值为void
-//                        hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0]);
-//                    }
-                      hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                      hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                      if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                          hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                      }else{
+                          hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                      }
+                      if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                          hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                      }else{
+                          hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                      }
                   }
 
 //                }else if(operandNum==1){
@@ -365,79 +356,91 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *l
             case Store:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value2->VTy)){
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[2],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                }
                 break;
             case Load:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
                 break;
             case GIVE_PARAM:
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
                 break;
             case LESS:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case GREAT:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case LESSEQ:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case GREATEQ:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case EQ:
-                value0=&ins->inst->user.value;
-                value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
-                break;
             case NOTEQ:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value2->VTy)){
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[2],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                }
                 break;
             case XOR:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
                 break;
             case zext:
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
                 break;
             case bitcast:
                 value0=&ins->inst->user.value;
@@ -450,10 +453,21 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *l
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-//                hashmap_bitcast_add(hashMap,value0,value1,reg_save_num);
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value2->VTy)){
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[2],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                }
                 break;
 //            case MEMCPY:
 //                value1=user_get_operand_use(&ins->inst->user,0)->Val;
@@ -465,9 +479,21 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *l
                 value0=&ins->inst->user.value;
                 value1=user_get_operand_use(&ins->inst->user,0)->Val;
                 value2= user_get_operand_use(&ins->inst->user,1)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
-                hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value2->VTy)){
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[2],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value2,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[2],lineScan_param);
+                }
                 break;
 
 //            case MEMSET:
@@ -479,8 +505,16 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *l
             case CopyOperation:
                 value0=ins->inst->user.value.alias;//这里是需要进到alias里面的
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
-                hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
-                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
                 break;
             default:
                 break;
@@ -491,7 +525,11 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *l
         int operandNum=ins->inst->user.value.NumUserOperands;
         if(operandNum!=0){
             Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+            if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+            }else{
+                hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+            }
         }
 
     }
