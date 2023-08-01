@@ -23,6 +23,9 @@ bool imm_is_valid(int value);
 bool imm_is_valid2(int value);
 void handle_illegal_imm(int dest_reg ,int x,int flag);//处理ldr的非法立即数
 void handle_illegal_imm1(int dest_reg,int x);//处理mov的非法立即数
+
+void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag);
+
 void arm_open_file(char argv[]);
 void arm_close_file();
 bool param_type_is_int();
@@ -136,8 +139,13 @@ void usage_of_global_variables();
 int array_suffix(Value*array,int which_dimension);
 //void multiply_and_add_instructions_for_translated_arrays(InstNode*instNode,HashMap*hashMap);
 void handle_reg_save(int reg);
+void handle_vfp_reg_save(int sreg);
+//保护通用现场
 void printf_stmfd_rlist();
 void printf_ldmfd_rlist();
+//保护浮点寄存器
+void printf_vpush_rlist();
+void printf_vpop_rlist();
 int count_bit(int value); //输入正数
 //返回0优化失败（不符合优化条件），返回1成功优化.
 int optimization_mul(int dest_reg,int left_reg,int imm); //进入函数之前先把其加载到寄存器
