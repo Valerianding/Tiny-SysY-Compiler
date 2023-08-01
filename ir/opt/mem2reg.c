@@ -677,9 +677,10 @@ void SSADeconstruction(Function *currentFunction){
                         BasicBlock *newBlock = bb_create();
 
 
+                        //TODO we need move the new block near to phi Block instead of the predecessor
                         //printf("prev block :%d \n",prevBlock->id);
-                        InstNode *prevTail = prevBlock->tail_node;
-                        InstNode *prevTailNext = get_next_inst(prevBlock->tail_node);
+
+                        InstNode *currHead = block->head_node;
 
                         Instruction *newBlockLabel = ins_new_zero_operator(Label);
                         newBlockLabel->user.value.pdata->instruction_pdata.true_goto_location = newBlock->id;
@@ -691,13 +692,8 @@ void SSADeconstruction(Function *currentFunction){
                         InstNode *newBlockBrNode = new_inst_node(newBlockBr);
 
 
-                        ins_insert_after(newBlockLabelNode, prevTail);
+                        ins_insert_before(newBlockLabelNode, currHead);
                         ins_insert_after(newBlockBrNode, newBlockLabelNode);
-
-                        //;
-                        newBlockBrNode->list.next = &prevTailNext->list;
-                        prevTailNext->list.prev = &newBlockBrNode->list;
-
 
                         // 维护这个基本块中的信息 TODO 没有维护支配信息等
                         bb_set_block(newBlock,newBlockLabelNode, newBlockBrNode);

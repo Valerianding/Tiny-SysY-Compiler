@@ -17,6 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "loopnorm.h"
+#include "loop2memcpy.h"
 #define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
@@ -190,19 +191,17 @@ int main(int argc, char* argv[]){
             loopAnalysis(currentFunction);
             LoopNormalize(currentFunction);
             dominanceAnalysis(currentFunction);
-            calculatePostDominance(currentFunction);
-            Mark(currentFunction);
-            Sweep(currentFunction);
-            removeUnreachable(currentFunction);
+            loopAnalysis(currentFunction);
+            Loop2Memcpy(currentFunction);
             renameVariables(currentFunction);
         }
     }
 
 
     //OK 现在开始我们不会对
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
-    }
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        Clean(currentFunction);
+//    }
 
     printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
@@ -221,7 +220,7 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
-//    printf_llvm_ir(instruction_list,argv[4],0);
+    printf_llvm_ir(instruction_list,argv[4],0);
 
     for(Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {

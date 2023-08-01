@@ -874,3 +874,16 @@ void topCfg(Function *currentFunction){
     }
     printf("\n");
 }
+
+//only clean the use_list and the CFG is NOT CHANGING!!!
+void cleanBlock(BasicBlock *block){
+    InstNode *blockHead = block->head_node;
+    InstNode *blockTail = block->tail_node;
+    InstNode *blockNext = get_next_inst(blockTail);
+
+    while(blockHead != blockNext){
+        InstNode *tempNode = get_next_inst(blockHead);
+        deleteIns(blockHead);
+        blockHead = tempNode;
+    }
+}

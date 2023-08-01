@@ -1,11 +1,7 @@
-int main(){
-    int a = getint();
-    int b = getint();
-    int i = getint();
-    int result = 0;
-    while(a < 10){
-        result = result + 1;
-        a = a + 1;
+void mem_move(int src[], int dst[], int n){
+    int i = 0;
+    while (i < n){
+        dst[i] = src[i];
+        i = i + 1;
     }
-    return result;
 }
