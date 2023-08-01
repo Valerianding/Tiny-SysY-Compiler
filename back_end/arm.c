@@ -6960,8 +6960,9 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     // 这个也是默认放回值类型和左值类型是一致的
     // 如果用一个float型去接受int型的结果，后面应该会有Copy指令的
 
-//    返回值为int
+
     if(!returnValueNotUsed(ins)){ //返回值被使用，需要保存
+//    返回值为int
         if(func_param_type->pdata->symtab_func_pdata.return_type.ID==Var_INT){
             if(isLocalVarIntType(value0->VTy)){ //接受为int
                 printf("\tmov\tr%d,r0\n",dest_reg_abs);
@@ -6969,18 +6970,30 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
                 if(dest_reg<0){
                     int x= get_value_offset_sp(hashMap,value0);
                     handle_illegal_imm(dest_reg_abs,x,0);
-
                 }
             } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
-                printf("\tvmov\ts0,r0\n");
-                fprintf(fp,"\tvmov\ts0,r0\n");
-                printf("\tvcvt.f32.s32\ts0,s0\n");
-                fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
-                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-                if(dest_reg<0){
-                    int x= get_value_offset_sp(hashMap,value0);
-                    handle_illegal_imm(dest_reg_abs,x,0);
+                if(ARM_enable_vfp==1){
+                    dest_reg=ins->inst->_vfpReg_[0];
+                    dest_reg_abs=abs(dest_reg);
+                    printf("\tvmov\ts%d,r0\n",dest_reg_abs);
+                    fprintf(fp,"\tvmov\ts%d,r0\n",dest_reg_abs);
+                    printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                    fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                    if(dest_reg<0){
+                        int x= get_value_offset_sp(hashMap,value0);
+                        vfp_handle_illegal_imm(dest_reg_abs,x,0);
+                    }
+                }else{
+                    printf("\tvmov\ts0,r0\n");
+                    fprintf(fp,"\tvmov\ts0,r0\n");
+                    printf("\tvcvt.f32.s32\ts0,s0\n");
+                    fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+                    printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                    fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                    if(dest_reg<0){
+                        int x= get_value_offset_sp(hashMap,value0);
+                        handle_illegal_imm(dest_reg_abs,x,0);
+                    }
                 }
             }
         }
@@ -6994,17 +7007,24 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
                 if(dest_reg<0){
                     int x= get_value_offset_sp(hashMap,value0);
                     handle_illegal_imm(dest_reg_abs,x,0);
-
                 }
-
-
             } else if(isLocalVarFloatType(value0->VTy)){ //接受为float
-                printf("\tvmov\tr%d,s0\n",dest_reg_abs);
-                fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-                if(dest_reg<0){
-                    int x= get_value_offset_sp(hashMap,value0);
-                    handle_illegal_imm(dest_reg_abs,x,0);
-
+                if(ARM_enable_vfp==1){
+                    dest_reg=ins->inst->_vfpReg_[0];
+                    dest_reg_abs=abs(dest_reg);
+                    printf("\tvmov\ts%d,s0\n",dest_reg_abs);
+                    fprintf(fp,"\tvmov\ts%d,s0\n",dest_reg_abs);
+                    if(dest_reg<0){
+                        int x= get_value_offset_sp(hashMap,value0);
+                        vfp_handle_illegal_imm(dest_reg_abs,x,0);
+                    }
+                }else{
+                    printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+                    fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+                    if(dest_reg<0){
+                        int x= get_value_offset_sp(hashMap,value0);
+                        handle_illegal_imm(dest_reg_abs,x,0);
+                    }
                 }
             }
         }
