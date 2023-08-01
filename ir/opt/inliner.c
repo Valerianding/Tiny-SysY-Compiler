@@ -537,7 +537,10 @@ int func_inline(struct _InstNode* instruction_node, int threshold)
                         index--;
                         //左值的pdata可能需要copy
                         //v_left_now->pdata->var_pdata.iVal=begin_func->inst->user.value.pdata->var_pdata.iVal;
-                        v_left_now->pdata=begin_func->inst->user.value.pdata;
+                        //v_left_now->pdata=begin_func->inst->user.value.pdata;          //同样，pdata也不能直接copy
+                        //pdata需要复制的应该也只有iVal和is_offset吧
+                        v_left_now->pdata->var_pdata.is_offset = begin_func->inst->user.value.pdata->var_pdata.is_offset;
+                        v_left_now->pdata->var_pdata.iVal = begin_func->inst->user.value.pdata->var_pdata.iVal;
                         v_left_now->alias=begin_func->inst->user.value.alias;     //数组的话，需要alias--->v_array才能打印
                         v_left_now->VTy = begin_func->inst->user.value.VTy;
 
