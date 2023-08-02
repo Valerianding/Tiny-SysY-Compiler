@@ -109,9 +109,9 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
 
 
 InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap);
-InstNode * arm_trans_GIVE_PARAM(HashMap *hashMap,int param_num);//
+InstNode * arm_trans_GIVE_PARAM(HashMap *hashMap,int param_num);
 InstNode * arm_trans_ALLBEGIN(InstNode *ins);
-InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);//
+InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap);
 
 InstNode * arm_trans_br_i1(InstNode *ins);
