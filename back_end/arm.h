@@ -113,6 +113,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap *hashMap,int param_num);
 InstNode * arm_trans_ALLBEGIN(InstNode *ins);
 InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap);
+
 InstNode * arm_trans_br_i1(InstNode *ins);
 InstNode * arm_trans_br(InstNode *ins);
 InstNode * arm_trans_br_i1_true(InstNode *ins);
@@ -122,12 +123,13 @@ InstNode * arm_trans_tmp(InstNode *ins);
 InstNode * arm_trans_XOR(InstNode *ins);
 InstNode * arm_trans_zext(InstNode *ins);
 InstNode * arm_trans_bitcast(InstNode *ins);
-InstNode * arm_trans_GMP(InstNode *ins,HashMap *hashMap);
+InstNode * arm_trans_Phi(InstNode *ins);
 InstNode * arm_trans_MEMCPY(InstNode *ins);
 InstNode * arm_trans_zeroinitializer(InstNode *ins);
-InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
-InstNode * arm_trans_Phi(InstNode *ins);
 InstNode * arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
+
+InstNode * arm_trans_GMP(InstNode *ins,HashMap *hashMap);
+InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode * arm_trans_fptosi(HashMap *hashMap,InstNode *ins);
 InstNode * arm_trans_sitofp(HashMap *hashMap,InstNode *ins);
 
