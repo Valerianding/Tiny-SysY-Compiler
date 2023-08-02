@@ -6181,45 +6181,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(dest_reg_abs,ans);
         }
-//        if(imm_is_valid(x1)&&(imm_is_valid(x2))){
-//            printf("\tmov\tr0,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-//            printf("\tmov\tr1,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-//        }else if ((!imm_is_valid(x1))&&(imm_is_valid(x2))){
-//            handle_illegal_imm1(0,x1);
-//
-//            printf("\tmov\tr1,#%d\n",x2);
-//            fprintf(fp,"\tmov\tr1,#%d\n",x2);
-//        } else if((imm_is_valid(x1))&&(!imm_is_valid(x2))){
-//            printf("\tmov\tr0,#%d\n",x1);
-//            fprintf(fp,"\tmov\tr0,#%d\n",x1);
-//            handle_illegal_imm1(1,x2);
-//
-//        }else{
-//            handle_illegal_imm1(0,x1);
-//            handle_illegal_imm1(1,x2);
-////            char arr1[12]="0x";
-////            sprintf(arr1+2,"%0x",x1);
-////            char arr2[12]="0x";
-////            sprintf(arr2+2,"%0x",x2);
-////            printf("\tldr\tr0,=%s\n",arr1);
-////            fprintf(fp,"\tldr\tr0,=%s\n",arr1);
-////            printf("\tldr\tr1,=%s\n",arr2);
-////            fprintf(fp,"\tldr\tr1,=%s\n",arr2);
-//        }
-//        if(reg_save[12]==1){
-//            printf("\tstr\tr12,[sp,#-4]!\n");
-//            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//        }
-//        printf("\tbl\t__aeabi_idivmod\n");
-//        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-//        if(reg_save[12]==1){
-//            printf("\tldr\tr12,[sp],#4\n");
-//            fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//        }
-//        printf("\tmov\tr%d,r1\n",dest_reg_abs);
-//        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+
 
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
@@ -6227,7 +6189,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm(dest_reg_abs,x,0);
 
             }
-        } else if(isLocalVarFloatType(value0->VTy)){
+        } else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==0){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
@@ -6240,7 +6202,19 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm(dest_reg_abs,x,0);
 
             }
-        }else if(isLocalArrayIntType(value0->VTy)){
+        }else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==1){
+            dest_reg=ins->inst->_vfpReg_[0];
+            dest_reg_abs=abs(dest_reg);
+            printf("\tvmov\ts%d,r0\n",dest_reg_abs);
+            fprintf(fp,"\tvmov\ts%d,r0\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+            fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                vfp_handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
+        else if(isLocalArrayIntType(value0->VTy)){
             assert(false);
         }else if(isGlobalVarIntType(value0->VTy)){
 //            ;这些都是需要补充完整的，不对，
@@ -6270,7 +6244,6 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
-
                 printf("\tmov\tr1,r%d\n",right_reg-100);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
             }else{
@@ -6279,7 +6252,6 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             }
         }else{
             handle_illegal_imm1(0,x1);
-
             if(right_reg>100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -6291,25 +6263,35 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
             }
         }
-//        if(reg_save[12]==1){
-//            printf("\tstr\tr12,[sp,#-4]!\n");
-//            fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//        }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-//        if(reg_save[12]==1){
-//            printf("\tldr\tr12,[sp],#4\n");
-//            fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//        }
-        printf("\tmov\tr%d,r1\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+        if(ARM_enable_vfp==1){
+            if(isLocalVarFloatType(value0->VTy)){
+                dest_reg=ins->inst->_vfpReg_[0];
+                dest_reg_abs=abs(dest_reg);
+                printf("\tvmov\ts%d,r1\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\ts%d,r1\n",dest_reg_abs);
+                printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    vfp_handle_illegal_imm(dest_reg_abs,x,0);
+                }
+            }else{
+                printf("\tmov\tr%d,r1\n",dest_reg_abs);
+                fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+            }
+        }else{
+            printf("\tmov\tr%d,r1\n",dest_reg_abs);
+            fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+        }
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
 
             }
-        } else if(isLocalVarFloatType(value0->VTy)){
+        } else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==0){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
@@ -6482,24 +6464,12 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
                 }
             }
-//            if(reg_save[12]==1){
-//                printf("\tstr\tr12,[sp,#-4]!\n");
-//                fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//            }
             printf("\tbl\t__aeabi_idivmod\n");
             fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-//            if(reg_save[12]==1){
-//                printf("\tldr\tr12,[sp],#4\n");
-//                fprintf(fp,"\tldr\tr12,[sp],#4\n");
-//            }
             printf("\tmov\tr%d,r1\n",dest_reg_abs);
             fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
 
         }
-
-
-
-
 
 
         if(isLocalVarIntType(value0->VTy)){
@@ -6507,7 +6477,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
             }
-        } else if(isLocalVarFloatType(value0->VTy)){
+        } else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==0){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
@@ -6520,7 +6490,19 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm(dest_reg_abs,x,0);
 
             }
-        }else if(isGlobalVarIntType(value0->VTy)){
+        } else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==1){
+            dest_reg=ins->inst->_vfpReg_[0];
+            dest_reg_abs=abs(dest_reg);
+            printf("\tvmov\ts%d,r0\n",dest_reg_abs);
+            fprintf(fp,"\tvmov\ts%d,r0\n",dest_reg_abs);
+            printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+            fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                vfp_handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
+        else if(isGlobalVarIntType(value0->VTy)){
 //            ;这些都是需要补充完整的，不对，
 //            全局变量会有相应的load和store指令，结果不应该在这里处理
 //            这里只需要转换为相应的格式就可以了
@@ -6572,14 +6554,32 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
 
-        printf("\tmov\tr%d,r1\n",dest_reg_abs);
-        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+        if(ARM_enable_vfp==1){
+            if(isLocalVarFloatType(value0->VTy)){
+                dest_reg=ins->inst->_vfpReg_[0];
+                dest_reg_abs=abs(dest_reg);
+                printf("\tvmov\ts%d,r1\n",dest_reg_abs);
+                fprintf(fp,"\tvmov\ts%d,r1\n",dest_reg_abs);
+                printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                if(dest_reg<0){
+                    int x= get_value_offset_sp(hashMap,value0);
+                    vfp_handle_illegal_imm(dest_reg_abs,x,0);
+                }
+            }else{
+                printf("\tmov\tr%d,r1\n",dest_reg_abs);
+                fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+            }
+        }else{
+            printf("\tmov\tr%d,r1\n",dest_reg_abs);
+            fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+        }
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
             }
-        } else if(isLocalVarFloatType(value0->VTy)){
+        } else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==0){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
@@ -7333,7 +7333,7 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
 
 //还需要对返回值进行处理
     int operandNum=ins->inst->user.value.NumUserOperands;
-    if(operandNum!=0){ //返回值非void,value1为进行返回得值
+    if(operandNum!=0){ //返回值非void,value1为进行返回的值
         Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
         int left_reg= ins->inst->_reg_[1];
 
@@ -7352,10 +7352,6 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                 float  x=value1->pdata->var_pdata.fVal;
                 int xx=*(int*)&x;
                 handle_illegal_imm1(0,xx);
-//                char arr[12]="0x";
-//                sprintf(arr+2,"%0x",xx);
-//                printf("\tldr\tr0,=%s\n",arr);
-//                fprintf(fp,"\tldr\tr0,=%s\n",arr);
                 float_to_int(0,0);
 
             } else if(isLocalVarIntType(value1->VTy)){
@@ -7368,7 +7364,7 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                     printf("\tmov\tr0,r%d\n",left_reg);
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
                 }
-            } else if(isLocalVarFloatType(value1->VTy)){
+            } else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==0){
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1); //已经将浮点数加载到了left_reg-100
@@ -7385,6 +7381,22 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                     fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
                     printf("\tvmov\tr0,s0\n");
                     fprintf(fp,"\tvmov\tr0,s0\n");
+                }
+
+            }else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==1){
+                left_reg=ins->inst->_vfpReg_[1];
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    vfp_handle_illegal_imm(left_reg,x,1); //已经将浮点数加载到了left_reg-100
+                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
+                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
+                    printf("\tvmov\tr0,s%d\n",left_reg-100);
+                    fprintf(fp,"\tvmov\tr0,s%d\n",left_reg-100);
+                }else{
+                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
+                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
+                    printf("\tvmov\tr0,s%d\n",left_reg);
+                    fprintf(fp,"\tvmov\tr0,s%d\n",left_reg);
                 }
 
             }
@@ -7407,10 +7419,6 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                 float  x=value1->pdata->var_pdata.fVal;
                 int xx=*(int*)&x;
                 handle_illegal_imm1(0,xx);
-//                char arr[12]="0x";
-//                sprintf(arr+2,"%0x",xx);
-//                printf("\tldr\tr0,=%s\n",arr);
-//                fprintf(fp,"\tldr\tr0,=%s\n",arr);
                 printf("\tvmov\ts0,r0\n");
                 fprintf(fp,"\tvmov\ts0,r0\n");
             } else if(isLocalVarIntType(value1->VTy)){
@@ -7427,7 +7435,7 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                 fprintf(fp,"\tvmov\ts0,r0\n");
                 printf("\tvcvt.f32.s32\ts0,s0\n");
                 fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
-            } else if(isLocalVarFloatType(value1->VTy)){
+            } else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==0){
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
@@ -7440,6 +7448,18 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                 }
                 printf("\tvmov\ts0,r0\n");
                 fprintf(fp,"\tvmov\ts0,r0\n");
+            } else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==1){
+                left_reg=ins->inst->_vfpReg_[1];
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    vfp_handle_illegal_imm(left_reg,x,1);
+
+                    printf("\tvmov\ts0,s%d\n",left_reg-100);
+                    fprintf(fp,"\tvmov\ts0,s%d\n",left_reg-100);
+                }else{
+                    printf("\tvmov\ts0,s%d\n",left_reg);
+                    fprintf(fp,"\tvmov\ts0,s%d\n",left_reg);
+                }
             }
         }
 
