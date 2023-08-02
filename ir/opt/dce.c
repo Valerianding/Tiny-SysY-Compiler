@@ -240,7 +240,7 @@ void Mark(Function *currentFunction){
         }
 
         // 我还是觉得br不能算
-        if(instNode->Opcode != br_i1){
+//        if(instNode->Opcode != br_i1){
             //计算每条
             BasicBlock *block = instNode->Parent;
 
@@ -258,7 +258,7 @@ void Mark(Function *currentFunction){
                     HashSetAdd(workList, rdfTail->inst);
                 }
             }
-        }
+//        }
     }
 }
 
@@ -305,14 +305,15 @@ bool Sweep(Function *currentFunction) {
                 //先delete吧，这样也释放了内存
                 deleteIns(branchNode);
                 currNode = nextNode;
+
                 // TODO 解决掉后面可能会引起的phi函数的冲突问题
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
-                assert(false);
+                currNode = get_next_inst(currNode);
+
             } else {
                 changed = true;
                 // 除了br不变的话其他的
-                // TODO 解决delete_inst相关的问题
                 InstNode *nextNode = get_next_inst(currNode);
                 deleteIns(currNode);
                 currNode = nextNode;
@@ -349,6 +350,7 @@ bool OnePass(Vector* vector) {
         if(block->visited == false){
             block->visited = true;
         }
+//        printf("current: %d\n",block->id);
         bool processed = false;
         assert(block != NULL);
         //printf("block %d\n",block->id);
@@ -381,6 +383,7 @@ bool OnePass(Vector* vector) {
             }
         }
 
+//        printf("processed is %d\n",processed);
         //if i ends in a jump to j then
         if (block->tail_node->inst->Opcode == br) {
             //if i is empty then
@@ -456,10 +459,10 @@ bool OnePass(Vector* vector) {
 
                 //
                 if(removeAble == true && processed == false){
-                    processed = true;
                     //printf("remove empty!\n");
                     //符合先决条件
                     //如果block里面有phi函数
+                    processed = true;
                     bool iHasPhi = false;
                     InstNode *iNode = block->head_node;
                     while(iNode != block->tail_node){
@@ -563,6 +566,7 @@ bool OnePass(Vector* vector) {
                 }
             }
 
+//            printf("processed2 is %d\n",processed);
             //if j has only one predecessor
             BasicBlock *j = block->true_block;
             if (HashSetSize(j->preBlocks) == 1 && processed == false) {
@@ -701,22 +705,13 @@ void Clean(Function *currentFunction){
 
         int size = (int)VectorSize(vector);
 
-        printf("vector size is %u\n",size);
+        //printf("vector size is %u\n",size);
 
         BasicBlock *temp = NULL;
-
-//        for(int i = size - 1; i >= 0; i--){
-//            VectorGet(vector,i,(void *)&temp);
-//            printf("%d is b%d\n",i,temp->id);
-//        }
-
-        printf("before one pass!\n");
 
         clear_visited_flag(currentFunction->entry);
 
         changed = OnePass(vector);
-
-        printf("after one pass!\n");
 
         removeUnreachable(currentFunction);
 

@@ -17,6 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "loopnorm.h"
+#include "loop2memcpy.h"
 #define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
@@ -159,7 +160,7 @@ int main(int argc, char* argv[]){
     combineZext(instruction_list);
 
 
-    //func_inline(instruction_list,255);
+    func_inline(instruction_list,255);
 
 
     //重新构建Function
@@ -188,23 +189,22 @@ int main(int argc, char* argv[]){
             dominanceAnalysis(currentFunction);
             //RunOptimizePasses(currentFunction);
             loopAnalysis(currentFunction);
-//            LICM(currentFunction);
-//            LoopConversion(currentFunction);
             LoopNormalize(currentFunction);
             dominanceAnalysis(currentFunction);
             loopAnalysis(currentFunction);
+            //Loop2Memcpy(currentFunction);
+            //InstCombine(currentFunction);
+            renameVariables(currentFunction);
         }
     }
 
 
-        //OK 现在开始我们不会对
-        printf_llvm_ir(instruction_list,argv[4],1);
+    //OK 现在开始我们不会对
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        Clean(currentFunction);
+//    }
 
-        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-            Clean(currentFunction);
-        }
-
-
+    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -221,11 +221,18 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
-//    printf_llvm_ir(instruction_list,argv[4],0);
+    printf_llvm_ir(instruction_list,argv[4],0);
 
     for(Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
         dominanceAnalysis(currentFunction);
+    }
+
+
+    //printf_llvm_ir(instruction_list,argv[4],0);
+
+    for(Function *currentFunction = start;
+        currentFunction != NULL; currentFunction = currentFunction->Next) {
         topCfg(currentFunction);
     }
 

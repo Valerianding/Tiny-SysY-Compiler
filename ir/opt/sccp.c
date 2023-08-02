@@ -11,12 +11,6 @@ HashMap *LatticeMap; // Value * -> LatticeValue;
 HashSet *ExecutedEdge; // Executed Edge
 
 
-void EvaluateAllPhisInBlock(BasicBlock *target){
-    InstNode *blockHead = target->head_node;
-    InstNode *blockTail = target->tail_node;
-
-}
-
 //我们共同分析Assign 和 Terminator Instruction
 void EvaluateAssignAndTerminator(InstNode *instNode){
 
@@ -59,7 +53,14 @@ void SCCP(Function *currentFunction){
             //mark e as executed
 
             //
-            EvaluateAllPhisInBlock(block);
+            InstNode *blockHead = block->head_node;
+            InstNode *blockTail = block->tail_node;
+            while(blockHead != blockTail){
+                if(blockHead->inst->Opcode == Phi){
+
+                }
+                blockHead = get_next_inst(blockHead);
+            }
 
             //if no other edge entering n is marked as executed
             //TODO modify

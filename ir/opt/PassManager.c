@@ -25,11 +25,11 @@ void RunOptimizePasses(Function *currentFunction){
     loopAnalysis(currentFunction);
     LICM(currentFunction);
 
-    //LoopConversion(currentFunction);
+    //loop2Memset(currentFunction);
 
     GCM(currentFunction);
 
-    instruction_combination(currentFunction);
+    //instruction_combination(currentFunction);
 
     postDominanceAnalysis(currentFunction);
 

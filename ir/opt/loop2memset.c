@@ -2,7 +2,7 @@
 // Created by Valerian on 2023/7/18.
 //
 
-#include "loopconv.h"
+#include "loop2memset.h"
 //this pass will try to convert store zero to a array in a loopAnalysis into memset
 //need to run it after LICM
 InstNode *newMemset(Value *ptr, Value *stored, Value *length){
@@ -83,20 +83,6 @@ bool LoopConvCheckLoop(Loop *loop){
 
     printf("finally true !!\n");
     return true;
-}
-
-//only clean the use_list and the CFG is NOT CHANGING!!!
-void cleanBlock(BasicBlock *block){
-    InstNode *blockHead = block->head_node;
-    InstNode *blockTail = block->tail_node;
-    InstNode *blockNext = get_next_inst(blockTail);
-
-    while(blockHead != blockNext){
-        InstNode *tempNode = get_next_inst(blockHead);
-        deleteIns(blockHead);
-        blockHead = tempNode;
-    }
-
 }
 
 bool LoopConv(Loop *loop){
@@ -205,28 +191,23 @@ bool LoopConv(Loop *loop){
         printf("stored %s to gep %s base %s!\n",stored->name,gepValue->name,basePtr->name);
     }
 
-    //ok now we can remove loopAnalysis body
+    //ok now we can remove loop body
 
 
-    //at to this point we know that the loopAnalysis has a dedicated exist
+    //at to this point we know that the loop has a dedicated exist
     assert(loop->containMultiBackEdge == false);
 
     //update the predecessors of entry block
 
 
     //yet it is certain that it has only one entry and one exit
-    //maybe we should try to do some control flow simplify
-
-
-    //OK let's do more
-
 
     BasicBlock *loopEntry = loop->head;
     //remove tail
     HashSetRemove(loop->head->preBlocks,loop->tail);
     assert(HashSetSize(loop->head->preBlocks) == 1);
 
-    //remove loopAnalysis body
+    //remove loop body
     cleanBlock(loop->body_block);
 
     //replace induction variable
@@ -308,24 +289,24 @@ bool LoopConv(Loop *loop){
     return true;
 }
 
-bool LoopConversion(Function *currentFunction){
-    bool effective = false;
-    HashSetFirst(currentFunction->loops);
-    for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
-        effective |= dfsTravel(root);
-    }
-    renameVariables(currentFunction);
-    return effective;
-}
-
 //同样的我们希望的是DFS 遍历整个树
-bool dfsTravel(Loop *root){
+bool loop2memset(Loop *root){
     bool effective = false;
     HashSetFirst(root->child);
     for(Loop *child = HashSetNext(root->child); child != NULL; child = HashSetNext(root->child)){
-        effective |= dfsTravel(child);
+        effective |= loop2memset(child);
     }
     //do operation now
     effective |= LoopConv(root);
+    return effective;
+}
+
+bool Loop2Memset(Function *currentFunction){
+    bool effective = false;
+    HashSetFirst(currentFunction->loops);
+    for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
+        effective |= loop2memset(root);
+    }
+    renameVariables(currentFunction);
     return effective;
 }

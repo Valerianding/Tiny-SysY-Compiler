@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "inscomb.h"
 #include "other.h"
-#include "loopconv.h"
+#include "loop2memset.h"
 #include "gcm.h"
 void RunBasicPasses(Function *currentFunction);
 void RunOptimizePasses(Function *currentFunction);

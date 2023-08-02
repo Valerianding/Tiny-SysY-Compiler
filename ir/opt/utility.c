@@ -8,7 +8,7 @@
 const Opcode invalidOpcodes[] = {FunBegin, Label, ALLBEGIN, Alloca, tmp, zext, MEMCPY, zeroinitializer, GLOBAL_VAR, FunEnd};
 const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
 const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label,GIVE_PARAM};
-const Opcode CriticalOpcodes[] = {Return,Call,Store,br,GIVE_PARAM,MEMCPY,MEMSET,SysYMemset};
+const Opcode CriticalOpcodes[] = {Return,Call,Store,GIVE_PARAM,MEMCPY,MEMSET,SysYMemset};
 const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
 const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
 //TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
@@ -131,9 +131,9 @@ void renameVariables(Function *currentFunction) {
         if(copyNode->inst->Opcode == CopyOperation){
             Value *copyDest = ins_get_dest(copyNode->inst)->alias;
             char *copyNum = &copyDest->name[1];
-            printf("string %s\n",copyNum);
+            //printf("string %s\n",copyNum);
             int num = atoi(copyNum);
-            printf("num %d\n",num);
+            //printf("num %d\n",num);
             HashSetAdd(copyNumSet,(void *)num);
         }
         copyNode = get_next_inst(copyNode);
@@ -142,7 +142,7 @@ void renameVariables(Function *currentFunction) {
     while (currNode != tailNode) {
         if (currNode->inst->Opcode != br && currNode->inst->Opcode != br_i1 && currNode->inst->Opcode != CopyOperation) {
             while(HashSetFind(copyNumSet,(void *)countVariable)){
-                printf("countVariable %d\n",countVariable);
+                //printf("countVariable %d\n",countVariable);
                 countVariable++;
             }
             if (currNode->inst->Opcode == Label) {
@@ -189,7 +189,7 @@ void renameVariables(Function *currentFunction) {
     while(currNode != endNode){
         BasicBlock *block = currNode->inst->Parent;
         if(block->visited == false){
-            printf("block %d\n",block->id);
+            //printf("block %d\n",block->id);
             block->visited = true;
             InstNode *blockTail = block->tail_node;
             if(block == tail){
@@ -604,12 +604,12 @@ bool isSameLargeType(Value *left, Value *right){
 
 
 //TODO Think carefully
-void SwapOperand(InstNode *instNode){
-    //swap Operand regardless of the correctness
-    User *user = &instNode->inst->user;
-
-    //
-}
+//void SwapOperand(InstNode *instNode){
+//    //swap Operand regardless of the correctness
+//    User *user = &instNode->inst->user;
+//
+//    //
+//}
 
 
 Function *ReconstructFunction(InstNode *inst_list){
@@ -800,7 +800,7 @@ void topCfg(Function *currentFunction){
     for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
         BasicBlock *block = pair->key;
         int in = (int)pair->value;
-        //printf("b %d indegree %d\n",block->id, in);
+        printf("b %d indegree %d\n",block->id, in);
     }
 
     currentFunction->ToPoBlocks = VectorInit(10);
@@ -814,11 +814,12 @@ void topCfg(Function *currentFunction){
 
     //
     while(HashMapSize(indegree) != 0){
-        //printf("one time!\n");
+        printf("one time!\n");
         //find the
         HashSetFirst(modified);
         for(BasicBlock *modifiedBlock = HashSetNext(modified); modifiedBlock != NULL; modifiedBlock = HashSetNext(modified)){
             int in = (int)HashMapGet(indegree,modifiedBlock);
+            printf("modified block %d\n",modifiedBlock->id);
             if(in == 0){
                 //sleep(1);
                 printf("block %d in degree is 0!!\n",modifiedBlock->id);
@@ -873,4 +874,17 @@ void topCfg(Function *currentFunction){
         printf(" %d",block->id);
     }
     printf("\n");
+}
+
+//only clean the use_list and the CFG is NOT CHANGING!!!
+void cleanBlock(BasicBlock *block){
+    InstNode *blockHead = block->head_node;
+    InstNode *blockTail = block->tail_node;
+    InstNode *blockNext = get_next_inst(blockTail);
+
+    while(blockHead != blockNext){
+        InstNode *tempNode = get_next_inst(blockHead);
+        deleteIns(blockHead);
+        blockHead = tempNode;
+    }
 }
