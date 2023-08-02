@@ -18,6 +18,8 @@
 #include "other.h"
 #include "loop2memset.h"
 #include "gcm.h"
+#include "loop2memcpy.h"
+#include "loopnorm.h"
 void RunBasicPasses(Function *currentFunction);
 void RunOptimizePasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

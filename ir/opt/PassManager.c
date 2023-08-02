@@ -17,19 +17,17 @@ void RunBasicPasses(Function *currentFunction){
 }
 
 void RunOptimizePasses(Function *currentFunction){
-    sideEffect(currentFunction);
-
     DVNT(currentFunction);
 
     //for loopAnalysis
     loopAnalysis(currentFunction);
     LICM(currentFunction);
 
-    //loop2Memset(currentFunction);
+    //Loop2Memset(currentFunction);
 
     GCM(currentFunction);
 
-    //instruction_combination(currentFunction);
+    instruction_combination(currentFunction);
 
     postDominanceAnalysis(currentFunction);
 

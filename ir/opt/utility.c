@@ -357,7 +357,6 @@ void calculateNonLocals(Function *currentFunction){
 
 
 void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction){
-    printf("in function %s\n",currentFunction->name);
     value_replaceAll(oldValue,newValue);
     InstNode *currNode = currentFunction->entry->head_node;
     InstNode *tailNode = currentFunction->tail->tail_node;

@@ -16,8 +16,6 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#include "loopnorm.h"
-#include "loop2memcpy.h"
 #define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
@@ -154,55 +152,50 @@ int main(int argc, char* argv[]){
 //    //mem2reg之后，优化前
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
-
     CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
 
+    //构建Function
+    Function *start = ReconstructFunction(instruction_list);
 
-    func_inline(instruction_list,255);
+    //先跑一次
+    //如果要fuc inline一定要dom一下
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        RunBasicPasses(currentFunction);
+    }
 
+    if(Optimize) {
+        for (Function *currentFunction = start;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+            RunOptimizePasses(currentFunction);
+        }
+    }
+
+    func_inline(instruction_list,225);
 
     //重新构建Function
-    Function *start = ReconstructFunction(instruction_list);
+    start = ReconstructFunction(instruction_list);
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //这里build CallGraphNode 需要在内联之后进行callgraph的
         buildCallGraphNode(currentFunction);
     }
 
-    //OK 现在开始我们不会对
-    printf_llvm_ir(instruction_list,argv[4],1);
-
-
-    //先跑一次
-    //cse cf
-    //如果要fuc inline一定要dom一下
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        RunBasicPasses(currentFunction);
-//    }
-//
     if(Optimize) {
-        travel();
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             dominanceAnalysis(currentFunction);
-            //RunOptimizePasses(currentFunction);
-            loopAnalysis(currentFunction);
-            LoopNormalize(currentFunction);
-            dominanceAnalysis(currentFunction);
-            loopAnalysis(currentFunction);
-            //Loop2Memcpy(currentFunction);
-            //InstCombine(currentFunction);
-            renameVariables(currentFunction);
+            RunOptimizePasses(currentFunction);
+            sideEffect(currentFunction);
         }
+        travel();
     }
 
-
     //OK 现在开始我们不会对
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        Clean(currentFunction);
-//    }
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+        Clean(currentFunction);
+    }
 
     printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
@@ -221,7 +214,7 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],0);
+ //   printf_llvm_ir(instruction_list,argv[4],0);
 
     for(Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
