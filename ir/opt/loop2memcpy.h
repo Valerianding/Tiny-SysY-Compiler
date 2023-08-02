@@ -6,7 +6,6 @@
 #define C22V1_LOOP2MEMCPY_H
 #include "utility.h"
 #include "function.h"
-extern int instruction_uid;
 bool CheckLoopMemcpy(Loop *loop);
 bool Loop2Memcpy(Function *currentFunction);
 #endif //C22V1_LOOP2MEMCPY_H

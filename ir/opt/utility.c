@@ -604,12 +604,12 @@ bool isSameLargeType(Value *left, Value *right){
 
 
 //TODO Think carefully
-void SwapOperand(InstNode *instNode){
-    //swap Operand regardless of the correctness
-    User *user = &instNode->inst->user;
-
-    //
-}
+//void SwapOperand(InstNode *instNode){
+//    //swap Operand regardless of the correctness
+//    User *user = &instNode->inst->user;
+//
+//    //
+//}
 
 
 Function *ReconstructFunction(InstNode *inst_list){
@@ -782,6 +782,9 @@ void topCfg(Function *currentFunction){
         HashSetFirst(block->preBlocks);
         for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
             if(HashSetFind(preBlock->dom,block)){
+                if(block->id == 77){
+
+                }
                 n = n - 1;
             }
         }
@@ -800,7 +803,7 @@ void topCfg(Function *currentFunction){
     for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
         BasicBlock *block = pair->key;
         int in = (int)pair->value;
-        //printf("b %d indegree %d\n",block->id, in);
+        printf("b %d indegree %d\n",block->id, in);
     }
 
     currentFunction->ToPoBlocks = VectorInit(10);
@@ -814,11 +817,13 @@ void topCfg(Function *currentFunction){
 
     //
     while(HashMapSize(indegree) != 0){
-        //printf("one time!\n");
+        sleep(1);
+        printf("one time!\n");
         //find the
         HashSetFirst(modified);
         for(BasicBlock *modifiedBlock = HashSetNext(modified); modifiedBlock != NULL; modifiedBlock = HashSetNext(modified)){
             int in = (int)HashMapGet(indegree,modifiedBlock);
+            printf("modified block %d\n",modifiedBlock->id);
             if(in == 0){
                 //sleep(1);
                 printf("block %d in degree is 0!!\n",modifiedBlock->id);

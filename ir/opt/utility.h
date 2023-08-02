@@ -20,7 +20,7 @@ void renameVariables(Function *currentFunction);
 void showInstructionInfo(InstNode *instruction_list);
 void showBlockInfo(InstNode *instruction_list);
 void HashSetClean(HashSet *set);
-//not set function
+//not set function have bug!! only used for certain condition
 BasicBlock *newBlock(HashSet *prevBlocks,BasicBlock *block);
 bool hasNoDestOperator(InstNode *insNode);
 InstNode *findNode(BasicBlock *block,Instruction *inst);

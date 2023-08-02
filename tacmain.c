@@ -18,7 +18,7 @@
 #include "line_scan.h"
 #include "loopnorm.h"
 #include "loop2memcpy.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]){
     combineZext(instruction_list);
 
 
-    //func_inline(instruction_list,255);
+    func_inline(instruction_list,255);
 
 
     //重新构建Function
@@ -192,7 +192,8 @@ int main(int argc, char* argv[]){
             LoopNormalize(currentFunction);
             dominanceAnalysis(currentFunction);
             loopAnalysis(currentFunction);
-            Loop2Memcpy(currentFunction);
+            //Loop2Memcpy(currentFunction);
+            //InstCombine(currentFunction);
             renameVariables(currentFunction);
         }
     }
@@ -225,6 +226,13 @@ int main(int argc, char* argv[]){
     for(Function *currentFunction = start;
          currentFunction != NULL; currentFunction = currentFunction->Next) {
         dominanceAnalysis(currentFunction);
+    }
+
+
+    //printf_llvm_ir(instruction_list,argv[4],0);
+
+    for(Function *currentFunction = start;
+        currentFunction != NULL; currentFunction = currentFunction->Next) {
         topCfg(currentFunction);
     }
 
