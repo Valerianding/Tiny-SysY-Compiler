@@ -53,6 +53,7 @@ void cal_cost(Function* callee,int threshold)
     //跳过第一条FunBegin
     currNode = get_next_inst(currNode);
 
+    bool flag_special =false;         //标记一下是不是特殊函数
     while (currNode != get_next_inst(end->tail_node)) {
         //1. 指令成本
         if(!is_particular_instr(currNode->inst->Opcode))
@@ -61,6 +62,7 @@ void cal_cost(Function* callee,int threshold)
         //如果是特殊的递归函数
         if(currNode->inst->Opcode == Call && strcmp(ins_get_lhs(currNode->inst)->name, funcValue->name)==0){
             *cost = 15000;
+            flag_special = true;
             break;
         }
 
@@ -69,18 +71,26 @@ void cal_cost(Function* callee,int threshold)
             call_func_cost = HashMapGet(cost_map,ins_get_lhs(currNode->inst));
             if(*call_func_cost > threshold){
                 *cost = 2000;
+                flag_special = true;
                 break;
             }
         }
 
         currNode = get_next_inst(currNode);
     }
+
     //2. 参数成本Arg_cost, LLVM的参数成本负向增加Cost的值
     //TypeSize;    //arg所占位数 32*
     //PointerSize;  //指针所占位数，即整数位数 ,是32位
     //Num = min((TypeSize+PointerSize-1)/PointerSize , 8); //Num取表达式和8中小的值
     int Num = min((funcValue->pdata->symtab_func_pdata.param_num*32 + 32 -1)/32,8);
     *cost -= 2 * Num * Instr_cost;
+
+    //先判断是不是单基本块，如果只有一个基本块的话，就直接cost低满
+    if(!flag_special && callee->entry == callee->tail && *cost > threshold){
+        *cost = threshold - 5;
+    }
+    flag_special = false;
 
     printf("cost : %d\n",*cost);
     HashMapPut(cost_map,funcValue,cost);
