@@ -94,8 +94,8 @@ void give_param_str(HashMap*hashMap,Value*value,char *name,int *ri);
 
 InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap);
-InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);
-InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);//
+InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);//
 InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap);
 InstNode * arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins);
@@ -109,9 +109,9 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap);
 
 
 InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap);
-InstNode * arm_trans_GIVE_PARAM(HashMap *hashMap,int param_num);
+InstNode * arm_trans_GIVE_PARAM(HashMap *hashMap,int param_num);//
 InstNode * arm_trans_ALLBEGIN(InstNode *ins);
-InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap);//
 InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap);
 
 InstNode * arm_trans_br_i1(InstNode *ins);

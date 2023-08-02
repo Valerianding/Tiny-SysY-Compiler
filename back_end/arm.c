@@ -1168,7 +1168,7 @@ InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
     int left_reg_abs;
     int x0= get_value_offset_sp(hashMap,value0);
     int x1= get_value_offset_sp(hashMap,value1);
-    if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
+    if(isImmIntType(value1->VTy) && imm_is_valid(value1->pdata->var_pdata.iVal)){
         int x=value1->pdata->var_pdata.iVal;
         printf("\tmov\tr%d,#%d\n",dest_reg_abs,x);
         fprintf(fp,"\tmov\tr%d,#%d\n",dest_reg_abs,x);
@@ -2307,7 +2307,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -2334,7 +2334,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -8124,14 +8124,7 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         }else{
             handle_illegal_imm1(1,x1);
             handle_illegal_imm1(2,x2);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",x1);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",x2);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
+
             printf("\tcmp\tr1,r2\n");
             fprintf(fp,"\tcmp\tr1,r2\n");
         }
@@ -8251,7 +8244,6 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         printf("\tvmrs\tAPSR_nzcv,fpscr\n");
         fprintf(fp,"\tvmrs\tAPSR_nzcv,fpscr\n");
     }
-
 
     if(isImmIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
@@ -8967,7 +8959,6 @@ InstNode * arm_trans_XOR(InstNode *ins){
 //        //means we need to store back
 //        assert(false);
 //    }
-
     return ins;
 }
 
@@ -9789,7 +9780,6 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         if(right_reg>100){
             int x= get_value_offset_sp(hashMap,value2);
             handle_illegal_imm(right_reg,x,2);
-
             right_reg_end=right_reg-100;
         }else{
             right_reg_end=right_reg;
@@ -9844,16 +9834,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             }
 
 
-        }
-        else if(isGlobalVarIntType(value1->VTy)){
-
-        } else if(isGlobalVarFloatType(value1->VTy)){
-
-        } else if(isGlobalArrayIntType(value1->VTy)){
-            ;
-        } else if(isGlobalArrayFloatType(value1->VTy)){
-            ;
-        } else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
+        }else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
             printf("\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
             fprintf(fp,"\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
             if(is_float_array(value2)){
@@ -9880,13 +9861,8 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 
         }else if(isImmFloatType(value1->VTy)){
             float x2=value1->pdata->var_pdata.fVal;
-//            printf("%d\n",value1->pdata->var_pdata.iVal);
             int *xx2=(int*)&x2;
             handle_illegal_imm1(1,*xx2);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx2);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             if(is_int_array(value2)){
 //                float_to_int(1,1);
                 float_to_int2(0,1,0);
@@ -9926,7 +9902,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             }
 
 
-        }else if(isLocalVarFloatType(value1->VTy)){
+        }else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==0){
             if(is_float_array(value2)){
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
@@ -9954,9 +9930,35 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
                 }
             }
 
-        }else if(isLocalArrayIntType(value1->VTy)){
+        }else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==1){
+            left_reg=ins->inst->_vfpReg_[1];
+            if(is_float_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    vfp_handle_illegal_imm(left_reg,x,1);
 
-        }else if(isLocalVarFloatType(value1->VTy)){
+                    printf("\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    printf("\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
+                }
+            } else if(is_int_array(value2)){
+                if(left_reg>100){
+                    int x= get_value_offset_sp(hashMap,value1);
+                    vfp_handle_illegal_imm(left_reg,x,1);
+                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
+                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
+
+                    printf("\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                }else{
+                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
+                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
+                    printf("\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
+                }
+            }
 
         }
         return ins;
@@ -9994,11 +9996,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         printf("\tldr\tr1,[r1]\n");
         fprintf(fp,"\tldr\tr1,[r1]\n");
         left_int_float=1;
-    } else if(isGlobalArrayIntType(value1->VTy)){
-        ;
-    } else if(isGlobalArrayFloatType(value1->VTy)){
-        ;
-    } else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
+    }else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
         printf("\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
         fprintf(fp,"\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
         left_int_float=0;
@@ -10009,13 +10007,9 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         left_int_float=0;
 
     }else if(isImmFloatType(value1->VTy)){
-//        char arr[12]="0x";
         float x=value1->pdata->var_pdata.fVal;
         int xx=*(int*)&x;
         handle_illegal_imm1(1,xx);
-//        sprintf(arr+2,"%0x",xx);
-//        printf("\tldr\tr1,=%s\n",arr);
-//        fprintf(fp,"\tldr\tr1,=%s\n",arr);
         left_int_float=1;
     }else if(isLocalVarIntType(value1->VTy)){
         left_int_float=0;
@@ -10030,7 +10024,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             fprintf(fp,"\tmov\tr1,r%d\n",left_reg);
         }
 
-    }else if(isLocalVarFloatType(value1->VTy)){
+    }else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==0){
         left_int_float=1;
         if(left_reg>100){
             int x= get_value_offset_sp(hashMap,value1);
@@ -10041,6 +10035,19 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         }else{
             printf("\tmov\tr1,r%d\n",left_reg);
             fprintf(fp,"\tmov\tr1,r%d\n",left_reg);
+        }
+    }
+    else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==1){
+        left_int_float=1;
+        if(left_reg>100){
+            int x= get_value_offset_sp(hashMap,value1);
+            vfp_handle_illegal_imm(left_reg,x,1);
+
+            printf("\tvmov\tr1,s%d\n",left_reg-100);
+            fprintf(fp,"\tvmov\tr1,s%d\n",left_reg-100);
+        }else{
+            printf("\tvmov\tr1,s%d\n",left_reg);
+            fprintf(fp,"\tvmov\tr1,s%d\n",left_reg);
         }
     }
 
@@ -10097,13 +10104,10 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             fprintf(fp,"\tstr\tr1,[r2]\n");
         }
 
-    } else if(isGlobalArrayIntType(value1->VTy)){
-        ;
-    } else if(isGlobalArrayFloatType(value1->VTy)){
-        ;
     }
     return ins;
 }
+
 InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 //    load和store是需要修改的，现在的情况就是float arr[3]={1,2,3}这个时候，往该地址里面存的值为int，这样取出来的还是int直接vmov到s1进性
 //    计算会导致错误，这里理想的情况是往数组里面存对应类型的数据，类型不符合就需要进行类型转换之后才能回存，load和store都是会有同样的问题。
@@ -10123,48 +10127,90 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 //         这里把值存到数组里面，数组有int和float，值本身也有int和float两种类型
 //         load的左值为Var_int,Var_float，address三种情况，address的话就先不进行类型转换
         if(is_int_array(value1)){
-            if(left_reg>100){
+            if(ARM_enable_vfp==0){
+                if(left_reg>100){
 //            这里说明GEP计算好的偏移量被放置如栈内存中
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
-
-                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
-                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
-
-
-            }else{
-                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
-                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
-
-            }
-            if(value0->VTy->ID==Var_INT){
-                ;
-            }else if(value0->VTy->ID==Var_FLOAT){
-                int_to_float(dest_reg_abs,dest_reg_abs);
-            }else{ //address
-                ;
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                    fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                }else{
+                    printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                    fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                }
+                if(value0->VTy->ID==Var_FLOAT){
+                    int_to_float(dest_reg_abs,dest_reg_abs);
+                }
+            }else if(ARM_enable_vfp==1){
+                if(value0->VTy->ID==Var_FLOAT){
+                    dest_reg=ins->inst->_vfpReg_[0];
+                    dest_reg_abs=abs(dest_reg);
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                    }else{
+                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                    }
+                    printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                    fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+                }else{
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+                        printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                    }else{
+                        printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                    }
+                }
             }
         }else if(is_float_array(value1)){
-            if(left_reg>100){
+            if(ARM_enable_vfp==0){
+                if(left_reg>100){
 //            这里说明GEP计算好的偏移量被放置如栈内存中
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
+                    int x= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,x,1);
+                    printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                    fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                }else{
+                    printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                    fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
 
-                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
-                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
-            }else{
-                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
-                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                }
+                if(value0->VTy->ID==Var_INT){
+                    float_to_int(dest_reg_abs,dest_reg_abs);
+                }
+            }else if(ARM_enable_vfp==1){
+                if(value0->VTy->ID==Var_FLOAT){
+                    dest_reg=ins->inst->_vfpReg_[0];
+                    dest_reg_abs=abs(dest_reg);
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                    }else{
+                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                    }
+                }else{
+                    if(left_reg>100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,x,1);
+                        printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                    }else{
+                        printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
 
+                    }
+                    float_to_int(dest_reg_abs,dest_reg_abs);
+                }
             }
-            if(value0->VTy->ID==Var_INT){
-                float_to_int(dest_reg_abs,dest_reg_abs);
-            }else if(value0->VTy->ID==Var_FLOAT){
-                ;
-            }else{ //address
-                ;
-            }
-
         }
 
 //        if(left_reg>100){
@@ -10181,15 +10227,23 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 //            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
 //
 //        }
-        if(dest_reg<0){
+        if(dest_reg<0 && ARM_enable_vfp==0){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
-
         }
+        if(dest_reg<0 && ARM_enable_vfp==1){
+            int x= get_value_offset_sp(hashMap,value0);
+            if(value0->VTy->ID==Var_FLOAT){
+                vfp_handle_illegal_imm(dest_reg_abs,x,0);
+            }else{
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
+        }
+
         return ins;
     }
 
-//    处理普通全局变量,处理全局变量的类型问题先不改
+//    处理普通全局变量,处理全局变量的类型问题先不改,默认value1和value0是同一种类型的type，如同为int或者说是同为float
     if(isGlobalVarIntType(value1->VTy)){
 
         printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
@@ -10201,7 +10255,6 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
             fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
-
         }else{
             printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
             fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
@@ -10209,20 +10262,33 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 
 
     } else if(isGlobalVarFloatType(value1->VTy)){
-
         printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
         fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
         printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
         fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-        if(dest_reg<0){
-            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
-            fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
-            int x= get_value_offset_sp(hashMap,value0);
-            handle_illegal_imm(dest_reg_abs,x,0);
+        if(ARM_enable_vfp==1){
+            dest_reg=ins->inst->_vfpReg_[0];
+            dest_reg_abs=abs(dest_reg);
+            if(dest_reg<0){
+                printf("\tvldr\ts%d,[r1]\n",dest_reg_abs);
+                fprintf(fp,"\tvldr\ts%d,[r1]\n",dest_reg_abs);
+                int x= get_value_offset_sp(hashMap,value0);
+                vfp_handle_illegal_imm(dest_reg_abs,x,0);
+            }else{
+                printf("\tvldr\ts%d,[r1]\n",dest_reg_abs);
+                fprintf(fp,"\tvldr\ts%d,[r1]\n",dest_reg_abs);
+            }
+        }else if(ARM_enable_vfp==0){
+            if(dest_reg<0){
+                printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
+                fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
 
-        }else{
-            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
-            fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
+            }else{
+                printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
+                fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
+            }
         }
     }
     return ins;
