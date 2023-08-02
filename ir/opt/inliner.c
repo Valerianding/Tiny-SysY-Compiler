@@ -571,6 +571,8 @@ int func_inline(struct _InstNode* instruction_node, int threshold)
                         }
                         //将alloca插在instNode前面
                         ins_insert_before(node_copy,instNode);
+                        //被提到前面了，所以更新它的基本块
+                        node_copy->inst->Parent = instNode->inst->Parent;
                     }
                     else
                         ins_insert_before(node_copy,instruction_node);
