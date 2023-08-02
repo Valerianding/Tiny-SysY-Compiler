@@ -32,6 +32,48 @@ InstNode* params[1000];      //存放所有参数
 
 int while_scope=0;
 
+//处理参数需要float-int间转换的情况
+Value *float_int_convert(Value* callee, Value* value, int param_index){
+    if(isIntType(callee->pdata->symtab_func_pdata.param_type_lists[param_index].ID) == isIntType(value->VTy->ID))
+        return value;
+    if(callee->pdata->symtab_func_pdata.param_type_lists[param_index].ID == AddressTyID && value->VTy->ID == AddressTyID)
+        return value;
+
+    Value *dest = NULL;
+    if(isIntType(callee->pdata->symtab_func_pdata.param_type_lists[param_index].ID)){            //float转int
+        Instruction *convert = ins_new_unary_operator(fptosi,value);
+        //将这个instruction加入总list
+        InstNode *node_convert = new_inst_node(convert);
+        ins_node_add(instruction_list,node_convert);
+        if(value->VTy->ID == Float){
+            dest = ins_get_dest(convert);
+            dest->VTy->ID = Int;
+            dest->pdata->var_pdata.iVal = (int)value->pdata->var_pdata.fVal;
+            deleteIns(node_convert);
+        }
+        else{
+            dest = ins_get_value_with_name(convert);
+            dest->VTy->ID = Var_INT;
+        }
+    } else{                              //int转float
+        Instruction *convert = ins_new_unary_operator(sitofp,value);
+        //将这个instruction加入总list
+        InstNode *node_convert = new_inst_node(convert);
+        ins_node_add(instruction_list,node_convert);
+        if(value->VTy->ID == Int){
+            dest = ins_get_dest(convert);
+            dest->VTy->ID = Float;
+            dest->pdata->var_pdata.fVal = (float )value->pdata->var_pdata.iVal;
+            deleteIns(node_convert);
+        }
+        else{
+            dest = ins_get_value_with_name(convert);
+            dest->VTy->ID = Var_FLOAT;
+        }
+    }
+    return dest;
+}
+
 void create_instruction_list(past root,Value* v_return,int block)
 {
     if (root != NULL) {
@@ -2937,8 +2979,8 @@ void create_func_def(past root) {
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
 struct _Value *cal_expr(past expr,int type,int* real) {
-//    Queue *queue=QueueInit();
-//    tree_balancing(&expr);
+    if(!isFloatType(type))
+        tree_balancing(&expr);
 
     //最后从栈中弹出的
     Value *final_result = (Value*) malloc(sizeof (Value));
@@ -3936,6 +3978,7 @@ void create_params_stmt(past func_params,Value * v_func)
         }
 
         //传递参数的IR
+        v = float_int_convert(v_func,v,p_num);
         instruction= ins_new_binary_operator(GIVE_PARAM,v,v_func);
         //将这个instruction加入总list
         InstNode *node = new_inst_node(instruction);
@@ -4140,10 +4183,10 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-//        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
-//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
-//        if(instruction->user.value.alias!= NULL && instruction->user.value.alias->name!= NULL && instruction->user.value.alias->alias!= NULL && instruction->user.value.alias->alias->name!= NULL)
-//            printf("%s . ",instruction->user.value.alias->name);
+        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
+        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+        if(instruction->user.value.alias!= NULL && instruction->user.value.alias->name!= NULL && instruction->user.value.alias->alias!= NULL && instruction->user.value.alias->alias->name!= NULL)
+            printf("%s . ",instruction->user.value.alias->name);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -5344,10 +5387,14 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             printf("isCritical\n\n");
         }
 //
-////        Value *v,*vl,*vr;
-////        v= ins_get_dest(instruction_node->inst);
-////        vl= ins_get_lhs(instruction_node->inst);
-////        vr= ins_get_rhs(instruction_node->inst);
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
+
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
 //        if(v!=NULL)
 //            printf("left:%p,\t",v);
 //        if(vl!=NULL)

@@ -782,9 +782,6 @@ void topCfg(Function *currentFunction){
         HashSetFirst(block->preBlocks);
         for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
             if(HashSetFind(preBlock->dom,block)){
-                if(block->id == 77){
-
-                }
                 n = n - 1;
             }
         }
@@ -817,7 +814,6 @@ void topCfg(Function *currentFunction){
 
     //
     while(HashMapSize(indegree) != 0){
-        sleep(1);
         printf("one time!\n");
         //find the
         HashSetFirst(modified);

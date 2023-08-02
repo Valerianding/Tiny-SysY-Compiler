@@ -5,7 +5,7 @@
 
 #define S 14
 #define R 6
-#define enable_vfp 0 //浮点寄存器分配开关
+int enable_vfp=0; //浮点寄存器分配开关
 
 //还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
 PriorityQueue *active;
@@ -422,11 +422,11 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
         value_register *node= HashMapGet(curFunction->lineScanVFPReg,value);
         if(node==NULL){
             if(i==0){
-                ins->inst->_reg_[i]=-30;
+                ins->inst->_vfpReg_[i]=-30;
             }else if(i==1){
-                ins->inst->_reg_[i]=130;
+                ins->inst->_vfpReg_[i]=130;
             } else if(i==2){
-                ins->inst->_reg_[i]=131;
+                ins->inst->_vfpReg_[i]=131;
             }
             return;
         }
