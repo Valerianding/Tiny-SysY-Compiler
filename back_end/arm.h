@@ -94,8 +94,8 @@ void give_param_str(HashMap*hashMap,Value*value,char *name,int *ri);
 
 InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap);
-InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);//
-InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);//
+InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap);
+InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap);
 InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap);
 InstNode * arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins);
