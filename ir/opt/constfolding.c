@@ -41,7 +41,6 @@ bool ConstFolding(Function *currentFunction){
                                 dest->pdata->var_pdata.iVal = (int)(left / right);
                                 break;
                             case Mod:
-                                assert(false);
                                 dest->pdata->var_pdata.iVal = (int)left % (int)right;
                                 break;
                             default:
