@@ -202,7 +202,7 @@ void label_func_inline_llvm(struct _InstNode* instNode_list, int threshold)
             for(Value* func = HashSetNext(callers); func!=NULL; func = HashSetNext(callers)){
                 if(strcmp(func->name,"main")!=0){
                     int *func_cost = HashMapGet(cost_map,func);
-                    if(*func_cost + *cost > threshold){
+                    if(*func_cost < threshold && *func_cost + *cost > threshold){
                         //取消C到B的内联
                         remove_one_callsite(func, funcValue);
                         can_del = false;
