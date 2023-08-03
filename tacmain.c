@@ -213,7 +213,7 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
- //   printf_llvm_ir(instruction_list,argv[4],0)
+    printf_llvm_ir(instruction_list,argv[4],0);
 
 
     for(Function *currentFunction = start;
