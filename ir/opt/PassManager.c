@@ -17,6 +17,9 @@ void RunBasicPasses(Function *currentFunction){
 }
 
 void RunOptimizePasses(Function *currentFunction){
+
+    dominanceAnalysis(currentFunction);
+
     DVNT(currentFunction);
 
     //for loopAnalysis
