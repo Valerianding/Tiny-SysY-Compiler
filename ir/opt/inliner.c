@@ -50,6 +50,13 @@ void cal_cost(Function* callee,int threshold)
     InstNode *currNode = entry->head_node;
     Value *funcValue = currNode->inst->user.use_list->Val;
 
+    //最后一句不为ret的暂不内联了
+    if(get_prev_inst(end->tail_node)->inst->Opcode != Return){
+        *cost = 10000;
+        HashMapPut(cost_map,funcValue,cost);
+        return;
+    }
+
     //跳过第一条FunBegin
     currNode = get_next_inst(currNode);
 
@@ -66,15 +73,15 @@ void cal_cost(Function* callee,int threshold)
             break;
         }
 
-        int *call_func_cost = (int*) malloc(4);
-        if(currNode->inst->Opcode == Call && symtab_lookup_withmap(this,ins_get_lhs(currNode->inst)->name, &this->value_maps->next->map)){
-            call_func_cost = HashMapGet(cost_map,ins_get_lhs(currNode->inst));
-            if(*call_func_cost > threshold){
-                *cost = 2000;
-                flag_special = true;
-                break;
-            }
-        }
+//        int *call_func_cost = (int*) malloc(4);
+//        if(currNode->inst->Opcode == Call && symtab_lookup_withmap(this,ins_get_lhs(currNode->inst)->name, &this->value_maps->next->map)){
+//            call_func_cost = HashMapGet(cost_map,ins_get_lhs(currNode->inst));
+//            if(*call_func_cost > threshold){
+//                *cost = 2000;
+//                flag_special = true;
+//                break;
+//            }
+//        }
 
         currNode = get_next_inst(currNode);
     }
@@ -207,7 +214,7 @@ void label_func_inline_llvm(struct _InstNode* instNode_list, int threshold)
                         remove_one_callsite(func, funcValue);
                         can_del = false;
                     }
-                    else if(*cost > threshold){
+                    else if(*cost > threshold){            //func_cost特别大，但cost小的情况可以内联。但是func_cost小或cost大的情况不行
                         //取消C到B的内联
                         remove_one_callsite(func, funcValue);
                         can_del = false;
