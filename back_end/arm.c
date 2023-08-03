@@ -496,6 +496,12 @@ bool imm_is_valid2(int value){
         return false;
     }
 }
+bool imm_is_valid3(int value){
+    if(value>=0 && value <=1020){
+        return true;
+    }
+    return false;
+}
 int power_of_two(int n){ //需要传入一个正数
     if (n <= 0 || (n & (n - 1)) != 0) {
         return -1;
@@ -613,7 +619,7 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
     if(give_param_flag[3]==0){
         if(flag==0){ //vstr dest_reg_abs
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
                 fprintf(fp,"\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
             }else {
@@ -623,7 +629,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp, "\tvstr\ts%d,[r11,r3]\n", handle_dest_reg);
             }
         }else if(flag==1){ //vldr left_reg-100
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
                 fprintf(fp,"\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
             } else{
@@ -633,7 +639,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp,"\tvldr\ts%d,[r11,r3]\n",handle_dest_reg-100);
             }
         }else { //vldr right_reg-100
-            if (imm_is_valid2(x)) {
+            if (imm_is_valid3(x)) {
                 printf("\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
                 fprintf(fp, "\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
             } else {
@@ -647,7 +653,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //        r3寄存器用于传参，并且已经被占用,获取一个可用寄存器
         int tmp_reg=get_free_reg();
         if(flag==0){ //str dest_reg_abs
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
                 fprintf(fp,"\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
             }else {
@@ -657,7 +663,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp, "\tvstr\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
             }
         }else if(flag==1){ //ldr left_reg-100
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
                 fprintf(fp,"\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
             } else{
@@ -667,7 +673,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp,"\tvldr\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
             }
         }else { //ldr right_reg-100
-            if (imm_is_valid2(x)) {
+            if (imm_is_valid3(x)) {
                 printf("\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
                 fprintf(fp, "\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
             } else {
@@ -1059,10 +1065,11 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
         }else{
             left_reg_abs=left_reg;
         }
-        printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg_abs,left_reg_abs);
-        fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg_abs,left_reg_abs);
-        printf("\tvmov\tr%d,s%d\n",dest_reg_abs,left_reg_abs);
-        fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,left_reg_abs);
+//        这里不能够在本s寄存器进行类型转换，会导致本寄存器的值被破坏
+        printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
+        fprintf(fp,"\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
+        printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
         if(dest_reg<0){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
@@ -2503,14 +2510,14 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -3552,7 +3559,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -3579,7 +3586,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -3784,14 +3791,14 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -4983,7 +4990,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -5010,7 +5017,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -5214,14 +5221,14 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -6331,7 +6338,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -6358,7 +6365,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -6560,14 +6567,14 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -8272,8 +8279,20 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         left_reg_abs=left_reg;
                     }
                     if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID==Var_FLOAT){
-                        printf("\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
-                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
+//                        注意vstr不支持这样的回写操作，只能vstr\ts%d,[sp,#-4]，不能加！
+//                        printf("\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
+//                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
+
+//解决方案1
+//                        printf("\tvmov\tr0,s%d\n",left_reg_abs);
+//                        fprintf(fp,"\tvmov\tr0,s%d\n",left_reg_abs);
+//                        printf("\tstr\tr0,[sp,#-4]!\n");
+//                        fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+//解决方案2
+                        printf("\tvstr\ts%d,[sp,#-4]\n",left_reg_abs);
+                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]\n",left_reg_abs);
+                        printf("\tsub\tsp,sp,#4\n");
+                        fprintf(fp,"\tsub\tsp,sp,#4\n");
                         vflag=1;
                     }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID==Var_INT){
                         printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);

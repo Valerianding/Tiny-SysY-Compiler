@@ -21,6 +21,7 @@
  */
 bool imm_is_valid(int value);
 bool imm_is_valid2(int value);
+bool imm_is_valid3(int value);
 void handle_illegal_imm(int dest_reg ,int x,int flag);//处理ldr的非法立即数
 void handle_illegal_imm1(int dest_reg,int x);//处理mov的非法立即数
 
