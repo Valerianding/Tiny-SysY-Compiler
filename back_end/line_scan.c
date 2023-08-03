@@ -80,7 +80,7 @@ void line_scan(InstNode*ins,Function* start){
         memset(myreg,0,sizeof(myreg));
         free_reg_num=6;
         memset(VFPreg,0, sizeof(VFPreg));
-        free_VFPreg_num=26;
+        free_VFPreg_num=14;
 //      到这里为止
 
 
@@ -251,6 +251,7 @@ void VFP_expire_old_intervals(Function *curFunction,value_live_range *i){
 //             j已经被进行寄存器分配
             value_register *r= HashMapGet(curFunction->lineScanVFPReg,j->value);
             assert(r!=NULL);
+//            printf("VFP_expire_old_intervals free s%d\n",r->sreg);
             free_VFPregister(r->sreg);
         }
     }
@@ -485,7 +486,7 @@ int get_an_availabel_VFPregister(){
 }
 void free_VFPregister(int i){
     free_VFPreg_num++;
-    VFPreg[i]=1;
+    VFPreg[i]=0;
 }
 int CompareNumerics(const void* lhs, const void* rhs){
     value_live_range * x1=(value_live_range *)lhs;

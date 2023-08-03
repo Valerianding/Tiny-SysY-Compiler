@@ -8,8 +8,8 @@
 #define MOVE_RIGHT 16
 
 int lineScan=1; //使用线性扫描寄存器分配
-#define ARM_enable_vfp 0
-//int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
+//#define ARM_enable_vfp 1
+int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
 //如果说使用浮点寄存器分配的话，Var_Float放在_vfpReg_寄存器中，其对应的所有Var_Float分配结果在lineScanVFPReg,遍历取出
 HashMap * lineScan_param;
 
@@ -77,10 +77,29 @@ void handle_lineScan_extra_reg(InstNode*ins,int param_num){
         }
     }
 }
+void handle_VFPlineScan_extra_reg(InstNode*ins,int param_num){
+    Function *curFunction=ins->inst->Parent->Parent;
+    Pair *ptr_pair;
+    HashMapFirst(curFunction->lineScanVFPReg);
+    while ((ptr_pair= HashMapNext(curFunction->lineScanVFPReg))!=NULL){
+        Value *value=(Value*)ptr_pair->key;
+        value_register *r=(value_register*)ptr_pair->value;
+        int num=-1;
+        assert(value->name!=NULL);
+        if(value->name[0]=='%'){
+            num=atoi(value->name+1);
+            if(num>=4 && num<param_num){
+//                多余的参数被分配了寄存器,需要在函数开始前就vldr到相应的浮点寄存器
+                offset *node= HashMapGet(lineScan_param,value);
+                assert(node!=NULL);
+                vfp_handle_illegal_imm(r->sreg+100,node->offset_sp,1);
+            }
+        }
+    }
+}
 //eabi不会保存r12
 void printf_stmfd_rlist(){
-//    printf();
-//    fprintf(fp,);
+
     if(save_r11==1){
         reg_save[11]=1;
     }
@@ -477,6 +496,12 @@ bool imm_is_valid2(int value){
         return false;
     }
 }
+bool imm_is_valid3(int value){
+    if(value>=0 && value <=1020){
+        return true;
+    }
+    return false;
+}
 int power_of_two(int n){ //需要传入一个正数
     if (n <= 0 || (n & (n - 1)) != 0) {
         return -1;
@@ -594,7 +619,7 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
     if(give_param_flag[3]==0){
         if(flag==0){ //vstr dest_reg_abs
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
                 fprintf(fp,"\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
             }else {
@@ -604,7 +629,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp, "\tvstr\ts%d,[r11,r3]\n", handle_dest_reg);
             }
         }else if(flag==1){ //vldr left_reg-100
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
                 fprintf(fp,"\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
             } else{
@@ -614,7 +639,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp,"\tvldr\ts%d,[r11,r3]\n",handle_dest_reg-100);
             }
         }else { //vldr right_reg-100
-            if (imm_is_valid2(x)) {
+            if (imm_is_valid3(x)) {
                 printf("\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
                 fprintf(fp, "\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
             } else {
@@ -628,7 +653,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //        r3寄存器用于传参，并且已经被占用,获取一个可用寄存器
         int tmp_reg=get_free_reg();
         if(flag==0){ //str dest_reg_abs
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
                 fprintf(fp,"\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
             }else {
@@ -638,7 +663,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp, "\tvstr\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
             }
         }else if(flag==1){ //ldr left_reg-100
-            if(imm_is_valid2(x)){
+            if(imm_is_valid3(x)){
                 printf("\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
                 fprintf(fp,"\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
             } else{
@@ -648,7 +673,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
                 fprintf(fp,"\tvldr\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
             }
         }else { //ldr right_reg-100
-            if (imm_is_valid2(x)) {
+            if (imm_is_valid3(x)) {
                 printf("\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
                 fprintf(fp, "\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
             } else {
@@ -714,33 +739,7 @@ bool is_float_array(Value *value){
     return  false;
 }
 void arm_open_file(char filename[]){
-//    int len= strlen(argv);
-//    char filepath[256];
-//    char *prefix= strncpy(malloc(len-2),argv,len-3);
-//    prefix[len-3]='\0';
-//    snprintf(filepath, sizeof(filepath),"../test/%s.s",prefix);
-//    free(prefix);
-//    FILE *myopen= fopen(filepath,"w");
-////    fprintf(myopen,"haha");
-//    if(myopen==NULL){
-//        perror("open file error");
-//    }
-//    return myopen;
-//    char new_ext[] = ".s";
-//    char *dot_ptr = strrchr(filename, '.');
-//    if(dot_ptr) {
-//        int basename_len = dot_ptr - filename;  // 计算基本文件名的长度
-//        char new_filename[basename_len + strlen(new_ext) + 1];  // 为新文件名分配足够的空间
-//
-//        strncpy(new_filename, filename, basename_len);  // 复制基本文件名
-//        new_filename[basename_len] = '\0';  // 在基本文件名后添加空字符
-//        strcat(new_filename, new_ext);  // 连接新的扩展名
-////        打开文件
-//        fp= fopen(new_filename,"w");
-//        printf("new_filename %s\n",new_filename);
-//    } else {
-//        printf("输入文件名有误\n");
-//    }
+
     char new_ext[260];
     strcpy(new_ext,filename);
     fp= fopen(new_ext,"w");
@@ -763,16 +762,7 @@ int get_value_offset_sp(HashMap *hashMap,Value*value){
     if(node==NULL&&(isImmFloatType(value->VTy)|| isImmIntType(value->VTy))){
 //        printf("this is imm,can't find in stack!!!");
     }
-//    if(node==NULL){
-//        printf("not find %s\n",value->name);
-//        printf("%p\n",value);
-//    }
 
-//    if(value == NULL){printf("NULLL!\n");}
-//    else{
-//        printf("value can't find %s\n",value->name);
-//    }
-//    assert(false);
     return -1;
 }
 
@@ -870,13 +860,7 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 }
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack){
     if(!HashMapContain(hashMap, value)){
-//        offset *node=offset_node();
-//        node->memory=1;
-//        node->regs=-1;
-//        node->regr=-1;
-//        node->offset_sp=*local_stack;
-//        (*local_stack)+=4;
-//        HashMapPut(hashMap,value,node);
+
         if(isLocalArrayIntType(value->VTy)||isLocalArrayFloatType(value->VTy)||isGlobalArrayIntType(value->VTy)||isGlobalArrayFloatType(value->VTy)){
 //           全局数组好像不应该在这里处理的
             int size_array= get_array_total_occupy(value->alias,0);
@@ -914,13 +898,7 @@ void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,i
     }
     return;
 
-//    offset *node=offset_node();
-//    node->offset_sp=(*local_stack);
-//    (*local_stack)+=4;
-//    node->memory=true;
-//    node->regs=-1;
-//    node->regr=-1;
-//    HashMapPut(hashMap,value0,node);
+
 }
 
 int get_siezof_sp(HashMap*hashMap){
@@ -1016,10 +994,10 @@ void arm_translate_ins(InstNode *ins,char argv[]){
 //            如果使用了线性扫描，需要处理多余的寄存器,将多余的寄存器提前加载到给对应参数分配的寄存器中
             if(lineScan==1){
                 handle_lineScan_extra_reg(ins,param_num);
+                if(ARM_enable_vfp==1){
+                    handle_VFPlineScan_extra_reg(ins,param_num);
+                }
             }
-
-            int hashsize= HashMapSize(hashMap)*4;
-//            printf("hashsize=%d\n",hashsize);
 
             func_return_type= user_get_operand_use(&ins->inst->user,0)->Val;
 
@@ -1087,10 +1065,11 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
         }else{
             left_reg_abs=left_reg;
         }
-        printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg_abs,left_reg_abs);
-        fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg_abs,left_reg_abs);
-        printf("\tvmov\tr%d,s%d\n",dest_reg_abs,left_reg_abs);
-        fprintf(fp,"\tvmov\tr%d,s%d\n",dest_reg_abs,left_reg_abs);
+//        这里不能够在本s寄存器进行类型转换，会导致本寄存器的值被破坏
+        printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
+        fprintf(fp,"\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
+        printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
         if(dest_reg<0){
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
@@ -2531,14 +2510,14 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -3580,7 +3559,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -3607,7 +3586,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -3812,14 +3791,14 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -5011,7 +4990,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -5038,7 +5017,7 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -5242,14 +5221,14 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -5326,22 +5305,12 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
         }
     }
 
-//    if(src_leftreg<0){
-//        int x= get_value_offset_sp(hashMap,value1);
-//        handle_illegal_imm(left_reg,x,0);
-//    }
-//    if(src_rightreg<0){
-//        int x= get_value_offset_sp(hashMap,value2);
-//        handle_illegal_imm(right_reg,x,0);
-//    }
+
     return  ins;
 }
 
 InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
-//    if(reg_save[12]==1){
-//        printf("\tstr\tr12,[sp,#-4]!\n");
-//        fprintf(fp,"\tstr\tr12,[sp,#-4]!\n");
-//    }
+
     Value *value0=&ins->inst->user.value;
     Value *value1=user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
@@ -6369,7 +6338,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -6396,7 +6365,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             printf("\tvcvt.f32.s32\ts1,s1\n");
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             } else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
@@ -6598,14 +6567,14 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg-100);
             }
             if(ARM_enable_vfp==1){
-                right_reg_abs=right_reg-100;
+                right_reg_abs=right_reg;
             }else{
                 printf("\tvmov\ts2,r%d\n",right_reg);
                 fprintf(fp,"\tvmov\ts2,r%d\n",right_reg);
             }
         }else if(right_reg>100){
             if(ARM_enable_vfp==1){
-                left_reg_abs=left_reg-100;
+                left_reg_abs=left_reg;
             }else{
                 printf("\tvmov\ts1,r%d\n",left_reg);
                 fprintf(fp,"\tvmov\ts1,r%d\n",left_reg);
@@ -7819,8 +7788,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                     Value *value=(Value*)ptr_pair->key;
                     value_register *r=(value_register*)ptr_pair->value;
                     if(strcmp(arr,value->name)==0){
-                        printf("\tmov\ts%d,s%d\n",r->sreg,j);
-                        fprintf(fp,"\tmov\ts%d,s%d\n",r->sreg,j);
+                        printf("\tvmov\ts%d,s%d\n",r->sreg,j);
+                        fprintf(fp,"\tvmov\ts%d,s%d\n",r->sreg,j);
                         flag=1;
                         break;
                     }
@@ -8001,48 +7970,6 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
             }
         }
 
-
-
-//        if(isImmIntType(value1->VTy)){
-//            if(imm_is_valid(value1->pdata->var_pdata.iVal)){
-//                printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-//                fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-//            } else{
-//                int x=value1->pdata->var_pdata.iVal;
-//                handle_illegal_imm1(0,x);
-//
-//            }
-//        } else if(isImmFloatType(value1->VTy)){
-//            float  x=value1->pdata->var_pdata.fVal;
-//            int xx=*(int*)&x;
-//            char arr[12]="0x";
-//            sprintf(arr+2,"%0x",xx);
-//            printf("\tldr\tr0,=%s\n",arr);
-//            fprintf(fp,"\tldr\tr0,=%s\n",arr);
-//        } else if(isLocalVarIntType(value1->VTy)){
-//            if(left_reg>100){
-//                int x= get_value_offset_sp(hashMap,value1);
-//                handle_illegal_imm(left_reg,x,1);
-//
-//                printf("\tmov\tr0,r%d\n",left_reg-100);
-//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-//            }else{
-//                printf("\tmov\tr0,r%d\n",left_reg);
-//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-//            }
-//        } else if(isLocalVarFloatType(value1->VTy)){
-//            ;
-//            if(left_reg>100){
-//                int x= get_value_offset_sp(hashMap,value1);
-//                handle_illegal_imm(left_reg,x,1);
-//
-//                printf("\tmov\tr0,r%d\n",left_reg-100);
-//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-//            }else{
-//                printf("\tmov\tr0,r%d\n",left_reg);
-//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-//            }
-//        }
     }
 
     int x1= stack_size;
@@ -8050,28 +7977,9 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
         if(imm_is_valid(x1)){
             printf("\tadd\tsp,sp,#%d\n",x1);
             fprintf(fp,"\tadd\tsp,sp,#%d\n",x1);
-//            char mesg[30];
-//            sprintf(mesg,"\tadd\tsp,sp,#%d\n",x1);
-//            strcat(return_message,mesg);
         }else{
             handle_illegal_imm1(2,x1);
 
-//            char arr1[12]="#0x";
-//            sprintf(arr1+3,"%0x",x1&AND_LOW);
-//            printf("\tmovw\tr%d,%s\n",2,arr1);
-//            fprintf(fp,"\tmovw\tr%d,%s\n",2,arr1);
-//            strcat(return_message,"\tmovw\tr2,");
-//            strcat(return_message,arr1);
-//            strcat(return_message,"\n");
-
-//            char arr2[12]="#0x";
-//            sprintf(arr2+3,"%0x",(x1 >> MOVE_RIGHT)&0xffff);
-//            printf("\tmovt\tr%d,%s\n",2,arr2);
-//            fprintf(fp,"\tmovt\tr%d,%s\n",2,arr2);
-
-//            strcat(return_message,"\tmovt\tr2,");
-//            strcat(return_message,arr2);
-//            strcat(return_message,"\n");
 
             printf("\tadd\tsp,sp,r2\n");
             fprintf(fp,"\tadd\tsp,sp,r2\n");
@@ -8088,35 +7996,20 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
     printf_ldmfd_rlist();
 
 
-//    if(func_call_func>0){
-//        printf("\tldmfd\tsp!,{r11,lr}\n");
-//        fprintf(fp,"\tldmfd\tsp!,{r11,lr}\n");
-//    }
     printf("\tbx\tlr\n");
     fprintf(fp,"\tbx\tlr\n");
-//    strcat(return_message,"\tbx\tlr\n");
 
 //    这里先加入一个固定的文字池
-//    printf("\tb\t.ROG_%d\n",ltorg_num);
-//    fprintf(fp,"\tb\t.ROG_%d\n",ltorg_num);
     char mesg[30];
     sprintf(mesg,"\tb\t.ROG_%d\n",ltorg_num);
     strcat(return_message,mesg);
 
-//    printf("\t.ltorg\n\t.space 200\n");
-//    fprintf(fp,"\t.ltorg\n\t.space 200\n");
     strcat(return_message,"\t.ltorg\n\t.space 200\n");
 
-//    printf(".ROG_%d:\n",ltorg_num);
-//    fprintf(fp,".ROG_%d:\n",ltorg_num);
     memset(mesg,0, sizeof(mesg));
     sprintf(mesg,".ROG_%d:\n",ltorg_num);
     strcat(return_message,mesg);
     ltorg_num++;
-//    if(strcmp(funcName,"main")==0){
-//        printf("\t.size\t%s, .-%s\n\n",funcName,funcName);
-//        fprintf(fp,"\t.size\t%s, .-%s\n\n",funcName,funcName);
-//    }
     char mesg2[1000];
     sprintf(mesg2,"\t.size\t%s, .-%s\n\n",funcName,funcName);
     strcat(return_message,mesg2);
@@ -8130,9 +8023,6 @@ InstNode *arm_trans_FuncEnd(InstNode*ins){
     printf("%s",return_message);
     fprintf(fp,"%s",return_message);
     memset(return_message,0, sizeof(return_message));
-//    printf("funcEnd\n");
-//    printf("hello\n");
-//    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
     return ins;
 }
 InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
@@ -8389,8 +8279,20 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         left_reg_abs=left_reg;
                     }
                     if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID==Var_FLOAT){
-                        printf("\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
-                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
+//                        注意vstr不支持这样的回写操作，只能vstr\ts%d,[sp,#-4]，不能加！
+//                        printf("\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
+//                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
+
+//解决方案1
+//                        printf("\tvmov\tr0,s%d\n",left_reg_abs);
+//                        fprintf(fp,"\tvmov\tr0,s%d\n",left_reg_abs);
+//                        printf("\tstr\tr0,[sp,#-4]!\n");
+//                        fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+//解决方案2
+                        printf("\tvstr\ts%d,[sp,#-4]\n",left_reg_abs);
+                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]\n",left_reg_abs);
+                        printf("\tsub\tsp,sp,#4\n");
+                        fprintf(fp,"\tsub\tsp,sp,#4\n");
                         vflag=1;
                     }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID==Var_INT){
                         printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
@@ -8417,32 +8319,12 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
 //                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
 //                所以说这个后面翻译的时候是需要改的。
-
-//            printf("\tstr\tr0,[sp,#-%d]\n",j*4);
-//            fprintf(fp,"\tstr\tr0,[sp,#-%d]\n",j*4);
 //          参数个数多于4个的话，就是直接往下存，并改变sp，在bl结束之后，还需要sub sp来将这些值取消掉
 //          如果时ARM_enable_vfp==1 vflag==0需要通过r0传参，ARM_enable_vfp==1 vflag==1直接vstr si,[sp,#-4]!
             if(ARM_enable_vfp==0 || vflag==0){
                 printf("\tstr\tr0,[sp,#-4]!\n");
                 fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
             }
-
-////                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
-////                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
-////                所以说这个后面翻译的时候是需要改的。
-//            if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
-////                对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递
-//                printf("    add r0,sp,#%d\n",i,x);
-//
-//            } else{
-//                printf("    ldr r0,[sp,#%d]\n",x);
-//                printf("    str r0,[sp,#-%d]\n",j*4);
-////                这个的传递顺序好像有点问题的，感觉如果give_param 是按照参数列表的顺序的话，
-////                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
-////                所以说这个后面翻译的时候是需要改的。
-//            }
-//            printf("    ldr r0,[sp,#%d]\n",x);
-//            printf("    str r0,[sp,#-%d]\n",i*4);
         }
         // 可以考虑一下，把这一部分代码放在后面，就是先传超出的参数，再去传前四个参数
         for(i=1;i<4;++i){
@@ -8597,7 +8479,6 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     }
                 }
             }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                assert(false);
                 if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
                 left_reg=tmp->inst->_vfpReg_[1];
                 if(left_reg>100){
@@ -8736,10 +8617,6 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             int *xx2=(int*)&x2;
             handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
             printf("\tvcmp.f32\ts1,s2\n");
@@ -8756,10 +8633,6 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
 
             int *xx2=(int*)&x2;
             handle_illegal_imm1(2,*xx2);
-//            char arr2[12]="0x";
-//            sprintf(arr2+2,"%0x",*xx2);
-//            printf("\tldr\tr2,=%s\n",arr2);
-//            fprintf(fp,"\tldr\tr2,=%s\n",arr2);
             printf("\tvmov\ts2,r2\n");
             fprintf(fp,"\tvmov\ts2,r2\n");
 
@@ -8776,10 +8649,6 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         if(imm_is_valid(x2)){
             int *xx1=(int*)&x1;
             handle_illegal_imm1(1,*xx1);
-//            char arr1[12]="0x";
-//            sprintf(arr1+2,"%0x",*xx1);
-//            printf("\tldr\tr1,=%s\n",arr1);
-//            fprintf(fp,"\tldr\tr1,=%s\n",arr1);
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
 
@@ -8819,19 +8688,11 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         float x2=value2->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
         handle_illegal_imm1(1,*xx1);
-//        char arr1[12]="0x";
-//        sprintf(arr1+2,"%0x",*xx1);
-//        printf("\tldr\tr1,=%s\n",arr1);
-//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
         printf("\tvmov\ts1,r1\n");
         fprintf(fp,"\tvmov\ts1,r1\n");
 
         int *xx2=(int*)&x2;
         handle_illegal_imm1(2,*xx2);
-//        char arr2[12]="0x";
-//        sprintf(arr2+2,"%0x",*xx2);
-//        printf("\tldr\tr2,=%s\n",arr2);
-//        fprintf(fp,"\tldr\tr2,=%s\n",arr2);
         printf("\tvmov\ts2,r2\n");
         fprintf(fp,"\tvmov\ts2,r2\n");
         printf("\tvcmp.f32\ts1,s2\n");
@@ -8921,10 +8782,6 @@ InstNode * arm_trans_LESS_GREAT_LEQ_GEQ_EQ_NEQ(InstNode *ins,HashMap*hashMap){
         float x1=value1->pdata->var_pdata.fVal;
         int *xx1=(int*)&x1;
         handle_illegal_imm1(1,*xx1);
-//        char arr1[12]="0x";
-//        sprintf(arr1+2,"%0x",*xx1);
-//        printf("\tldr\tr1,=%s\n",arr1);
-//        fprintf(fp,"\tldr\tr1,=%s\n",arr1);
         printf("\tvmov\ts1,r1\n");
         fprintf(fp,"\tvmov\ts1,r1\n");
         if(right_reg>100){
@@ -9692,24 +9549,6 @@ InstNode * arm_trans_bitcast(InstNode *ins){
 //    assert(false);
     return ins;
 }
-//void multiply_and_add_instructions_for_translated_arrays(InstNode*ins,HashMap*hashMap){
-//    Value *value0=&ins->inst->user.value;
-//    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-//    Value *value2= user_get_operand_use(&ins->inst->user,1)->Val;
-//    int which_dimension=value0->pdata->var_pdata.iVal;
-//    int off=0;
-//    int dest_reg=ins->inst->_reg_[0];
-//    int dest_reg_abs= abs(dest_reg);
-//    int left_reg=ins->inst->_reg_[1];
-//    int right_reg=ins->inst->_reg_[2];
-//    if(left_reg>100){
-//        int x=get_value_offset_sp(hashMap,value1);
-//        printf("\tldr\tr%d,");
-//        fprintf(fp,"\tldr\tr%d,");
-//    }
-//
-//    return;
-//}
 InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 // 因为之前设计上的问题，所以说需要把数组的load和store进行分离，这个的实现逻辑是需要改的
 // 这个需要大改，ldr和str可以在这里处理掉，就不需要再去修改load和store对应的翻译了
@@ -9997,13 +9836,6 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //        像这样的情况仅仅是会在一维数组中出现，但是lsy的一维数组处理好像是有问题的
             int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
             int result= array_suffix(value0->alias,which_dimension);
-//            if(imm_is_valid(result)){
-//                printf("\tmov\tr2,#%d\n",result);
-//                fprintf(fp,"\tmov\tr2,#%d\n",result);
-//            }else{
-//                handle_illegal_imm1(2,result);
-//
-//            }
             if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
 //                assert(false);
                 int x;

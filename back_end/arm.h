@@ -21,6 +21,7 @@
  */
 bool imm_is_valid(int value);
 bool imm_is_valid2(int value);
+bool imm_is_valid3(int value);
 void handle_illegal_imm(int dest_reg ,int x,int flag);//处理ldr的非法立即数
 void handle_illegal_imm1(int dest_reg,int x);//处理mov的非法立即数
 
@@ -139,7 +140,6 @@ void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack)
 void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,int *local_stack);
 void usage_of_global_variables();
 int array_suffix(Value*array,int which_dimension);
-//void multiply_and_add_instructions_for_translated_arrays(InstNode*instNode,HashMap*hashMap);
 void handle_reg_save(int reg);
 void handle_vfp_reg_save(int sreg);
 //保护通用现场
@@ -154,4 +154,5 @@ int optimization_mul(int dest_reg,int left_reg,int imm); //进入函数之前先
 
 //这个肯定也是要改的，比如说一个浮点参数，被分配了si寄存器，那么函数一开始的时候，需要将多余的参数从内存加载到相应的s寄存器
 void handle_lineScan_extra_reg(InstNode*ins,int param_num);
+void handle_VFPlineScan_extra_reg(InstNode*ins,int param_num);
 #endif //C22V1_ARM_H
