@@ -8,7 +8,8 @@
 #define MOVE_RIGHT 16
 
 int lineScan=1; //使用线性扫描寄存器分配
-int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
+#define ARM_enable_vfp 0
+//int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
 //如果说使用浮点寄存器分配的话，Var_Float放在_vfpReg_寄存器中，其对应的所有Var_Float分配结果在lineScanVFPReg,遍历取出
 HashMap * lineScan_param;
 
@@ -1369,7 +1370,6 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
 //                存回内存
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
-
             }
         } else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==0){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
@@ -4080,6 +4080,8 @@ InstNode * arm_trans_Mul(InstNode *ins,HashMap*hashMap){
     int dest_reg_abs= abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int right_reg=ins->inst->_reg_[2];
+    int left_reg_abs;
+    int right_reg_abs;
 
 //    int src_leftreg=ins->inst->_reg_[1];
 //    int src_rightreg=ins->inst->_reg_[2];
@@ -8036,7 +8038,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 
         if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
             if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
@@ -8047,19 +8049,20 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
                 }
                 if(isLocalVarIntType(value1->VTy)){
-                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
                         int_to_float(0,0);
                     }
                 }else if(isLocalVarFloatType(value1->VTy)){
-                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
                         printf("\tvmov\ts0,r0\n");
                         fprintf(fp,"\tvmov\ts0,r0\n");
-                    }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
+                    }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
                         float_to_int(0,0);
                     }
                 }
             }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                assert(false);
+                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
                 left_reg=tmp->inst->_vfpReg_[1];
                 if(left_reg>100){
                     int x= get_value_offset_sp(hashMap,value1);
@@ -8068,13 +8071,13 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 }else{
                     left_reg_abs=left_reg;
                 }
-                if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
+                if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
                     printf("\tvmov\ts0,s%d\n",left_reg_abs);
                     fprintf(fp,"\tvmov\ts0,s%d\n",left_reg_abs);
                     //这里为了和之前的版本匹配，就是即传到si，也传到通用寄存器，因为在自己的函数中，函数开始时是使用通用寄存器来处理的
                     printf("\tvmov\tr0,s0\n");
                     fprintf(fp,"\tvmov\tr0,s0\n");
-                }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_INT){
+                }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
                     printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
                     fprintf(fp,"\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
                     printf("\tvmov\tr0,s0\n");
@@ -9860,7 +9863,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         sprintf(value_int,"%d",value1->pdata->var_pdata.iVal);
         strcat(globalvar_message,value_int);
         strcat(globalvar_message,"\n");
-        
+
     } else if(isGlobalVarFloatType(value1->VTy)){
         char name[270];
         sprintf(name,"\t.data\n%s:",value1->name+1);

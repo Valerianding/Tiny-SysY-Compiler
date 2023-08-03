@@ -151,5 +151,7 @@ void printf_vpop_rlist();
 int count_bit(int value); //输入正数
 //返回0优化失败（不符合优化条件），返回1成功优化.
 int optimization_mul(int dest_reg,int left_reg,int imm); //进入函数之前先把其加载到寄存器
+
+//这个肯定也是要改的，比如说一个浮点参数，被分配了si寄存器，那么函数一开始的时候，需要将多余的参数从内存加载到相应的s寄存器
 void handle_lineScan_extra_reg(InstNode*ins,int param_num);
 #endif //C22V1_ARM_H
