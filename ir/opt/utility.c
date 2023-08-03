@@ -818,10 +818,10 @@ void topCfg(Function *currentFunction){
         HashSetFirst(modified);
         for(BasicBlock *modifiedBlock = HashSetNext(modified); modifiedBlock != NULL; modifiedBlock = HashSetNext(modified)){
             int in = (int)HashMapGet(indegree,modifiedBlock);
-            printf("modified block %d\n",modifiedBlock->id);
+            //printf("modified block %d in %d\n",modifiedBlock->id,in);
             if(in == 0){
                 //sleep(1);
-                printf("block %d in degree is 0!!\n",modifiedBlock->id);
+                //printf("block %d in degree is 0!!\n",modifiedBlock->id);
                 VectorPushBack(vector,modifiedBlock);
                 //OK now we remove this Block from HashMap
                 HashMapRemove(indegree,modifiedBlock);

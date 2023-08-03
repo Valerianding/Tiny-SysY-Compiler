@@ -709,6 +709,7 @@ void SSADeconstruction(Function *currentFunction){
                         }
                         HashSetAdd(newBlock->preBlocks, prevBlock);
                         newBlock->true_block = block;
+                        newBlock->false_block = NULL;
                         //移除原来那个边
                         HashSetRemove(block->preBlocks, prevBlock);
                         HashSetAdd(block->preBlocks, newBlock);

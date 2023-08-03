@@ -189,7 +189,6 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
             sideEffect(currentFunction);
         }
-        travel();
     }
 
     //OK 现在开始我们不会对
@@ -214,18 +213,12 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
- //   printf_llvm_ir(instruction_list,argv[4],0);
+ //   printf_llvm_ir(instruction_list,argv[4],0)
 
-    for(Function *currentFunction = start;
-         currentFunction != NULL; currentFunction = currentFunction->Next) {
-        dominanceAnalysis(currentFunction);
-    }
-
-
-    //printf_llvm_ir(instruction_list,argv[4],0);
 
     for(Function *currentFunction = start;
         currentFunction != NULL; currentFunction = currentFunction->Next) {
+        dominanceAnalysis(currentFunction);
         topCfg(currentFunction);
     }
 

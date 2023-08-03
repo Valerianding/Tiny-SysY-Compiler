@@ -43,22 +43,11 @@ void combine(BasicBlock *i, BasicBlock *j){
     removeIns(iOriginalTailNode);
 
     InstNode *labelNode = j->head_node;
-
-    removeIns(labelNode);
-
     InstNode *currNode = get_next_inst(labelNode);
-
-
-    InstNode *iHeadNode = i->head_node;
-    InstNode *jHeadNode = j->head_node;
-    //printf("combine block %d, %d  each headnode is %d,  %d\n",i->id,j->id,iHeadNode->inst->i,jHeadNode->inst->i);
 
 
     //delete labelNode
     deleteIns(labelNode);
-
-
-    InstNode *jTailNextNode = get_next_inst(j->tail_node);
 
     InstNode *nextLabelNode = get_next_inst(j->tail_node);
 
@@ -114,6 +103,10 @@ void combine(BasicBlock *i, BasicBlock *j){
             jFalseNode = get_next_inst(jFalseNode);
         }
     }
+
+    i->true_block = j->true_block;
+
+    i->false_block = j->false_block;
 
     Function *currentFunction = j->Parent;
     //如果j是exit修改的
@@ -462,6 +455,7 @@ bool OnePass(Vector* vector) {
                     //printf("remove empty!\n");
                     //符合先决条件
                     //如果block里面有phi函数
+                    changed = true;
                     processed = true;
                     bool iHasPhi = false;
                     InstNode *iNode = block->head_node;
