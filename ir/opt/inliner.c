@@ -92,7 +92,7 @@ void cal_cost(Function* callee,int threshold)
     }
     flag_special = false;
 
-    printf("cost : %d\n",*cost);
+    printf("%s :cost : %d\n",funcValue->name,*cost);
     HashMapPut(cost_map,funcValue,cost);
 }
 
@@ -207,6 +207,11 @@ void label_func_inline_llvm(struct _InstNode* instNode_list, int threshold)
                         remove_one_callsite(func, funcValue);
                         can_del = false;
                     }
+                    else if(*cost > threshold){
+                        //取消C到B的内联
+                        remove_one_callsite(func, funcValue);
+                        can_del = false;
+                    }
                     else {
                         *func_cost = *func_cost + *cost;
                         //更新func的cost
@@ -217,8 +222,10 @@ void label_func_inline_llvm(struct _InstNode* instNode_list, int threshold)
         }
         if(can_del && strcmp(funcValue->name,"main")!=0){
             int *del_func = HashMapGet(cost_map, funcValue);
-            if(*del_func <= threshold)
+            if(*del_func <= threshold){
+                printf("name :%s\n",funcValue->name);
                 funcValue->pdata->symtab_func_pdata.flag_inline = 1;
+            }
         }
     }
 
