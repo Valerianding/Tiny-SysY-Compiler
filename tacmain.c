@@ -182,6 +182,10 @@ int main(int argc, char* argv[]){
         buildCallGraphNode(currentFunction);
     }
 
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        RunBasicPasses(currentFunction);
+    }
+
     if(Optimize) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
