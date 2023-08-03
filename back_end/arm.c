@@ -989,6 +989,11 @@ void arm_translate_ins(InstNode *ins,char argv[]){
             if(func_call_func>0){
                 k++;
             }
+            for(int i=16;i<30;i++){
+                if(vfpreg_save[i]==1){
+                    k++;
+                }
+            }
             hashMap=offset_init(ins,&local_var_num,k,lineScan_param);
 
 //            如果使用了线性扫描，需要处理多余的寄存器,将多余的寄存器提前加载到给对应参数分配的寄存器中
