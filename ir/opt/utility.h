@@ -53,4 +53,5 @@ bool isDominated(BasicBlock *block, BasicBlock *target);
 void RPOCfg(Function *currentFunction);
 void topCfg(Function *currentFunction);
 void cleanBlock(BasicBlock *block);
+bool containFloat(InstNode *node);
 #endif //C22V1_UTILITY_H

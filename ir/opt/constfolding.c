@@ -26,7 +26,7 @@ bool ConstFolding(Function *currentFunction){
                     if(isLocalVarInt(dest)){
                         dest->VTy->ID = Int;
                         float left = getOperandValue(lhs);
-                        float right = (int)getOperandValue(rhs);
+                        float right = getOperandValue(rhs);
                         switch(currNode->inst->Opcode){
                             case Add:
                                dest->pdata->var_pdata.iVal = (int)(left + right);
@@ -41,8 +41,11 @@ bool ConstFolding(Function *currentFunction){
                                 dest->pdata->var_pdata.iVal = (int)(left / right);
                                 break;
                             case Mod:
+                                assert(false);
                                 dest->pdata->var_pdata.iVal = (int)left % (int)right;
                                 break;
+                            default:
+                                assert(false);
                         }
                     }else if(isLocalVarFloat(dest)){
                         dest->VTy->ID = Float;
@@ -58,6 +61,11 @@ bool ConstFolding(Function *currentFunction){
                             case Mul:
                                 dest->pdata->var_pdata.fVal = left * right;
                                 break;
+                            case Div:
+                                dest->pdata->var_pdata.fVal = left / right;
+                                break;
+                            default:
+                                assert(false);
                         }
                     }
                     // 还要记得删除这里的语句

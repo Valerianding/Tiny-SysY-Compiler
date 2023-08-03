@@ -150,11 +150,14 @@ int main(int argc, char* argv[]){
     }
 
 //    //mem2reg之后，优化前
-//    printf_llvm_ir(instruction_list,argv[4],1);
+
 
     CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
+
+
+    bool NOTOK = containFloat(instruction_list);
 
     //构建Function
     Function *start = ReconstructFunction(instruction_list);
@@ -162,10 +165,11 @@ int main(int argc, char* argv[]){
     //先跑一次
     //如果要fuc inline一定要dom一下
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
+        if(!NOTOK)
+            RunBasicPasses(currentFunction);
     }
 
-    if(Optimize) {
+    if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
@@ -177,30 +181,32 @@ int main(int argc, char* argv[]){
     //重新构建Function
     start = ReconstructFunction(instruction_list);
 
+    //inline 之后的IR
+    printf_llvm_ir(instruction_list,argv[4],1);
+
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //这里build CallGraphNode 需要在内联之后进行callgraph的
         buildCallGraphNode(currentFunction);
     }
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        RunBasicPasses(currentFunction);
+        if(!NOTOK)
+            RunBasicPasses(currentFunction);
     }
 
-    if(Optimize) {
-        for (Function *currentFunction = start;
-             currentFunction != NULL; currentFunction = currentFunction->Next) {
-            dominanceAnalysis(currentFunction);
+    if(!NOTOK && Optimize){
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
-            sideEffect(currentFunction);
         }
     }
 
     //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         Clean(currentFunction);
+        renameVariables(currentFunction);
     }
 
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){

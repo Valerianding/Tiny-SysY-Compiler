@@ -8,7 +8,7 @@
 const Opcode invalidOpcodes[] = {FunBegin, Label, ALLBEGIN, Alloca, tmp, zext, MEMCPY, zeroinitializer, GLOBAL_VAR, FunEnd};
 const Opcode compareOpcodes[] = {EQ,NOTEQ,LESS, LESSEQ,GREAT,GREATEQ};
 const Opcode hasNoDestOpcodes[] = {br,br_i1,br_i1_true,br_i1_false,Store,Return,Label,GIVE_PARAM};
-const Opcode CriticalOpcodes[] = {Return,Call,Store,GIVE_PARAM,MEMCPY,MEMSET,SysYMemset};
+const Opcode CriticalOpcodes[] = {Return,Call,Store,GIVE_PARAM,MEMCPY,MEMSET,SysYMemset,SysYMemcpy};
 const Opcode CalculationOpcodes[] = {Add,Sub,Mul,Mod,Div,GEP};
 const Opcode simpleOpcodes[] = {Add, Sub, Mul, Div, Mod,GEP};
 //TODO 解决全局的公共子表达式 解决其对于Phi函数可能的破坏
@@ -73,17 +73,6 @@ void correctType(Function *currentFunction){
         if(headNode->inst->Opcode == Alloca && insValue->VTy->ID == AddressTyID){
             insValue->VTy->ID = Var_INT;
         }
-
-//        // TODO 还有很多function我们没有设置Type
-//        if(headNode->inst->Opcode == Call){
-//            Value *function = ins_get_lhs(headNode->inst);
-//            if(strcmp(function->name,"getint") == 0){
-//                insValue->VTy->ID = Var_INT;
-//            }else if(strcmp(function->name,"getfloat") == 0){
-//                insValue->VTy->ID = Var_FLOAT;
-//            }
-//        }
-        //我们还需要对到底是从数组还是局部变量定义的进行区分
         headNode = get_next_inst(headNode);
     }
 }
@@ -888,4 +877,15 @@ void cleanBlock(BasicBlock *block){
         deleteIns(blockHead);
         blockHead = tempNode;
     }
+}
+
+bool containFloat(InstNode *node){
+    while(node != NULL){
+        Value *dest = ins_get_dest(node->inst);
+        if(isLocalVarFloat(dest)){
+            return true;
+        }
+        node = get_next_inst(node);
+    }
+    return false;
 }
