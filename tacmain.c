@@ -172,7 +172,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    func_inline(instruction_list,225);
+    func_inline(instruction_list,124);
 
     //重新构建Function
     start = ReconstructFunction(instruction_list);
@@ -213,7 +213,7 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
- //   printf_llvm_ir(instruction_list,argv[4],0)
+  //  printf_llvm_ir(instruction_list,argv[4],0);
 
 
     for(Function *currentFunction = start;
