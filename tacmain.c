@@ -225,7 +225,6 @@ int main(int argc, char* argv[]){
 
     //  printf_llvm_ir(instruction_list,argv[4],0);
 
-
     for(Function *currentFunction = start;
         currentFunction != NULL; currentFunction = currentFunction->Next) {
         dominanceAnalysis(currentFunction);
