@@ -9,7 +9,7 @@
 
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
-int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
+int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s29
 //如果说使用浮点寄存器分配的话，Var_Float放在_vfpReg_寄存器中，其对应的所有Var_Float分配结果在lineScanVFPReg,遍历取出
 HashMap * lineScan_param;
 
@@ -620,33 +620,33 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
     if(give_param_flag[3]==0){
         if(flag==0){ //vstr dest_reg_abs
             if(imm_is_valid3(x)){
-                printf("\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
-                fprintf(fp,"\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
+                printf("\tvstr.32\ts%d,[r11,#%d]\n",handle_dest_reg,x);
+                fprintf(fp,"\tvstr.32\ts%d,[r11,#%d]\n",handle_dest_reg,x);
             }else {
                 handle_illegal_imm1(3,x);
 
-                printf("\tvstr\ts%d,[r11,r3]\n", handle_dest_reg);
-                fprintf(fp, "\tvstr\ts%d,[r11,r3]\n", handle_dest_reg);
+                printf("\tvstr.32\ts%d,[r11,r3]\n", handle_dest_reg);
+                fprintf(fp, "\tvstr.32\ts%d,[r11,r3]\n", handle_dest_reg);
             }
         }else if(flag==1){ //vldr left_reg-100
             if(imm_is_valid3(x)){
-                printf("\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
-                fprintf(fp,"\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
+                printf("\tvldr.32\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
+                fprintf(fp,"\tvldr.32\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
             } else{
                 handle_illegal_imm1(3,x);
 
-                printf("\tvldr\ts%d,[r11,r3]\n",handle_dest_reg-100);
-                fprintf(fp,"\tvldr\ts%d,[r11,r3]\n",handle_dest_reg-100);
+                printf("\tvldr.32\ts%d,[r11,r3]\n",handle_dest_reg-100);
+                fprintf(fp,"\tvldr.32\ts%d,[r11,r3]\n",handle_dest_reg-100);
             }
-        }else { //vldr right_reg-100
+        }else { //vldr.32 right_reg-100
             if (imm_is_valid3(x)) {
-                printf("\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
-                fprintf(fp, "\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+                printf("\tvldr.32\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+                fprintf(fp, "\tvldr.32\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
             } else {
                 handle_illegal_imm1(3, x);
 
-                printf("\tvldr\ts%d,[r11,r3]\n", handle_dest_reg - 100);
-                fprintf(fp, "\tvldr\ts%d,[r11,r3]\n", handle_dest_reg - 100);
+                printf("\tvldr.32\ts%d,[r11,r3]\n", handle_dest_reg - 100);
+                fprintf(fp, "\tvldr.32\ts%d,[r11,r3]\n", handle_dest_reg - 100);
             }
         }
     }else{
@@ -654,33 +654,33 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
         int tmp_reg=get_free_reg();
         if(flag==0){ //str dest_reg_abs
             if(imm_is_valid3(x)){
-                printf("\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
-                fprintf(fp,"\tvstr\ts%d,[r11,#%d]\n",handle_dest_reg,x);
+                printf("\tvstr.32\ts%d,[r11,#%d]\n",handle_dest_reg,x);
+                fprintf(fp,"\tvstr.32\ts%d,[r11,#%d]\n",handle_dest_reg,x);
             }else {
                 handle_illegal_imm1(tmp_reg,x);
 
-                printf("\tvstr\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
-                fprintf(fp, "\tvstr\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
+                printf("\tvstr.32\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
+                fprintf(fp, "\tvstr.32\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
             }
         }else if(flag==1){ //ldr left_reg-100
             if(imm_is_valid3(x)){
-                printf("\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
-                fprintf(fp,"\tvldr\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
+                printf("\tvldr.32\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
+                fprintf(fp,"\tvldr.32\ts%d,[r11,#%d]\n",handle_dest_reg-100,x);
             } else{
                 handle_illegal_imm1(tmp_reg,x);
 
-                printf("\tvldr\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
-                fprintf(fp,"\tvldr\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
+                printf("\tvldr.32\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
+                fprintf(fp,"\tvldr.32\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
             }
         }else { //ldr right_reg-100
             if (imm_is_valid3(x)) {
-                printf("\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
-                fprintf(fp, "\tvldr\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+                printf("\tvldr.32\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
+                fprintf(fp, "\tvldr.32\ts%d,[r11,#%d]\n", handle_dest_reg - 100, x);
             } else {
                 handle_illegal_imm1(tmp_reg, x);
 
-                printf("\tvldr\ts%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
-                fprintf(fp, "\tvldr\ts%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
+                printf("\tvldr.32\ts%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
+                fprintf(fp, "\tvldr.32\ts%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
             }
         }
     }
@@ -8284,9 +8284,9 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         left_reg_abs=left_reg;
                     }
                     if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID==Var_FLOAT){
-//                        注意vstr不支持这样的回写操作，只能vstr\ts%d,[sp,#-4]，不能加！
-//                        printf("\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
-//                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]!\n",left_reg_abs);
+//                        注意vstr.32不支持这样的回写操作，只能vstr.32\ts%d,[sp,#-4]，不能加！
+//                        printf("\tvstr.32\ts%d,[sp,#-4]!\n",left_reg_abs);
+//                        fprintf(fp,"\tvstr.32\ts%d,[sp,#-4]!\n",left_reg_abs);
 
 //解决方案1
 //                        printf("\tvmov\tr0,s%d\n",left_reg_abs);
@@ -8294,8 +8294,8 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //                        printf("\tstr\tr0,[sp,#-4]!\n");
 //                        fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
 //解决方案2
-                        printf("\tvstr\ts%d,[sp,#-4]\n",left_reg_abs);
-                        fprintf(fp,"\tvstr\ts%d,[sp,#-4]\n",left_reg_abs);
+                        printf("\tvstr.32\ts%d,[sp,#-4]\n",left_reg_abs);
+                        fprintf(fp,"\tvstr.32\ts%d,[sp,#-4]\n",left_reg_abs);
                         printf("\tsub\tsp,sp,#4\n");
                         fprintf(fp,"\tsub\tsp,sp,#4\n");
                         vflag=1;
@@ -8325,7 +8325,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //                应该是str r0,[sp,#-%d],(num-4-i+1)*4;因为最后一个参数（就是参数列表里面最大的参数应该是放在sp-4的位置）
 //                所以说这个后面翻译的时候是需要改的。
 //          参数个数多于4个的话，就是直接往下存，并改变sp，在bl结束之后，还需要sub sp来将这些值取消掉
-//          如果时ARM_enable_vfp==1 vflag==0需要通过r0传参，ARM_enable_vfp==1 vflag==1直接vstr si,[sp,#-4]!
+//          如果时ARM_enable_vfp==1 vflag==0需要通过r0传参，ARM_enable_vfp==1 vflag==1直接vstr.32 si,[sp,#-4]!
             if(ARM_enable_vfp==0 || vflag==0){
                 printf("\tstr\tr0,[sp,#-4]!\n");
                 fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
@@ -10490,11 +10490,11 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
                     int x= get_value_offset_sp(hashMap,value1);
                     vfp_handle_illegal_imm(left_reg,x,1);
 
-                    printf("\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
-                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                    printf("\tvstr.32\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tvstr.32\ts%d,[r%d]\n",left_reg-100,right_reg_end);
                 }else{
-                    printf("\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
-                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
+                    printf("\tvstr.32\ts%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tvstr.32\ts%d,[r%d]\n",left_reg,right_reg_end);
                 }
             } else if(is_int_array(value2)){
                 if(left_reg>100){
@@ -10503,13 +10503,13 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
                     printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
                     fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
 
-                    printf("\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
-                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                    printf("\tvstr.32\ts%d,[r%d]\n",left_reg-100,right_reg_end);
+                    fprintf(fp,"\tvstr.32\ts%d,[r%d]\n",left_reg-100,right_reg_end);
                 }else{
                     printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
                     fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
-                    printf("\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
-                    fprintf(fp,"\tvstr\ts%d,[r%d]\n",left_reg,right_reg_end);
+                    printf("\tvstr.32\ts%d,[r%d]\n",left_reg,right_reg_end);
+                    fprintf(fp,"\tvstr.32\ts%d,[r%d]\n",left_reg,right_reg_end);
                 }
             }
 
@@ -10701,11 +10701,11 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
                     if(left_reg>100){
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
-                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
-                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        printf("\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
                     }else{
-                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
-                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                        printf("\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg);
                     }
                     printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
                     fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
@@ -10744,11 +10744,11 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
                     if(left_reg>100){
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
-                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
-                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        printf("\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
+                        fprintf(fp,"\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg-100);
                     }else{
-                        printf("\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
-                        fprintf(fp,"\tvldr\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                        printf("\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg);
+                        fprintf(fp,"\tvldr.32\ts%d,[r%d]\n",dest_reg_abs,left_reg);
                     }
                 }else{
                     if(left_reg>100){
@@ -10823,13 +10823,13 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
             dest_reg=ins->inst->_vfpReg_[0];
             dest_reg_abs=abs(dest_reg);
             if(dest_reg<0){
-                printf("\tvldr\ts%d,[r1]\n",dest_reg_abs);
-                fprintf(fp,"\tvldr\ts%d,[r1]\n",dest_reg_abs);
+                printf("\tvldr.32\ts%d,[r1]\n",dest_reg_abs);
+                fprintf(fp,"\tvldr.32\ts%d,[r1]\n",dest_reg_abs);
                 int x= get_value_offset_sp(hashMap,value0);
                 vfp_handle_illegal_imm(dest_reg_abs,x,0);
             }else{
-                printf("\tvldr\ts%d,[r1]\n",dest_reg_abs);
-                fprintf(fp,"\tvldr\ts%d,[r1]\n",dest_reg_abs);
+                printf("\tvldr.32\ts%d,[r1]\n",dest_reg_abs);
+                fprintf(fp,"\tvldr.32\ts%d,[r1]\n",dest_reg_abs);
             }
         }else if(ARM_enable_vfp==0){
             if(dest_reg<0){
