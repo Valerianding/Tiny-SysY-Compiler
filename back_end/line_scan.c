@@ -4,7 +4,7 @@
 #include "line_scan.h"
 
 #define S 14
-#define R 7
+#define R 6
 int enable_vfp=1; //浮点寄存器分配开关
 
 //还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
@@ -448,9 +448,9 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
             return;
         }
         if(i==0){
-            ins->inst->_reg_[i]=-14;
+            ins->inst->_reg_[i]=-10;
         }else if(i==1){
-            ins->inst->_reg_[i]=114;
+            ins->inst->_reg_[i]=110;
         } else if(i==2){
             ins->inst->_reg_[i]=112;
         }
@@ -461,7 +461,7 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
 
 
 int get_an_availabel_register(){
-    for(int i=4;i<=10;i++){
+    for(int i=4;i<10;i++){
         if(myreg[i]==0){
             myreg[i]=1;
             free_reg_num--;
