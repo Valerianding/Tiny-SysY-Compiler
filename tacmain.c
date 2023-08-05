@@ -176,7 +176,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    func_inline(instruction_list,124);
+    //func_inline(instruction_list,124);
 
     //重新构建Function
     start = ReconstructFunction(instruction_list);
@@ -197,6 +197,12 @@ int main(int argc, char* argv[]){
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
+
+//            bool changed = true;
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//                renameVariables(currentFunction);
+//            }
         }
     }
 

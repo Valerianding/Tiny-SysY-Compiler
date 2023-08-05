@@ -571,6 +571,7 @@ bool isSimpleOperator(InstNode *instNode){
 }
 
 bool isSame(Value *left, Value *right){
+    if(left == NULL || right == NULL) return false;
     if(isImmInt(left) && isImmInt(right) && (left->pdata->var_pdata.iVal == right->pdata->var_pdata.iVal)){
         return true;
     }else if(isImmFloat(left) && isImmFloat(right) && (left->pdata->var_pdata.fVal == right->pdata->var_pdata.fVal)){
@@ -886,6 +887,28 @@ bool containFloat(InstNode *node){
             return true;
         }
         node = get_next_inst(node);
+    }
+    return false;
+}
+
+bool usedInPhi(Value *value, Function *function){
+    assert(value != NULL && function != NULL);
+    BasicBlock *entry = function->entry;
+    BasicBlock *tail = function->tail;
+    InstNode *funcHead = entry->head_node;
+    InstNode *funcTail = tail->tail_node;
+    while(funcHead != funcTail){
+        if(funcHead->inst->Opcode == Phi){
+            HashSet *phiSet = funcHead->inst->user.value.pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                Value *define = phiInfo->define;
+                if(define == value){
+                    return true;
+                }
+            }
+        }
+        funcHead = get_next_inst(funcHead);
     }
     return false;
 }
