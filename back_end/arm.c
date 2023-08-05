@@ -10,9 +10,13 @@
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
 int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s29
+//考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
+int arm_flag_lr=1;
+//考虑释放r11，释放掉之后需要把所有基于r11的内存操作都基于sp来进行操作
+int arm_flag_r11=0;
+int sp_offset_to_r11=0;
 //如果说使用浮点寄存器分配的话，Var_Float放在_vfpReg_寄存器中，其对应的所有Var_Float分配结果在lineScanVFPReg,遍历取出
 HashMap * lineScan_param;
-
 
 //优化开关1打开
 int optimization=1;  //优化总开关
@@ -424,17 +428,26 @@ void handle_reg_save(int reg){
     }
     if(reg_dest<=3){
 //        不用保存
+        return;
     }
     if(reg_dest>=13){
 //        不用保存
+        return;
     }
 
-    if(reg_dest==10 || reg_dest==12){
-//    r10和r12也是不需要保存
+//请注意在使用释放掉lr，那么r10将被分配，所以说r10是需要被保护的
+    if(arm_flag_lr==0){
+        if(reg_dest==10 || reg_dest==12){
+            return;
+        }
+    } else if(arm_flag_lr==1){
+        if(reg_dest==12){
+//            printf("hello\n");如果说r12被保护了，那只能说是用来凑数的
+            return;
+        }
     }
-    else{
-        reg_save[reg_dest]=1;
-    }
+//    printf("save r%d\n",reg_dest);
+    reg_save[reg_dest]=1;
     return;
 }
 //返回当前维需要计算的数组的偏移量（乘加的乘数值）,现在为了匹配func_inline需要使用value0的alisa
@@ -806,17 +819,25 @@ void arm_close_file(){
     return;
 }
 int get_value_offset_sp(HashMap *hashMap,Value*value){
-//    printf("find %s\n",value->name);
-    offset *node= HashMapGet(hashMap, value);
-    if(node!=NULL) {
+    if(arm_flag_r11==0){
+        //    printf("find %s\n",value->name);
+        offset *node= HashMapGet(hashMap, value);
+        if(node!=NULL) {
 //        printf("ldr %s\n",value->name);
 //        printf("get_value_offset_sp %d\n",node->offset_sp);
-        return node->offset_sp;
+            return node->offset_sp;
 
-    }
-    if(node==NULL&&(isImmFloatType(value->VTy)|| isImmIntType(value->VTy))){
+        }
+        if(node==NULL&&(isImmFloatType(value->VTy)|| isImmIntType(value->VTy))){
 //        printf("this is imm,can't find in stack!!!");
+        }
+    }else if(arm_flag_r11==1){
+        offset *node= HashMapGet(hashMap, value);
+        if(node!=NULL) {
+            return node->offset_sp+sp_offset_to_r11;
+        }
     }
+
 
     return -1;
 }
@@ -7205,6 +7226,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     if(param_num_>4 && (((param_num_)-4)%2)!=0){
         printf("\tsub\tsp,sp,#4\n");
         fprintf(fp,"\tsub\tsp,sp,#4\n");
+        sp_offset_to_r11+=4;
         flag=1;
     }
 //    if((param_num_%2)!=0){
@@ -7257,11 +7279,24 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    }
 //    这里还需要调整sp,去掉压入栈的参数，这里可以使用add直接调整sp，也可以使用mov sp,fp直接调整
     if(param_num_>4 || flag==1){
-        int x=param_num_-4;
+//        int x=param_num_-4;
 //        printf("\tadd\tsp,sp,#%d\n",x*4);
 //        fprintf(fp,"\tadd\tsp,sp,#%d\n",x*4);
-        printf("\tmov\tsp,r11\n");
-        fprintf(fp,"\tmov\tsp,r11\n");
+        if(arm_flag_r11==0){
+            printf("\tmov\tsp,r11\n");
+            fprintf(fp,"\tmov\tsp,r11\n");
+        }else if(arm_flag_r11==1){
+            if(imm_is_valid(sp_offset_to_r11)){
+                printf("\tadd\tsp,sp,#%d\n",sp_offset_to_r11);
+                fprintf(fp,"\tadd\tsp,sp,#%d\n",sp_offset_to_r11);
+            }else{
+                handle_illegal_imm1(3,sp_offset_to_r11);
+                printf("\tadd\tsp,sp,r3\n");
+                fprintf(fp,"\tadd\tsp,sp,r3\n");
+            }
+            sp_offset_to_r11=0; //此时sp==r11，
+        }
+
     }
 //    printf("operandNum=%d\n",operandNum);下面这个判断好像是有点问题的
 //    如果说返回值为void的情况是不需要mov r%d,r0的
@@ -7413,7 +7448,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 
     memset(reg_save,0, sizeof(reg_save));
     memset(vfpreg_save,0, sizeof(vfpreg_save));
-
+    sp_offset_to_r11=0;
 //    reg_save[11]=1;fp帧指针并不是每个函数都需要保存，是在该函数调用了其他的函数的时候才需要保存，其实和lr是一样的
 //    上面这种设置方法是错误的，r11是否需要保存取决于该函数有没有破坏r11寄存器，就是函数一开始的时候，有没有mov r11,sp这样的指令
 //    这个mov r11,sp只要是开辟了局部栈也就是执行了sub 这个指令，那么都会执行mov r11,sp也就是破坏掉r11，这个时候就需要保存r11
@@ -8341,6 +8376,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         fprintf(fp,"\tvstr\ts%d,[sp,#-4]\n",left_reg_abs);
                         printf("\tsub\tsp,sp,#4\n");
                         fprintf(fp,"\tsub\tsp,sp,#4\n");
+                        sp_offset_to_r11+=4;
                         vflag=1;
                     }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID==Var_INT){
                         printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
@@ -8372,6 +8408,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             if(ARM_enable_vfp==0 || vflag==0){
                 printf("\tstr\tr0,[sp,#-4]!\n");
                 fprintf(fp,"\tstr\tr0,[sp,#-4]!\n");
+                sp_offset_to_r11+=4;
             }
         }
         // 可以考虑一下，把这一部分代码放在后面，就是先传超出的参数，再去传前四个参数
