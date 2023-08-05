@@ -3,6 +3,7 @@
 //
 #include "live_interval.h"
 
+
 int vfpFlag=1; //启用浮点寄存器分配
 
 HashMap *hashmap;

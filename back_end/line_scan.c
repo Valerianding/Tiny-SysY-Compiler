@@ -7,6 +7,7 @@
 #define R 6
 int enable_vfp=1; //浮点寄存器分配开关
 
+
 //还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
 PriorityQueue *active;
 //最终的寄存器分配方案，location中的成员代表在内存，result中成员代表成功分配寄存器func->lineScanReg
