@@ -594,8 +594,6 @@ bool OnePass(Vector* vector) {
             if (isEmpty(j) && j->tail_node->inst->Opcode == br_i1 && processed == false) {
 
                 //当前基本块有并且只能有一个phi函数！！ 其他情况都有点怪 我都assert false
-
-                assert(false);
                 int countPhi = 0;
                 InstNode *jNode = j->head_node;
                 InstNode *jTailNode = j->tail_node;

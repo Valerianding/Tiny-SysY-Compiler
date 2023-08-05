@@ -10,6 +10,4 @@
 #include "sideeffect.h"
 #include "utility.h"
 extern InstNode *instruction_list;
-void RemoveUselessFunction(InstNode *insHead);
-bool AlgorithmEliminate(Function *function);
 #endif //C22V1_OTHER_H

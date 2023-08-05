@@ -142,20 +142,11 @@ int main(int argc, char* argv[]){
         calculateNonLocals(currentFunction);
 
         mem2reg(currentFunction);
-
-        //Loop invariant code motion 需要使用live-out信息
-        calculateLiveness(currentFunction);
-
-        printLiveness(currentFunction);
     }
-
-//    //mem2reg之后，优化前
-
 
     CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
-
 
     bool NOTOK = containFloat(instruction_list);
 
@@ -176,13 +167,29 @@ int main(int argc, char* argv[]){
         }
     }
 
-    //func_inline(instruction_list,124);
+    if(Optimize){
+        func_inline(instruction_list,124);
 
-    //重新构建Function
-    start = ReconstructFunction(instruction_list);
+        //重新构建Function
+        start = ReconstructFunction(instruction_list);
 
-    //inline 之后的IR
-    printf_llvm_ir(instruction_list,argv[4],1);
+        global2local(instruction_list);
+
+        //printf_llvm_ir(instruction_list,argv[4],1);
+
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+
+            dominanceAnalysis(currentFunction);
+
+            calculateNonLocals(currentFunction);
+
+            mem2reg(currentFunction);
+
+            //Loop invariant code motion 需要使用live-out信息
+            calculateLiveness(currentFunction);
+        }
+    }
+
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //这里build CallGraphNode 需要在内联之后进行callgraph的
@@ -193,6 +200,8 @@ int main(int argc, char* argv[]){
         if(!NOTOK)
             RunBasicPasses(currentFunction);
     }
+
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
