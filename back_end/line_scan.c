@@ -5,7 +5,8 @@
 
 #define S 14
 #define R 6
-int enable_vfp=0; //浮点寄存器分配开关
+int enable_vfp=1; //浮点寄存器分配开关
+
 
 //还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
 PriorityQueue *active;

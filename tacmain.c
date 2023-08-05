@@ -221,7 +221,7 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+   // printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -238,8 +238,7 @@ int main(int argc, char* argv[]){
         printLiveness(currentFunction);
     }
 
-  //  printf_llvm_ir(instruction_list,argv[4],0);
-
+    //  printf_llvm_ir(instruction_list,argv[4],0);
 
     for(Function *currentFunction = start;
         currentFunction != NULL; currentFunction = currentFunction->Next) {
@@ -252,6 +251,7 @@ int main(int argc, char* argv[]){
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
+
 
 
 //    线性扫描

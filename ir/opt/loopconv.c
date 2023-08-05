@@ -183,6 +183,6 @@ bool loopSimplify(Loop *loop){
 bool LoopSimplify(Function *currentFunction){
     HashSet *loops = currentFunction->loops;
     HashSetFirst(loops);
-    for(Loop *root = HashSetNext(loops);)
+//    for(Loop *root = HashSetNext(loops);)
     return true;
 }
