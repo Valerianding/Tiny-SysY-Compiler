@@ -10716,9 +10716,9 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-    if(strcmp(value0->name,"%470")==0){
-        printf("hello");
-    }
+//    if(strcmp(value0->name,"%470")==0){
+//        printf("hello");
+//    }
     int dest_reg=ins->inst->_reg_[0];
     int dest_reg_abs=abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
