@@ -7866,9 +7866,6 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
         }
     }
 
-//    printf("localstack=%d\n",local_stack);
-//    int myx= HashMapSize(hashMap)*4;
-//    printf("hashmapsize=%d\n",myx);
 
     HashMapDeinit(hashMap);
 
@@ -8082,22 +8079,7 @@ InstNode *arm_trans_FuncEnd(InstNode*ins){
 InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
 //    在汇编中，alloca不需要翻译,但是栈帧分配的时候需要用到。
 // 这个现在暂定是用来进行数组的初始话操作。bl memset来进行处理，就不需要调用多次store
-//    Value *value0=&ins->inst->user.value;
-////    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
-//    if(isLocalArrayIntType(value0->VTy)|| isLocalArrayFloatType(value0->VTy)|| isGlobalArrayIntType(value0->VTy)||isGlobalArrayFloatType(value0->VTy)){
-////        printf("%s\n",value0->alias->name);
-//        int x=get_value_offset_sp(hashMap,value0);
-//        printf("\tadd\tr0,r11,#%d\n",x);
-//        fprintf(fp,"\tadd\tr0,r11,#%d\n",x);
-//        printf("\tmov\tr1,#0\n");
-//        fprintf(fp,"\tmov\tr1,#0\n");
-//        x= get_array_total_occupy(value0->alias,0);
-//        printf("\tmov\tr2,#%d\n",x);
-//        fprintf(fp,"\tmov\tr2,#%d\n",x);
-//        printf("\tbl\tmemset\n");
-//
-//        fprintf(fp,"\tbl\tmemset\n");
-//    }
+
     return ins;
 }
 
@@ -8235,7 +8217,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     }
                 }
 
-//                这里还需要加上特地为SysYMemset判断的数组类型
+//                这里还需要加上特地为SysYMemset判断的数组类型,SysYMemcpy也有同样的问题
                 else if(isLocalArrayIntType(value1->VTy) || isLocalArrayFloatType(value1->VTy)){
                     int x= get_value_offset_sp(hashMap,value1);
                     if(imm_is_valid(x)){
@@ -8247,14 +8229,14 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                             fprintf(fp,"\tadd\tr%d,r11,#%d\n",i,x);
                         }
                     }else{
-                        handle_illegal_imm1(1,x);
+                        handle_illegal_imm1(i,x);
                     }
                 }
                 else if(isGlobalArrayIntType(value1->VTy) || isGlobalArrayFloatType(value1->VTy)){
-                    printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-                    fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-                    printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-                    fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    printf("\tmovw\tr%d,#:lower16:%s\n",i,value1->name+1);
+                    fprintf(fp,"\tmovw\tr%d,#:lower16:%s\n",i,value1->name+1);
+                    printf("\tmovt\tr%d,#:upper16:%s\n",i,value1->name+1);
+                    fprintf(fp,"\tmovt\tr%d,#:upper16:%s\n",i,value1->name+1);
                 }
                 else{
                     assert(false);
