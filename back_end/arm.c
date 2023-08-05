@@ -497,7 +497,7 @@ bool imm_is_valid2(int value){
     }
 }
 bool imm_is_valid3(int value){
-    if(value>=0 && value <=1020){
+    if(value>=-1020 && value <=1020){
         return true;
     }
     return false;
@@ -632,8 +632,10 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //                fprintf(fp,"\tvmov\tr0,s%d\n",handle_dest_reg);
 //                printf("\tstr\tr0,[r11,r3]\n");
 //                fprintf(fp,"\tstr\tr0,[r11,r3]\n");
-                printf("\tvstr\ts%d,[r11,r3]\n", handle_dest_reg);
-                fprintf(fp, "\tvstr\ts%d,[r11,r3]\n", handle_dest_reg);
+                printf("\tadd\tr3,r11,r3\n");
+                fprintf(fp,"\tadd\tr3,r11,r3\n");
+                printf("\tvstr\ts%d,[r3]\n", handle_dest_reg);
+                fprintf(fp, "\tvstr\ts%d,[r3]\n", handle_dest_reg);
             }
         }else if(flag==1){ //vldr left_reg-100
             if(imm_is_valid3(x)){
@@ -650,8 +652,10 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //                fprintf(fp,"\tldr\tr0,[r11,r3]\n");
 //                printf("\tvmov\ts%d,r0\n",handle_dest_reg-100);
 //                fprintf(fp,"\tvmov\ts%d,r0\n",handle_dest_reg-100);
-                printf("\tvldr\ts%d,[r11,r3]\n",handle_dest_reg-100);
-                fprintf(fp,"\tvldr\ts%d,[r11,r3]\n",handle_dest_reg-100);
+                printf("\tadd\tr3,r11,r3\n");
+                fprintf(fp,"\tadd\tr3,r11,r3\n");
+                printf("\tvldr\ts%d,[r3]\n",handle_dest_reg-100);
+                fprintf(fp,"\tvldr\ts%d,[r3]\n",handle_dest_reg-100);
             }
         }else { //vldr right_reg-100
             if (imm_is_valid3(x)) {
@@ -667,8 +671,10 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //                fprintf(fp,"\tldr\tr0,[r11,r3]\n");
 //                printf("\tvmov\ts%d,r0\n",handle_dest_reg-100);
 //                fprintf(fp,"\tvmov\ts%d,r0\n",handle_dest_reg-100);
-                printf("\tvldr\ts%d,[r11,r3]\n", handle_dest_reg - 100);
-                fprintf(fp, "\tvldr\ts%d,[r11,r3]\n", handle_dest_reg - 100);
+                printf("\tadd\tr3,r11,r3\n");
+                fprintf(fp,"\tadd\tr3,r11,r3\n");
+                printf("\tvldr\ts%d,[r3]\n", handle_dest_reg - 100);
+                fprintf(fp, "\tvldr\ts%d,[r3]\n", handle_dest_reg - 100);
             }
         }
     }else{
@@ -688,8 +694,10 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //                fprintf(fp,"\tvmov\tr%d,s%d\n",tmp_reg,handle_dest_reg);
 //                printf("\tstr\tr%d,[r11,r3]\n",tmp_reg);
 //                fprintf(fp,"\tstr\tr%d,[r11,r3]\n",tmp_reg);
-                printf("\tvstr\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
-                fprintf(fp, "\tvstr\ts%d,[r11,r%d]\n", handle_dest_reg,tmp_reg);
+                printf("\tadd\tr%d,r11,r%d\n",tmp_reg,tmp_reg);
+                fprintf(fp,"\tadd\tr%d,r11,r%d\n",tmp_reg,tmp_reg);
+                printf("\tvstr\ts%d,[r%d]\n", handle_dest_reg,tmp_reg);
+                fprintf(fp, "\tvstr\ts%d,[r%d]\n", handle_dest_reg,tmp_reg);
             }
         }else if(flag==1){ //ldr left_reg-100
             if(imm_is_valid3(x)){
@@ -705,8 +713,10 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //                fprintf(fp,"\tldr\tr0,[r11,r%d]\n",tmp_reg);
 //                printf("\tvmov\ts%d,r0\n",handle_dest_reg-100);
 //                fprintf(fp,"\tvmov\ts%d,r0\n",handle_dest_reg-100);
-                printf("\tvldr\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
-                fprintf(fp,"\tvldr\ts%d,[r11,r%d]\n",handle_dest_reg-100,tmp_reg);
+                printf("\tadd\tr%d,r11,r%d\n",tmp_reg,tmp_reg);
+                fprintf(fp,"\tadd\tr%d,r11,r%d\n",tmp_reg,tmp_reg);
+                printf("\tvldr\ts%d,[r%d]\n",handle_dest_reg-100,tmp_reg);
+                fprintf(fp,"\tvldr\ts%d,[r%d]\n",handle_dest_reg-100,tmp_reg);
             }
         }else { //ldr right_reg-100
             if (imm_is_valid3(x)) {
@@ -722,8 +732,10 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //                fprintf(fp,"\tldr\tr0,[r11,r%d]\n",tmp_reg);
 //                printf("\tvmov\ts%d,r0\n",handle_dest_reg-100);
 //                fprintf(fp,"\tvmov\ts%d,r0\n",handle_dest_reg-100);
-                printf("\tvldr\ts%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
-                fprintf(fp, "\tvldr\ts%d,[r11,r%d]\n", handle_dest_reg - 100,tmp_reg);
+                printf("\tadd\tr%d,r11,r%d\n",tmp_reg,tmp_reg);
+                fprintf(fp,"\tadd\tr%d,r11,r%d\n",tmp_reg,tmp_reg);
+                printf("\tvldr\ts%d,[r%d]\n", handle_dest_reg - 100,tmp_reg);
+                fprintf(fp, "\tvldr\ts%d,[r%d]\n", handle_dest_reg - 100,tmp_reg);
             }
         }
     }
@@ -7384,7 +7396,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
            "\t.arch armv7ve\n"
            "\t.syntax unified\n"
            "\t.arm\n"
-           "\t.fpu vfpv4\n"
+           "\t.fpu neon-vfpv4\n"
            "\t.type\t%s, %%function\n"
            ,user_get_operand_use(&ins->inst->user,0)->Val->name
            ,user_get_operand_use(&ins->inst->user,0)->Val->name);
@@ -7394,7 +7406,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             "\t.arch armv7ve\n"
             "\t.syntax unified\n"
             "\t.arm\n"
-            "\t.fpu vfpv4\n"
+            "\t.fpu neon-vfpv4\n"
             "\t.type\t%s, %%function\n"
         ,user_get_operand_use(&ins->inst->user,0)->Val->name
         ,user_get_operand_use(&ins->inst->user,0)->Val->name);
