@@ -7904,9 +7904,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                         printf("\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
                         fprintf(fp,"\tstr\tr%d,[r11,#%d]\n",j,param_off[j]);
                     }else{
-                        handle_illegal_imm1(4,param_off[j]);
-                        printf("\tstr\tr%d,[r11,r4]\n",j);
-                        fprintf(fp,"\tstr\tr%d,[r11,r4]\n",j);
+                        handle_illegal_imm1(12,param_off[j]);
+                        printf("\tstr\tr%d,[r11,r12]\n",j);
+                        fprintf(fp,"\tstr\tr%d,[r11,r12]\n",j);
                     }
                 }
             }
