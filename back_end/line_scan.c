@@ -6,7 +6,8 @@
 #define S 14
 #define R 7
 int enable_vfp=1; //浮点寄存器分配开关
-int flag_lr=1;
+int flag_lr=1; //释放lr
+int flag_r11=0; //释放r11,释放了r11，那么就是8个可用寄存器
 
 //还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
 PriorityQueue *active;
@@ -473,7 +474,16 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
 
 
 int get_an_availabel_register(){
-    if(flag_lr==1){
+    if(flag_lr==1 && flag_r11==1){
+        for(int i=4;i<=11;i++){
+            if(myreg[i]==0){
+                myreg[i]=1;
+                free_reg_num--;
+                return i;
+            }
+        }
+        return -1;
+    }else if(flag_lr==1 && flag_r11==0){
         for(int i=4;i<=10;i++){
             if(myreg[i]==0){
                 myreg[i]=1;
@@ -482,7 +492,8 @@ int get_an_availabel_register(){
             }
         }
         return -1;
-    }else{
+    }
+    else{
         for(int i=4;i<10;i++){
             if(myreg[i]==0){
                 myreg[i]=1;

@@ -7,5 +7,6 @@
 #include "function.h"
 #include "utility.h"
 #include "loopinfo.h"
-bool LoopConv(Function *currentFunction);
+bool LoopSimplify(Function *currentFunction);
+void exmaineLoop(Function *currentFunction);
 #endif //C22V1_LOOPCONV_H

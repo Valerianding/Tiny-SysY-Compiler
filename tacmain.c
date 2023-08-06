@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -206,6 +206,11 @@ int main(int argc, char* argv[]){
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
+            loopAnalysis(currentFunction);
+            LoopNormalize(currentFunction);
+//            exmaineLoop(currentFunction);
+//            printf("here!!!\n");
+//            LoopSimplify(currentFunction);
 
 //            bool changed = true;
 //            while(changed){
@@ -214,14 +219,17 @@ int main(int argc, char* argv[]){
 //            }
         }
     }
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
+        printf("clean now!\n");
+//        Clean(currentFunction);
+        printf("clean !\n");
         renameVariables(currentFunction);
     }
 
-   // printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -251,7 +259,6 @@ int main(int argc, char* argv[]){
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
-
 
 
 //    线性扫描

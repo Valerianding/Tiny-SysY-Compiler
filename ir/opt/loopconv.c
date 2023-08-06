@@ -55,26 +55,36 @@ bool CheckNode(InstNode *instNode, Loop *loop){
         entryHead = get_next_inst(entryHead);
     }
 
+
+    printf("phiValue is %s\n",phiValue->name);
+
     Use *phiUses = phiValue->use_list;
     while(phiUses != NULL){
         User *user = phiUses->Parent;
+        Value *userValue = (Value *)user;
+        if(userValue == dest){
+            phiUses = phiUses->Next;
+            continue;
+        }
         Instruction *userIns = (Instruction *)user;
         BasicBlock *userBlock = userIns->Parent;
-        if(userBlock == loop->body_block){
+        //除了当前的使用之外，还有在循环内的使用 -> 才能说是bad
+        if(HashSetFind(loop->loopBody,userBlock)){
             return false;
         }
         phiUses = phiUses->Next;
     }
 
-    //need initValue to be constant
+    //need initValue to be constant int
     //also one is form the Loop, and the other is not from the loop
-    HashSet *phiSet = instNode->inst->user.value.pdata->pairSet;
+    HashSet *phiSet = lhsIns->user.value.pdata->pairSet;
     HashSetFirst(phiSet);
     Value *other = NULL;
     assert(HashSetSize(phiSet) == 2);
     for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
         BasicBlock *from = phiInfo->from;
         Value *define = phiInfo->define;
+        //initValue must be a constant int
         if(!HashSetFind(loop->loopBody,from)){
             if(define == NULL || !isImmInt(define)){
                 return false;
@@ -83,6 +93,7 @@ bool CheckNode(InstNode *instNode, Loop *loop){
             other = define;
         }
     }
+
 
     if(other == NULL || other != dest) return false;
 
@@ -98,7 +109,7 @@ bool CheckNode(InstNode *instNode, Loop *loop){
     if(HashSetFind(loop->loopBody,rhsIns->Parent)) return false;
 
     //同时计算不来自循环也需要不是load、call出来的变量
-    //TODO is it safe now?
+    //TODO is it safe now? -> certainly not safe!!! & not strong enough
     if(rhsIns->Opcode == Call || rhsIns->Opcode == Load) return false;
 
     return true;
@@ -155,6 +166,7 @@ bool loopSimplify(Loop *loop){
     }
 
     if(!CheckConvLoop(loop)){
+        //printf("loop %d is not satisfied!\n",loop->head->id);
         return changed;
     }
 
@@ -163,12 +175,41 @@ bool loopSimplify(Loop *loop){
     InstNode *bodyTail = bodyBlock->tail_node;
     while(bodyHead != bodyTail){
         if(CheckNode(bodyHead,loop)){
-            printf("node %d can be replaced!\n");
+            //printf("node %d can be replaced!\n",bodyHead->inst->i);
             //find the init Value and the trip count of the loop
+            Value *lhs = ins_get_lhs(bodyHead->inst);
+            Instruction *correspondingPhi = (Instruction *)lhs;
+            assert(correspondingPhi->Opcode == Phi);
+
+            Value *initValue = NULL;
+            HashSet *phiSet = correspondingPhi->user.value.pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                Value *define = phiInfo->define;
+                BasicBlock *from = phiInfo->from;
+                if(!HashSetFind(loop->loopBody,from)){
+                    initValue = define;
+                }
+            }
+
+            Instruction *slt = (Instruction *)loop->end_cond;
+            Value *tripCount = ins_get_rhs(slt);
+
+
+            assert(isImmInt(tripCount) && isImmInt(initValue));
+
+
+            assert(bodyHead->inst->Opcode == Add || bodyHead->inst->Opcode == Sub);
+
+
+            Value *rhs = ins_get_rhs(bodyHead->inst);
 
             //create a mult instruction in the preHeader
+            Instruction *mult = ins_new_binary_operator(Mul,rhs,tripCount);
+            mult->Parent = loop->preHeader;
 
-            //insert an instruction with op of original computation
+            InstNode *multNode = new_inst_node(mult);
+
 
             //replace the phi after and
         }
@@ -187,5 +228,5 @@ bool LoopSimplify(Function *currentFunction){
     for(Loop *root = HashSetNext(loops); root != NULL; root = HashSetNext(loops)){
         changed |= loopSimplify(root);
     }
-    return true;
+    return changed;
 }

@@ -60,6 +60,7 @@ void dfsTravelLoop(Loop *loop){
     prevNext->list.prev = &newBlockBrNode->list;
 
     bb_set_block(preHeader,newBlockLabelNode,newBlockBrNode);
+    assert(preHeader->head_node == newBlockLabelNode && preHeader->tail_node == newBlockBrNode);
     preHeader->Parent = loopEntry->Parent;
 
     //还需要修改来自guard的phi -> 来自preHeader的phi
@@ -77,6 +78,10 @@ void dfsTravelLoop(Loop *loop){
         }
         entryHead = get_next_inst(entryHead);
     }
+
+    assert(guard != NULL && preHeader != NULL);
+    loop->guard = guard;
+    loop->preHeader = preHeader;
 }
 
 
@@ -89,4 +94,23 @@ void LoopNormalize(Function *currentFunction){
         dfsTravelLoop(loop);
     }
     renameVariables(currentFunction);
+}
+
+
+void examineLoop2(Loop *loop){
+    HashSetFirst(loop->child);
+    for(Loop *child = HashSetNext(loop->child); child != NULL; child = HashSetNext(loop->child)){
+        examineLoop2(child);
+    }
+    assert(loop->preHeader != NULL);
+    assert(loop->guard != NULL);
+
+    //printf("%d preheader %d guard %d\n",loop->head->id,loop->preHeader->id,loop->guard->id);
+}
+
+void exmaineLoop(Function *currentFunction){
+    HashSetFirst(currentFunction->loops);
+    for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
+        examineLoop2(root);
+    }
 }
