@@ -181,8 +181,11 @@ bool loopSimplify(Loop *loop){
 //modified value  = phi op loop-invariant variable
 //
 bool LoopSimplify(Function *currentFunction){
+    bool changed = false;
     HashSet *loops = currentFunction->loops;
     HashSetFirst(loops);
-//    for(Loop *root = HashSetNext(loops);)
+    for(Loop *root = HashSetNext(loops); root != NULL; root = HashSetNext(loops)){
+        changed |= loopSimplify(root);
+    }
     return true;
 }
