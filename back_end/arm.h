@@ -15,6 +15,15 @@
 #include <unistd.h>
 #include "line_scan.h"
 /**
+ * @brief 记录临时寄存器的使用情况
+ * */
+typedef struct _UsageOfTmpReg{
+    int generalReg[3];
+    int r12;
+    int r14;
+}UsageOfTmpReg;
+
+/**
  * 判断立即数int是否有效
  * @param value
  * @return
@@ -36,6 +45,8 @@ void float_to_int(int si,int ri);
 void float_to_int2(int si,int srcri,int destri);
 bool is_int_array(Value *value);
 bool is_float_array(Value *value);
+int get_a_tem_reg();
+void free_a_tmp_reg(int i);
 int get_free_reg();
 int power_of_two(int x);
 /**
@@ -103,6 +114,7 @@ InstNode * arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
 
+//打印固定的文字池
 InstNode * arm_trans_FuncEnd(InstNode*ins);
 
 InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
@@ -127,8 +139,8 @@ InstNode * arm_trans_bitcast(InstNode *ins);
 InstNode * arm_trans_Phi(InstNode *ins);
 InstNode * arm_trans_MEMCPY(InstNode *ins);
 InstNode * arm_trans_zeroinitializer(InstNode *ins);
-InstNode * arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
 
+InstNode * arm_trans_MEMSET(HashMap *hashMap,InstNode *ins);
 InstNode * arm_trans_GMP(InstNode *ins,HashMap *hashMap);
 InstNode * arm_trans_GLOBAL_VAR(InstNode *ins);
 InstNode * arm_trans_fptosi(HashMap *hashMap,InstNode *ins);
