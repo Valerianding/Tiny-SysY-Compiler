@@ -231,6 +231,7 @@ int main(int argc, char* argv[]){
         topCfg(currentFunction);
     }
 
+
     //lsy_begin
 //    printf("=================fix===================\n");
     fix_array(instruction_list);
