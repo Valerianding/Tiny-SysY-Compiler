@@ -1,65 +1,1382 @@
-int n;
-int swap (int array[], int i, int j){
-    int temp;
-    temp = array[i];
-    array[i] = array[j];
-    array[j] = temp;
-    return 0;
-}
-int heap_ajust(int arr[], int start, int end) {
-    int dad;
-    dad = start;
-    int son;
-    son = dad * 2 + 1;
-    while (son < end + 1) { //   
-        if (son < end && arr[son] < arr[son + 1])
-            son = son + 1;
-        if (arr[dad] > arr[son])
-            return 0;
-        else {
-            dad = swap(arr,dad,son);
-            dad = son;
-            son = dad * 2 + 1;
+const int SHIFT_TABLE[16] = {1,   2,   4,    8,    16,   32,   64,    128,
+                             256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
+
+int long_func() {
+    int ans, i, x, y, cur;
+    {
+        int pl = 2, pr = 0, pres = 1;
+        while (pr > 0) {
+            ans = 0;
+            i = 0;
+            x = pr;
+            y = 1;
+            while (i < 16) {
+                if (x % 2 && y % 2) {
+                    ans = ans + 1 * SHIFT_TABLE[i];
+                }
+                x = x / 2;
+                y = y / 2;
+                i = i + 1;
+            }
+            if (ans) {
+                {
+                    int ml = pres, mr = pl, mres = 0;
+                    while (mr) {
+                        ans = 0;
+                        i = 0;
+                        x = mr;
+                        y = 1;
+                        while (i < 16) {
+                            if (x % 2 && y % 2) {
+                                ans = ans + 1 * SHIFT_TABLE[i];
+                            }
+                            x = x / 2;
+                            y = y / 2;
+                            i = i + 1;
+                        }
+                        if (ans) {
+                            {
+                                int al = mres, c = ml, sum;
+                                while (c) {
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2) {
+                                            if (y % 2 == 0) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                        } else if (y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    sum = ans;
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    c = ans;
+                                    if ((1) > 15) {
+                                        ans = 0;
+                                    } else {
+                                        ans = 0;
+                                        i = 0;
+                                        x = (c)*SHIFT_TABLE[1];
+                                        y = 0xffff;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                    }
+                                    c = ans;
+                                    al = sum;
+                                }
+                                ans = al;
+                            }
+                            mres = ans;
+                        }
+                        {
+                            int al = ml, c = ml, sum;
+                            while (c) {
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2) {
+                                        if (y % 2 == 0) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                    } else if (y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                sum = ans;
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                c = ans;
+                                if ((1) > 15) {
+                                    ans = 0;
+                                } else {
+                                    ans = 0;
+                                    i = 0;
+                                    x = (c)*SHIFT_TABLE[1];
+                                    y = 0xffff;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                }
+                                c = ans;
+                                al = sum;
+                            }
+                            ans = al;
+                        }
+                        ml = ans;
+                        x = mr;
+                        y = 1;
+                        if (y >= 15) {
+                            if (x < 0) {
+                                ans = 0xffff;
+                            } else {
+                                ans = 0;
+                            }
+                        } else if (y > 0) {
+                            if (x > 0x7fff) {
+                                x = x / SHIFT_TABLE[y];
+                                ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                            } else {
+                                ans = x / SHIFT_TABLE[y];
+                            }
+                        } else {
+                            ans = x;
+                        }
+                        mr = ans;
+                    }
+                    ans = mres;
+                }
+                pres = ans;
+            }
+            {
+                int ml = pl, mr = pl, mres = 0;
+                while (mr) {
+                    ans = 0;
+                    i = 0;
+                    x = mr;
+                    y = 1;
+                    while (i < 16) {
+                        if (x % 2 && y % 2) {
+                            ans = ans + 1 * SHIFT_TABLE[i];
+                        }
+                        x = x / 2;
+                        y = y / 2;
+                        i = i + 1;
+                    }
+                    if (ans) {
+                        {
+                            int al = mres, c = ml, sum;
+                            while (c) {
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2) {
+                                        if (y % 2 == 0) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                    } else if (y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                sum = ans;
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                c = ans;
+                                if ((1) > 15) {
+                                    ans = 0;
+                                } else {
+                                    ans = 0;
+                                    i = 0;
+                                    x = (c)*SHIFT_TABLE[1];
+                                    y = 0xffff;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                }
+                                c = ans;
+                                al = sum;
+                            }
+                            ans = al;
+                        }
+                        mres = ans;
+                    }
+                    {
+                        int al = ml, c = ml, sum;
+                        while (c) {
+                            ans = 0;
+                            i = 0;
+                            x = al;
+                            y = c;
+                            while (i < 16) {
+                                if (x % 2) {
+                                    if (y % 2 == 0) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                } else if (y % 2) {
+                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                }
+                                x = x / 2;
+                                y = y / 2;
+                                i = i + 1;
+                            }
+                            sum = ans;
+                            ans = 0;
+                            i = 0;
+                            x = al;
+                            y = c;
+                            while (i < 16) {
+                                if (x % 2 && y % 2) {
+                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                }
+                                x = x / 2;
+                                y = y / 2;
+                                i = i + 1;
+                            }
+                            c = ans;
+                            if ((1) > 15) {
+                                ans = 0;
+                            } else {
+                                ans = 0;
+                                i = 0;
+                                x = (c)*SHIFT_TABLE[1];
+                                y = 0xffff;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                            }
+                            c = ans;
+                            al = sum;
+                        }
+                        ans = al;
+                    }
+                    ml = ans;
+                    x = mr;
+                    y = 1;
+                    if (y >= 15) {
+                        if (x < 0) {
+                            ans = 0xffff;
+                        } else {
+                            ans = 0;
+                        }
+                    } else if (y > 0) {
+                        if (x > 0x7fff) {
+                            x = x / SHIFT_TABLE[y];
+                            ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                        } else {
+                            ans = x / SHIFT_TABLE[y];
+                        }
+                    } else {
+                        ans = x;
+                    }
+                    mr = ans;
+                }
+                ans = mres;
+            }
+            pl = ans;
+            x = pr;
+            y = 1;
+            if (y >= 15) {
+                if (x < 0) {
+                    ans = 0xffff;
+                } else {
+                    ans = 0;
+                }
+            } else if (y > 0) {
+                if (x > 0x7fff) {
+                    x = x / SHIFT_TABLE[y];
+                    ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                } else {
+                    ans = x / SHIFT_TABLE[y];
+                }
+            } else {
+                ans = x;
+            }
+            pr = ans;
         }
+        ans = pres;
     }
-    return 0;
-}
-int heap_sort(int arr[], int len) {
-    int i;
-    int tmp;
-    i = len / 2 - 1;
-    while ( i > -1) {
-        tmp = len - 1;
-        tmp = heap_ajust(arr, i, tmp);
-        i = i - 1;
+    putint(ans);
+    putch(10);
+    {
+        int pl = 2, pr = 1, pres = 1;
+        while (pr > 0) {
+            ans = 0;
+            i = 0;
+            x = pr;
+            y = 1;
+            while (i < 16) {
+                if (x % 2 && y % 2) {
+                    ans = ans + 1 * SHIFT_TABLE[i];
+                }
+                x = x / 2;
+                y = y / 2;
+                i = i + 1;
+            }
+            if (ans) {
+                {
+                    int ml = pres, mr = pl, mres = 0;
+                    while (mr) {
+                        ans = 0;
+                        i = 0;
+                        x = mr;
+                        y = 1;
+                        while (i < 16) {
+                            if (x % 2 && y % 2) {
+                                ans = ans + 1 * SHIFT_TABLE[i];
+                            }
+                            x = x / 2;
+                            y = y / 2;
+                            i = i + 1;
+                        }
+                        if (ans) {
+                            {
+                                int al = mres, c = ml, sum;
+                                while (c) {
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2) {
+                                            if (y % 2 == 0) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                        } else if (y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    sum = ans;
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    c = ans;
+                                    if ((1) > 15) {
+                                        ans = 0;
+                                    } else {
+                                        ans = 0;
+                                        i = 0;
+                                        x = (c)*SHIFT_TABLE[1];
+                                        y = 0xffff;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                    }
+                                    c = ans;
+                                    al = sum;
+                                }
+                                ans = al;
+                            }
+                            mres = ans;
+                        }
+                        {
+                            int al = ml, c = ml, sum;
+                            while (c) {
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2) {
+                                        if (y % 2 == 0) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                    } else if (y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                sum = ans;
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                c = ans;
+                                if ((1) > 15) {
+                                    ans = 0;
+                                } else {
+                                    ans = 0;
+                                    i = 0;
+                                    x = (c)*SHIFT_TABLE[1];
+                                    y = 0xffff;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                }
+                                c = ans;
+                                al = sum;
+                            }
+                            ans = al;
+                        }
+                        ml = ans;
+                        x = mr;
+                        y = 1;
+                        if (y >= 15) {
+                            if (x < 0) {
+                                ans = 0xffff;
+                            } else {
+                                ans = 0;
+                            }
+                        } else if (y > 0) {
+                            if (x > 0x7fff) {
+                                x = x / SHIFT_TABLE[y];
+                                ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                            } else {
+                                ans = x / SHIFT_TABLE[y];
+                            }
+                        } else {
+                            ans = x;
+                        }
+                        mr = ans;
+                    }
+                    ans = mres;
+                }
+                pres = ans;
+            }
+            {
+                int ml = pl, mr = pl, mres = 0;
+                while (mr) {
+                    ans = 0;
+                    i = 0;
+                    x = mr;
+                    y = 1;
+                    while (i < 16) {
+                        if (x % 2 && y % 2) {
+                            ans = ans + 1 * SHIFT_TABLE[i];
+                        }
+                        x = x / 2;
+                        y = y / 2;
+                        i = i + 1;
+                    }
+                    if (ans) {
+                        {
+                            int al = mres, c = ml, sum;
+                            while (c) {
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2) {
+                                        if (y % 2 == 0) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                    } else if (y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                sum = ans;
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                c = ans;
+                                if ((1) > 15) {
+                                    ans = 0;
+                                } else {
+                                    ans = 0;
+                                    i = 0;
+                                    x = (c)*SHIFT_TABLE[1];
+                                    y = 0xffff;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                }
+                                c = ans;
+                                al = sum;
+                            }
+                            ans = al;
+                        }
+                        mres = ans;
+                    }
+                    {
+                        int al = ml, c = ml, sum;
+                        while (c) {
+                            ans = 0;
+                            i = 0;
+                            x = al;
+                            y = c;
+                            while (i < 16) {
+                                if (x % 2) {
+                                    if (y % 2 == 0) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                } else if (y % 2) {
+                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                }
+                                x = x / 2;
+                                y = y / 2;
+                                i = i + 1;
+                            }
+                            sum = ans;
+                            ans = 0;
+                            i = 0;
+                            x = al;
+                            y = c;
+                            while (i < 16) {
+                                if (x % 2 && y % 2) {
+                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                }
+                                x = x / 2;
+                                y = y / 2;
+                                i = i + 1;
+                            }
+                            c = ans;
+                            if ((1) > 15) {
+                                ans = 0;
+                            } else {
+                                ans = 0;
+                                i = 0;
+                                x = (c)*SHIFT_TABLE[1];
+                                y = 0xffff;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                            }
+                            c = ans;
+                            al = sum;
+                        }
+                        ans = al;
+                    }
+                    ml = ans;
+                    x = mr;
+                    y = 1;
+                    if (y >= 15) {
+                        if (x < 0) {
+                            ans = 0xffff;
+                        } else {
+                            ans = 0;
+                        }
+                    } else if (y > 0) {
+                        if (x > 0x7fff) {
+                            x = x / SHIFT_TABLE[y];
+                            ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                        } else {
+                            ans = x / SHIFT_TABLE[y];
+                        }
+                    } else {
+                        ans = x;
+                    }
+                    mr = ans;
+                }
+                ans = mres;
+            }
+            pl = ans;
+            x = pr;
+            y = 1;
+            if (y >= 15) {
+                if (x < 0) {
+                    ans = 0xffff;
+                } else {
+                    ans = 0;
+                }
+            } else if (y > 0) {
+                if (x > 0x7fff) {
+                    x = x / SHIFT_TABLE[y];
+                    ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                } else {
+                    ans = x / SHIFT_TABLE[y];
+                }
+            } else {
+                ans = x;
+            }
+            pr = ans;
+        }
+        ans = pres;
     }
-    i = len - 1;
-    while ( i > 0) {
-        int tmp0;
-        tmp0 = 0;
-        tmp = swap(arr,tmp0,i);
-        tmp = i - 1;
-        tmp = heap_ajust(arr, tmp0, tmp);
-        i = i-1;
+    putint(ans);
+    putch(10);
+    cur = 2;
+    while (cur < 16) {
+        {
+            int pl = 2, pr = cur, pres = 1;
+            while (pr > 0) {
+                ans = 0;
+                i = 0;
+                x = pr;
+                y = 1;
+                while (i < 16) {
+                    if (x % 2 && y % 2) {
+                        ans = ans + 1 * SHIFT_TABLE[i];
+                    }
+                    x = x / 2;
+                    y = y / 2;
+                    i = i + 1;
+                }
+                if (ans) {
+                    {
+                        int ml = pres, mr = pl, mres = 0;
+                        while (mr) {
+                            ans = 0;
+                            i = 0;
+                            x = mr;
+                            y = 1;
+                            while (i < 16) {
+                                if (x % 2 && y % 2) {
+                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                }
+                                x = x / 2;
+                                y = y / 2;
+                                i = i + 1;
+                            }
+                            if (ans) {
+                                {
+                                    int al = mres, c = ml, sum;
+                                    while (c) {
+                                        ans = 0;
+                                        i = 0;
+                                        x = al;
+                                        y = c;
+                                        while (i < 16) {
+                                            if (x % 2) {
+                                                if (y % 2 == 0) {
+                                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                                }
+                                            } else if (y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                        sum = ans;
+                                        ans = 0;
+                                        i = 0;
+                                        x = al;
+                                        y = c;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                        c = ans;
+                                        if ((1) > 15) {
+                                            ans = 0;
+                                        } else {
+                                            ans = 0;
+                                            i = 0;
+                                            x = (c)*SHIFT_TABLE[1];
+                                            y = 0xffff;
+                                            while (i < 16) {
+                                                if (x % 2 && y % 2) {
+                                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                                }
+                                                x = x / 2;
+                                                y = y / 2;
+                                                i = i + 1;
+                                            }
+                                        }
+                                        c = ans;
+                                        al = sum;
+                                    }
+                                    ans = al;
+                                }
+                                mres = ans;
+                            }
+                            {
+                                int al = ml, c = ml, sum;
+                                while (c) {
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2) {
+                                            if (y % 2 == 0) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                        } else if (y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    sum = ans;
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    c = ans;
+                                    if ((1) > 15) {
+                                        ans = 0;
+                                    } else {
+                                        ans = 0;
+                                        i = 0;
+                                        x = (c)*SHIFT_TABLE[1];
+                                        y = 0xffff;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                    }
+                                    c = ans;
+                                    al = sum;
+                                }
+                                ans = al;
+                            }
+                            ml = ans;
+                            x = mr;
+                            y = 1;
+                            if (y >= 15) {
+                                if (x < 0) {
+                                    ans = 0xffff;
+                                } else {
+                                    ans = 0;
+                                }
+                            } else if (y > 0) {
+                                if (x > 0x7fff) {
+                                    x = x / SHIFT_TABLE[y];
+                                    ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                                } else {
+                                    ans = x / SHIFT_TABLE[y];
+                                }
+                            } else {
+                                ans = x;
+                            }
+                            mr = ans;
+                        }
+                        ans = mres;
+                    }
+                    pres = ans;
+                }
+                {
+                    int ml = pl, mr = pl, mres = 0;
+                    while (mr) {
+                        ans = 0;
+                        i = 0;
+                        x = mr;
+                        y = 1;
+                        while (i < 16) {
+                            if (x % 2 && y % 2) {
+                                ans = ans + 1 * SHIFT_TABLE[i];
+                            }
+                            x = x / 2;
+                            y = y / 2;
+                            i = i + 1;
+                        }
+                        if (ans) {
+                            {
+                                int al = mres, c = ml, sum;
+                                while (c) {
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2) {
+                                            if (y % 2 == 0) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                        } else if (y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    sum = ans;
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    c = ans;
+                                    if ((1) > 15) {
+                                        ans = 0;
+                                    } else {
+                                        ans = 0;
+                                        i = 0;
+                                        x = (c)*SHIFT_TABLE[1];
+                                        y = 0xffff;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                    }
+                                    c = ans;
+                                    al = sum;
+                                }
+                                ans = al;
+                            }
+                            mres = ans;
+                        }
+                        {
+                            int al = ml, c = ml, sum;
+                            while (c) {
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2) {
+                                        if (y % 2 == 0) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                    } else if (y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                sum = ans;
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                c = ans;
+                                if ((1) > 15) {
+                                    ans = 0;
+                                } else {
+                                    ans = 0;
+                                    i = 0;
+                                    x = (c)*SHIFT_TABLE[1];
+                                    y = 0xffff;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                }
+                                c = ans;
+                                al = sum;
+                            }
+                            ans = al;
+                        }
+                        ml = ans;
+                        x = mr;
+                        y = 1;
+                        if (y >= 15) {
+                            if (x < 0) {
+                                ans = 0xffff;
+                            } else {
+                                ans = 0;
+                            }
+                        } else if (y > 0) {
+                            if (x > 0x7fff) {
+                                x = x / SHIFT_TABLE[y];
+                                ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                            } else {
+                                ans = x / SHIFT_TABLE[y];
+                            }
+                        } else {
+                            ans = x;
+                        }
+                        mr = ans;
+                    }
+                    ans = mres;
+                }
+                pl = ans;
+                x = pr;
+                y = 1;
+                if (y >= 15) {
+                    if (x < 0) {
+                        ans = 0xffff;
+                    } else {
+                        ans = 0;
+                    }
+                } else if (y > 0) {
+                    if (x > 0x7fff) {
+                        x = x / SHIFT_TABLE[y];
+                        ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                    } else {
+                        ans = x / SHIFT_TABLE[y];
+                    }
+                } else {
+                    ans = x;
+                }
+                pr = ans;
+            }
+            ans = pres;
+        }
+        putint(ans);
+        putch(10);
+        cur = cur + 1;
+    }
+    cur = 0;
+    while (cur < 16) {
+        {
+            int pl = 2, pr = cur, pres = 1;
+            while (pr > 0) {
+                ans = 0;
+                i = 0;
+                x = pr;
+                y = 1;
+                while (i < 16) {
+                    if (x % 2 && y % 2) {
+                        ans = ans + 1 * SHIFT_TABLE[i];
+                    }
+                    x = x / 2;
+                    y = y / 2;
+                    i = i + 1;
+                }
+                if (ans) {
+                    {
+                        int ml = pres, mr = pl, mres = 0;
+                        while (mr) {
+                            ans = 0;
+                            i = 0;
+                            x = mr;
+                            y = 1;
+                            while (i < 16) {
+                                if (x % 2 && y % 2) {
+                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                }
+                                x = x / 2;
+                                y = y / 2;
+                                i = i + 1;
+                            }
+                            if (ans) {
+                                {
+                                    int al = mres, c = ml, sum;
+                                    while (c) {
+                                        ans = 0;
+                                        i = 0;
+                                        x = al;
+                                        y = c;
+                                        while (i < 16) {
+                                            if (x % 2) {
+                                                if (y % 2 == 0) {
+                                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                                }
+                                            } else if (y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                        sum = ans;
+                                        ans = 0;
+                                        i = 0;
+                                        x = al;
+                                        y = c;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                        c = ans;
+                                        if ((1) > 15) {
+                                            ans = 0;
+                                        } else {
+                                            ans = 0;
+                                            i = 0;
+                                            x = (c)*SHIFT_TABLE[1];
+                                            y = 0xffff;
+                                            while (i < 16) {
+                                                if (x % 2 && y % 2) {
+                                                    ans = ans + 1 * SHIFT_TABLE[i];
+                                                }
+                                                x = x / 2;
+                                                y = y / 2;
+                                                i = i + 1;
+                                            }
+                                        }
+                                        c = ans;
+                                        al = sum;
+                                    }
+                                    ans = al;
+                                }
+                                mres = ans;
+                            }
+                            {
+                                int al = ml, c = ml, sum;
+                                while (c) {
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2) {
+                                            if (y % 2 == 0) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                        } else if (y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    sum = ans;
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    c = ans;
+                                    if ((1) > 15) {
+                                        ans = 0;
+                                    } else {
+                                        ans = 0;
+                                        i = 0;
+                                        x = (c)*SHIFT_TABLE[1];
+                                        y = 0xffff;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                    }
+                                    c = ans;
+                                    al = sum;
+                                }
+                                ans = al;
+                            }
+                            ml = ans;
+                            x = mr;
+                            y = 1;
+                            if (y >= 15) {
+                                if (x < 0) {
+                                    ans = 0xffff;
+                                } else {
+                                    ans = 0;
+                                }
+                            } else if (y > 0) {
+                                if (x > 0x7fff) {
+                                    x = x / SHIFT_TABLE[y];
+                                    ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                                } else {
+                                    ans = x / SHIFT_TABLE[y];
+                                }
+                            } else {
+                                ans = x;
+                            }
+                            mr = ans;
+                        }
+                        ans = mres;
+                    }
+                    pres = ans;
+                }
+                {
+                    int ml = pl, mr = pl, mres = 0;
+                    while (mr) {
+                        ans = 0;
+                        i = 0;
+                        x = mr;
+                        y = 1;
+                        while (i < 16) {
+                            if (x % 2 && y % 2) {
+                                ans = ans + 1 * SHIFT_TABLE[i];
+                            }
+                            x = x / 2;
+                            y = y / 2;
+                            i = i + 1;
+                        }
+                        if (ans) {
+                            {
+                                int al = mres, c = ml, sum;
+                                while (c) {
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2) {
+                                            if (y % 2 == 0) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                        } else if (y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    sum = ans;
+                                    ans = 0;
+                                    i = 0;
+                                    x = al;
+                                    y = c;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                    c = ans;
+                                    if ((1) > 15) {
+                                        ans = 0;
+                                    } else {
+                                        ans = 0;
+                                        i = 0;
+                                        x = (c)*SHIFT_TABLE[1];
+                                        y = 0xffff;
+                                        while (i < 16) {
+                                            if (x % 2 && y % 2) {
+                                                ans = ans + 1 * SHIFT_TABLE[i];
+                                            }
+                                            x = x / 2;
+                                            y = y / 2;
+                                            i = i + 1;
+                                        }
+                                    }
+                                    c = ans;
+                                    al = sum;
+                                }
+                                ans = al;
+                            }
+                            mres = ans;
+                        }
+                        {
+                            int al = ml, c = ml, sum;
+                            while (c) {
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2) {
+                                        if (y % 2 == 0) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                    } else if (y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                sum = ans;
+                                ans = 0;
+                                i = 0;
+                                x = al;
+                                y = c;
+                                while (i < 16) {
+                                    if (x % 2 && y % 2) {
+                                        ans = ans + 1 * SHIFT_TABLE[i];
+                                    }
+                                    x = x / 2;
+                                    y = y / 2;
+                                    i = i + 1;
+                                }
+                                c = ans;
+                                if ((1) > 15) {
+                                    ans = 0;
+                                } else {
+                                    ans = 0;
+                                    i = 0;
+                                    x = (c)*SHIFT_TABLE[1];
+                                    y = 0xffff;
+                                    while (i < 16) {
+                                        if (x % 2 && y % 2) {
+                                            ans = ans + 1 * SHIFT_TABLE[i];
+                                        }
+                                        x = x / 2;
+                                        y = y / 2;
+                                        i = i + 1;
+                                    }
+                                }
+                                c = ans;
+                                al = sum;
+                            }
+                            ans = al;
+                        }
+                        ml = ans;
+                        x = mr;
+                        y = 1;
+                        if (y >= 15) {
+                            if (x < 0) {
+                                ans = 0xffff;
+                            } else {
+                                ans = 0;
+                            }
+                        } else if (y > 0) {
+                            if (x > 0x7fff) {
+                                x = x / SHIFT_TABLE[y];
+                                ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                            } else {
+                                ans = x / SHIFT_TABLE[y];
+                            }
+                        } else {
+                            ans = x;
+                        }
+                        mr = ans;
+                    }
+                    ans = mres;
+                }
+                pl = ans;
+                x = pr;
+                y = 1;
+                if (y >= 15) {
+                    if (x < 0) {
+                        ans = 0xffff;
+                    } else {
+                        ans = 0;
+                    }
+                } else if (y > 0) {
+                    if (x > 0x7fff) {
+                        x = x / SHIFT_TABLE[y];
+                        ans = x + 65536 - SHIFT_TABLE[15 - y + 1];
+                    } else {
+                        ans = x / SHIFT_TABLE[y];
+                    }
+                } else {
+                    ans = x;
+                }
+                pr = ans;
+            }
+            ans = pres;
+        }
+        if (SHIFT_TABLE[cur] != ans) return 1;
+        cur = cur + 1;
     }
     return 0;
 }
 
-int main(){
-    n = 10;
-    int a[10];
-    a[0]=4;a[1]=3;a[2]=9;a[3]=2;a[4]=0;
-    a[5]=1;a[6]=6;a[7]=5;a[8]=7;a[9]=8;
-    int i;
-    i = 0;
-    i = heap_sort(a, n);
-    while (i < n) {
-        int tmp;
-        tmp = a[i];
-        putint(tmp);
-        tmp = 10;
-        putch(tmp);
-        i = i + 1;
-    }
-    return 0;
+int main() {
+    return long_func();
 }

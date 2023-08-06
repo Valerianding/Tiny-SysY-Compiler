@@ -219,7 +219,6 @@ void mem2reg(Function *currentFunction){
 
     //变量重命名 如果都没有alloc那么就不需要了
     if(HashMapSize(IncomingVals) != 0){
-        //printf("---------------------------------------------fuck--------------------------------------- \n");
         dfsTravelDomTree(root,IncomingVals);
     }
 
@@ -303,8 +302,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         HashMapPut(countDefine,alloc,defineTimes);
     }
 
-    //printf("11111 \n");
-    // 变量重命名
     while(curr != get_next_inst(tail)){
         switch(curr->inst->Opcode) {
             case Load: {
@@ -337,7 +334,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                     //可以直接这样更新
                     stack *allocStack = HashMapGet(IncomingVals, store);
                     assert(allocStack != nullptr);
-                    //printf("store %s\n",data->name);
+                    printf("store %s\n",data->name);
                     stackPush(allocStack, data);
                     //记录define的次数
                     int *defineTime = HashMapGet(countDefine,store);
@@ -353,7 +350,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 // 如果是phi的话我们就需要将现在的栈顶设置为phi指令
                 Value *phi = &curr->inst->user.value;
                 stack *allocStack = HashMapGet(IncomingVals, alloc);
-                assert(allocStack != nullptr);
+                if(allocStack == NULL){
+                    //如果没有找到代表这个Phi是提前建立好的
+                    break;
+                }
                 stackPush(allocStack, phi);
                 //
                 int *defineTime = HashMapGet(countDefine,alloc);
@@ -365,7 +365,8 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         curr = get_next_inst(curr);
     }
 
-    // 如果当前的末尾是funcEnd的话我们需要回退一个instNode
+    // 由于最后一个block不一定是return
+    // 并且如果当前的末尾是funcEnd的话我们需要回退一个instNode
     if(tail->inst->Opcode == FunEnd){
         tail = get_prev_inst(tail);
     }
@@ -382,12 +383,19 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         //维护这个block内的phiNode 跳过Label
         InstNode *nextBlockCurr = get_next_inst(nextBlock->head_node);
 
+
         while(nextBlockCurr->inst->Opcode == Phi){
             //对应的是哪个
             Value *alias = nextBlockCurr->inst->user.value.alias;
+            assert(alias != NULL);
+            printf("alias name %s\n",alias->name);
             //去找对应需要更新的
             stack *allocStack = HashMapGet(IncomingVals,alias);
-            assert(allocStack != NULL);
+            //global 2 local之后我们不想分析那些已经好了的Phi
+            if(allocStack == NULL){
+                nextBlockCurr = get_next_inst(nextBlockCurr);
+                continue;
+            }
 
             //从中去取目前到达的定义
             Value *pairValue = NULL;
@@ -427,6 +435,11 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
             //取栈里面找那个对应的Value
             stack *allocStack = HashMapGet(IncomingVals,alias);
+            //因为我们
+            if(allocStack == NULL){
+                trueBlockCurr = get_next_inst(trueBlockCurr);
+                continue;
+            }
             assert(allocStack != NULL);
 
             Value *pairValue = NULL;
@@ -447,6 +460,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             Value *alias = falseBlockCurr->inst->user.value.alias;
 
             stack *allocStack = HashMapGet(IncomingVals,alias);
+            if(allocStack == NULL){
+                falseBlockCurr = get_next_inst(falseBlockCurr);
+                continue;
+            }
             assert(allocStack != NULL);
 
             Value *pairValue = NULL;
@@ -464,8 +481,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         }
     }
 
-    //printf("333\n");
-    // 递归遍历
     HashSetFirst(node->children);
     for(DomTreeNode *key = HashSetNext(node->children); key != nullptr; key = HashSetNext(node->children)){
         dfsTravelDomTree(key,IncomingVals);

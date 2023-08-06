@@ -54,4 +54,5 @@ void RPOCfg(Function *currentFunction);
 void topCfg(Function *currentFunction);
 void cleanBlock(BasicBlock *block);
 bool containFloat(InstNode *node);
+bool usedInPhi(Value *value, Function *function);
 #endif //C22V1_UTILITY_H

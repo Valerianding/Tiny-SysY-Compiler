@@ -1,9 +1,8 @@
-////
-//// Created by Valerian on 2023/5/14.
-////
 //
-//#include "inscomb.h"
+// Created by Valerian on 2023/5/14.
 //
+//
+
 //This pass will do inst combine
 #include "inscomb.h"
 InstNode *cur_;
@@ -11,10 +10,10 @@ InstNode *result_;
 HashSet *workList;
 
 const Opcode possibleOpcodes[] = {Add,Sub,Mul,Div,Mod};
-bool isPossibleOperator(InstNode *inst){
+bool isPossibleOperator(Instruction *inst){
     int n = sizeof(possibleOpcodes) / sizeof(Opcode);
     for(int i = 0; i < n; i++){
-        if(inst->inst->Opcode == possibleOpcodes[i]){
+        if(inst->Opcode == possibleOpcodes[i]){
             return true;
         }
     }
@@ -28,32 +27,46 @@ bool isDeadInst(InstNode *instNode){
         //-> because we don't know the calculation operation's input is from what
         return false;
     }
+    //also we must taking phi's uses into consideration
+    bool Dead = true;
     Value *dest = ins_get_dest(instNode->inst);
-    if(dest->use_list == NULL){
-        return true;
+    if(dest->use_list != NULL){
+        Dead = false;
     }
-    return false;
+    BasicBlock *block = instNode->inst->Parent;
+    Function *func = block->Parent;
+    if(usedInPhi(dest,func)){
+        Dead = false;
+    }
+    return Dead;
 }
 
 //add all users of current instruction to workList
+//also we only want to consider the possible operations
 void AddUsesToWorklist(InstNode *inst){
-
+    assert(checkType(inst->inst));
+    Value *dest = ins_get_dest(inst->inst);
+    Use *uses = dest->use_list;
+    while(uses != NULL){
+        Value *user= uses->Val;
+        Instruction *userIns = (Instruction *)user;
+        if(isPossibleOperator(userIns) && user->use_list != NULL){
+            InstNode *userNode = findNode(userIns->Parent,userIns);
+            HashSetAdd(workList,userNode);
+        }
+        uses = uses->Next;
+    }
 }
 
 InstNode *ReplaceInstUsesWith(InstNode *inst, Value *newValue){
     AddUsesToWorklist(inst);
-
+    Value *dest = ins_get_dest(inst->inst);
+    BasicBlock *block = inst->inst->Parent;
+    Function *func = block->Parent;
+    valueReplaceAll(dest,newValue,func);
+    return inst;
 }
 
-//only consider binary operations
-bool CheckInt(InstNode *instNode){
-    assert(instNode != NULL);
-    Value *lhs = ins_get_lhs(instNode->inst);
-    Value *rhs = ins_get_rhs(instNode->inst);
-    Value *dest = ins_get_dest(instNode->inst);
-    if(!isImmInt(lhs) || !isImmInt(rhs) || !isImmInt(dest)) return false;
-    return true;
-}
 
 
 //check if the dest of the operation is only used once
@@ -104,9 +117,12 @@ bool isAssociative(Opcode op){
 
 
 //because we don't want to mess up with Types
-//so we'd better check out type for the combine instruction
+//So we'd better check out type for the combine instruction
+//also we don't want to mess up with non-binary operations
+//So let's make it a possible operation only
 bool checkType(Instruction *ins){
     assert(ins != NULL);
+    if(!isPossibleOperator(ins)) return false;
     Value *insLhs = ins_get_lhs(ins);
     Value *insRhs = ins_get_rhs(ins);
     Value *insDest = ins_get_dest(ins);
@@ -231,7 +247,6 @@ bool SimplifyCommutative(InstNode *instNode){
                 InstNode *newBinaryNode = new_inst_node(newBinary);
                 ins_insert_before(newBinaryNode,cur_);
 
-                //TODO add to workList
                 HashSetAdd(workList,newBinaryNode);
 
                 Value *newDest = ins_get_dest(newBinary);
@@ -246,26 +261,125 @@ bool SimplifyCommutative(InstNode *instNode){
     return changed;
 }
 
+// If this value is a multiply that can be folded into other computations
+// (because it has a constant operand), return the non-constant operand.
+// The constant is for sure a int!!
 //TODO why this need use_list to be 1
-Value *DynCastMul(Value *lhs,int paramNum){
+Value *DynCastMul(Value *val,int paramNum){
+    //due to immediate value has no name
+    if(isImmInt(val)) return NULL;
     int countUse = 0;
-    Use *uses = lhs->use_list;
+    Use *uses = val->use_list;
     while(uses != NULL){
         countUse++;
         uses = uses->Next;
     }
-    printf("%s\n",lhs->name);
-    if(countUse == 1 && !isImm(lhs) && !isParam(lhs,paramNum)){
-        Instruction *lhsIns = (Instruction *)lhs;
-        Value *lhsInsRhs = ins_get_rhs(lhsIns);
-        Value *lhsInsLhs = ins_get_lhs(lhsIns);
-        if(lhsIns->Opcode == Mul && isImmInt(lhsInsRhs)){
-            return lhsInsLhs;
+    //we need value's name to judge if it is param
+    //it is ok that if the val's name is %temp -> because it is definitely not the param
+    assert(val->name != NULL);
+    if(countUse == 1 && !isImm(val) && !isParam(val,paramNum)){
+        Instruction *valIns = (Instruction *)val;
+        if(!checkType(valIns)) return NULL;
+        Value *valInsRhs = ins_get_rhs(valIns);
+        Value *valInsLhs = ins_get_lhs(valIns);
+        if(valIns->Opcode == Mul && isImmInt(valInsRhs)){
+            return valInsLhs;
         }
     }
     return NULL;
 }
 
+//TODO Also why this need use_list to be 1
+Value *DynCastAdd(Value *val,int paramNum){
+    if(isImmInt(val)) return NULL;
+    int countUse = 0;
+    Use *uses = val->use_list;
+    while(uses != NULL){
+        countUse++;
+        uses = uses->Next;
+    }
+    assert(val->name != NULL);
+    if(countUse == 1 && !isImm(val) && !isParam(val,paramNum)){
+        Instruction *valIns = (Instruction *)val;
+        if(!checkType(valIns)) return NULL;
+        Value *valInsRhs = ins_get_rhs(valIns);
+        Value *valInsLhs = ins_get_lhs(valIns);
+        if(valIns->Opcode == Add && isImmInt(valInsRhs)){
+            return valInsLhs;
+        }
+    }
+    return NULL;
+}
+
+//helper function to see if the mul is useless
+//(x * C) / C -> X
+//return the constant C
+//TODO why we need use_list to be 1
+Value *UselessCastMul(Value *val, int paramNum){
+    if(isImmInt(val)) return NULL;
+    int countUse = 0;
+    Use *uses = val->use_list;
+    while(uses != NULL){
+        countUse++;
+        uses = uses->Next;
+    }
+    assert(val->name != NULL);
+    if(countUse == 1 && !isImmInt(val) && !isParam(val,paramNum)){
+        Instruction *mul = (Instruction *)val;
+        if(!checkType(mul)) return NULL;
+        Value *constant = ins_get_rhs(mul);
+        if(mul->Opcode == Mul && isImmInt(constant)){
+            return constant;
+        }
+    }
+    return NULL;
+}
+
+// (x + C) - C -> X
+Value *UselessCastAdd(Value *val, int paramNum){
+    if(isImmInt(val)) return NULL;
+    int countUse = 0;
+    Use *uses = val->use_list;
+    while(uses != NULL){
+        countUse++;
+        uses = uses->Next;
+    }
+    assert(val->name != NULL);
+    if(countUse == 1 && !isImmInt(val) && !isParam(val,paramNum)){
+        Instruction *add = (Instruction *)val;
+        if(!checkType(add)) return NULL;
+        Value *constant = ins_get_rhs(add);
+        if(add->Opcode == Add && isImmInt(constant)){
+            return constant;
+        }
+    }
+    return NULL;
+}
+
+
+// (X - C) + C - > X
+//TODO
+Value *UselessCastSub(Value *val, int paramNum){
+    if(isImmInt(val)) return NULL;
+    int countUse = 0;
+    Use *uses = val->use_list;
+    while(uses != NULL){
+        countUse++;
+        uses = uses->Next;
+    }
+    assert(val->name != NULL);
+    if(countUse == 1 && !isImmInt(val) && !isParam(val,paramNum)){
+        Instruction *sub = (Instruction *)val;
+        if(!checkType(sub)) return NULL;
+        Value *constant = ins_get_rhs(sub);
+        if(sub->Opcode == Sub && isImmInt(constant)){
+            return constant;
+        }
+    }
+    return NULL;
+}
+
+// X / C * C - > X is wrong due to the rounding
 InstNode *RunOnAdd(InstNode *instNode){
     bool changed = SimplifyCommutative(instNode);
 
@@ -280,10 +394,22 @@ InstNode *RunOnAdd(InstNode *instNode){
         return changed ? cur_ : nullptr;
     }
 
-    //x + 0 -> x
     //TODO not finished
-    if(isImm(rhs) && rhs->pdata->var_pdata.iVal == 0){
-        ReplaceInstUsesWith(instNode,lhs);
+    if(isImm(rhs)){
+        //x + 0 -> x
+        if(rhs->pdata->var_pdata.iVal == 0){
+            return ReplaceInstUsesWith(instNode,lhs);
+        }
+
+        //(X - C) + C -> X
+        Value *sc = UselessCastSub(lhs,paramNum);
+        if(isSame(sc,rhs)){
+            assert(isImmInt(rhs) && sc->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
+            Instruction *lhsIns = (Instruction *)lhs;
+            Value *lhsInsLhs = ins_get_lhs(lhsIns);
+            //
+            return ReplaceInstUsesWith(cur_,lhsInsLhs);
+        }
     }
 
     //x + x -> x * 2
@@ -336,25 +462,133 @@ InstNode *RunOnSub(InstNode *instNode){
     Value *lhs = ins_get_lhs(instNode->inst);
     Value *rhs = ins_get_rhs(instNode->inst);
 
-    //x - x -> 0
-    if(isSame(lhs,rhs)){
+    BasicBlock *block = instNode->inst->Parent;
+    int paramNum = block->Parent->entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
 
+    if(!checkType(instNode->inst)){
+        return NULL;
     }
+
+    //x - x -> 0
+    //TODO not finished
+    if(isSame(lhs,rhs)){
+        Value *constZero = (Value *)malloc(sizeof(Value));
+        value_init_int(constZero,0);
+        return ReplaceInstUsesWith(cur_,constZero);
+    }
+
+    // X - X * C -> X * (1 - C)
+    if(DynCastMul(rhs,paramNum) == lhs){
+        //
+        Instruction *rhsIns = (Instruction *)rhs;
+        Value *constant = ins_get_rhs(rhsIns);
+        Value *ncp1 = (Value *)malloc(sizeof(Value));
+        value_init_int(ncp1,1 - constant->pdata->var_pdata.iVal);
+        Instruction *newMul = ins_new_binary_operator(Mul,lhs,ncp1);
+        newMul->user.value.name = (char *)malloc(sizeof(char) * 10);
+        strcpy(newMul->user.value.name,"%multi");
+        newMul->user.value.VTy->ID = Var_INT;
+        InstNode *multiNode = new_inst_node(newMul);
+        return multiNode;
+    }
+
+    // X * C - X -> X * (C - 1)
+    if(DynCastMul(lhs,paramNum) == rhs){
+        //
+        Instruction *lhsIns = (Instruction *)lhs;
+        Value *constant = ins_get_rhs(lhsIns);
+        Value *cm1 = (Value *)malloc(sizeof(Value));
+        value_init_int(cm1,constant->pdata->var_pdata.iVal - 1);
+        Instruction *newMul = ins_new_binary_operator(Mul,rhs,cm1);
+        newMul->user.value.name = (char *)malloc(sizeof(char) * 10);
+        strcpy(newMul->user.value.name,"%multi");
+        newMul->user.value.VTy->ID = Var_INT;
+        InstNode *multiNode = new_inst_node(newMul);
+        return multiNode;
+    }
+
+
+    // (X + Y) - Y -> X
+    //TODO now we only consider the constant situation
+    // X + C - C -> X
+    Value *add = UselessCastAdd(lhs,paramNum);
+    if(isSame(add,rhs)){
+        assert(add->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
+        Instruction *lhsIns = (Instruction *)lhs;
+        Value *lhsInsLhs = ins_get_lhs(lhsIns);
+        return ReplaceInstUsesWith(cur_,lhsInsLhs);
+    }
+
+    //TODO Y - (X + Y) -> -X
     return NULL;
 }
 
 InstNode *RunOnMul(InstNode *instNode){
+    bool changed = SimplifyCommutative(instNode);
 
+//    BasicBlock *block = instNode->inst->Parent;
+//    int paramNum = block->Parent->entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
 
-    return NULL;
+    Value *lhs = ins_get_lhs(instNode->inst);
+    Value *rhs = ins_get_rhs(instNode->inst);
+
+    if(!checkType(instNode->inst)){
+        return changed ? cur_ : NULL;
+    }
+
+    if(isImmInt(rhs)){
+        //x * 0 -> 0
+        if(rhs->pdata->var_pdata.iVal == 0){
+            Value *zero = (Value *)malloc(sizeof(Value));
+            value_init_int(zero,0);
+            return ReplaceInstUsesWith(instNode,zero);
+        }
+
+        //x * 1 -> x
+        if(rhs->pdata->var_pdata.iVal == 1){
+            return ReplaceInstUsesWith(instNode,lhs);
+        }
+    }
+    return changed ? cur_ : NULL;
 }
 
 InstNode *RunOnDiv(InstNode *instNode){
+    Value *lhs = ins_get_lhs(instNode->inst);
+    Value *rhs = ins_get_rhs(instNode->inst);
 
+    BasicBlock *block = instNode->inst->Parent;
+    int paramNum = block->Parent->entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
 
+    if(!checkType(instNode->inst)){
+        return NULL;
+    }
+
+    if(isImmInt(rhs)){
+        //x / 1 -> x
+        if(rhs->pdata->var_pdata.iVal == 1){
+            return ReplaceInstUsesWith(cur_,lhs);
+        }
+
+        //(x * C) / C -> X
+        Value *mc = UselessCastMul(lhs,paramNum);
+        if(isSame(mc,rhs)){
+            assert(mc->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
+            Instruction *lhsIns = (Instruction *)lhs;
+            Value *lhsInsLhs = ins_get_lhs(lhsIns);
+            return ReplaceInstUsesWith(cur_,lhsInsLhs);
+        }
+    }
+
+    if(isImmInt(lhs)){
+        //0 / x -> 0
+        if(lhs->pdata->var_pdata.iVal == 0){
+            return ReplaceInstUsesWith(cur_,lhs);
+        }
+    }
     return NULL;
 }
 
+//TODO finish this
 InstNode *RunOnMod(InstNode *instNode){
 
     return NULL;
@@ -385,7 +619,9 @@ void RunPass(InstNode *instNode){
             return;
         }
         default:{
-            assert(false);
+            //TODO the critical instruction should not be considered!
+            result_ = NULL;
+            return;
         }
     }
 }
@@ -424,7 +660,7 @@ bool InstCombine(Function *currentFunction){
         InstNode *blockHead = block->head_node;
         InstNode *blockTail = block->tail_node;
         while(blockHead != blockTail){
-            if(isPossibleOperator(blockHead)){
+            if(isPossibleOperator(blockHead->inst)){
                 HashSetAdd(workList,blockHead);
             }
             blockHead = get_next_inst(blockHead);
@@ -437,24 +673,31 @@ bool InstCombine(Function *currentFunction){
         HashSetFirst(workList);
         InstNode *node = HashSetNext(workList);
         HashSetRemove(workList,node);
+        printf("now on %d\n",node->inst->i);
+
+        Value *lhs = ins_get_lhs(node->inst);
+        Value *rhs = ins_get_rhs(node->inst);
 
         //if is dead inst
         if(isDeadInst(node)){
+            changed = true;
             //add operands to the workList
-            //int numOfOperand = node->inst->user.value.NumUserOperands;
-
-            Value *lhs = ins_get_lhs(node->inst);
-            Value *rhs = ins_get_rhs(node->inst);
+            //This could add critical operations to the workList
+            //and we don't want this to happen, So we simply add possible operations to workList
             if(!isImm(lhs) && !isParam(lhs,paramNum)){
                 Instruction *lhsIns = (Instruction *)lhs;
                 InstNode *lhsNode = findNode(lhsIns->Parent,lhsIns);
-                HashSetAdd(workList,lhsNode);
+                if(isPossibleOperator(lhsIns)){
+                    HashSetAdd(workList,lhsNode);
+                }
             }
 
             if(!isImm(rhs) && !isParam(rhs,paramNum)){
                 Instruction *rhsIns = (Instruction *)rhs;
                 InstNode *rhsNode = findNode(rhsIns->Parent,rhsIns);
-                HashSetAdd(workList,rhsNode);
+                if(isPossibleOperator(rhsIns)){
+                    HashSetAdd(workList,rhsNode);
+                }
             }
 
             //remove this instruction from parent block
@@ -463,6 +706,17 @@ bool InstCombine(Function *currentFunction){
         }
 
         //if we can const propagate it
+        if(lhs != NULL && rhs != NULL && isImmInt(lhs) && isImmInt(rhs)){
+            changed = true;
+            //const propagate it
+            Value *constant =  Fold(node->inst->Opcode,lhs,rhs);
+            ReplaceInstUsesWith(node,constant);
+
+            //erase this instruction
+            deleteIns(node);
+            continue;
+        }
+
 
         printf("run on %d\n",node->inst->i);
         //try to combine current instruction
@@ -487,8 +741,17 @@ bool InstCombine(Function *currentFunction){
                 Value *new = ins_get_dest(result_->inst);
                 valueReplaceAll(old,new,currentFunction);
             }else{
-
+                //if it is the same node means the result is modified
+                if(isDeadInst(node)){
+                    deleteIns(node);
+                    result_ = NULL;
+                }
             }
+            if(result_){
+                HashSetAdd(workList, result_);
+                AddUsesToWorklist(result_);
+            }
+            changed = true;
         }
     }
     return changed;
