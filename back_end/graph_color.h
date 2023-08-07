@@ -14,7 +14,7 @@
 #include "dominance.h"
 #include <math.h>
 
-#define K 12
+#define K 10
 #define  _HEURISTIC_BASE 1.45
 
 extern int myreg[16];
@@ -55,5 +55,7 @@ typedef struct AdjPair_{
     Node * u;
     Node * v;
 }AdjPair;
+
+void reg_alloca(Function *start);
 
 #endif //C22V1_GRAPH_COLOR_H

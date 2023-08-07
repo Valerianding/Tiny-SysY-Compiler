@@ -51,6 +51,9 @@ Node *get_Node_with_value(Value* value){
     node->value = value;
     node->adjOpdSet = HashSetInit();
     node->moveSet = HashSetInit();
+    node->type = USUAL;
+    node->loopCounter = 0;
+    node->degree = 0;
     HashSetAdd(nodeSet,node);
     return node;
 }
@@ -100,7 +103,7 @@ void handle_def_(HashSet* live, Value* def, int loopDepth){
     node->loopCounter = loopDepth;
 
     //if(node->type == PreColored || node->type == Virtual){
-    if(node->type == USUAL){
+    if(node->type == USUAL && !HashSetFind(live,def)){
         HashSetAdd(live,def);
         HashSetFirst(live);
         for(Node* n = HashSetNext(live); n!=NULL; n = HashSetNext(live)){
@@ -129,7 +132,7 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth){
     Node *node = get_Node_with_value(uvalue);
     node->loopCounter = loopDepth;
 //    if(node->type == PreColored || node->type == Virtual){
-    if(node->type == USUAL){
+    if(node->type == USUAL && !HashSetFind(live,uvalue)){
         HashSetAdd(live,uvalue);
     }
 }
@@ -212,10 +215,10 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             handle_use_(live,value2,loopDepth);
             break;
         case br_i1:
-            value1=user_get_operand_use(&ins->inst->user,0)->Val; //真值
-            handle_use_(live,value1,loopDepth);
             //各个out变量之间需要建边
             addEdge_within_live(live);
+            value1=user_get_operand_use(&ins->inst->user,0)->Val; //真值
+            handle_use_(live,value1,loopDepth);
             break;
         case br:
             //各个out变量之间需要建边
@@ -283,11 +286,13 @@ void build(){
                     //mov dst,src不应是直接冲突关系，而是潜在可合并关系
                     HashSetRemove(live, ins_get_lhs(curr_node->inst));
                     MachineMove *mv = (MachineMove*) malloc(sizeof (MachineMove));
-                    mv->src = get_Node_with_value(ins_get_lhs(curr_node->inst));
-                    mv->dst = get_Node_with_value(ins_get_dest(curr_node->inst));
-                    HashSetAdd(mv->src->moveSet,mv);
-                    HashSetAdd(mv->dst->moveSet,mv);
-                    HashSetAdd(worklistMoves,mv);
+                    if(ins_get_lhs(curr_node->inst)->name!=NULL){
+                        mv->src = get_Node_with_value(ins_get_lhs(curr_node->inst));
+                        mv->dst = get_Node_with_value(ins_get_dest(curr_node->inst));
+                        HashSetAdd(mv->src->moveSet,mv);
+                        HashSetAdd(mv->dst->moveSet,mv);
+                        HashSetAdd(worklistMoves,mv);
+                    }
                 }
                 dealSDefUse(live,curr_node,currNodeParent);
                 curr_node = get_prev_inst(curr_node);
@@ -439,7 +444,7 @@ bool conservative(HashSet* adjacent1, HashSet* adjacent2){
 //合并move u <- v
 //1. u 预着色, v 是虚拟寄存器, 且 v 的冲突邻接点均满足: 要么为低度数结点, 要么预着色, 要么已经与 u 邻接
 //2. u, v 都不是预着色, 且两者的邻接冲突结点的高结点个数加起来也不超过 K - 1 个
-void combine(Node* u,Node* v){
+void combine_(Node* u,Node* v){
     if(HashSetFind(freezeWorklist,v))
         HashSetRemove(freezeWorklist,v);
     else
@@ -492,7 +497,7 @@ void coalesce(){
     } else if((u->type == PreColored && adjOK(v,u))
              || (u->type!=PreColored && conservative(adjacent(u), adjacent(v)))){
         HashSetAdd(coalescedMoves,m);
-        combine(u,v);
+        combine_(u,v);
         addWorkList(u);
     } else
         HashSetAdd(activeMoves,m);
@@ -608,19 +613,23 @@ void preAssignColors(){
         stackPop(selectStack);
         assert(toBeColored->type!=PreColored && toBeColored->type!=Allocated);
 
+        for(int i=3;i<=12;i++){
+            myreg[i] = 0;
+        }
+
         // 把待分配颜色的结点的邻接结点的颜色去除
         HashSetFirst(toBeColored->adjOpdSet);
         for(Node* node = HashSetNext(toBeColored->adjOpdSet); node!=NULL; node = HashSetNext(toBeColored->adjOpdSet)){
             Node *a = getAlias(node);
             if(hasReg(a)){
-                myreg[a->reg] = 0;
+                myreg[a->reg] = 1;
                 HashMapRemove(colorMap,a);
 //            } else if(a->type == Virtual){
             } else if(a->type == USUAL){
                 int *reg;
                 reg = HashMapGet(colorMap,a);
                 if(reg != NULL){
-                    myreg[*reg] = 0;
+                    myreg[*reg] = 1;
                     HashMapRemove(colorMap,a);
                 }
             }
@@ -717,24 +726,27 @@ void rewriteProgram(Function* func){
 
 void labelRegister(Function* func){
     //遍历每个block
-    InstNode *cur_node = func->entry->head_node;
+    InstNode *cur_node = get_next_inst(func->entry->head_node);
     InstNode *last_node = func->tail->tail_node;
     while(cur_node != last_node){
         Value *v,*vl,*vr;
         v= ins_get_dest(cur_node->inst);
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
-        if(v!=NULL){
+        if(v!=NULL && v->name!=NULL){
             int *reg ;
-            reg = HashMapGet(colorMap, get_Node_with_value(ins_get_dest(cur_node->inst)));
+            if(cur_node->inst->Opcode == CopyOperation)
+                reg = HashMapGet(colorMap, get_Node_with_value(ins_get_dest(cur_node->inst)->alias));
+            else
+                reg = HashMapGet(colorMap, get_Node_with_value(ins_get_dest(cur_node->inst)));
             cur_node->inst->_reg_[0] = *reg;
         }
-        if(vl!=NULL){
+        if(vl!=NULL && vl->name!=NULL){
             int *reg ;
             reg = HashMapGet(colorMap, get_Node_with_value(ins_get_lhs(cur_node->inst)));
             cur_node->inst->_reg_[0] = *reg;
         }
-        if(vr!=NULL){
+        if(vr!=NULL && vr->name!=NULL){
             int *reg;
             reg = HashMapGet(colorMap, get_Node_with_value(ins_get_rhs(cur_node->inst)));
             cur_node->inst->_reg_[0] = *reg;
