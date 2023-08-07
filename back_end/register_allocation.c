@@ -1,4 +1,6 @@
 #include"register_allocation.h"
+#define S 14
+#define R 10
 struct reg_queue *head;
 int *non_available_colors;
 extern Symtab *this;
@@ -9,7 +11,7 @@ struct SString * live_in_name;
 struct SString * live_out_name;
 int edge_num,edge_num_global;
 int var_num,var_num_global;
-int KK = 5;
+int KK = 10;
 int rig_num;
 int reg_param_num;
 int block_in_num,block_out_num;
@@ -25,6 +27,26 @@ struct name_num *live;
 struct name_num *live_global;
 InstNode * one_param[1000];   //存放单次正确位置的参数
 InstNode* params[1000];      //存放所有参数
+
+
+static int enable_vfp=0; //浮点寄存器分配开关
+static int flag_lr=1; //释放lr
+static int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
+
+//还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
+PriorityQueue *active;
+//最终的寄存器分配方案，location中的成员代表在内存，result中成员代表成功分配寄存器func->lineScanReg
+HashSet *location;
+//HashMap *result; //key =Value* value=value_register* (int),不需要另外建立，直接使用Function里面的lineScanReg来存放
+
+// 浮点寄存器分配
+PriorityQueue *VFPactive;
+HashSet *VFPlocation;
+
+int VFPreg[32];
+int free_VFPreg_num;
+int myreg[16];
+int free_reg_num;
 
 struct  reg_edge *_bian;
 
@@ -1439,6 +1461,253 @@ void printf_llvm_ir_withreg(struct _InstNode *instruction_node)
     //fpintf(fptr,"declare dso_local i32 @putf(...) #1\n");
 }
 
+void gcp_init(PriorityQueue* pqueue)
+{
+    var_num=0;
+    edge_num=0;
+    HashSet *tmp;
+    tmp=HashSetInit();
+    void *elem;
+    value_live_range *cur;
+    while (PriorityQueueSize(pqueue)!=0){
+        PriorityQueueTop(pqueue,&elem);
+        PriorityQueuePop(pqueue);
+//        printf("%d\n",PriorityQueueSize(pqueue));
+        cur=(value_live_range*)elem;
+        var_num++;
+        // printf("%s start %d    end %d\n",cur->value->name,cur->start,cur->end);
+        HashSetAdd(tmp,cur);
+    }
+    HashSetFirst(tmp);
+    while ((elem= HashSetNext(tmp))!=NULL){
+        PriorityQueuePush(pqueue,elem);
+    }
+    live_global=(struct name_num *)malloc(sizeof(struct name_num)*(var_num+10));
+    var_num=0;
+    while (PriorityQueueSize(pqueue)!=0){
+        PriorityQueueTop(pqueue,&elem);
+        PriorityQueuePop(pqueue);
+//        printf("%d\n",PriorityQueueSize(pqueue));
+        cur=(value_live_range*)elem;
+        live_global[var_num].name=cur->value->name;
+        live_global[var_num].first=cur->start;
+        live_global[var_num].last=cur->end;
+        var_num++;
+        HashSetAdd(tmp,cur);
+    }
+    HashSetFirst(tmp);
+    while ((elem= HashSetNext(tmp))!=NULL){
+        PriorityQueuePush(pqueue,elem);
+    }
+    _bian=(struct reg_edge *)malloc(sizeof(struct reg_edge)*((var_num)*(var_num+10)/2));
+    for(int i=0;i<var_num;i++)
+    {
+        for(int j=i+1;j<var_num;j++)
+        {
+            // printf("now %s %s\n",live[i].name,live[j].name);
+            // if((live[i].last<live[j].first||live[i].first>live[j].last)||
+            //    (live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)||
+            //    (live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1))
+            if(live_global[i].last<live_global[j].first||live_global[i].first>live_global[j].last)
+            {
+                // printf("%s %s没有在一起哦\n",live[i].name,live[j].name);
+                // if(live[i].last<live[j].first||live[i].first>live[j].last)  printf("from1\n");
+                // if(live[i].first==live[j].last&&live[i].first_is_use==0&&live[j].last_is_use==1)  printf("from2\n");
+                // if(live[j].first==live[i].last&&live[j].first_is_use==0&&live[i].last_is_use==1)  printf("from3\n");
+            }
+            else
+            {
+                // printf("%s %s在一起了\n",live[i].name,live[j].name);
+                create_bian(i,j);
+            }
+        }
+    }
+}
+
+void gcp_allocate(InstNode* ins,Function* start)
+{
+    Function *curFunction=start;
+    for(;curFunction!=NULL;curFunction=curFunction->Next){
+//        初始化函数的活跃变量表
+        curFunction->live_interval=PriorityQueueInit();
+        curFunction->live_interval->set_compare(curFunction->live_interval,CompareNumerics);
+        assert(curFunction->live_interval!=NULL);
+//        初始化函数的寄存器分配结果表
+        curFunction->lineScanReg=HashMapInit();
+        assert(curFunction->lineScanReg!=NULL);
+
+        if(enable_vfp==1){
+            curFunction->vfp_live_interval=PriorityQueueInit();
+            curFunction->vfp_live_interval->set_compare(curFunction->vfp_live_interval,CompareNumerics);
+            curFunction->lineScanVFPReg=HashMapInit();
+        }
+//        获取函数的活跃变量表
+        get_function_live_interval(curFunction);
+//        active <-- {}
+        active=PriorityQueueInit();
+        active->set_compare(active,CompareNumerics2);
+        location=HashSetInit();
+        if(enable_vfp==1){
+            VFPactive=PriorityQueueInit();
+            VFPactive->set_compare(VFPactive,CompareNumerics2);
+            VFPlocation=HashSetInit();
+        }
+
+        memset(myreg,0,sizeof(myreg));
+        free_reg_num=6;
+        memset(VFPreg,0, sizeof(VFPreg));
+        free_VFPreg_num=14;
+//      到这里为止
+
+        // line_scan(curFunction,curFunction->live_interval);
+        g_alloca(curFunction,curFunction->live_interval);
+        if(enable_vfp==1){
+            VFP_line_scan_alloca(curFunction,curFunction->vfp_live_interval);
+        }
+
+        label_the_result_of_linescan_register(curFunction,curFunction->entry->head_node);
+
+
+
+//      打印寄存器分配的结果
+        printf("in register:\n");
+        Pair *ptr_pair;
+        HashMapFirst(curFunction->lineScanReg);
+        while ((ptr_pair= HashMapNext(curFunction->lineScanReg))!=NULL){
+            Value *value=(Value*)ptr_pair->key;
+            value_register *node=(value_register*)ptr_pair->value;
+            printf("%s --> r%d\n",value->name,node->reg);
+        }
+        printf("in memory:\n");
+        void *elem;
+        value_live_range *tmp;
+        HashSetFirst(location);
+        while ((elem= HashSetNext(location))!=NULL){
+            tmp=(value_live_range*)elem;
+            printf("%s statr %d,end %d\n",tmp->value->name,tmp->start,tmp->end);
+        }
+        if(enable_vfp==1){
+            printf("Var_Float in register:\n");
+            HashMapFirst(curFunction->lineScanVFPReg);
+            while ((ptr_pair= HashMapNext(curFunction->lineScanVFPReg))!=NULL){
+                Value *value=(Value*)ptr_pair->key;
+                value_register *node=(value_register*)ptr_pair->value;
+                printf("%s --> s%d\n",value->name,node->sreg);
+            }
+            printf("Var_Float in memory:\n");
+            HashSetFirst(VFPlocation);
+            while ((elem= HashSetNext(VFPlocation))!=NULL){
+                tmp=(value_live_range*)elem;
+                printf("%s statr %d,end %d\n",tmp->value->name,tmp->start,tmp->end);
+            }
+        }
+
+
+
+//        在这里可以把active,location,VFPactive和VFPlocation释放掉
+        PriorityQueueDeinit(active);
+        HashSetDeinit(location);
+        if(enable_vfp==1){
+            PriorityQueueDeinit(VFPactive);
+            HashSetDeinit(VFPlocation);
+        }
+    }
+}
+
+
+void g_alloca(Function *curFunction,PriorityQueue*queue){
+    void *elem;
+    value_live_range *i;
+    printf("PriorityQueueSize(queue) =%d\n",PriorityQueueSize(queue));
+
+
+    printf("11\n");
+    gcp_init(queue);
+    init_RIG();
+    create_RIG();
+    check_edge();
+    //print_info();
+    minimize_RIG();
+    init_non_available_colors();
+    while(first_fit_coloring())
+    {
+        reset_colors();
+        reset_queue();
+        spill_variable();
+    }
+    printf("22\n");
+    // test_ans();
+    // print_colors();
+    color_removed();
+
+    while (PriorityQueueSize(queue)!=0){ //foreach live interval i
+
+        PriorityQueueTop(queue,&elem);
+        PriorityQueuePop(queue);
+
+        i=(value_live_range*)elem;
+        expire_old_intervals(curFunction,i);
+        // if(PriorityQueueSize(active)==R){
+        //     spill_at_interval(curFunction,i);
+        // }else{
+        //     value_register *r=(value_register*) malloc(sizeof(value_register));
+        //     r->reg=get_an_availabel_register();
+        //     assert(r->reg!=-1);
+        //     HashMapPut(curFunction->lineScanReg,i->value,r);
+        //     PriorityQueuePush(active,i);
+        // }
+        int gcp_color=list_of_variables[find_gcp_live(i->value->name)].color;
+        if(gcp_color >= 0)
+        {
+            value_register *r=(value_register*) malloc(sizeof(value_register));
+            r->reg=gcp_color+3;
+            assert(r->reg!=-1);
+            HashMapPut(curFunction->lineScanReg,i->value,r);
+//            printf("put curFunction->lineScanReg %s\n",i->value->name);
+//            printf("%s\n",i->value->name);
+            PriorityQueuePush(active,i);
+        }
+        else
+        {
+            spill_at_interval(curFunction,i);
+        }
+    }
+
+//     while (PriorityQueueSize(queue)!=0){ //foreach live interval i
+
+//         PriorityQueueTop(queue,&elem);
+//         PriorityQueuePop(queue);
+
+//         i=(value_live_range*)elem;
+// //        printf("analyze %s\n",i->value->name);
+//         expire_old_intervals(curFunction,i);
+//         if(PriorityQueueSize(active)==R){
+//             spill_at_interval(curFunction,i);
+//         }else{
+//             value_register *r=(value_register*) malloc(sizeof(value_register));
+//             r->reg=get_an_availabel_register();
+//             assert(r->reg!=-1);
+//             HashMapPut(curFunction->lineScanReg,i->value,r);
+// //            printf("put curFunction->lineScanReg %s\n",i->value->name);
+// //            printf("%s\n",i->value->name);
+//             PriorityQueuePush(active,i);
+//         }
+//     }
+
+}
+
+int find_gcp_live(char *name)
+{
+    if(name)
+    {
+        for(int i=0;i<var_num;i++)
+        {
+            if(strcmp(name,live_global[i].name)==0)
+                return i;
+        }
+    }
+    return -1;
+}
 
 void travel_ir(InstNode *instruction_node)
 {
@@ -4475,7 +4744,7 @@ void create_variable_list()
 #if reg_alloc_test
         list_of_variables[i].name = live_global[i].name;
 #else
-        list_of_variables[i].name = live[i].name;
+        list_of_variables[i].name = live_global[i].name;
 #endif
         list_of_variables[i].color = NO_COLOR;
         list_of_variables[i].neighbor_count = 0;

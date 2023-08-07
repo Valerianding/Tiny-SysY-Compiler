@@ -1,3 +1,5 @@
+#ifndef REG_H
+#define REG_H
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -11,6 +13,8 @@
 #include "user.h"
 #include "function.h"
 #include "offset.h"
+#include "line_scan.h"
+
 #define SET(i) ( non_available_colors[i/32] |= (1 << (i % 32) ) )
 #define CLEAR(i)   ( non_available_colors[i/32] &= ~(1 << (i % 32) ) )
 #define CHECK(i)  ( non_available_colors[i/32] & (1 << (i % 32) ) )
@@ -96,8 +100,9 @@ struct  reg_now
 };
 
 
-
-
+void gcp_init(PriorityQueue* pqueue);
+void gcp_allocate(InstNode* ins,Function* start);
+void g_alloca(Function *curFunction,PriorityQueue*queue);
 void init_non_available_colors();
 void reset_non_available_colors();
 int first_fit_coloring();
@@ -155,3 +160,4 @@ void clean_reg_global();
 void addinout();
 void printf_asm_test(char * filename_test);
 void reg_control(struct _InstNode *instruction_node,Function *start);
+#endif

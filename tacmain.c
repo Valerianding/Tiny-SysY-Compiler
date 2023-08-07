@@ -142,11 +142,20 @@ int main(int argc, char* argv[]){
         calculateNonLocals(currentFunction);
 
         mem2reg(currentFunction);
+
+        //Loop invariant code motion 需要使用live-out信息
+        calculateLiveness(currentFunction);
+
+        printLiveness(currentFunction);
     }
+
+//    //mem2reg之后，优化前
+
 
     CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
+
 
     bool NOTOK = containFloat(instruction_list);
 
@@ -166,6 +175,8 @@ int main(int argc, char* argv[]){
 //            RunOptimizePasses(currentFunction);
         }
     }
+
+    func_inline(instruction_list,124);
 
 
     if(Optimize){
@@ -189,6 +200,13 @@ int main(int argc, char* argv[]){
         }
     }
 
+    //重新构建Function
+    start = ReconstructFunction(instruction_list);
+
+    //inline 之后的IR
+    // printf_llvm_ir(instruction_list,argv[4],1);
+
+
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //这里build CallGraphNode 需要在内联之后进行callgraph的
@@ -200,11 +218,10 @@ int main(int argc, char* argv[]){
             RunBasicPasses(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
-
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
+
 
 
             bool changed = true;
@@ -223,8 +240,8 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
         }
     }
-
     printf_llvm_ir(instruction_list,argv[4],1);
+
 
     //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -232,8 +249,7 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
-
+    // printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -263,10 +279,15 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],0);
 
 
+
 //    线性扫描
     line_scan(instruction_list,start);
 
 //    reg_control(instruction_list,start);
+
+
+//    gcp_allocate(instruction_list,start);
+    //修改all_in_memory开启/关闭寄存器分配
 
 
     arm_open_file(argv[3]);
