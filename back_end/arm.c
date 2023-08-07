@@ -529,6 +529,7 @@ int get_free_reg(){
             return i;
         }
     }
+    return 3;
     assert(false);
 //    assert(false);
 }
