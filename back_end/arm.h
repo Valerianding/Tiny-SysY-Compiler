@@ -48,6 +48,7 @@ bool is_float_array(Value *value);
 int get_a_tem_reg();
 void free_a_tmp_reg(int i);
 int get_free_reg();
+int get_order_param(int param_num);
 int power_of_two(int x);
 /**
  * @details 获取哈希表的大小

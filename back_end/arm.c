@@ -62,21 +62,22 @@ int ltorg_num=0;
 int give_param_flag[4];
 char return_message[100000];
 int stm_num; //8字节对齐
-
+int order_param_flag;
+int order_of_param[4];
 int get_a_tem_reg(){
     for(int i=2;i>=0;i--){
         if(watchReg.generalReg[i]==0 && give_param_flag[i]==0){
             watchReg.generalReg[i]=1;
             return i;
         }
+        if(watchReg.r14==0){
+            watchReg.r14=1;
+            return 14;
+        }
         assert(false);
         if(watchReg.r12==0){
             watchReg.r12=1;
             return 12;
-        }
-        if(watchReg.r14==0){
-            watchReg.r14=1;
-            return 14;
         }
         assert(false);
         return -1;
@@ -527,8 +528,36 @@ int get_free_reg(){
             return i;
         }
     }
-    return -1;
+    return 14;
 //    assert(false);
+}
+int get_order_param(int param_num){
+    assert(param_num<=4);
+    InstNode *tmp;
+    int tmpR;
+    if(order_param_flag==0){
+        for(int i=0;i<param_num;i++){
+            tmp=one_param[i];
+            assert(tmp!=NULL);
+            tmpR=tmp->inst->_reg_[1];
+            if(tmpR==3){
+                order_param_flag=1;
+                order_of_param[i]=1;
+                return i;
+            }
+        }
+        order_param_flag=1;
+        order_of_param[0]=1;
+        return 0;
+    }else {
+        for(int i=0;i<param_num;i++){
+            if(order_of_param[i]==0){
+                order_of_param[i]=1;
+                return i;
+            }
+        }
+    }
+    return -1; //表示传参结束
 }
 void handle_illegal_imm1(int dest_reg,int x){
     if(x>=0&&x<=AND_LOW){//16位bit即可表示下，则只需要用到movw,但是一样需要用到movt,因为寄存器如果本来高16位如果为零的或就错了
@@ -6889,6 +6918,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    所以说现在是先调用一下get_param_list(),传入call的value1，和give_count这个变量的地址，然后就可以使用0ne_param里面的ir了
     memset(give_param_flag,0, sizeof(give_param_flag));
     memset(&watchReg,0,sizeof(watchReg));
+
     int operandNum=ins->inst->user.value.NumUserOperands;
 
 //    现在这个call简单修复了一下，就是返回值为Unkonwn的话，
@@ -6916,7 +6946,8 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     }
 
     get_param_list(value1,&give_count);
-
+    memset(order_of_param,0, sizeof(order_of_param));
+    order_param_flag=0;
     arm_trans_GIVE_PARAM(hashMap,param_num_);
 
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
@@ -7748,7 +7779,8 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
     int num=param_num;
     InstNode *tmp=NULL;
     if(num<=4){
-        for(int i=0;i<num;i++){
+        int i= get_order_param(num);
+        while (i!=-1){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             int left_reg_abs;
@@ -7875,6 +7907,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 
             }
             give_param_flag[i]=1;
+            i= get_order_param(num);
         }
     }
     else{
@@ -7994,7 +8027,8 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             }
         }
         // 可以考虑一下，把这一部分代码放在后面，就是先传超出的参数，再去传前四个参数
-        for(i=1;i<4;++i){
+        i= get_order_param(4);
+        while (i!=-1){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             int left_reg_abs;
@@ -8088,100 +8122,100 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 }
             }
             give_param_flag[i]=1;
+            i= get_order_param(4);
         }
-
 //        填充r0
-        tmp=one_param[0];
-        int left_reg=tmp->inst->_reg_[1];
-        int left_reg_abs;
-        Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
-
-        if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
-            if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-                printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-                fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-                    int_to_float(0,0);
-                }
-            } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-                handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
-                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-                    int_to_float(0,0);
-                }
-            } else if(isImmFloatType(value1->VTy)){
-                handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
-
-                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-                    printf("\tvmov\ts0,r0\n");
-                    fprintf(fp,"\tvmov\ts0,r0\n");
-                }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
-                    float_to_int(0,0);
-                }
-            }
-        }
-
-        if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
-            if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
-                if(left_reg>100){
-                    int x= get_value_offset_sp(hashMap,value1);
-                    handle_illegal_imm(left_reg,x,1);
-                    printf("\tmov\tr0,r%d\n",left_reg-100);
-                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-                }else{
-                    printf("\tmov\tr0,r%d\n",left_reg);
-                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-                }
-                if(isLocalVarIntType(value1->VTy)){
-                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-                        int_to_float(0,0);
-                    }
-                }else if(isLocalVarFloatType(value1->VTy)){
-                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-                        printf("\tvmov\ts0,r0\n");
-                        fprintf(fp,"\tvmov\ts0,r0\n");
-                    }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
-                        float_to_int(0,0);
-                    }
-                }
-            }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
-                left_reg=tmp->inst->_vfpReg_[1];
-                if(left_reg>100){
-                    int x= get_value_offset_sp(hashMap,value1);
-                    vfp_handle_illegal_imm(left_reg,x,1);
-                    left_reg_abs=left_reg-100;
-                }else{
-                    left_reg_abs=left_reg;
-                }
-                if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-                    printf("\tvmov\ts0,s%d\n",left_reg_abs);
-                    fprintf(fp,"\tvmov\ts0,s%d\n",left_reg_abs);
-                    //这里为了和之前的版本匹配，就是即传到si，也传到通用寄存器，因为在自己的函数中，函数开始时是使用通用寄存器来处理的
-                    printf("\tvmov\tr0,s0\n");
-                    fprintf(fp,"\tvmov\tr0,s0\n");
-                }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
-                    printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
-                    fprintf(fp,"\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
-                    printf("\tvmov\tr0,s0\n");
-                    fprintf(fp,"\tvmov\tr0,s0\n");
-                }
-            }
-        }
-
-
-        else if(value1->VTy->ID==AddressTyID){
-            if(left_reg>100){
-                int x= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,x,1);
-
-                printf("\tmov\tr0,r%d\n",left_reg-100);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-            }else{
-                printf("\tmov\tr0,r%d\n",left_reg);
-                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-            }
-        }
+//        tmp=one_param[0];
+//        int left_reg=tmp->inst->_reg_[1];
+//        int left_reg_abs;
+//        Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
+//
+//        if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
+//            if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
+//                printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+//                fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
+//                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
+//                    int_to_float(0,0);
+//                }
+//            } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
+//                handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
+//                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
+//                    int_to_float(0,0);
+//                }
+//            } else if(isImmFloatType(value1->VTy)){
+//                handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
+//
+//                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
+//                    printf("\tvmov\ts0,r0\n");
+//                    fprintf(fp,"\tvmov\ts0,r0\n");
+//                }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
+//                    float_to_int(0,0);
+//                }
+//            }
+//        }
+//
+//        if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
+//            if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
+//                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
+//                if(left_reg>100){
+//                    int x= get_value_offset_sp(hashMap,value1);
+//                    handle_illegal_imm(left_reg,x,1);
+//                    printf("\tmov\tr0,r%d\n",left_reg-100);
+//                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+//                }else{
+//                    printf("\tmov\tr0,r%d\n",left_reg);
+//                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+//                }
+//                if(isLocalVarIntType(value1->VTy)){
+//                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
+//                        int_to_float(0,0);
+//                    }
+//                }else if(isLocalVarFloatType(value1->VTy)){
+//                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
+//                        printf("\tvmov\ts0,r0\n");
+//                        fprintf(fp,"\tvmov\ts0,r0\n");
+//                    }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
+//                        float_to_int(0,0);
+//                    }
+//                }
+//            }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+//                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
+//                left_reg=tmp->inst->_vfpReg_[1];
+//                if(left_reg>100){
+//                    int x= get_value_offset_sp(hashMap,value1);
+//                    vfp_handle_illegal_imm(left_reg,x,1);
+//                    left_reg_abs=left_reg-100;
+//                }else{
+//                    left_reg_abs=left_reg;
+//                }
+//                if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
+//                    printf("\tvmov\ts0,s%d\n",left_reg_abs);
+//                    fprintf(fp,"\tvmov\ts0,s%d\n",left_reg_abs);
+//                    //这里为了和之前的版本匹配，就是即传到si，也传到通用寄存器，因为在自己的函数中，函数开始时是使用通用寄存器来处理的
+//                    printf("\tvmov\tr0,s0\n");
+//                    fprintf(fp,"\tvmov\tr0,s0\n");
+//                }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
+//                    printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
+//                    fprintf(fp,"\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
+//                    printf("\tvmov\tr0,s0\n");
+//                    fprintf(fp,"\tvmov\tr0,s0\n");
+//                }
+//            }
+//        }
+//
+//
+//        else if(value1->VTy->ID==AddressTyID){
+//            if(left_reg>100){
+//                int x= get_value_offset_sp(hashMap,value1);
+//                handle_illegal_imm(left_reg,x,1);
+//
+//                printf("\tmov\tr0,r%d\n",left_reg-100);
+//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+//            }else{
+//                printf("\tmov\tr0,r%d\n",left_reg);
+//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
+//            }
+//        }
     }
 
 
@@ -9282,13 +9316,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         int flag=value0->pdata->var_pdata.iVal;
         int off= get_value_offset_sp(hashMap,value1);
         assert(off!=-1);
-//        if(value1 && value1->name && strcmp(value1->name,"%5")==0){
-//            printf("hhe\n");
-//        }
-//        printf("%s %d\n",value1->name,off);
         if(flag<0){ //常数
             int x=value2->pdata->var_pdata.iVal*4;
-//            printf("x  %d\n",x);
             x+=off;
             if(imm_is_valid(x)){
                 if(x!=0){
@@ -9357,10 +9386,10 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                         }
                     }else{
                         handle_illegal_imm1(2,x1);
-                        watchReg.generalReg[2]=1;
                         printf("\tadd\tr1,sp,r2\n");
                         fprintf(fp,"\tadd\tr1,sp,r2\n");
                     }
+                    watchReg.generalReg[1]=1;
                     if(imm_is_valid(result)){
                         printf("\tmov\tr2,#%d\n",result);
                         fprintf(fp,"\tmov\tr2,#%d\n",result);
@@ -9438,6 +9467,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
                 printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
                 fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                watchReg.generalReg[1]=1;
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 if(imm_is_valid(y)){
@@ -9476,6 +9506,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
                     printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
                     fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    watchReg.generalReg[1]=1;
                     if(right_reg>100){
                         int x2= get_value_offset_sp(hashMap,value2);
                         handle_illegal_imm(right_reg,x2,2);
@@ -9499,9 +9530,6 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         int left_reg_flag=ins->inst->_reg_[1];
         assert(left_reg_flag!=0);
         int flag=value0->pdata->var_pdata.iVal;
-        if(strcmp(value1->name,"%340")==0){
-//            printf("\thello\n");
-        }
         if(flag<0){
 //            printf("GEP next1\n");
 //            非第一条GEP而且是常数的偏移（其后不含变量）,常数的偏移的话直接add就可以了
@@ -9638,6 +9666,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             }
         }
     }
+
     memset(&watchReg,0, sizeof(watchReg));
     return ins;
 }

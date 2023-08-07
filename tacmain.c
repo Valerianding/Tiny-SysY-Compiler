@@ -176,7 +176,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-//    func_inline(instruction_list,124);
+    func_inline(instruction_list,124);
 
     //重新构建Function
     start = ReconstructFunction(instruction_list);
