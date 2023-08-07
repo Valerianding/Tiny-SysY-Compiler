@@ -70,6 +70,7 @@ int get_a_tem_reg(){
             watchReg.generalReg[i]=1;
             return i;
         }
+        assert(false);
         if(watchReg.r14==0){
             watchReg.r14=1;
             return 14;
@@ -528,12 +529,21 @@ int get_free_reg(){
             return i;
         }
     }
-    return 14;
+    assert(false);
 //    assert(false);
 }
 int get_order_param(int param_num){
     assert(param_num<=4);
     InstNode *tmp;
+//    如果give_param的时候被标到了r1，则标回ri
+//    int changeReg;
+//    for(int i=0;i<param_num;i++){
+//        tmp=one_param[i];
+//        if(tmp->inst->_reg_[i]==101 && give_param_flag[1]==1){
+//            tmp->inst->_reg_[i]=i+100;
+//        }
+//    }
+
     int tmpR;
     if(order_param_flag==0){
         for(int i=0;i<param_num;i++){
@@ -6546,9 +6556,11 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //        printf("\tsub\tsp,sp,#4\n");
 //        fprintf(fp,"\tsub\tsp,sp,#4\n");
 //        sp_offset_to_r11+=4;
-        printf("\tpush\t{ r3,r12 }\n");
-        fprintf(fp,"\tpush\t{ r3,r12 }\n");
-        sp_offset_to_r11+=8;
+        printf("\tpush\t{ r3,r12,r14 }\n");
+        fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+        printf("\tsub\tsp,sp,#4\n");
+        fprintf(fp,"\tsub\tsp,sp,#4\n");
+        sp_offset_to_r11+=16;
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
 //        printf("\tadd\tsp,sp,#8\n");
@@ -6556,8 +6568,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //        sp_offset_to_r11=0;
 //        printf("\tldr\tr3,[sp,#-4]\n");
 //        fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-        printf("\tpop\t{ r3,r12 }\n");
-        fprintf(fp,"\tpop\t{ r3,r12 }\n");
+        printf("\tadd\tsp,sp,#4\n");
+        fprintf(fp,"\tadd\tsp,sp,#4\n");
+        printf("\tpop\t{ r3,r12,r14 }\n");
+        fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
         sp_offset_to_r11=0;
 
         if(ARM_enable_vfp==1){
@@ -6754,9 +6768,11 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
                 }
             }
-            printf("\tpush\t{ r3,r12 }\n");
-            fprintf(fp,"\tpush\t{ r3,r12 }\n");
-            sp_offset_to_r11+=8;
+            printf("\tpush\t{ r3,r12,r14 }\n");
+            fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+            printf("\tsub\tsp,sp,#4\n");
+            fprintf(fp,"\tsub\tsp,sp,#4\n");
+            sp_offset_to_r11+=16;
 //            printf("\tstr\tr3,[sp,#-4]!\n");
 //            fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
 //            sp_offset_to_r11+=4;
@@ -6770,8 +6786,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //            sp_offset_to_r11=0;
 //            printf("\tldr\tr3,[sp,#-4]\n");
 //            fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-            printf("\tpop\t{ r3,r12 }\n");
-            fprintf(fp,"\tpop\t{ r3,r12 }\n");
+            printf("\tadd\tsp,sp,#4\n");
+            fprintf(fp,"\tadd\tsp,sp,#4\n");
+            printf("\tpop\t{ r3,r12,r14 }\n");
+            fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
             sp_offset_to_r11=0;
 
             printf("\tmov\tr%d,r1\n",dest_reg_abs);
@@ -6851,9 +6869,11 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr1,r%d\n",right_reg);
             fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
         }
-        printf("\tpush\t{ r3,r12 }\n");
-        fprintf(fp,"\tpush\t{ r3,r12 }\n");
-        sp_offset_to_r11+=8;
+        printf("\tpush\t{ r3,r12,r14 }\n");
+        fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+        printf("\tsub\tsp,sp,#4\n");
+        fprintf(fp,"\tsub\tsp,sp,#4\n");
+        sp_offset_to_r11+=16;
 //        printf("\tstr\tr3,[sp,#-4]!\n");
 //        fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
 //        sp_offset_to_r11+=4;
@@ -6867,8 +6887,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //        sp_offset_to_r11=0;
 //        printf("\tldr\tr3,[sp,#-4]\n");
 //        fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-        printf("\tpop\t{ r3,r12 }\n");
-        fprintf(fp,"\tpop\t{ r3,r12 }\n");
+        printf("\tadd\tsp,sp,#4\n");
+        fprintf(fp,"\tadd\tsp,sp,#4\n");
+        printf("\tpop\t{ r3,r12,r14 }\n");
+        fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
         sp_offset_to_r11=0;
 
         if(ARM_enable_vfp==1){
@@ -6950,9 +6972,11 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //    printf("\tstr\tr3,[sp,#-4]!\n");
 //    fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
 //    sp_offset_to_r11+=4;
-    printf("\tpush\t{ r3,r12 }\n");
-    fprintf(fp,"\tpush\t{ r3,r12 }\n");
-    sp_offset_to_r11+=8;
+    printf("\tpush\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+    printf("\tsub\tsp,sp,#4\n");
+    fprintf(fp,"\tsub\tsp,sp,#4\n");
+    sp_offset_to_r11+=16;
 
     if(param_num_>4 && (((param_num_)-4)%2)!=0){
         printf("\tsub\tsp,sp,#4\n");
@@ -6997,18 +7021,18 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 //            sp_offset_to_r11=0; //此时sp==r11，
 //        }
 //    }
-    if((sp_offset_to_r11-8)!=0){
-        if(imm_is_valid(sp_offset_to_r11-8)){
-            printf("\tadd\tsp,sp,#%d\n",sp_offset_to_r11-8);
-            fprintf(fp,"\tadd\tsp,sp,#%d\n",sp_offset_to_r11-8);
+    if((sp_offset_to_r11-12)!=0){
+        if(imm_is_valid(sp_offset_to_r11-12)){
+            printf("\tadd\tsp,sp,#%d\n",sp_offset_to_r11-12);
+            fprintf(fp,"\tadd\tsp,sp,#%d\n",sp_offset_to_r11-12);
         }else{
-            handle_illegal_imm1(3,sp_offset_to_r11-8);
+            handle_illegal_imm1(3,sp_offset_to_r11-12);
             printf("\tadd\tsp,sp,r3\n");
             fprintf(fp,"\tadd\tsp,sp,r3\n");
         }
     }
-    printf("\tpop\t{ r3,r12 }\n");
-    fprintf(fp,"\tpop\t{ r3,r12 }\n");
+    printf("\tpop\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
 
 //      恢复保存的r3寄存器
 //    printf("\tldr\tr3,[sp,#-4]\n");
@@ -7103,9 +7127,11 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
 //    printf("\tsub\tsp,sp,#4\n");
 //    fprintf(fp,"\tsub\tsp,sp,#4\n");
 //    sp_offset_to_r11+=4;
-    printf("\tpush\t{ r3,r12 }\n");
-    fprintf(fp,"\tpush\t{ r3,r12 }\n");
-    sp_offset_to_r11+=8;
+    printf("\tpush\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+    printf("\tsub\tsp,sp,#4\n");
+    fprintf(fp,"\tsub\tsp,sp,#4\n");
+    sp_offset_to_r11+=16;
 
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
@@ -7120,8 +7146,10 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
 //    sp_offset_to_r11=0;
 //    printf("\tldr\tr3,[sp,#-4]\n");
 //    fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-    printf("\tpop\t{ r3,r12 }\n");
-    fprintf(fp,"\tpop\t{ r3,r12 }\n");
+    printf("\tadd\tsp,sp,#4\n");
+    fprintf(fp,"\tadd\tsp,sp,#4\n");
+    printf("\tpop\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
     sp_offset_to_r11=0;
 
     memset(give_param_flag,0, sizeof(give_param_flag));
@@ -7817,6 +7845,11 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         while (i!=-1){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
+            if(give_param_flag[1]==1){
+                if(left_reg==101){
+                    left_reg=i+100;
+                }
+            }
             int left_reg_abs;
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
 //            判断传递参数时的give_param的类型和被调用函数期望的类型是否一致？
@@ -8065,6 +8098,11 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
         while (i!=-1){
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
+            if(give_param_flag[1]==1){
+                if(left_reg==101){
+                    left_reg=i+100;
+                }
+            }
             int left_reg_abs;
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
@@ -9893,9 +9931,11 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
 //        printf("\tsub\tsp,sp,#4\n");
 //        fprintf(fp,"\tsub\tsp,sp,#4\n");
 //        sp_offset_to_r11+=4;
-        printf("\tpush\t{ r3,r12 }\n");
-        fprintf(fp,"\tpush\t{ r3,r12 }\n");
-        sp_offset_to_r11+=8;
+        printf("\tpush\t{ r3,r12,r14 }\n");
+        fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+        printf("\tsub\tsp,sp,#4\n");
+        fprintf(fp,"\tsub\tsp,sp,#4\n");
+        sp_offset_to_r11+=16;
 
         int x=get_value_offset_sp(hashMap,value1);
         if(imm_is_valid(x)){
@@ -9929,8 +9969,10 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
 //        sp_offset_to_r11=0;
 //        printf("\tldr\tr3,[sp,#-4]\n");
 //        fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-        printf("\tpop\t{ r3,r12 }\n");
-        fprintf(fp,"\tpop\t{ r3,r12 }\n");
+        printf("\tadd\tsp,sp,#4\n");
+        fprintf(fp,"\tadd\tsp,sp,#4\n");
+        printf("\tpop\t{ r3,r12,r14 }\n");
+        fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
         sp_offset_to_r11=0;
     }
     return ins;
