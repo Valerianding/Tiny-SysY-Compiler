@@ -31,7 +31,7 @@ void RunOptimizePasses(Function *currentFunction){
 
 //    Loop2Memcpy(currentFunction);
 
-    GCM(currentFunction);
+    //GCM(currentFunction);
 
     instruction_combination(currentFunction);
 

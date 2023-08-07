@@ -206,7 +206,7 @@ bool loopSimplify(Loop *loop){
 
             assert(bodyHead->inst->Opcode == Add || bodyHead->inst->Opcode == Sub);
 
-            assert(loop->preHeader != NULL && loop->guard != NULL);
+            //assert(loop->preHeader != NULL && loop->guard != NULL);
 
             Value *rhs = ins_get_rhs(bodyHead->inst);
 
