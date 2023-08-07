@@ -9347,6 +9347,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     dest_reg_abs=abs(dest_reg);
     left_reg=ins->inst->_reg_[1];
     right_reg=ins->inst->_reg_[2];
+    int tmpReg;
 //    数组好像只有第一条GEP指令的value1类型是对的，之后的GEP指令对应的都是address,全局比那辆也是一样的，所以说可以利用value1的类型来判断是不是第一条GEP
 
 
@@ -9365,6 +9366,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         }else{
             left_reg_abs=left_reg;
         }
+
         assert(left_reg_abs!=0);
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
@@ -9380,9 +9382,10 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     }
                 }
             }else{
-                handle_illegal_imm1(1,y);
-                printf("\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
-                fprintf(fp,"\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
+                tmpReg=get_free_reg();
+                handle_illegal_imm1(tmpReg,y);
+                printf("\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg_abs,tmpReg);
+                fprintf(fp,"\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg_abs,tmpReg);
             }
             if(dest_reg_abs==1){
                 watchReg.generalReg[1]=1;
