@@ -9,7 +9,7 @@
 
 
 //当前还没有考虑memset 和 sysymemset
-const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_PARAM,EQ,NOTEQ,GREAT,GREATEQ,LESS,LESSEQ,Div,Mod};
+const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_PARAM,EQ,NOTEQ,GREAT,GREATEQ,LESS,LESSEQ,Div,Mod,SysYMemset,SysYMemcpy};
 
 void bfsTravelDomTree(DomTreeNode *root,int level){
     root->depth = level;
@@ -57,7 +57,7 @@ bool isPinnedIns(InstNode *instNode){
 void Schedule_Early(Instruction *ins){
     BasicBlock *curBlock = ins->Parent;
 
-    printf("curIns %d, curBlock %d\n",ins->i,curBlock->id);
+    //printf("curIns %d, curBlock %d\n",ins->i,curBlock->id);
     Function *function = curBlock->Parent;
     assert(function != NULL);
 
@@ -409,7 +409,7 @@ DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
 }
 
 void Schedule_Late(Instruction *ins){
-    printf("ins %d\n",ins->i);
+    //printf("ins %d\n",ins->i);
     if(ins->visited == true){
         return;
     }
@@ -471,7 +471,7 @@ void Schedule_Late(Instruction *ins){
 
     //只有不是pinned的insNode值得我们去移动，但是pinnedNode 的uses我们还是希望能够Schedule Late
     InstNode *insNode = findNode(ins->Parent,ins);
-    printf("insNode %d\n",insNode->inst->i);
+    //printf("insNode %d\n",insNode->inst->i);
     if(!isPinnedIns(insNode)){
 
         if(lca == NULL) return;

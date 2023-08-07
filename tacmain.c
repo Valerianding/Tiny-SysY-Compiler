@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -163,20 +163,18 @@ int main(int argc, char* argv[]){
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunOptimizePasses(currentFunction);
+//            RunOptimizePasses(currentFunction);
         }
     }
 
 
     if(Optimize){
-        func_inline(instruction_list,124);
+        //func_inline(instruction_list,124);
 
         //重新构建Function
         start = ReconstructFunction(instruction_list);
 
         global2local(instruction_list);
-
-        //printf_llvm_ir(instruction_list,argv[4],1);
 
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
 
@@ -207,26 +205,30 @@ int main(int argc, char* argv[]){
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
-            loopAnalysis(currentFunction);
-            LoopNormalize(currentFunction);
-//            exmaineLoop(currentFunction);
-//            printf("here!!!\n");
-//            LoopSimplify(currentFunction);
 
-//            bool changed = true;
-//            while(changed){
-//                changed = InstCombine(currentFunction);
-//                renameVariables(currentFunction);
-//            }
+
+            bool changed = true;
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
+//
+            LoopSimplify(currentFunction);
+//
+            changed = true;
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
+
+            renameVariables(currentFunction);
+            RunOptimizePasses(currentFunction);
         }
     }
+
     printf_llvm_ir(instruction_list,argv[4],1);
 
     //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        printf("clean now!\n");
-//        Clean(currentFunction);
-        printf("clean !\n");
+        Clean(currentFunction);
         renameVariables(currentFunction);
     }
 
@@ -256,29 +258,20 @@ int main(int argc, char* argv[]){
         topCfg(currentFunction);
     }
 
-    //lsy_begin
-//    printf("=================fix===================\n");
+
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
-    //lsy_end
 
 
 //    线性扫描
     line_scan(instruction_list,start);
 
-    //ljw_begin
 //    reg_control(instruction_list,start);
-    //修改all_in_memory开启/关闭寄存器分配
-    //ljw_end`1`
 
-    //    ljf_begin
-//    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
-//    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
 
     arm_open_file(argv[3]);
     arm_translate_ins(instruction_list,argv[3]);
     arm_close_file();
-    //    ljf_end
 #endif
     return 0;
 }

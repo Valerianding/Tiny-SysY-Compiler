@@ -9,7 +9,7 @@
 
 #include "dvnt.h"
 
-//TODO 由于新增了fptosi 和 sitofp 需要重新考虑，并且加上算术相等的判断！！！
+//TODO 由于新增了fptosi 和 sitofp 需要重新考虑，并且加上算术相等的判断！！！  -> 算术相等会被InstComb处理掉
 const Opcode valueOperator[] = {Alloca,GEP,bitcast,Load,Call,Add,Sub, Div,Mul,Mod,fptosi,sitofp};
 unsigned int value_number_seed = 1;
 bool isValueAbleOperator(InstNode *instNode){
