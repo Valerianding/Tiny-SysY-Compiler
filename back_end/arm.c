@@ -9384,6 +9384,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 printf("\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
                 fprintf(fp,"\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9432,6 +9435,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg_abs);
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int z= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,z,0);
@@ -9458,6 +9464,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm1(0,x);
                 printf("\tadd\tr%d,sp,r0\n",dest_reg_abs);
                 fprintf(fp,"\tadd\tr%d,sp,r0\n",dest_reg_abs);
+            }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
@@ -9535,6 +9544,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     }
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9569,6 +9581,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm1(0,x);
                 printf("\tadd\tr%d,r1,r0\n",dest_reg_abs);
                 fprintf(fp,"\tadd\tr%d,r1,r0\n",dest_reg_abs);
+            }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
@@ -9646,6 +9661,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     }
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9700,6 +9718,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg);
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9745,6 +9766,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg);
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9789,6 +9813,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             }else{
                 printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
                 fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+            }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
