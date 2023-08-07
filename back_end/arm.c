@@ -362,6 +362,7 @@ void printf_vpush_rlist(){
             }
         }
     }
+
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
