@@ -29,7 +29,7 @@ void RunOptimizePasses(Function *currentFunction){
 
     Loop2Memset(currentFunction);
 
-    Loop2Memcpy(currentFunction);
+//    Loop2Memcpy(currentFunction);
 
     GCM(currentFunction);
 

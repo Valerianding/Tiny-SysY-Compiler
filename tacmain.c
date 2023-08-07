@@ -172,15 +172,14 @@ int main(int argc, char* argv[]){
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
-//            RunOptimizePasses(currentFunction);
+            RunOptimizePasses(currentFunction);
         }
     }
 
-    func_inline(instruction_list,124);
-
+//    func_inline(instruction_list,124);
 
     if(Optimize){
-        //func_inline(instruction_list,124);
+        func_inline(instruction_list,124);
 
         //重新构建Function
         start = ReconstructFunction(instruction_list);

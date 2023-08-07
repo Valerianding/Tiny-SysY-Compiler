@@ -6540,6 +6540,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         if(imm_is_valid(x1)){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
+            watchReg.generalReg[0]=1;
             if(right_reg>=100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -6551,10 +6552,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             }
         }else{
             handle_illegal_imm1(0,x1);
+            watchReg.generalReg[0]=1;
             if(right_reg>=100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
-
                 printf("\tmov\tr1,r%d\n",right_reg-100);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
             }else{
@@ -6772,6 +6773,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if((imm_is_valid(x2))){
                 printf("\tmov\tr1,#%d\n",x2);
                 fprintf(fp,"\tmov\tr1,#%d\n",x2);
+                watchReg.generalReg[1]=1;
                 if(left_reg > 100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
@@ -6783,6 +6785,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 }
             }else{
                 handle_illegal_imm1(1,x2);
+                watchReg.generalReg[1]=1;
                 if(left_reg>=100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
