@@ -7163,7 +7163,8 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
 
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
-
+    memset(order_of_param,0, sizeof(order_of_param));
+    order_param_flag=0;
     arm_trans_GIVE_PARAM(hashMap,3);
 
     printf("\tbl\tmemset\n");
@@ -7195,7 +7196,8 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
 
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
-
+    memset(order_of_param,0, sizeof(order_of_param));
+    order_param_flag=0;
     arm_trans_GIVE_PARAM(hashMap,3);
 
     printf("\tbl\tmemcpy\n");
