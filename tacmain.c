@@ -248,6 +248,7 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 
+
     // printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
