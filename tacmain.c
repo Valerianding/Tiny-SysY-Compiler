@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
     start = ReconstructFunction(instruction_list);
 
     //inline 之后的IR
-   // printf_llvm_ir(instruction_list,argv[4],1);
+    // printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //这里build CallGraphNode 需要在内联之后进行callgraph的
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 
-   // printf_llvm_ir(instruction_list,argv[4],1);
+    // printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -225,18 +225,20 @@ int main(int argc, char* argv[]){
 
     //  printf_llvm_ir(instruction_list,argv[4],0);
 
-
     for(Function *currentFunction = start;
         currentFunction != NULL; currentFunction = currentFunction->Next) {
         dominanceAnalysis(currentFunction);
         topCfg(currentFunction);
     }
 
+
     //lsy_begin
 //    printf("=================fix===================\n");
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
     //lsy_end
+
+
 
 
 //    线性扫描

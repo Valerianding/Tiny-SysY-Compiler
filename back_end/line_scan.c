@@ -4,8 +4,10 @@
 #include "line_scan.h"
 
 #define S 14
-#define R 6
+#define R 10
 int enable_vfp=0; //浮点寄存器分配开关
+int flag_lr=1; //释放lr
+int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
 
 //还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
 PriorityQueue *active;
@@ -447,13 +449,24 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
         if(isLocalArrayFloatType(value->VTy) || isLocalArrayIntType(value->VTy)){
             return;
         }
-        if(i==0){
-            ins->inst->_reg_[i]=-10;
-        }else if(i==1){
-            ins->inst->_reg_[i]=110;
-        } else if(i==2){
-            ins->inst->_reg_[i]=112;
+        if(flag_lr==1){
+            if(i==0){
+                ins->inst->_reg_[i]=-14;
+            }else if(i==1){
+                ins->inst->_reg_[i]=114;
+            } else if(i==2){
+                ins->inst->_reg_[i]=100;
+            }
+        }else{
+            if(i==0){
+                ins->inst->_reg_[i]=-10;
+            }else if(i==1){
+                ins->inst->_reg_[i]=110;
+            } else if(i==2){
+                ins->inst->_reg_[i]=112;
+            }
         }
+
         return;
     }
     ins->inst->_reg_[i]=node->reg;
@@ -461,14 +474,36 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
 
 
 int get_an_availabel_register(){
-    for(int i=4;i<10;i++){
-        if(myreg[i]==0){
-            myreg[i]=1;
-            free_reg_num--;
-            return i;
+    if(flag_lr==1 && flag_r11==1){
+        for(int i=3;i<=12;i++){
+            if(myreg[i]==0){
+                myreg[i]=1;
+                free_reg_num--;
+                return i;
+            }
         }
+        return -1;
+    }else if(flag_lr==1 && flag_r11==0){
+        for(int i=3;i<=10;i++){
+            if(myreg[i]==0){
+                myreg[i]=1;
+                free_reg_num--;
+                return i;
+            }
+        }
+        return -1;
     }
-    return -1;
+    else{
+        for(int i=3;i<10;i++){
+            if(myreg[i]==0){
+                myreg[i]=1;
+                free_reg_num--;
+                return i;
+            }
+        }
+        return -1;
+    }
+
 }
 void free_register(int i){
     free_reg_num++;

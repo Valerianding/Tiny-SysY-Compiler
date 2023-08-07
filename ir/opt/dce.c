@@ -343,9 +343,13 @@ bool OnePass(Vector* vector) {
         if(block->visited == false){
             block->visited = true;
         }
-//        printf("current: %d\n",block->id);
+        printf("current: %d\n",block->id);
+        if(block->id == 2188){
+
+        }
         bool processed = false;
         assert(block != NULL);
+
         //printf("block %d\n",block->id);
         // if i ends in a conditional branch
         if (block->tail_node->inst->Opcode == br_i1) {
@@ -466,6 +470,7 @@ bool OnePass(Vector* vector) {
                             bool usedByJ = false;
                             //如果block里面有phi函数
                             InstNode *jNode = j->head_node;
+
                             while(jNode != j->tail_node){
                                 if(jNode->inst->Opcode == Phi){
                                     HashSet *jSet = jNode->inst->user.value.pdata->pairSet;
@@ -590,12 +595,12 @@ bool OnePass(Vector* vector) {
                 combine(block, j);
             }
 
+
+
             //if j is empty and ends in a conditional branch then
             if (isEmpty(j) && j->tail_node->inst->Opcode == br_i1 && processed == false) {
 
                 //当前基本块有并且只能有一个phi函数！！ 其他情况都有点怪 我都assert false
-
-                assert(false);
                 int countPhi = 0;
                 InstNode *jNode = j->head_node;
                 InstNode *jTailNode = j->tail_node;
@@ -704,6 +709,8 @@ void Clean(Function *currentFunction){
         BasicBlock *temp = NULL;
 
         clear_visited_flag(currentFunction->entry);
+
+        printf("one pass!\n");
 
         changed = OnePass(vector);
 

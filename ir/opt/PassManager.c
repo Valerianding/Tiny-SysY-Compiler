@@ -28,9 +28,9 @@ void RunOptimizePasses(Function *currentFunction){
 
     //Loop2Memset(currentFunction);
 
-    GCM(currentFunction);
+    //GCM(currentFunction);
 
-    instruction_combination(currentFunction);
+    //instruction_combination(currentFunction);
 
     postDominanceAnalysis(currentFunction);
 

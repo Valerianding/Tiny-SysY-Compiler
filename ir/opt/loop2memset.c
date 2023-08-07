@@ -24,12 +24,6 @@ InstNode *newMemset(Value *ptr, Value *stored, Value *length){
     return memsetNode;
 }
 
-Value *get_ptr(InstNode *memsetIns){
-    if(memsetIns->inst->Opcode != SysYMemset){
-        assert(false);
-    }
-}
-
 bool LoopConvCheckLoop(Loop *loop){
     if(HashSetSize(loop->loopBody) != 2) return false;
 

@@ -28,5 +28,6 @@ void combination(Instruction *instruction_A,Instruction * instruction_B);
 
 
 //djf
+bool checkType(Instruction *ins);
 bool InstCombine(Function *currentFunction);
 #endif //C22V1_INSCOMB_H

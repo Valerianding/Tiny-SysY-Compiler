@@ -5,11 +5,8 @@
 #include "globalopt.h"
 Vector *constant_;
 
-//we only considered -> if it is only been read
-//more case: only stored but never used
 //TODO for array & global variable
 void CheckGlobalVariable(InstNode *list){
-
     //first of all we go through all the node to see if the initValue actually is uncritical for all
     InstNode *node = list;
     while(node != NULL){
@@ -308,7 +305,7 @@ void global2local(InstNode *list){
         if(globalNode->inst->Opcode == GLOBAL_VAR){
             Value *dest = ins_get_dest(globalNode->inst);
             if(isGlobalVar(dest)){
-                //check if it is only used in one function
+                //check if it is only used in main function
                 Use *uses = dest->use_list;
                 bool OnlyUsedInMainFunction = true;
                 Function *prevFunction = NULL;
@@ -330,12 +327,27 @@ void global2local(InstNode *list){
                     //insert a alloca instruction
                     //replace all the global var with this alloca
                     printf("var %s is only used!\n",dest->name);
-                    //TODO because there is no used global variable
-                    if(prevFunction != NULL)
+                    if(prevFunction != NULL){
                         replaceGlobal(prevFunction,dest);
+                    }
                 }
             }
         }
         globalNode = get_next_inst(globalNode);
+    }
+
+    globalNode = get_next_inst(list);
+    while(globalNode->inst->Opcode != FunBegin){
+        assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
+        Value *dest = ins_get_dest(globalNode->inst);
+        printf("dest is %s\n",dest->name);
+        Use *destUses = dest->use_list;
+        if(destUses == NULL){
+            InstNode *tempNode = get_next_inst(globalNode);
+            deleteIns(globalNode);
+            globalNode = tempNode;
+        }else{
+            globalNode = get_next_inst(globalNode);
+        }
     }
 }
