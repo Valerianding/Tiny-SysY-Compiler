@@ -7183,6 +7183,33 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     memset(give_param_flag,0, sizeof(give_param_flag));
     return ins;
 }
+InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
+    memset(give_param_flag,0, sizeof(give_param_flag));
+
+
+    printf("\tpush\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+    printf("\tsub\tsp,sp,#4\n");
+    fprintf(fp,"\tsub\tsp,sp,#4\n");
+    sp_offset_to_r11+=16;
+
+    get_param_list(NULL,&give_count);
+    func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
+
+    arm_trans_GIVE_PARAM(hashMap,3);
+
+    printf("\tbl\tmemcpy\n");
+    fprintf(fp,"\tbl\tmemcpy\n");
+
+    printf("\tadd\tsp,sp,#4\n");
+    fprintf(fp,"\tadd\tsp,sp,#4\n");
+    printf("\tpop\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
+    sp_offset_to_r11=0;
+
+    memset(give_param_flag,0, sizeof(give_param_flag));
+    return ins;
+}
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     memset(return_message,0, sizeof(return_message));
     int k;
@@ -10596,6 +10623,8 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_fptosi(hashMap,ins);
         case SysYMemset:
             return arm_tarns_SysYMemset(hashMap,ins);
+        case SysYMemcpy:
+            return arm_tarns_SysYMemcpy(hashMap,ins);
         default:
             return ins;
     }
