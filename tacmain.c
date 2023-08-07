@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -227,10 +227,10 @@ int main(int argc, char* argv[]){
 //            while(changed){
 //                changed = InstCombine(currentFunction);
 //            }
-////
+//
 //            LoopNormalize(currentFunction);
 //            LoopSimplify(currentFunction);
-////
+//
 //            changed = true;
 //            while(changed){
 //                changed = InstCombine(currentFunction);
