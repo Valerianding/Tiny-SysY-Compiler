@@ -4,7 +4,7 @@
 #include "line_scan.h"
 
 #define S 14
-#define R 10
+#define R 11
 int enable_vfp=0; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
 int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
@@ -451,9 +451,9 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
         }
         if(flag_lr==1){
             if(i==0){
-                ins->inst->_reg_[i]=-14;
+                ins->inst->_reg_[i]=-1;
             }else if(i==1){
-                ins->inst->_reg_[i]=114;
+                ins->inst->_reg_[i]=101;
             } else if(i==2){
                 ins->inst->_reg_[i]=100;
             }
@@ -481,6 +481,9 @@ int get_an_availabel_register(){
                 free_reg_num--;
                 return i;
             }
+        }
+        if(myreg[14]==0){
+            return 14;
         }
         return -1;
     }else if(flag_lr==1 && flag_r11==0){
