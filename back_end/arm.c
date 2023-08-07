@@ -6948,7 +6948,9 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     get_param_list(value1,&give_count);
     memset(order_of_param,0, sizeof(order_of_param));
     order_param_flag=0;
-    arm_trans_GIVE_PARAM(hashMap,param_num_);
+    if(param_num_!=0){
+        arm_trans_GIVE_PARAM(hashMap,param_num_);
+    }
 
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
