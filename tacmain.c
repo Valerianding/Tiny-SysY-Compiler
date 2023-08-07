@@ -277,7 +277,7 @@ int main(int argc, char* argv[]){
 
 
     fix_array(instruction_list);
-    printf_llvm_ir(instruction_list,argv[4],0);
+//    printf_llvm_ir(instruction_list,argv[4],0);
 
 
 
