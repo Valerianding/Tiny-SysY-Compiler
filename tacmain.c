@@ -184,6 +184,7 @@ int main(int argc, char* argv[]){
     //inline 之后的IR
     // printf_llvm_ir(instruction_list,argv[4],1);
 
+
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //这里build CallGraphNode 需要在内联之后进行callgraph的
         buildCallGraphNode(currentFunction);
@@ -242,10 +243,11 @@ int main(int argc, char* argv[]){
 
 
 //    线性扫描
-    line_scan(instruction_list,start);
+    // line_scan(instruction_list,start);
 
     //ljw_begin
 //    reg_control(instruction_list,start);
+    gcp_allocate(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
     //ljw_end`1`
 
