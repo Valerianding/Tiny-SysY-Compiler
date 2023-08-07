@@ -239,7 +239,7 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
         }
     }
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     //OK 现在开始我们不会对
