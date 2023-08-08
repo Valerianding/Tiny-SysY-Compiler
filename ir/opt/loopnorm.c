@@ -6,7 +6,6 @@
 //create a empty preheader for each loop
 
 void dfsTravelLoop(Loop *loop){
-    printf("in loop %d\n",loop->head->id);
     HashSetFirst(loop->child);
     for(Loop *child = HashSetNext(loop->child); child != NULL; child = HashSetNext(loop->child)){
         dfsTravelLoop(child);
@@ -20,11 +19,9 @@ void dfsTravelLoop(Loop *loop){
         if(HashSetFind(loop->loopBody,preBlock)){
             n = n - 1;
         }else{
-            printf("n %d\n",preBlock->id);
             guard = preBlock;
         }
     }
-    printf("now %d\n",loopEntry->id);
 
     //must have only one pred which will be our
     assert(n == 1);

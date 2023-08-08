@@ -109,21 +109,20 @@ bool LoopConv(Loop *loop){
 
     if(bodycount != 4) return false;
 
-    InstNode *gepInstNode = NULL;
     //skip label node
     bodyHead = loop->body_block->head_node;
     bodyHead = get_next_inst(bodyHead);
     int index = 0;
 
 
-    printf("bodyHead id %d\n",bodyHead->inst->i);
+//    printf("bodyHead id %d\n",bodyHead->inst->i);
     Value *basePtr = NULL; // gep的lhs
     Value *gepValue = NULL; // gep的dest
     Value *stored = NULL;
     while(bodyHead != bodyTail){
         switch (index) {
             case 0:{
-                //must be an access instruction=
+                //must be an access instruction
                 if(bodyHead->inst->Opcode != GEP){
                     return false;
                 }
@@ -182,7 +181,7 @@ bool LoopConv(Loop *loop){
     }
 
     if(basePtr != NULL && gepValue != NULL && stored != NULL){
-        printf("stored %s to gep %s base %s!\n",stored->name,gepValue->name,basePtr->name);
+        //printf("stored %s to gep %s base %s!\n",stored->name,gepValue->name,basePtr->name);
     }
 
     //ok now we can remove loop body
@@ -192,9 +191,7 @@ bool LoopConv(Loop *loop){
     assert(loop->containMultiBackEdge == false);
 
     //update the predecessors of entry block
-
-
-    //yet it is certain that it has only one entry and one exit
+    //Yet it is certain that it has only one entry and one exit
 
     BasicBlock *loopEntry = loop->head;
     //remove tail
@@ -236,6 +233,7 @@ bool LoopConv(Loop *loop){
     //insert function call on loopAnalysis entry
     Instruction *giveparam1 = ins_new_unary_operator(GIVE_PARAM,basePtr);
     InstNode *paramPtr = new_inst_node(giveparam1);
+    giveparam1->Parent = loopEntry;
     ins_insert_after(paramPtr,lengthNode);
     paramPtr->inst->Parent = loopEntry;
 

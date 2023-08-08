@@ -9,7 +9,7 @@
 
 
 //当前还没有考虑memset 和 sysymemset
-const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_PARAM,EQ,NOTEQ,GREAT,GREATEQ,LESS,LESSEQ,Div,Mod};
+const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_PARAM,EQ,NOTEQ,GREAT,GREATEQ,LESS,LESSEQ,Div,Mod,SysYMemset,SysYMemcpy};
 
 void bfsTravelDomTree(DomTreeNode *root,int level){
     root->depth = level;
@@ -57,7 +57,7 @@ bool isPinnedIns(InstNode *instNode){
 void Schedule_Early(Instruction *ins){
     BasicBlock *curBlock = ins->Parent;
 
-    printf("curIns %d, curBlock %d\n",ins->i,curBlock->id);
+    //printf("curIns %d, curBlock %d\n",ins->i,curBlock->id);
     Function *function = curBlock->Parent;
     assert(function != NULL);
 
@@ -409,7 +409,7 @@ DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
 }
 
 void Schedule_Late(Instruction *ins){
-    printf("ins %d\n",ins->i);
+    //printf("ins %d\n",ins->i);
     if(ins->visited == true){
         return;
     }
@@ -471,7 +471,7 @@ void Schedule_Late(Instruction *ins){
 
     //只有不是pinned的insNode值得我们去移动，但是pinnedNode 的uses我们还是希望能够Schedule Late
     InstNode *insNode = findNode(ins->Parent,ins);
-    printf("insNode %d\n",insNode->inst->i);
+    //printf("insNode %d\n",insNode->inst->i);
     if(!isPinnedIns(insNode)){
 
         if(lca == NULL) return;
@@ -496,14 +496,38 @@ void Schedule_Late(Instruction *ins){
             BasicBlock *bestBlock = best->block;
 
             InstNode *blockHead = get_next_inst(bestBlock->head_node);
+            InstNode *blockTail = bestBlock->tail_node;
+            //not to all insert at the beginning
+            //if current Block have use -> insert just before the use
+            //if current Block have no use -> insert just before the tail
 
+            //because the phi's use is considered at the predecessor
+            //so current block's phi must have no use!!
 
-            while(blockHead->inst->Opcode == Phi){
+            bool HaveUse = false;
+
+            while(blockHead != blockTail){
+                int numOfOperands = blockHead->inst->user.value.NumUserOperands;
+                Value *lhs = NULL;
+                Value *rhs = NULL;
+                if(numOfOperands == 1){
+                    lhs = ins_get_lhs(blockHead->inst);
+                }else if(numOfOperands == 2){
+                    lhs = ins_get_lhs(blockHead->inst);
+                    rhs = ins_get_rhs(blockHead->inst);
+                }
+
+                if(lhs != NULL && lhs == insDest){
+                    break;
+                }
+                if(rhs != NULL && rhs == insDest){
+                    break;
+                }
+
                 blockHead = get_next_inst(blockHead);
             }
 
             ins_insert_before(insNode,blockHead);
-
 
             insNode->inst->Parent = bestBlock;
         }

@@ -80,7 +80,7 @@ void line_scan(InstNode*ins,Function* start){
         }
 
         memset(myreg,0,sizeof(myreg));
-        free_reg_num=6;
+        free_reg_num=11;
         memset(VFPreg,0, sizeof(VFPreg));
         free_VFPreg_num=14;
 //      到这里为止
@@ -174,7 +174,7 @@ void expire_old_intervals(Function *curFunction,value_live_range *i){
         PriorityQueueTop(active,&elem);
         j=(value_live_range*)elem;
 //        if endpoint[j] ≥ startpoint[i]
-        if(j->end>=i->start){
+        if(j->end>i->start){
             return;
         }else{
 //            remove j from active

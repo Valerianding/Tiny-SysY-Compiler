@@ -85,7 +85,6 @@ bool loop2memcpy(Loop *loop){
         switch (index) {
             case 0:{
                 if(currNode->inst->Opcode != GEP){
-                    assert(false);
                     return false;
                 }
                 Value *gepIndex = ins_get_rhs(currNode->inst);
@@ -244,4 +243,7 @@ bool Loop2Memcpy(Function *currentFunction){
     for(Loop *root = HashSetNext(currentFunction->loops); root != NULL; root = HashSetNext(currentFunction->loops)){
         effective |= loop2memcpy(root);
     }
+
+    //need to rename in order to not confuse the Mark & Sweep
+    renameVariables(currentFunction);
 }

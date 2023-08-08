@@ -20,22 +20,25 @@ void RunOptimizePasses(Function *currentFunction){
 
     dominanceAnalysis(currentFunction);
 
-    DVNT(currentFunction);
+    DVNT(currentFunction); // 浮点情况还有可能有错
 
     //for loopAnalysis
     loopAnalysis(currentFunction);
+
     LICM(currentFunction);
 
-    //Loop2Memset(currentFunction);
+    Loop2Memset(currentFunction);
 
-    //GCM(currentFunction);
+    Loop2Memcpy(currentFunction);
 
-    //instruction_combination(currentFunction);
+    GCM(currentFunction);
+
+    instruction_combination(currentFunction);
 
     postDominanceAnalysis(currentFunction);
 
     Mark(currentFunction);
-
+//
     Sweep(currentFunction);
 
     renameVariables(currentFunction);

@@ -4,7 +4,3 @@
 
 
 #include "other.h"
-
-
-//for integer-divide-optimization only
-//we should analyze algorithm identical

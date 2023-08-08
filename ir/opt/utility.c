@@ -789,7 +789,7 @@ void topCfg(Function *currentFunction){
     for(Pair *pair = HashMapNext(indegree); pair != NULL; pair = HashMapNext(indegree)){
         BasicBlock *block = pair->key;
         int in = (int)pair->value;
-        printf("b %d indegree %d\n",block->id, in);
+        //printf("b %d indegree %d\n",block->id, in);
     }
 
     currentFunction->ToPoBlocks = VectorInit(10);
@@ -803,12 +803,12 @@ void topCfg(Function *currentFunction){
 
     //
     while(HashMapSize(indegree) != 0){
-        printf("one time!\n");
+        //printf("one time!\n");
         //find the
         HashSetFirst(modified);
         for(BasicBlock *modifiedBlock = HashSetNext(modified); modifiedBlock != NULL; modifiedBlock = HashSetNext(modified)){
             int in = (int)HashMapGet(indegree,modifiedBlock);
-            printf("modified block %d in %d\n",modifiedBlock->id,in);
+            //printf("modified block %d in %d\n",modifiedBlock->id,in);
             if(in == 0){
                 //printf("block %d in degree is 0!!\n",modifiedBlock->id);
                 VectorPushBack(vector,modifiedBlock);

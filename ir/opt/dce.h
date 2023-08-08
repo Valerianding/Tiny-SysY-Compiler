@@ -7,6 +7,7 @@
 #include "function.h"
 #include "utility.h"
 #include "dominance.h"
+void depthFirstTraversal(Vector *vector, BasicBlock *block);
 bool isEssentialOperator(InstNode *inst);
 void Mark(Function *currentFunction);
 bool Sweep(Function *currentFunction);

@@ -12,6 +12,6 @@ extern Vector *constant_;
 extern InstNode *instruction_list;
 void CheckGlobalVariable(InstNode *list);
 
-//perform before mem2reg
+//mem2reg performs after it
 void global2local(InstNode *list);
 #endif //C22V1_GLOBALOPT_H

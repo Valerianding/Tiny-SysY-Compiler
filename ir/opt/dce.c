@@ -343,10 +343,8 @@ bool OnePass(Vector* vector) {
         if(block->visited == false){
             block->visited = true;
         }
-        printf("current: %d\n",block->id);
-        if(block->id == 2188){
+        //printf("current: %d\n",block->id);
 
-        }
         bool processed = false;
         assert(block != NULL);
 
@@ -357,7 +355,7 @@ bool OnePass(Vector* vector) {
             int trueLocation = insValue->pdata->instruction_pdata.true_goto_location;
             int falseLocation = insValue->pdata->instruction_pdata.false_goto_location;
             if (trueLocation == falseLocation) {
-                printf("same branch!\n");
+                //printf("same branch!\n");
 
                 changed = true;
                 // replace it with a jump
@@ -469,11 +467,11 @@ bool OnePass(Vector* vector) {
                             Value *iPhi = ins_get_dest(iNode->inst);
                             bool usedByJ = false;
                             //如果block里面有phi函数
-                            InstNode *jNode = j->head_node;
+                            InstNode *jHead = j->head_node;
 
-                            while(jNode != j->tail_node){
-                                if(jNode->inst->Opcode == Phi){
-                                    HashSet *jSet = jNode->inst->user.value.pdata->pairSet;
+                            while(jHead != j->tail_node){
+                                if(jHead->inst->Opcode == Phi){
+                                    HashSet *jSet = jHead->inst->user.value.pdata->pairSet;
                                     HashSetFirst(jSet);
                                     for(pair *phiInfo = HashSetNext(jSet); phiInfo != NULL; phiInfo = HashSetNext(jSet)){
                                         if(phiInfo->define == iPhi){
@@ -497,7 +495,7 @@ bool OnePass(Vector* vector) {
                                         }
                                     }
                                 }
-                                jNode = get_next_inst(jNode);
+                                jHead = get_next_inst(jHead);
                             }
                             //如果i本来有phi函数出了外层循环还是没有usedbyJ的话
                             if(!usedByJ){
@@ -505,7 +503,7 @@ bool OnePass(Vector* vector) {
                                 assert(HashSetSize(j->preBlocks) == 1);
                                 InstNode *nextNode = get_next_inst(iNode);
                                 removeIns(iNode);
-                                ins_insert_after(j->head_node,iNode);
+                                ins_insert_after(iNode,j->head_node);
                                 iNode->inst->Parent = j;
                                 iNode = nextNode;
                             }else{
@@ -572,7 +570,6 @@ bool OnePass(Vector* vector) {
                 processed = true;
                 HashSetFirst(j->preBlocks);
                 BasicBlock *jPrev = HashSetNext(j->preBlocks);
-                //printf("block is %d, jPrev is %d\n",block->id,jPrev->id);
 
                 assert(jPrev == block);
 
@@ -591,7 +588,7 @@ bool OnePass(Vector* vector) {
 
                 HashSetFirst(j->preBlocks);
 
-                //combine i and j
+//                combine i and j
                 combine(block, j);
             }
 
@@ -684,6 +681,7 @@ bool OnePass(Vector* vector) {
                 }
             }
         }
+        //printf("changed %d\n",changed);
     }
     return changed;
 }
@@ -710,7 +708,7 @@ void Clean(Function *currentFunction){
 
         clear_visited_flag(currentFunction->entry);
 
-        printf("one pass!\n");
+        //printf("one pass!\n");
 
         changed = OnePass(vector);
 

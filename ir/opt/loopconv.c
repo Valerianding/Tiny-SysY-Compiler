@@ -127,6 +127,10 @@ bool CheckConvLoop(Loop *loop){
 
     if(!loop->initValue) return false;
 
+    //induction variable 的 initValue必须是0我们才能进行优化
+
+    if(!isImmInt(loop->initValue) || loop->initValue->pdata->var_pdata.iVal != 0) return false;
+
     if(!loop->modifier) return false;
 
     Instruction *modifierIns = (Instruction *)loop->modifier;
@@ -175,10 +179,11 @@ bool loopSimplify(Loop *loop){
     InstNode *bodyTail = bodyBlock->tail_node;
     while(bodyHead != bodyTail){
         if(CheckNode(bodyHead,loop)){
-            //printf("node %d can be replaced!\n",bodyHead->inst->i);
+            printf("node %d can be replaced!\n",bodyHead->inst->i);
             //find the init Value and the trip count of the loop
             Value *lhs = ins_get_lhs(bodyHead->inst);
             Instruction *correspondingPhi = (Instruction *)lhs;
+            InstNode *phiNode = findNode(correspondingPhi->Parent,correspondingPhi);
             assert(correspondingPhi->Opcode == Phi);
 
             Value *initValue = NULL;
@@ -201,19 +206,45 @@ bool loopSimplify(Loop *loop){
 
             assert(bodyHead->inst->Opcode == Add || bodyHead->inst->Opcode == Sub);
 
+            //assert(loop->preHeader != NULL && loop->guard != NULL);
 
             Value *rhs = ins_get_rhs(bodyHead->inst);
 
+            InstNode *preHeaderTail = loop->preHeader->tail_node;
             //create a mult instruction in the preHeader
             Instruction *mult = ins_new_binary_operator(Mul,rhs,tripCount);
             mult->Parent = loop->preHeader;
-
+            mult->user.value.VTy->ID = Var_INT;
+            mult->user.value.name = (char *)malloc(sizeof(char) * 10);
+            strcpy(mult->user.value.name,"%mult");
             InstNode *multNode = new_inst_node(mult);
+            ins_insert_before(multNode,preHeaderTail);
 
+            Value *multDest = ins_get_dest(mult);
+            //create a mult instruction
+            Instruction *result = ins_new_binary_operator(bodyHead->inst->Opcode,initValue,multDest);
+            result->Parent = loop->preHeader;
+            result->user.value.VTy->ID = Var_INT;
+            result->user.value.name = (char *)malloc(sizeof(char) * 10);
+            strcpy(result->user.value.name,"%result");
+            InstNode *resultNode = new_inst_node(result);
+            ins_insert_before(resultNode,preHeaderTail);
+
+            InstNode *nextNode = get_next_inst(bodyHead);
+
+
+            Value *phiValue = ins_get_dest(correspondingPhi);
+            Value *resultValue = ins_get_dest(result);
+            //remove original node & the phi only phi node
+            deleteIns(bodyHead);
+            deleteIns(phiNode);
 
             //replace the phi after and
+            valueReplaceAll(phiValue,resultValue,loop->head->Parent);
+            bodyHead = nextNode;
+        }else{
+            bodyHead = get_next_inst(bodyHead);
         }
-        bodyHead = get_next_inst(bodyHead);
     }
 }
 
