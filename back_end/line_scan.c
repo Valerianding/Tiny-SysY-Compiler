@@ -3,7 +3,7 @@
 //
 #include "line_scan.h"
 
-#define S 14
+#define S 16
 #define R 11
 int enable_vfp=0; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
@@ -425,11 +425,11 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
         value_register *node= HashMapGet(curFunction->lineScanVFPReg,value);
         if(node==NULL){
             if(i==0){
-                ins->inst->_vfpReg_[i]=-30;
+                ins->inst->_vfpReg_[i]=-15;
             }else if(i==1){
-                ins->inst->_vfpReg_[i]=130;
+                ins->inst->_vfpReg_[i]=115;
             } else if(i==2){
-                ins->inst->_vfpReg_[i]=131;
+                ins->inst->_vfpReg_[i]=116;
             }
             return;
         }
@@ -513,7 +513,7 @@ void free_register(int i){
     myreg[i]=0;
 }
 int get_an_availabel_VFPregister(){
-    for(int i=16;i<30;i++){
+    for(int i=16;i<=31;i++){
         if(VFPreg[i]==0){
             VFPreg[i]=1;
             free_VFPreg_num--;
