@@ -826,7 +826,7 @@ void rewriteLabel(Function* func){
             if(HashSetFind(spilledNodes, get_Node_with_value(vl)))
                 cur_node->inst->_reg_[1] = 114;
         }
-        if(vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) &&
+        if(vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode !=GIVE_PARAM &&
                 value_type(vr)){
             if(HashSetFind(spilledNodes, get_Node_with_value(vr)))
                 cur_node->inst->_reg_[2] = 100;
@@ -861,7 +861,7 @@ void labelRegister(Function* func){
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_lhs(cur_node->inst))))->reg;
             cur_node->inst->_reg_[1] = reg;
         }
-        if(vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) &&
+        if(vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
                 value_type(vr)){
             int reg;
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_rhs(cur_node->inst))))->reg;
