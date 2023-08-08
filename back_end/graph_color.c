@@ -37,6 +37,10 @@ HashSet *adjSet;
 HashSet *nodeSet;
 HashMap *colorMap;
 
+//获取活跃区间
+PriorityQueue *interval_queue;
+HashMap *intervalMap;
+
 //lsy
 HashSet* restore_spillNodes;
 
@@ -108,6 +112,8 @@ void init(){
     adjSet = HashSetInit();
     nodeSet = HashSetInit();
     colorMap = HashMapInit();
+    interval_queue = PriorityQueueInit();
+    intervalMap = HashMapInit();
 }
 
 bool find_pair(Node* u,Node* v){
@@ -308,7 +314,7 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             handle_use_(live,value2,loopDepth);
             break;
         case CopyOperation:
-            value0=ins->inst->user.value.alias;       //TODO 为什么要进alias呢
+            value0=ins->inst->user.value.alias;
             value1= user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
             handle_use_(live,value1,loopDepth);
@@ -342,22 +348,21 @@ void build(Function* func){
             InstNode *curr_node = currNodeParent->tail_node;
             /// 2. 逆序遍历ir
             while (curr_node != first_node){
-                if(curr_node->inst->Opcode == CopyOperation){
+                if(curr_node->inst->Opcode == CopyOperation && ins_get_lhs(curr_node->inst)->name!=NULL){
                     //为什么要live <---live\use(I)
                     //mov dst,src不应是直接冲突关系，而是潜在可合并关系
-
-                    if(ins_get_lhs(curr_node->inst)->VTy->ID == Int || ins_get_lhs(curr_node->inst)->use_list == NULL){
+                    value_live_range *range = HashMapGet(intervalMap, ins_get_lhs(curr_node->inst));
+                    if(ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end){
                         HashSetRemove(live, ins_get_lhs(curr_node->inst));
                         MachineMove *mv = (MachineMove*) malloc(sizeof (MachineMove));
 //                    if(ins_get_lhs(curr_node->inst)->name!=NULL && !check_spilled(ins_get_dest(curr_node->inst)) && !check_spilled(
 //                            ins_get_lhs(curr_node->inst))){
-                        if(ins_get_lhs(curr_node->inst)->name!=NULL){
-                            mv->src = get_Node_with_value(ins_get_lhs(curr_node->inst));
-                            mv->dst = get_Node_with_value(ins_get_dest(curr_node->inst)->alias);
-                            HashSetAdd(mv->src->moveSet,mv);
-                            HashSetAdd(mv->dst->moveSet,mv);
-                            HashSetAdd(worklistMoves,mv);
-                        }
+
+                        mv->src = get_Node_with_value(ins_get_lhs(curr_node->inst));
+                        mv->dst = get_Node_with_value(ins_get_dest(curr_node->inst)->alias);
+                        HashSetAdd(mv->src->moveSet,mv);
+                        HashSetAdd(mv->dst->moveSet,mv);
+                        HashSetAdd(worklistMoves,mv);
                     }
                 }
                 dealSDefUse(live,curr_node,currNodeParent);
@@ -481,11 +486,6 @@ bool adjOK(Node* v,Node* u){
 }
 
 Node *getAlias(Node* node){
-    HashSetFirst(coalescedNodes);
-    for(Node* n = HashSetNext(coalescedNodes); n!=NULL; n = HashSetNext(coalescedNodes)){
-        printf("coalesceNode: %s\n",n->value->name);
-    }
-
     while (HashSetFind(coalescedNodes, node))
         node = node->alias;
     return node;
@@ -625,9 +625,16 @@ HashMap *cal_interval_len(PriorityQueue* queue){
     return lenMap;
 }
 
+void get_interval_set(PriorityQueue* queue){
+    while (PriorityQueueSize(queue) > 0){
+        value_live_range *range;
+        PriorityQueueTop(queue,(void**)&range);
+        PriorityQueuePop(queue);
+        HashMapPut(intervalMap, range->value,range);
+    }
+}
+
 void selectSpill(Function* cur_func){
-    //先获取活跃区间
-    PriorityQueue *interval_queue = PriorityQueueInit();
     build_live_interval(cur_func->ToPoBlocks,interval_queue);
     HashMap *lenMap = cal_interval_len(interval_queue);
 
@@ -729,6 +736,7 @@ void assignColors(){
     if(HashSetSize(spilledNodes) > 0)
         return;
 
+    int size = HashSetSize(coalescedNodes);
     HashSetFirst(coalescedNodes);
     for(Node* node = HashSetNext(coalescedNodes); node!=NULL; node = HashSetNext(coalescedNodes)){
         Node *a = getAlias(node);
@@ -877,6 +885,11 @@ void reg_alloca_(Function *start){
     for(Function *curFunction = start;curFunction!=NULL;curFunction=curFunction->Next){
         init();
         restore_spillNodes = HashSetInit();
+
+        //先获取活跃区间
+        build_live_interval(curFunction->ToPoBlocks,interval_queue);
+        get_interval_set(interval_queue);
+
         build(curFunction);
 
         //makeWorkList
