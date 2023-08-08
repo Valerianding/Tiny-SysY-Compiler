@@ -7,6 +7,7 @@
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 
+
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
 int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
