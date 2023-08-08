@@ -121,7 +121,7 @@ bool LICM_EACH(Loop *loop){
             //必须满足两个条件
             //1 A 在循环L中的其他地方没有定值语句 SSA ！！
 
-            //2 循环L中对A的使用只有S中对于A的定值能够到 SSA应该也满足！！  ——》 除了Phi函数的情况
+            //2 循环L中对A的使用只有S中对于A的定值能够到 SSA应该也满足！！ ——> 除了Phi函数的情况
             bool cond0 = true;
             HashSetFirst(loop->loopBody);
             for(BasicBlock *bodyBlock = HashSetNext(loop->loopBody); bodyBlock != NULL; bodyBlock = HashSetNext(loop->loopBody)){
@@ -189,17 +189,17 @@ bool LICM_EACH(Loop *loop){
                 //需要判断是否需要新的基本块
                 //如果除开循环前驱大于1
 
-                //TODO examine this condtion
-                if(HashSetSize(newBlockPrev) > 1){
-                    assert(false);
-                    newPrevBlock = newBlock(newBlockPrev,head);
-                    newPrevBlock->Parent = loop->head->Parent;
-                }else{
-                    //找到唯一不属于循环的前驱节点
-                    assert(HashSetSize(newBlockPrev) == 1);
-                    HashSetFirst(newBlockPrev);
-                    newPrevBlock = HashSetNext(newBlockPrev);
-                }
+
+                //找到唯一不属于循环的前驱节点
+                assert(HashSetSize(newBlockPrev) == 1);
+                HashSetFirst(newBlockPrev);
+                newPrevBlock = HashSetNext(newBlockPrev);
+//                assert(newPrevBlock == loop->preHeader);
+//                assert(loop->guard != NULL);
+//                assert(loop->guard->tail_node->inst->Opcode == br);
+
+                //change the guard terminator to be a br_i1
+                //if we hoist a store we need to put a guard
 
                 // remove from
                 //printf("move %s to block %d\n",var->name, newPrevBlock->id);

@@ -176,13 +176,35 @@ int main(int argc, char* argv[]){
         }
     }
 
-    func_inline(instruction_list,124);
+//    func_inline(instruction_list,124);
+
+    if(Optimize){
+        func_inline(instruction_list,124);
+
+        //重新构建Function
+        start = ReconstructFunction(instruction_list);
+
+        global2local(instruction_list);
+
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+
+            dominanceAnalysis(currentFunction);
+
+            calculateNonLocals(currentFunction);
+
+            mem2reg(currentFunction);
+
+            //Loop invariant code motion 需要使用live-out信息
+            calculateLiveness(currentFunction);
+        }
+    }
 
     //重新构建Function
     start = ReconstructFunction(instruction_list);
 
     //inline 之后的IR
     // printf_llvm_ir(instruction_list,argv[4],1);
+
 
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -198,8 +220,28 @@ int main(int argc, char* argv[]){
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
+
+
+//
+//            bool changed = true;
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//            }
+////
+//            LoopNormalize(currentFunction);
+//            LoopSimplify(currentFunction);
+////
+//            changed = true;
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//            }
+//
+//            renameVariables(currentFunction);
+//            RunOptimizePasses(currentFunction);
         }
     }
+//    printf_llvm_ir(instruction_list,argv[4],1);
+
 
     //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -207,7 +249,8 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 
-    // printf_llvm_ir(instruction_list,argv[4],1);
+
+//     printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
@@ -233,32 +276,24 @@ int main(int argc, char* argv[]){
     }
 
 
-    //lsy_begin
-//    printf("=================fix===================\n");
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
-    //lsy_end
-
 
 
 
 //    线性扫描
-    // line_scan(instruction_list,start);
+    line_scan(instruction_list,start);
 
-    //ljw_begin
 //    reg_control(instruction_list,start);
-    gcp_allocate(instruction_list,start);
-    //修改all_in_memory开启/关闭寄存器分配
-    //ljw_end`1`
 
-    //    ljf_begin
-//    如果需要打印到文件里面，打开arm_open_file和arm_close_file,
-//    argv[3]里面直接给的就是汇编文件，直接打开就行，修改一下
+
+//    gcp_allocate(instruction_list,start);
+    //修改all_in_memory开启/关闭寄存器分配
+
 
     arm_open_file(argv[3]);
     arm_translate_ins(instruction_list,argv[3]);
     arm_close_file();
-    //    ljf_end
 #endif
     return 0;
 }

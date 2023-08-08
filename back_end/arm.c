@@ -362,6 +362,7 @@ void printf_vpush_rlist(){
             }
         }
     }
+
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
@@ -529,6 +530,7 @@ int get_free_reg(){
             return i;
         }
     }
+    return 3;
     assert(false);
 //    assert(false);
 }
@@ -1317,10 +1319,10 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
             printf("\tvmov\tr%d,s0\n",dest_reg_abs);
             fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
-               if(dest_reg<0){
-                    int x= get_value_offset_sp(hashMap,value0);
-                   handle_illegal_imm(dest_reg_abs,x,0);
-               }
+            if(dest_reg<0){
+                int x= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,x,0);
+            }
         }
         else if(isLocalVarFloatType(value0->VTy) && ARM_enable_vfp==1){
 //                需要将相加的结果转化为IEEE754格式存放为Var_Float预先分配好的寄存器中,
@@ -5667,6 +5669,9 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
             if(x2<0){
                 if(n==1){
                     if(left_reg>=100){
+                        if(left_reg==101){
+                            left_reg=102;
+                        }
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
                         printf("\tadd\tr0,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
@@ -5685,6 +5690,9 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                     }
                 } else{
                     if(left_reg>=100){
+                        if(left_reg==101){
+                            left_reg=102;
+                        }
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
                         printf("\tasr\tr1,r%d,#31\n",left_reg-100);
@@ -5723,6 +5731,9 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                     }
                 } else{
                     if(left_reg>=100){
+                        if(left_reg==101){
+                            left_reg=102;
+                        }
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
                         printf("\tasr\tr1,r%d,#31\n",left_reg-100);
@@ -5740,6 +5751,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
                         fprintf(fp,"\tasr\tr%d,r0,#%d\n",dest_reg_abs,n);
                     }
                 }
+
             }
         }else{
             tmpReg=get_a_tem_reg();
@@ -6528,6 +6540,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         if(imm_is_valid(x1)){
             printf("\tmov\tr0,#%d\n",x1);
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
+            watchReg.generalReg[0]=1;
             if(right_reg>=100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
@@ -6539,10 +6552,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             }
         }else{
             handle_illegal_imm1(0,x1);
+            watchReg.generalReg[0]=1;
             if(right_reg>=100){
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
-
                 printf("\tmov\tr1,r%d\n",right_reg-100);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
             }else{
@@ -6635,8 +6648,12 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if(x2<0){
                 if(n==1){
                     if(left_reg>=100){
+                        if(left_reg==101){
+                            left_reg=100;
+                        }
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
+
                         printf("\tadd\tr1,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
                         fprintf(fp,"\tadd\tr1,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
                         printf("\tbic\tr1,r1,#1\n");
@@ -6653,6 +6670,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                     }
                 } else{
                     if(left_reg>=100){
+                        if(left_reg==101){
+                            left_reg=100;
+                        }
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
 
@@ -6690,6 +6710,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             }else if(x2>0){
                 if(n==1){
                     if(left_reg>=100){
+                        if(left_reg==101){
+                            left_reg=100;
+                        }
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
                         printf("\tadd\tr1,r%d,r%d,lsr #31\n",left_reg-100,left_reg-100);
@@ -6708,6 +6731,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                     }
                 } else{
                     if(left_reg>=100){
+                        if(left_reg==101){
+                            left_reg=100;
+                        }
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(left_reg,x,1);
 
@@ -6747,6 +6773,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             if((imm_is_valid(x2))){
                 printf("\tmov\tr1,#%d\n",x2);
                 fprintf(fp,"\tmov\tr1,#%d\n",x2);
+                watchReg.generalReg[1]=1;
                 if(left_reg > 100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
@@ -6758,6 +6785,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 }
             }else{
                 handle_illegal_imm1(1,x2);
+                watchReg.generalReg[1]=1;
                 if(left_reg>=100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
@@ -7135,7 +7163,8 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
 
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
-
+    memset(order_of_param,0, sizeof(order_of_param));
+    order_param_flag=0;
     arm_trans_GIVE_PARAM(hashMap,3);
 
     printf("\tbl\tmemset\n");
@@ -7155,19 +7184,47 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     memset(give_param_flag,0, sizeof(give_param_flag));
     return ins;
 }
+InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
+    memset(give_param_flag,0, sizeof(give_param_flag));
+
+
+    printf("\tpush\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+    printf("\tsub\tsp,sp,#4\n");
+    fprintf(fp,"\tsub\tsp,sp,#4\n");
+    sp_offset_to_r11+=16;
+
+    get_param_list(NULL,&give_count);
+    func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
+    memset(order_of_param,0, sizeof(order_of_param));
+    order_param_flag=0;
+    arm_trans_GIVE_PARAM(hashMap,3);
+
+    printf("\tbl\tmemcpy\n");
+    fprintf(fp,"\tbl\tmemcpy\n");
+
+    printf("\tadd\tsp,sp,#4\n");
+    fprintf(fp,"\tadd\tsp,sp,#4\n");
+    printf("\tpop\t{ r3,r12,r14 }\n");
+    fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
+    sp_offset_to_r11=0;
+
+    memset(give_param_flag,0, sizeof(give_param_flag));
+    return ins;
+}
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
     memset(return_message,0, sizeof(return_message));
     int k;
     printf(
             "\t.align\t2\n"
-           "\t.global\t%s\n"
-           "\t.arch armv7ve\n"
-           "\t.syntax unified\n"
-           "\t.arm\n"
-           "\t.fpu neon-vfpv4\n"
-           "\t.type\t%s, %%function\n"
-           ,user_get_operand_use(&ins->inst->user,0)->Val->name
-           ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+            "\t.global\t%s\n"
+            "\t.arch armv7ve\n"
+            "\t.syntax unified\n"
+            "\t.arm\n"
+            "\t.fpu neon-vfpv4\n"
+            "\t.type\t%s, %%function\n"
+            ,user_get_operand_use(&ins->inst->user,0)->Val->name
+            ,user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,
             "\t.align\t2\n"
             "\t.global\t%s\n"
@@ -7176,8 +7233,8 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             "\t.arm\n"
             "\t.fpu neon-vfpv4\n"
             "\t.type\t%s, %%function\n"
-        ,user_get_operand_use(&ins->inst->user,0)->Val->name
-        ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+            ,user_get_operand_use(&ins->inst->user,0)->Val->name
+            ,user_get_operand_use(&ins->inst->user,0)->Val->name);
 
     memset(reg_save,0, sizeof(reg_save));
     memset(vfpreg_save,0, sizeof(vfpreg_save));
@@ -7215,7 +7272,7 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             Value *value1 = user_get_operand_use(&tmp->inst->user, 0)->Val;
             Value *value2 = user_get_operand_use(&tmp->inst->user, 1)->Val;
             if(isLocalVarIntType(value1->VTy)|| isGlobalVarIntType(value1->VTy)|| isImmIntType(value1->VTy) ||
-                    isLocalArrayIntType(value1->VTy) || isGlobalArrayIntType(value1->VTy)){
+               isLocalArrayIntType(value1->VTy) || isGlobalArrayIntType(value1->VTy)){
                 if(isLocalVarIntType(value2->VTy)|| isGlobalVarIntType(value2->VTy)|| isImmIntType(value2->VTy) ||
                    isLocalArrayIntType(value2->VTy) || isGlobalArrayIntType(value2->VTy)){
                     func_call_func+=1;
@@ -7306,27 +7363,27 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
                 }
                 break;
             case Call:
-                  if(returnValueNotUsed(ins)){ //返回值未被使用，不需要保存
-                      value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                      if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                          FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
-                      }else{
-                          FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
-                      }
-                  }else{ //返回值被使用需要保存
-                      value0 = &ins->inst->user.value;
-                      value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
-                      if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
-                          FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);
-                      }else{
-                          FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
-                      }
-                      if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                          FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
-                      }else{
-                          FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
-                      }
-                  }
+                if(returnValueNotUsed(ins)){ //返回值未被使用，不需要保存
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                        FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
+                    }else{
+                        FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                    }
+                }else{ //返回值被使用需要保存
+                    value0 = &ins->inst->user.value;
+                    value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
+                    if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                        FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);
+                    }else{
+                        FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                    }
+                    if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                        FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
+                    }else{
+                        FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                    }
+                }
                 break;
             case Store:
                 value1 = user_get_operand_use(&ins->inst->user, 0)->Val;
@@ -8299,31 +8356,31 @@ InstNode * arm_trans_ALLBEGIN(InstNode *ins){
 //    int i=ins->inst->i;
 //    printf("**********ALLBEGIN**************\n");
     printf("\t.arch armv7ve\n"
-//           "\t.eabi_attribute 28, 1\n"
-//           "\t.eabi_attribute 20, 1\n"
-//           "\t.eabi_attribute 21, 1\n"
-//           "\t.eabi_attribute 23, 3\n"
-//           "\t.eabi_attribute 24, 1\n"
-//           "\t.eabi_attribute 25, 1\n"
-//           "\t.eabi_attribute 26, 2\n"
-//           "\t.eabi_attribute 30, 6\n"
-//           "\t.eabi_attribute 34, 1\n"
-//           "\t.eabi_attribute 18, 4\n"
-//           "\t.file\t\"%s\"\n"
+           //           "\t.eabi_attribute 28, 1\n"
+           //           "\t.eabi_attribute 20, 1\n"
+           //           "\t.eabi_attribute 21, 1\n"
+           //           "\t.eabi_attribute 23, 3\n"
+           //           "\t.eabi_attribute 24, 1\n"
+           //           "\t.eabi_attribute 25, 1\n"
+           //           "\t.eabi_attribute 26, 2\n"
+           //           "\t.eabi_attribute 30, 6\n"
+           //           "\t.eabi_attribute 34, 1\n"
+           //           "\t.eabi_attribute 18, 4\n"
+           //           "\t.file\t\"%s\"\n"
            "\t.text\n");
     fprintf(fp,"\t.arch armv7ve\n"
-//            "\t.eabi_attribute 28, 1\n"
-//            "\t.eabi_attribute 20, 1\n"
-//            "\t.eabi_attribute 21, 1\n"
-//            "\t.eabi_attribute 23, 3\n"
-//            "\t.eabi_attribute 24, 1\n"
-//            "\t.eabi_attribute 25, 1\n"
-//            "\t.eabi_attribute 26, 2\n"
-//            "\t.eabi_attribute 30, 6\n"
-//            "\t.eabi_attribute 34, 1\n"
-//            "\t.eabi_attribute 18, 4\n"
-//           "\t.file\t\"%s\"\n"
-           "\t.text\n");
+               //            "\t.eabi_attribute 28, 1\n"
+               //            "\t.eabi_attribute 20, 1\n"
+               //            "\t.eabi_attribute 21, 1\n"
+               //            "\t.eabi_attribute 23, 3\n"
+               //            "\t.eabi_attribute 24, 1\n"
+               //            "\t.eabi_attribute 25, 1\n"
+               //            "\t.eabi_attribute 26, 2\n"
+               //            "\t.eabi_attribute 30, 6\n"
+               //            "\t.eabi_attribute 34, 1\n"
+               //            "\t.eabi_attribute 18, 4\n"
+               //           "\t.file\t\"%s\"\n"
+               "\t.text\n");
 //    printf("\t.text\n"
 //           "\t.align\t2\n"
 //           "\t.global\tmain\n"
@@ -9292,6 +9349,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     dest_reg_abs=abs(dest_reg);
     left_reg=ins->inst->_reg_[1];
     right_reg=ins->inst->_reg_[2];
+    int tmpReg;
 //    数组好像只有第一条GEP指令的value1类型是对的，之后的GEP指令对应的都是address,全局比那辆也是一样的，所以说可以利用value1的类型来判断是不是第一条GEP
 
 
@@ -9310,6 +9368,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         }else{
             left_reg_abs=left_reg;
         }
+
         assert(left_reg_abs!=0);
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
@@ -9325,9 +9384,13 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     }
                 }
             }else{
-                handle_illegal_imm1(1,y);
-                printf("\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
-                fprintf(fp,"\tadd\tr%d,r%d,r1\n",dest_reg_abs,left_reg_abs);
+                tmpReg=get_free_reg();
+                handle_illegal_imm1(tmpReg,y);
+                printf("\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg_abs,tmpReg);
+                fprintf(fp,"\tadd\tr%d,r%d,r%d\n",dest_reg_abs,left_reg_abs,tmpReg);
+            }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
@@ -9377,6 +9440,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg_abs);
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int z= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,z,0);
@@ -9403,6 +9469,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm1(0,x);
                 printf("\tadd\tr%d,sp,r0\n",dest_reg_abs);
                 fprintf(fp,"\tadd\tr%d,sp,r0\n",dest_reg_abs);
+            }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
@@ -9480,6 +9549,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     }
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9514,6 +9586,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 handle_illegal_imm1(0,x);
                 printf("\tadd\tr%d,r1,r0\n",dest_reg_abs);
                 fprintf(fp,"\tadd\tr%d,r1,r0\n",dest_reg_abs);
+            }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
                 x= get_value_offset_sp(hashMap,value0);
@@ -9591,13 +9666,16 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     }
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
             }
         }
     }
-    // 非第一条GEP，局部数组和全局数组都是一样的处理
+        // 非第一条GEP，局部数组和全局数组都是一样的处理
     else{
         int left_reg_flag=ins->inst->_reg_[1];
         assert(left_reg_flag!=0);
@@ -9645,6 +9723,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg);
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9690,6 +9771,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg);
                 }
             }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
+            }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
@@ -9710,15 +9794,19 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             if(left_reg>=100&&right_reg>=100){
                 int x1= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x1,1);
+                if(left_reg==101){
+                    watchReg.generalReg[1]=1;
+                }
                 int x2= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x2,2);
-
                 printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
                 fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg-100);
             }else if(left_reg>=100){
                 int x1= get_value_offset_sp(hashMap,value1);
                 handle_illegal_imm(left_reg,x1,1);
-
+                if(left_reg==101){
+                    watchReg.generalReg[1]=1;
+                }
                 printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
                 fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg-100);
             }else if(right_reg>=100){
@@ -9730,6 +9818,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             }else{
                 printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
                 fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+            }
+            if(dest_reg_abs==1){
+                watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
@@ -10564,6 +10655,8 @@ InstNode *_arm_translate_ins(InstNode *ins,InstNode *head,HashMap*hashMap,int st
             return arm_trans_fptosi(hashMap,ins);
         case SysYMemset:
             return arm_tarns_SysYMemset(hashMap,ins);
+        case SysYMemcpy:
+            return arm_tarns_SysYMemcpy(hashMap,ins);
         default:
             return ins;
     }

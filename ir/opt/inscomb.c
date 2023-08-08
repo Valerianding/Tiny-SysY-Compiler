@@ -7,7 +7,7 @@
 #include "inscomb.h"
 InstNode *cur_;
 InstNode *result_;
-HashSet *workList;
+Vector *workList;
 
 const Opcode possibleOpcodes[] = {Add,Sub,Mul,Div,Mod};
 bool isPossibleOperator(Instruction *inst){
@@ -18,6 +18,19 @@ bool isPossibleOperator(Instruction *inst){
         }
     }
     return false;
+}
+
+void RemoveFromWorklist(Vector *workList,InstNode *instNode){
+    unsigned i = 0;
+    while(i < VectorSize(workList)){
+        InstNode *sameNode = NULL;
+        VectorGet(workList,i,(void *)&sameNode);
+        if(sameNode == instNode){
+            VectorRemove(workList,i);
+        }else{
+            i = i + 1;
+        }
+    }
 }
 
 bool isDeadInst(InstNode *instNode){
@@ -44,6 +57,7 @@ bool isDeadInst(InstNode *instNode){
 //add all users of current instruction to workList
 //also we only want to consider the possible operations
 void AddUsesToWorklist(InstNode *inst){
+    printf("%d\n",inst->inst->i);
     assert(checkType(inst->inst));
     Value *dest = ins_get_dest(inst->inst);
     Use *uses = dest->use_list;
@@ -52,7 +66,7 @@ void AddUsesToWorklist(InstNode *inst){
         Instruction *userIns = (Instruction *)user;
         if(isPossibleOperator(userIns) && user->use_list != NULL){
             InstNode *userNode = findNode(userIns->Parent,userIns);
-            HashSetAdd(workList,userNode);
+            VectorPushBack(workList,userNode);
         }
         uses = uses->Next;
     }
@@ -241,13 +255,15 @@ bool SimplifyCommutative(InstNode *instNode){
 
                 Value *newConstant = Fold(op,lhsInsRhs,rhsInsRhs);
                 Instruction *newBinary = ins_new_binary_operator(op,lhsInsLhs,rhsInsLhs);
-
+                newBinary->user.value.VTy->ID = Var_INT;
+                newBinary->user.value.name = (char *)malloc(sizeof(char) * 10);
+                strcpy(newBinary->user.value.name,"%new");
                 //TODO is it to set parent according to cur_ or instNode
                 newBinary->Parent = cur_->inst->Parent;
                 InstNode *newBinaryNode = new_inst_node(newBinary);
                 ins_insert_before(newBinaryNode,cur_);
 
-                HashSetAdd(workList,newBinaryNode);
+                VectorPushBack(workList,newBinaryNode);
 
                 Value *newDest = ins_get_dest(newBinary);
 
@@ -477,6 +493,11 @@ InstNode *RunOnSub(InstNode *instNode){
         return ReplaceInstUsesWith(cur_,constZero);
     }
 
+    //X - O -> X
+    if(isImmInt(rhs) && rhs->pdata->var_pdata.iVal == 0){
+        return ReplaceInstUsesWith(cur_,lhs);
+    }
+
     // X - X * C -> X * (1 - C)
     if(DynCastMul(rhs,paramNum) == lhs){
         //
@@ -637,43 +658,50 @@ bool InstCombine(Function *currentFunction){
 
     //insert all possible instructions to workList
     HashSet *ALL = HashSetInit();
-    workList = HashSetInit();
-    HashSetAdd(workList,entry);
-    while(HashSetSize(workList) != 0){
-        HashSetFirst(workList);
-        BasicBlock *block = HashSetNext(workList);
+
+
+    HashSet *WorkList = HashSetInit();
+    HashSetAdd(WorkList,entry);
+    while(HashSetSize(WorkList) != 0){
+        HashSetFirst(WorkList);
+        BasicBlock *block = HashSetNext(WorkList);
         block->visited = true;
-        HashSetRemove(workList,block);
+        HashSetRemove(WorkList,block);
         HashSetAdd(ALL,block);
         if(block->true_block && block->true_block->visited == false){
-            HashSetAdd(workList,block->true_block);
+            HashSetAdd(WorkList,block->true_block);
         }
         if(block->false_block && block->false_block->visited == false){
-            HashSetAdd(workList, block->false_block);
+            HashSetAdd(WorkList, block->false_block);
         }
     }
 
-    HashSetClean(workList); // now we need to collect InstNode*
+    HashSetDeinit(WorkList);
 
+
+    workList = VectorInit(1000);
     HashSetFirst(ALL);
     for(BasicBlock *block = HashSetNext(ALL); block != NULL; block = HashSetNext(ALL)){
         InstNode *blockHead = block->head_node;
         InstNode *blockTail = block->tail_node;
         while(blockHead != blockTail){
             if(isPossibleOperator(blockHead->inst)){
-                HashSetAdd(workList,blockHead);
+                VectorPushBack(workList,blockHead);
             }
             blockHead = get_next_inst(blockHead);
         }
     }
 
-    printf("size of workList %d\n", HashSetSize(workList));
+    HashSetDeinit(ALL);
+
     //run on workList
-    while(HashSetSize(workList) != 0){
-        HashSetFirst(workList);
-        InstNode *node = HashSetNext(workList);
-        HashSetRemove(workList,node);
-        printf("now on %d\n",node->inst->i);
+    while(VectorSize(workList) != 0){
+        unsigned last = VectorSize(workList) - 1;
+        InstNode *node = NULL;
+        VectorGet(workList,last,(void *)&node);
+        VectorRemove(workList,last);
+
+        //printf("now on %d\n",node->inst->i);
 
         Value *lhs = ins_get_lhs(node->inst);
         Value *rhs = ins_get_rhs(node->inst);
@@ -688,7 +716,7 @@ bool InstCombine(Function *currentFunction){
                 Instruction *lhsIns = (Instruction *)lhs;
                 InstNode *lhsNode = findNode(lhsIns->Parent,lhsIns);
                 if(isPossibleOperator(lhsIns)){
-                    HashSetAdd(workList,lhsNode);
+                    VectorPushBack(workList,(void *)lhsNode);
                 }
             }
 
@@ -696,35 +724,36 @@ bool InstCombine(Function *currentFunction){
                 Instruction *rhsIns = (Instruction *)rhs;
                 InstNode *rhsNode = findNode(rhsIns->Parent,rhsIns);
                 if(isPossibleOperator(rhsIns)){
-                    HashSetAdd(workList,rhsNode);
+                    VectorPushBack(workList,(void *)rhsNode);
                 }
             }
+            RemoveFromWorklist(workList,node);
 
             //remove this instruction from parent block
             deleteIns(node);
             continue;
         }
-
+//
         //if we can const propagate it
         if(lhs != NULL && rhs != NULL && isImmInt(lhs) && isImmInt(rhs)){
             changed = true;
             //const propagate it
             Value *constant =  Fold(node->inst->Opcode,lhs,rhs);
             ReplaceInstUsesWith(node,constant);
-
+            RemoveFromWorklist(workList,node);
             //erase this instruction
             deleteIns(node);
             continue;
         }
 
 
-        printf("run on %d\n",node->inst->i);
+        //printf("run on %d\n",node->inst->i);
         //try to combine current instruction
         cur_ = node;
         result_ = NULL;
         RunPass(node);
-
-        //if effective
+//
+//        //if effective
         if(result_){
             changed = true;
             //if it is not the same means this instruction can be replaced
@@ -734,6 +763,7 @@ bool InstCombine(Function *currentFunction){
                 result_->inst->Parent = block;
                 ins_insert_before(result_,node);
 
+                RemoveFromWorklist(workList,node);
                 //replace
                 //don't delete it just replace it!! the dead inst will automatically be removed
 
@@ -743,17 +773,19 @@ bool InstCombine(Function *currentFunction){
             }else{
                 //if it is the same node means the result is modified
                 if(isDeadInst(node)){
+                    RemoveFromWorklist(workList,node);
                     deleteIns(node);
                     result_ = NULL;
                 }
             }
             if(result_){
-                HashSetAdd(workList, result_);
+                VectorPushBack(workList, result_);
                 AddUsesToWorklist(result_);
             }
             changed = true;
         }
     }
+    VectorDeinit(workList);
     return changed;
 }
 
@@ -764,15 +796,6 @@ bool InstCombine(Function *currentFunction){
 
 
 //-----------------------------lsy
-
-/*
- * 目前做了一个基本块内的,int类型的inscomb
- */
-
-//判断类型是不是加减,TODO 乘除未做
-//检查type与是否有常数
-//检查后面是否被用到过
-//location为0指前面那条，location为1指后面那条
 bool check(Instruction *instruction,int location)
 {
     if(((location==0 && instruction->user.value.use_list!=NULL) || (location==1)) && (instruction->Opcode==Add || instruction->Opcode==Sub))

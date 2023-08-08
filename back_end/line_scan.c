@@ -80,7 +80,7 @@ void line_scan(InstNode*ins,Function* start){
         }
 
         memset(myreg,0,sizeof(myreg));
-        free_reg_num=6;
+        free_reg_num=11;
         memset(VFPreg,0, sizeof(VFPreg));
         free_VFPreg_num=14;
 //      到这里为止
