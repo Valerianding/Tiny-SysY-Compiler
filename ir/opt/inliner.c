@@ -61,7 +61,20 @@ void cal_cost(Function* callee,int threshold)
     currNode = get_next_inst(currNode);
 
     bool flag_special =false;         //标记一下是不是特殊函数
+    int hoist_add = 0;
+    bool hoist_flag = false;
     while (currNode != get_next_inst(end->tail_node)) {
+        //TODO 暂时加的针对于hoist的判断
+        if(currNode->inst->Opcode == Add)
+            hoist_add++;
+        else
+            hoist_add = 0;
+
+        if(hoist_add > 1000){
+            hoist_flag = true;
+            break;
+        }
+
         //1. 指令成本
         if(!is_particular_instr(currNode->inst->Opcode))
             *cost += Instr_cost;
@@ -72,16 +85,6 @@ void cal_cost(Function* callee,int threshold)
             flag_special = true;
             break;
         }
-
-//        int *call_func_cost = (int*) malloc(4);
-//        if(currNode->inst->Opcode == Call && symtab_lookup_withmap(this,ins_get_lhs(currNode->inst)->name, &this->value_maps->next->map)){
-//            call_func_cost = HashMapGet(cost_map,ins_get_lhs(currNode->inst));
-//            if(*call_func_cost > threshold){
-//                *cost = 2000;
-//                flag_special = true;
-//                break;
-//            }
-//        }
 
         currNode = get_next_inst(currNode);
     }
@@ -97,6 +100,9 @@ void cal_cost(Function* callee,int threshold)
     if(!flag_special && callee->entry == callee->tail && *cost > threshold){
         *cost = threshold - 5;
     }
+    if(!flag_special && hoist_flag)
+        *cost = threshold - 5;
+
     flag_special = false;
 
     printf("%s :cost : %d\n",funcValue->name,*cost);
@@ -243,72 +249,6 @@ void label_func_inline_llvm(struct _InstNode* instNode_list, int threshold)
     }
 }
 
-//TODO 目前内联条件(可能会再修改)
-//1. 最多5个基本块
-//2. 不递归
-//3. 变量数最大为30
-void label_func_inline(struct _InstNode* instNode_list)
-{
-    InstNode *temp = get_next_inst(instNode_list);
-    //找到第一个function的
-    while(temp->inst->Parent->Parent == NULL){
-        temp = get_next_inst(temp);
-    }
-    BasicBlock *block = temp->inst->Parent;
-
-    //遍历函数
-    for(Function *currentFunction = block->Parent; currentFunction != NULL; currentFunction = currentFunction->Next){
-        //1.数变量数量
-        //2.判断基本块与递归call
-        BasicBlock *entry = currentFunction->entry;
-        BasicBlock *end = currentFunction->tail;
-
-        InstNode *currNode = entry->head_node;
-
-        Value *funcValue = currNode->inst->user.use_list->Val;
-        //先默认都可内联
-        if(strcmp(funcValue->name,"main")!=0)
-            funcValue->pdata->symtab_func_pdata.flag_inline=1;
-        //跳过第一条FunBegin
-        currNode = get_next_inst(currNode);
-        int max_num=0;       //不管有参没参，变量数都等于max_num数
-        int block_num = 1;
-        while (currNode != get_next_inst(end->tail_node)) {
-            //最后的一定出现在左边
-            if(currNode->inst->user.value.name!=NULL){
-                max_num= get_name_index(&currNode->inst->user.value);
-                if(max_num>30)
-                {
-                    funcValue->pdata->symtab_func_pdata.flag_inline=0;
-                    printf("%s inline 0\n",funcValue->name);
-                    break;
-                }
-            }
-            //判断基本块数量
-            if(currNode->inst->Opcode==Label){
-                block_num++;
-                if(block_num>5){
-                    funcValue->pdata->symtab_func_pdata.flag_inline=0;
-                    printf("%s inline 0\n",funcValue->name);
-                    break;
-                }
-            }
-
-            Value *func_callee = NULL;
-            if(currNode->inst->Opcode==Call)
-                 func_callee = symtab_lookup_withmap(this, currNode->inst->user.use_list->Val->name, &this->value_maps->next->map);
-            if(currNode->inst->Opcode==Call && (currNode->inst->user.use_list->Val->name == funcValue->name || (func_callee
-                     && func_callee->pdata->symtab_func_pdata.flag_inline==0))){
-                funcValue->pdata->symtab_func_pdata.flag_inline=0;
-                printf("%s inline 0\n",funcValue->name);
-                break;
-            }
-
-            currNode = get_next_inst(currNode);
-        }
-    }
-}
-
 //将phi的信息补充完整
 void reduce_phi(HashMap* phi_map,HashMap* alias_map,HashMap* block_map, int param){
     HashMapFirst(phi_map);
@@ -402,7 +342,6 @@ void connect_caller_block(HashMap* block_map, HashSet* callee_block_set, BasicBl
 int func_inline(struct _InstNode* instruction_node, int threshold)
 {
     //先跑一遍，看是否符合内联条件
-    //label_func_inline(instruction_node);
     label_func_inline_llvm(instruction_node,threshold);
 
     InstNode *start=instruction_node;
