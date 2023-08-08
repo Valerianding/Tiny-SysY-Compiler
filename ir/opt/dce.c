@@ -343,7 +343,7 @@ bool OnePass(Vector* vector) {
         if(block->visited == false){
             block->visited = true;
         }
-        printf("current: %d\n",block->id);
+        //printf("current: %d\n",block->id);
 
         bool processed = false;
         assert(block != NULL);
@@ -355,7 +355,7 @@ bool OnePass(Vector* vector) {
             int trueLocation = insValue->pdata->instruction_pdata.true_goto_location;
             int falseLocation = insValue->pdata->instruction_pdata.false_goto_location;
             if (trueLocation == falseLocation) {
-                printf("same branch!\n");
+                //printf("same branch!\n");
 
                 changed = true;
                 // replace it with a jump
@@ -577,11 +577,11 @@ bool OnePass(Vector* vector) {
                 //printf("combine blocks! suc: %d\n",j->id);
 
                 if(j->true_block){
-                    printf("suc true: %d, ",j->true_block->id);
+                    //printf("suc true: %d, ",j->true_block->id);
                 }
 
                 if(j->false_block){
-                    printf("suc false: %d, ",j->false_block->id);
+                    //printf("suc false: %d, ",j->false_block->id);
                 }
 
                 //printf("\n");
@@ -681,7 +681,7 @@ bool OnePass(Vector* vector) {
                 }
             }
         }
-        printf("changed %d\n",changed);
+        //printf("changed %d\n",changed);
     }
     return changed;
 }

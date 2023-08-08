@@ -29,9 +29,9 @@ void RunOptimizePasses(Function *currentFunction){
 
     Loop2Memset(currentFunction);
 
-//    Loop2Memcpy(currentFunction);
+    Loop2Memcpy(currentFunction);
 
-    //GCM(currentFunction);
+    GCM(currentFunction);
 
     instruction_combination(currentFunction);
 

@@ -496,14 +496,38 @@ void Schedule_Late(Instruction *ins){
             BasicBlock *bestBlock = best->block;
 
             InstNode *blockHead = get_next_inst(bestBlock->head_node);
+            InstNode *blockTail = bestBlock->tail_node;
+            //not to all insert at the beginning
+            //if current Block have use -> insert just before the use
+            //if current Block have no use -> insert just before the tail
 
+            //because the phi's use is considered at the predecessor
+            //so current block's phi must have no use!!
 
-            while(blockHead->inst->Opcode == Phi){
+            bool HaveUse = false;
+
+            while(blockHead != blockTail){
+                int numOfOperands = blockHead->inst->user.value.NumUserOperands;
+                Value *lhs = NULL;
+                Value *rhs = NULL;
+                if(numOfOperands == 1){
+                    lhs = ins_get_lhs(blockHead->inst);
+                }else if(numOfOperands == 2){
+                    lhs = ins_get_lhs(blockHead->inst);
+                    rhs = ins_get_rhs(blockHead->inst);
+                }
+
+                if(lhs != NULL && lhs == insDest){
+                    break;
+                }
+                if(rhs != NULL && rhs == insDest){
+                    break;
+                }
+
                 blockHead = get_next_inst(blockHead);
             }
 
             ins_insert_before(insNode,blockHead);
-
 
             insNode->inst->Parent = bestBlock;
         }

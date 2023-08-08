@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -222,22 +222,22 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
 
 
-//
-//            bool changed = true;
-//            while(changed){
-//                changed = InstCombine(currentFunction);
-//            }
-//
-//            LoopNormalize(currentFunction);
-//            LoopSimplify(currentFunction);
-//
-//            changed = true;
-//            while(changed){
-//                changed = InstCombine(currentFunction);
-//            }
-//
-//            renameVariables(currentFunction);
-//            RunOptimizePasses(currentFunction);
+            bool changed = true;
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
+
+            LoopNormalize(currentFunction);
+            LoopSimplify(currentFunction);
+
+            changed = true;
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
+
+
+            renameVariables(currentFunction);
+            RunOptimizePasses(currentFunction);
         }
     }
 //    printf_llvm_ir(instruction_list,argv[4],1);
@@ -250,7 +250,7 @@ int main(int argc, char* argv[]){
     }
 
 
-//     printf_llvm_ir(instruction_list,argv[4],1);
+     printf_llvm_ir(instruction_list,argv[4],1);
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
