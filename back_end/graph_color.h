@@ -12,9 +12,10 @@
 #include "utility.h"
 #include "line_scan.h"
 #include "dominance.h"
+#include "travel.h"
 #include <math.h>
 
-#define K 10
+#define K 11
 #define  _HEURISTIC_BASE 1.45
 
 extern int myreg[16];
@@ -56,6 +57,6 @@ typedef struct AdjPair_{
     Node * v;
 }AdjPair;
 
-void reg_alloca(Function *start);
+void reg_alloca_(Function *start);
 
 #endif //C22V1_GRAPH_COLOR_H
