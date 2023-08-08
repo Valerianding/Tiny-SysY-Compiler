@@ -223,21 +223,21 @@ int main(int argc, char* argv[]){
 
 
 //
-//            bool changed = true;
-//            while(changed){
-//                changed = InstCombine(currentFunction);
-//            }
-////
-//            LoopNormalize(currentFunction);
-//            LoopSimplify(currentFunction);
-////
-//            changed = true;
-//            while(changed){
-//                changed = InstCombine(currentFunction);
-//            }
+            bool changed = true;
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
 //
-//            renameVariables(currentFunction);
-//            RunOptimizePasses(currentFunction);
+            LoopNormalize(currentFunction);
+            LoopSimplify(currentFunction);
+//
+            changed = true;
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
+
+            renameVariables(currentFunction);
+            RunOptimizePasses(currentFunction);
         }
     }
 //    printf_llvm_ir(instruction_list,argv[4],1);
