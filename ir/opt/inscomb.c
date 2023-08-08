@@ -685,7 +685,7 @@ bool InstCombine(Function *currentFunction){
         InstNode *blockHead = block->head_node;
         InstNode *blockTail = block->tail_node;
         while(blockHead != blockTail){
-            if(isPossibleOperator(blockHead->inst)){
+            if(isPossibleOperator(blockHead->inst) && checkType(blockHead->inst)){
                 VectorPushBack(workList,blockHead);
             }
             blockHead = get_next_inst(blockHead);

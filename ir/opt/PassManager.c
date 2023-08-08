@@ -38,7 +38,7 @@ void RunOptimizePasses(Function *currentFunction){
     postDominanceAnalysis(currentFunction);
 
     Mark(currentFunction);
-//
+
     Sweep(currentFunction);
 
     renameVariables(currentFunction);

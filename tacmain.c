@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -159,14 +159,15 @@ int main(int argc, char* argv[]){
 
     bool NOTOK = containFloat(instruction_list);
 
+
     //构建Function
     Function *start = ReconstructFunction(instruction_list);
 
     //先跑一次
     //如果要fuc inline一定要dom一下
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK)
-            RunBasicPasses(currentFunction);
+//        if(!NOTOK)
+//            RunBasicPasses(currentFunction);
     }
 
     if(Optimize && !NOTOK) {
@@ -176,7 +177,6 @@ int main(int argc, char* argv[]){
         }
     }
 
-//    func_inline(instruction_list,124);
 
     if(Optimize){
         func_inline(instruction_list,124);
@@ -213,8 +213,8 @@ int main(int argc, char* argv[]){
     }
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK)
-            RunBasicPasses(currentFunction);
+//        if(!NOTOK)
+//            RunBasicPasses(currentFunction);
     }
 
     if(!NOTOK && Optimize){
@@ -222,17 +222,16 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
 
             bool changed = true;
-            while(changed){
-                changed = InstCombine(currentFunction);
-            }
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//            }
 
-            LoopNormalize(currentFunction);
-            LoopSimplify(currentFunction);
+//            LoopSimplify(currentFunction);
 
-            changed = true;
-            while(changed){
-                changed = InstCombine(currentFunction);
-            }
+//            changed = true;
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//            }
 
             renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
