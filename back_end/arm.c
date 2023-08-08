@@ -266,7 +266,6 @@ void printf_ldmfd_rlist(){
         if(k==1){
             printf("\tldr\tr%d,[sp],#4\n",n);
             fprintf(fp,"\tldr\tr%d,[sp],#4\n",n);
-
             return;
         }
         int start = -1;
@@ -348,14 +347,14 @@ void printf_ldmfd_rlist(){
 }
 void printf_vpush_rlist(){
     int vfpRaveNum=0;
-    for(int i=16;i<30;i++){
+    for(int i=16;i<=31;i++){
         if(vfpreg_save[i]==1){
             vfpRaveNum++;
         }
     }
 //    进行调整，确保保护栈帧之后，sp还是8字节对齐的
     if((vfpRaveNum%2)!=0){
-        for(int i=16;i<30;i++){
+        for(int i=16;i<=31;i++){
             if(vfpreg_save[i]==0){
                 vfpRaveNum++;
                 vfpreg_save[i]=1;
@@ -363,11 +362,10 @@ void printf_vpush_rlist(){
             }
         }
     }
-
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
-        for(int i=16;i<30;i++){
+        for(int i=16;i<=31;i++){
             if(vfpreg_save[i]==1 && vfpRaveNum!=1){
                 printf("s%d,",i);
                 fprintf(fp,"s%d,",i);
@@ -384,7 +382,7 @@ void printf_vpush_rlist(){
 }
 void printf_vpop_rlist(){
     int vfpRaveNum=0;
-    for(int i=16;i<30;i++){
+    for(int i=16;i<=31;i++){
         if(vfpreg_save[i]==1){
             vfpRaveNum++;
         }
@@ -392,7 +390,7 @@ void printf_vpop_rlist(){
     if(vfpRaveNum!=0){
         printf("\tvpop\t{");
         fprintf(fp,"\tvpop\t{");
-        for(int i=16;i<30;i++){
+        for(int i=16;i<=31;i++){
             if(vfpreg_save[i]==1 && vfpRaveNum!=1){
                 printf("s%d,",i);
                 fprintf(fp,"s%d,",i);
@@ -415,7 +413,7 @@ void handle_vfp_reg_save(int sreg){
     }else{
         sreg_dest=sreg_abs;
     }
-    if(sreg_dest >= 16 && sreg_dest < 30){
+    if(sreg_dest >= 16 && sreg_dest <= 31){
         vfpreg_save[sreg_dest]=1;
     }
 }
@@ -435,7 +433,6 @@ void handle_reg_save(int reg){
 //        不用保存
         return;
     }
-
 //请注意在使用释放掉lr，那么r10将被分配，所以说r10是需要被保护的
     if(arm_flag_lr==0){
         if(reg_dest==10 || reg_dest==12){
@@ -546,7 +543,6 @@ int get_order_param(int param_num){
 //            tmp->inst->_reg_[i]=i+100;
 //        }
 //    }
-
     int tmpR;
     if(order_param_flag==0){
         for(int i=0;i<param_num;i++){
@@ -787,7 +783,6 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 //                printf("funcbegin %s %d\n",value->name,node->offset_sp);
                 HashMapPut(hashMap,value,node);
             }
-
         }
 //        free(key);重复释放的原因有可能在这里
     }
@@ -958,7 +953,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
             if(func_call_func>0){
                 k++;
             }
-            for(int i=16;i<30;i++){
+            for(int i=16;i<=31;i++){
                 if(vfpreg_save[i]==1){
                     k++;
                 }
@@ -993,12 +988,15 @@ void arm_translate_ins(InstNode *ins,char argv[]){
 }
 InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
 //    float强制转换为int  value1 --> value0,现在的情况是value1有可能是立即数，也可能是变量
+    memset(&watchReg,0, sizeof(watchReg));
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     int dest_reg=ins->inst->_reg_[0];
     int left_reg=ins->inst->_reg_[1];
     int left_reg_abs;
     int dest_reg_abs=abs(dest_reg);
+    int tmpReg;
+//    现在fptosi存在浮点数是立即数的情况
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
 //    if(isImmFloatType(value1->VTy)){
 //        assert(false);
@@ -1007,7 +1005,22 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
 //        handle_illegal_imm1(0,x);
 //        left_reg_abs=0;
 //    }
-//    else
+    if(isImmFloatType(value1->VTy)){
+        tmpReg=get_free_reg();
+        float x1=value1->pdata->var_pdata.fVal;
+        int x=*(int*)&x1;
+        handle_illegal_imm1(tmpReg,x);
+        printf("\tvmov\ts0,r%d\n",tmpReg);
+        fprintf(fp,"\tvmov\ts0,r%d\n",tmpReg);
+        printf("\tvcvt.s32.f32\ts0,s0\n");
+        fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
+        printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+        if(dest_reg<0){
+            x= get_value_offset_sp(hashMap,value0);
+            handle_illegal_imm(dest_reg_abs,x,0);
+        }
+    }
     if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==0){
         assert(left_reg!=0);
         if(left_reg>=100){
@@ -1052,17 +1065,60 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
         }
     }
 
-
+    memset(&watchReg,0, sizeof(watchReg));
     return ins;
 }
 InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
 //    float强制转换为intvalue1 --> value0,现在的情况是value1有可能是立即数，也可能是变量
+    memset(&watchReg,0, sizeof(watchReg));
     Value *value0=&ins->inst->user.value;
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     int dest_reg=ins->inst->_reg_[0];
     int left_reg=ins->inst->_reg_[1];
     int left_reg_abs;
     int dest_reg_abs=abs(dest_reg);
+    int tmpReg;
+//    现在sitofp存在int型是立即数的情况
+    if(isImmIntType(value1->VTy) && ARM_enable_vfp==0){
+        tmpReg=get_free_reg();
+        int x=value1->pdata->var_pdata.iVal;
+        if(imm_is_valid(x)){
+            printf("\tmov\tr%d,#%d\n",tmpReg,x);
+            fprintf(fp,"\tmov\tr%d,#%d\n",tmpReg,x);
+        }else{
+            handle_illegal_imm1(tmpReg,x);
+        }
+        printf("\tvmov\ts0,r%d\n",tmpReg);
+        fprintf(fp,"\tvmov\ts0,r%d\n",tmpReg);
+        printf("\tvcvt.f32.s32\ts0,s0\n");
+        fprintf(fp,"\tvcvt.f32.s32\ts0,s0\n");
+        printf("\tvmov\tr%d,s0\n",dest_reg_abs);
+        fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
+        if(dest_reg<0){
+            x= get_value_offset_sp(hashMap,value0);
+            handle_illegal_imm(dest_reg_abs,x,0);
+        }
+    }else if(isImmIntType(value1->VTy) && ARM_enable_vfp==1){
+        tmpReg=get_free_reg();
+        int x=value1->pdata->var_pdata.iVal;
+        if(imm_is_valid(x)){
+            printf("\tmov\tr%d,#%d\n",tmpReg,x);
+            fprintf(fp,"\tmov\tr%d,#%d\n",tmpReg,x);
+        }else{
+            handle_illegal_imm1(tmpReg,x);
+        }
+        dest_reg=ins->inst->_vfpReg_[0];
+        dest_reg_abs=abs(dest_reg);
+        printf("\tvmov\ts%d,r%d\n",dest_reg_abs,tmpReg);
+        fprintf(fp,"\tvmov\ts%d,r%d\n",dest_reg_abs,tmpReg);
+        printf("\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        fprintf(fp,"\tvcvt.f32.s32\ts%d,s%d\n",dest_reg_abs,dest_reg_abs);
+        if(dest_reg<0){
+            x= get_value_offset_sp(hashMap,value0);
+            vfp_handle_illegal_imm(dest_reg_abs,x,0);
+        }
+    }
+
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
     if(isLocalVarIntType(value1->VTy) && ARM_enable_vfp==0){
         assert(left_reg!=0);
@@ -1103,7 +1159,7 @@ InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
             vfp_handle_illegal_imm(dest_reg_abs,x,0);
         }
     }
-
+    memset(&watchReg,0, sizeof(watchReg));
     return ins;
 }
 InstNode * arm_trans_CopyOperation(InstNode*ins,HashMap*hashMap){
@@ -10565,7 +10621,6 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
                 fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
-
             }else{
                 printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
                 fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
