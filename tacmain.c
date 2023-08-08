@@ -285,10 +285,14 @@ int main(int argc, char* argv[]){
     line_scan(instruction_list,start);
 
 //    reg_control(instruction_list,start);
-
     for(InstNode *tmp=instruction_list;tmp!=NULL;tmp= get_next_inst(tmp)){
         if((tmp->inst->_reg_[1] == tmp->inst->_reg_[2]) && tmp->inst->_reg_[1] != 0){
-            assert(false);
+            Value *lhs = ins_get_lhs(tmp->inst);
+            Value *rhs = ins_get_rhs(tmp->inst);
+            if(!isSame(lhs,rhs)){
+                printf("%d assert(false) left :%d,right :%d\n",tmp->inst->Opcode,tmp->inst->_reg_[1],tmp->inst->_reg_[2]);
+                assert(false);
+            }
         }
 //        if(tmp->inst->Opcode==CopyOperation){
 //            printf("dest r%d,left %d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
