@@ -286,6 +286,14 @@ int main(int argc, char* argv[]){
 
 //    reg_control(instruction_list,start);
 
+    for(InstNode *tmp=instruction_list;tmp!=NULL;tmp= get_next_inst(tmp)){
+        if((tmp->inst->_reg_[1] == tmp->inst->_reg_[2]) && tmp->inst->_reg_[1] != 0){
+            assert(false);
+        }
+//        if(tmp->inst->Opcode==CopyOperation){
+//            printf("dest r%d,left %d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
+//        }
+    }
 
 //    gcp_allocate(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
