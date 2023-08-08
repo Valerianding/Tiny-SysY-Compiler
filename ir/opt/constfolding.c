@@ -21,51 +21,60 @@ bool ConstFolding(Function *currentFunction){
                 Value *rhs = ins_get_rhs(currNode->inst);
                 Value *dest = ins_get_dest(currNode->inst);
                 // 左右都是立即数
+
                 if(isImm(lhs) && isImm(rhs)){
                     changed = true;
                     if(isLocalVarInt(dest)){
-                        dest->VTy->ID = Int;
+                        Value *replace = (Value *)malloc(sizeof(Value));
+                        int result = 0;
                         float left = getOperandValue(lhs);
                         float right = getOperandValue(rhs);
                         switch(currNode->inst->Opcode){
                             case Add:
-                               dest->pdata->var_pdata.iVal = (int)(left + right);
-                               break;
+                                result = (int)(left + right);
+                                break;
                             case Sub:
-                                dest->pdata->var_pdata.iVal = (int)(left - right);
+                                result = (int)(left - right);
                                 break;
                             case Mul:
-                                dest->pdata->var_pdata.iVal = (int)(left * right);
+                                result = (int)(left * right);
                                 break;
                             case Div:
-                                dest->pdata->var_pdata.iVal = (int)(left / right);
+                                result = (int)(left / right);
                                 break;
                             case Mod:
-                                dest->pdata->var_pdata.iVal = (int)left % (int)right;
+                                result = (int)left % (int)right;
                                 break;
                             default:
                                 assert(false);
                         }
+                        value_init_int(replace,result);
+                        valueReplaceAll(dest,replace,currentFunction);
                     }else if(isLocalVarFloat(dest)){
-                        dest->VTy->ID = Float;
+                        changed = true;
                         float left = getOperandValue(lhs);
                         float right = getOperandValue(rhs);
+                        float result = 0;
+                        Value *replace = (Value *)malloc(sizeof(Value));
+
                         switch(currNode->inst->Opcode){
                             case Add:
-                                dest->pdata->var_pdata.fVal = left + right;
+                                result = left + right;
                                 break;
                             case Sub:
-                                dest->pdata->var_pdata.fVal = left - right;
+                                result = left - right;
                                 break;
                             case Mul:
-                                dest->pdata->var_pdata.fVal = left * right;
+                                result = left * right;
                                 break;
                             case Div:
-                                dest->pdata->var_pdata.fVal = left / right;
+                                result = left / right;
                                 break;
                             default:
                                 assert(false);
                         }
+                        value_init_float(replace,result);
+                        valueReplaceAll(dest,replace,currentFunction);
                     }
                     // 还要记得删除这里的语句
                     //我们直接改了dest所以就不用value replace

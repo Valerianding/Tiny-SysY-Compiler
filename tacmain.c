@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -66,6 +66,8 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
+
+    Optimize = true;
 
     yyin=fopen(argv[4], "r");
 
@@ -166,8 +168,8 @@ int main(int argc, char* argv[]){
     //先跑一次
     //如果要fuc inline一定要dom一下
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        if(!NOTOK)
-//            RunBasicPasses(currentFunction);
+        if(!NOTOK)
+            RunBasicPasses(currentFunction);
     }
 
     if(Optimize && !NOTOK) {
@@ -222,16 +224,16 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
 
             bool changed = true;
-//            while(changed){
-//                changed = InstCombine(currentFunction);
-//            }
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
 
-//            LoopSimplify(currentFunction);
+            LoopSimplify(currentFunction);
 
-//            changed = true;
-//            while(changed){
-//                changed = InstCombine(currentFunction);
-//            }
+            changed = true;
+            while(changed){
+                changed = InstCombine(currentFunction);
+            }
 
             renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
@@ -286,13 +288,14 @@ int main(int argc, char* argv[]){
         if((tmp->inst->_reg_[1] == tmp->inst->_reg_[2]) && tmp->inst->_reg_[1] != 0){
             Value *lhs = ins_get_lhs(tmp->inst);
             Value *rhs = ins_get_rhs(tmp->inst);
-            if(!isSame(lhs,rhs)){
-                printf("%d assert(false) left :%d,right :%d\n",tmp->inst->Opcode,tmp->inst->_reg_[1],tmp->inst->_reg_[2]);
-                assert(false);
+            if( (lhs!=NULL) && (rhs!=NULL) ){
+                if(lhs!=rhs){
+                    assert(false);
+                }
             }
         }
 //        if(tmp->inst->Opcode==CopyOperation){
-//            printf("dest r%d,left %d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
+//            printf("dest r%d,left r%d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
 //        }
     }
 

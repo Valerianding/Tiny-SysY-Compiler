@@ -33,7 +33,7 @@ void RunOptimizePasses(Function *currentFunction){
 
     GCM(currentFunction);
 
-    instruction_combination(currentFunction);
+//    instruction_combination(currentFunction);
 
     postDominanceAnalysis(currentFunction);
 
