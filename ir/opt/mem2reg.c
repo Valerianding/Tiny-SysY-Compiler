@@ -321,7 +321,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
                     //replace 必然不能是nullptr否则会出现未定义错误
                     assert(replace != nullptr);
-                    value_replaceAll(value, replace);
+                    valueReplaceAll(value, replace,curr->inst->Parent->Parent);
                 }
                 break;
             }
@@ -597,7 +597,7 @@ void correctPhiNode(Function *currentFunction){
                 pair *phiInfo = HashSetNext(phiSet);
                 Value *define = phiInfo->define;
                 Value *insValue = ins_get_dest(currNode->inst);
-                value_replaceAll(insValue,define);
+                valueReplaceAll(insValue,define,currentFunction);
 
 
                 // 还不对因为有可能在另一个phi函数里面引用到了这个变量所以我们还得替换！
