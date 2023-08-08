@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -68,7 +68,6 @@ int main(int argc, char* argv[]){
     }
     Optimize = true;
 
-    Optimize = true;
 
     yyin=fopen(argv[4], "r");
 
@@ -168,15 +167,15 @@ int main(int argc, char* argv[]){
 
     //先跑一次
     //如果要fuc inline一定要dom一下
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK)
-            RunBasicPasses(currentFunction);
-    }
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        if(!NOTOK)
+//            RunBasicPasses(currentFunction);
+//    }
 
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunOptimizePasses(currentFunction);
+//            RunOptimizePasses(currentFunction);
         }
     }
 
@@ -188,6 +187,8 @@ int main(int argc, char* argv[]){
         start = ReconstructFunction(instruction_list);
 
         global2local(instruction_list);
+
+        printf_llvm_ir(instruction_list,argv[4],1);
 
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
 
@@ -206,9 +207,9 @@ int main(int argc, char* argv[]){
     start = ReconstructFunction(instruction_list);
 
     //inline 之后的IR
-    // printf_llvm_ir(instruction_list,argv[4],1);
+     printf_llvm_ir(instruction_list,argv[4],1);
 
-
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         //这里build CallGraphNode 需要在内联之后进行callgraph的
@@ -216,28 +217,28 @@ int main(int argc, char* argv[]){
     }
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        if(!NOTOK)
-//            RunBasicPasses(currentFunction);
+        if(!NOTOK)
+            RunBasicPasses(currentFunction);
     }
 
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunOptimizePasses(currentFunction);
+//            RunOptimizePasses(currentFunction);
 
-            bool changed = true;
-            while(changed){
-                changed = InstCombine(currentFunction);
-            }
-
-            LoopSimplify(currentFunction);
-
-            changed = true;
-            while(changed){
-                changed = InstCombine(currentFunction);
-            }
-
-            renameVariables(currentFunction);
-            RunOptimizePasses(currentFunction);
+//            bool changed = true;
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//            }
+//
+//            LoopSimplify(currentFunction);
+//
+//            changed = true;
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//            }
+//
+//            renameVariables(currentFunction);
+//            RunOptimizePasses(currentFunction);
         }
     }
 //    printf_llvm_ir(instruction_list,argv[4],1);
@@ -249,8 +250,9 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 
-
 //     printf_llvm_ir(instruction_list,argv[4],1);
+
+
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){

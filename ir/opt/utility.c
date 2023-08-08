@@ -352,10 +352,12 @@ void valueReplaceAll(Value *oldValue, Value *newValue, Function *currentFunction
     while(currNode != tailNode){
         if(currNode->inst->Opcode == Phi){
             HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
-            HashSetFirst(phiSet);
-            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                if(phiInfo->define == oldValue){
-                    phiInfo->define = newValue;
+            if(phiSet != NULL){
+                HashSetFirst(phiSet);
+                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                    if(phiInfo->define == oldValue){
+                        phiInfo->define = newValue;
+                    }
                 }
             }
         }
