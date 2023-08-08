@@ -1,5 +1,5 @@
 //
-// Created by Administrator on 2023/7/27.
+// Created by ljf on 2023/7/27.
 //
 #include "line_scan.h"
 
