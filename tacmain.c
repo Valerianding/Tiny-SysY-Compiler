@@ -221,8 +221,8 @@ int main(int argc, char* argv[]){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
 
+            //GCM(currentFunction);
 
-//
             bool changed = true;
             while(changed){
                 changed = InstCombine(currentFunction);
