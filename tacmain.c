@@ -66,7 +66,6 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -286,13 +285,14 @@ int main(int argc, char* argv[]){
         if((tmp->inst->_reg_[1] == tmp->inst->_reg_[2]) && tmp->inst->_reg_[1] != 0){
             Value *lhs = ins_get_lhs(tmp->inst);
             Value *rhs = ins_get_rhs(tmp->inst);
-            if(!isSame(lhs,rhs)){
-                printf("%d assert(false) left :%d,right :%d\n",tmp->inst->Opcode,tmp->inst->_reg_[1],tmp->inst->_reg_[2]);
-                assert(false);
+            if( (lhs!=NULL) && (rhs!=NULL) ){
+                if(lhs!=rhs){
+                    assert(false);
+                }
             }
         }
 //        if(tmp->inst->Opcode==CopyOperation){
-//            printf("dest r%d,left %d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
+//            printf("dest r%d,left r%d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
 //        }
     }
 
