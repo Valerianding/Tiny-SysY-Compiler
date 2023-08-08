@@ -40,6 +40,8 @@ enum TypeID {
 
     GlobalArrayInt = 22, // 全局Int类型数组
     GlobalArrayFloat = 23, // 全局float类型数组
+
+    tmp_mem,              //TODO 会删的会删的, 先放在这儿
 };
 
 typedef struct _Type{

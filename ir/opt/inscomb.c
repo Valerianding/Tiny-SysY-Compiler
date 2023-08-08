@@ -816,8 +816,12 @@ int get_const_location(Instruction* instruction)
     return 2;
 }
 
-Value *get_value(Instruction *instruction)
+Value *get_value(Instruction *instruction,bool special)
 {
+    //如果两边都是int,但是是特殊情况
+    if(special && ((ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float) && (ins_get_rhs(instruction)->VTy->ID==Int || ins_get_rhs(instruction)->VTy->ID==Float)))
+        return ins_get_lhs(instruction);
+
     //如果两边都是int,取左边作为const，右边作value
     if((ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float) && (ins_get_rhs(instruction)->VTy->ID==Int || ins_get_rhs(instruction)->VTy->ID==Float))
         return ins_get_rhs(instruction);
@@ -827,8 +831,11 @@ Value *get_value(Instruction *instruction)
     return ins_get_rhs(instruction);
 }
 
-Value *get_const(Instruction *instruction)
+Value *get_const(Instruction *instruction, bool special)
 {
+    if((ins_get_rhs(instruction)->VTy->ID==Int || ins_get_rhs(instruction)->VTy->ID==Float) && special)
+        return ins_get_rhs(instruction);
+
     if(ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float)
         return ins_get_lhs(instruction);
     return ins_get_rhs(instruction);
@@ -837,10 +844,14 @@ Value *get_const(Instruction *instruction)
 //合并
 void combination(Instruction *instruction_A,Instruction * instruction_B)
 {
+    bool special = false;
+    if(instruction_A->Opcode==Sub && instruction_B->Opcode==Sub)
+        special = true;
+
     //合并得到常值
-    Value *v_A_const= get_const(instruction_A);
-    Value *v_A_value= get_value(instruction_A);
-    Value *v_B_const= get_const(instruction_B);
+    Value *v_A_const= get_const(instruction_A,special);
+    Value *v_A_value= get_value(instruction_A,special);
+    Value *v_B_const= get_const(instruction_B,false);
 
     Value *v_num=(Value*) malloc(sizeof (Value));
     //以第二条的opcode为准
@@ -871,6 +882,24 @@ void combination(Instruction *instruction_A,Instruction * instruction_B)
         replace_rhs_operand(instruction_B,v_num);
         replace_lhs_operand(instruction_B,v_A_value);
     }
+}
+
+bool have_phi_use(Function* currentFunction, Value* oldValue){
+    InstNode *currNode = currentFunction->entry->head_node;
+    InstNode *tailNode = currentFunction->tail->tail_node;
+    while(currNode != tailNode){
+        if(currNode->inst->Opcode == Phi){
+            HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                if(phiInfo->define == oldValue){
+                    return true;
+                }
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
+    return false;
 }
 
 void instruction_combination(Function *currentFunction)
@@ -907,6 +936,10 @@ void instruction_combination(Function *currentFunction)
                     currNode->inst->user.value.pdata->var_pdata.iVal=0;
                     use=use->Next;
                 }
+            }
+            if(have_phi_use(currentFunction, ins_get_dest(instruction))){
+                flag=0;
+                currNode->inst->user.value.pdata->var_pdata.iVal=0;
             }
         }
         currNode= get_next_inst(currNode);
