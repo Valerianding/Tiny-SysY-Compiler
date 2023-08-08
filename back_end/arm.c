@@ -7,6 +7,7 @@
 #define AND_LOW 65535
 #define MOVE_RIGHT 16
 
+
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
 int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s29
@@ -7163,7 +7164,8 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
 
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
-
+    memset(order_of_param,0, sizeof(order_of_param));
+    order_param_flag=0;
     arm_trans_GIVE_PARAM(hashMap,3);
 
     printf("\tbl\tmemset\n");
@@ -7195,7 +7197,8 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
 
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
-
+    memset(order_of_param,0, sizeof(order_of_param));
+    order_param_flag=0;
     arm_trans_GIVE_PARAM(hashMap,3);
 
     printf("\tbl\tmemcpy\n");
