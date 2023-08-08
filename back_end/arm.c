@@ -266,7 +266,6 @@ void printf_ldmfd_rlist(){
         if(k==1){
             printf("\tldr\tr%d,[sp],#4\n",n);
             fprintf(fp,"\tldr\tr%d,[sp],#4\n",n);
-
             return;
         }
         int start = -1;
@@ -363,7 +362,6 @@ void printf_vpush_rlist(){
             }
         }
     }
-
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
@@ -435,7 +433,6 @@ void handle_reg_save(int reg){
 //        不用保存
         return;
     }
-
 //请注意在使用释放掉lr，那么r10将被分配，所以说r10是需要被保护的
     if(arm_flag_lr==0){
         if(reg_dest==10 || reg_dest==12){
@@ -546,7 +543,6 @@ int get_order_param(int param_num){
 //            tmp->inst->_reg_[i]=i+100;
 //        }
 //    }
-
     int tmpR;
     if(order_param_flag==0){
         for(int i=0;i<param_num;i++){
@@ -787,7 +783,6 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
 //                printf("funcbegin %s %d\n",value->name,node->offset_sp);
                 HashMapPut(hashMap,value,node);
             }
-
         }
 //        free(key);重复释放的原因有可能在这里
     }
@@ -10565,7 +10560,6 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
                 fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
-
             }else{
                 printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
                 fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
