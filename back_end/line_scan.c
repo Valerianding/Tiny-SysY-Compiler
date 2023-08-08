@@ -174,7 +174,7 @@ void expire_old_intervals(Function *curFunction,value_live_range *i){
         PriorityQueueTop(active,&elem);
         j=(value_live_range*)elem;
 //        if endpoint[j] ≥ startpoint[i]
-        if(j->end>=i->start){
+        if(j->end>=i->start){ //等号删除是有点问题的
             return;
         }else{
 //            remove j from active
