@@ -531,7 +531,15 @@ void Schedule_Late(Instruction *ins){
                 blockHead = get_prev_inst(blockHead);
             }
 
-            ins_insert_before(insNode,blockHead);
+            if(blockHead->inst->Opcode == GIVE_PARAM){
+                while(blockHead->inst->Opcode == GIVE_PARAM){
+                    blockHead = get_prev_inst(blockHead);
+                }
+                ins_insert_after(insNode,blockHead);
+            }else{
+                ins_insert_before(insNode,blockHead);
+            }
+
 
             insNode->inst->Parent = bestBlock;
         }
