@@ -603,6 +603,7 @@ void freezeMoves(Node* node){
 void freeze(){
     HashSetFirst(freezeWorklist);
     Node * node = HashSetNext(freezeWorklist);
+    HashSetRemove(freezeWorklist,node);
     HashSetAdd(simplifyWorklist,node);
     freezeMoves(node);
 }
@@ -883,41 +884,50 @@ void putInLineScanReg(Function* func){
 
 void reg_alloca_(Function *start){
     for(Function *curFunction = start;curFunction!=NULL;curFunction=curFunction->Next){
-        init();
-        restore_spillNodes = HashSetInit();
+        while (true){
+            init();
+            restore_spillNodes = HashSetInit();
 
-        //先获取活跃区间
-        build_live_interval(curFunction->ToPoBlocks,interval_queue);
-        get_interval_set(interval_queue);
+            //先获取活跃区间
+            build_live_interval(curFunction->ToPoBlocks,interval_queue);
+            get_interval_set(interval_queue);
 
-        build(curFunction);
+            build(curFunction);
 
-        //makeWorkList
-        HashSetFirst(nodeSet);
-        for(Node* node = HashSetNext(nodeSet); node!=NULL; node = HashSetNext(nodeSet)){
-            if(node->degree >= K){
-                HashSetAdd(spillWorklist,node);              //加入高度数结点表
-            } else if(HashSetSize(MoveRelated(node)) > 0){
-                HashSetAdd(freezeWorklist,node);                 //加入低度数传送有关结点
-            } else {
-                HashSetAdd(simplifyWorklist,node);            //直接简化
+            //makeWorkList
+            HashSetFirst(nodeSet);
+            for(Node* node = HashSetNext(nodeSet); node!=NULL; node = HashSetNext(nodeSet)){
+                if(node->degree >= K){
+                    HashSetAdd(spillWorklist,node);              //加入高度数结点表
+                } else if(HashSetSize(MoveRelated(node)) > 0){
+                    HashSetAdd(freezeWorklist,node);                 //加入低度数传送有关结点
+                } else {
+                    HashSetAdd(simplifyWorklist,node);            //直接简化
+                }
+            }
+
+            regAllocIteration(curFunction);
+            assignColors();
+
+            if(HashSetSize(spilledNodes) > 0) {
+                //rewriteProgram(curFunction);
+                rewriteLabel(curFunction);
+            } else{
+                labelRegister(curFunction);
+                putInLineScanReg(curFunction);
+                break;
             }
         }
+    }
+}
 
-//        int size1= HashSetSize(spillWorklist);
-//        int size2 = HashSetSize(freezeWorklist);
-//        int size3 = HashSetSize(simplifyWorklist);
-
-        regAllocIteration(curFunction);
-        assignColors();
-
-        if(HashSetSize(spilledNodes) > 0) {
-            rewriteProgram(curFunction);
-            //rewriteLabel(curFunction);
-            reg_alloca_(curFunction);
-        } else{
-            labelRegister(curFunction);
-            putInLineScanReg(curFunction);
-        }
+void adjust_i(InstNode* instNode){
+    instNode = get_next_inst(instNode);
+    int i = 0;
+    while (instNode!=NULL && instNode->inst->Opcode!=ALLBEGIN)
+    {
+        instNode->inst->i = i;
+        i++;
+        instNode = get_next_inst(instNode);
     }
 }
