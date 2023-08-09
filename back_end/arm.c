@@ -476,7 +476,7 @@ void handle_vfp_reg_save(int sreg){
     }else{
         sreg_dest=sreg_abs;
     }
-    if(sreg_dest >= 16 && sreg_dest <= 31){
+    if(sreg_dest >= 6 && sreg_dest <= 31){
         vfpreg_save[sreg_dest]=1;
     }
 }
