@@ -436,11 +436,11 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
         value_register *node= HashMapGet(curFunction->lineScanVFPReg,value);
         if(node==NULL){
             if(i==0){
-                ins->inst->_vfpReg_[i]=-15;
+                ins->inst->_vfpReg_[i]=-4;
             }else if(i==1){
-                ins->inst->_vfpReg_[i]=115;
+                ins->inst->_vfpReg_[i]=104;
             } else if(i==2){
-                ins->inst->_vfpReg_[i]=116;
+                ins->inst->_vfpReg_[i]=105;
             }
             return;
         }
