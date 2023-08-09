@@ -13,6 +13,7 @@
 #include "line_scan.h"
 #include "dominance.h"
 #include "travel.h"
+#include "inliner.h"
 #include <math.h>
 
 #define K 11
@@ -58,5 +59,7 @@ typedef struct AdjPair_{
 }AdjPair;
 
 void reg_alloca_(Function *start);
+//图着色需要interval的支持必须有一致的编号
+void adjust_i(InstNode* instNode);
 
 #endif //C22V1_GRAPH_COLOR_H

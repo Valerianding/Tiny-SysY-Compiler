@@ -215,6 +215,9 @@ void addEdge_within_live(HashSet* live){
 
     HashSetFirst(live);
     for(Value* v = HashSetNext(live); v!=NULL; v = HashSetNext(live)){
+        if(check_spilled(v))
+            continue;
+
         Node *new_node = get_Node_with_value(v);
 
         HashSetFirst(tmp_store);
@@ -352,17 +355,22 @@ void build(Function* func){
                     //为什么要live <---live\use(I)
                     //mov dst,src不应是直接冲突关系，而是潜在可合并关系
                     value_live_range *range = HashMapGet(intervalMap, ins_get_lhs(curr_node->inst));
-                    if(ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end){
-                        HashSetRemove(live, ins_get_lhs(curr_node->inst));
-                        MachineMove *mv = (MachineMove*) malloc(sizeof (MachineMove));
-//                    if(ins_get_lhs(curr_node->inst)->name!=NULL && !check_spilled(ins_get_dest(curr_node->inst)) && !check_spilled(
-//                            ins_get_lhs(curr_node->inst))){
+                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)) && !check_spilled(
+                            ins_get_lhs(curr_node->inst))){
 
-                        mv->src = get_Node_with_value(ins_get_lhs(curr_node->inst));
-                        mv->dst = get_Node_with_value(ins_get_dest(curr_node->inst)->alias);
-                        HashSetAdd(mv->src->moveSet,mv);
-                        HashSetAdd(mv->dst->moveSet,mv);
-                        HashSetAdd(worklistMoves,mv);
+                        //lsy, 比书上加一个, 如果已经有冲突关系，就不加入了
+                        Node *src = get_Node_with_value(ins_get_lhs(curr_node->inst));
+                        Node *dst = get_Node_with_value(ins_get_dest(curr_node->inst)->alias);
+                        if(!HashSetFind(src->adjOpdSet,dst)){
+                            HashSetRemove(live, ins_get_lhs(curr_node->inst));
+                            MachineMove *mv = (MachineMove*) malloc(sizeof (MachineMove));
+
+                            mv->src = src;
+                            mv->dst = dst;
+                            HashSetAdd(mv->src->moveSet,mv);
+                            HashSetAdd(mv->dst->moveSet,mv);
+                            HashSetAdd(worklistMoves,mv);
+                        }
                     }
                 }
                 dealSDefUse(live,curr_node,currNodeParent);
@@ -603,6 +611,7 @@ void freezeMoves(Node* node){
 void freeze(){
     HashSetFirst(freezeWorklist);
     Node * node = HashSetNext(freezeWorklist);
+    HashSetRemove(freezeWorklist,node);
     HashSetAdd(simplifyWorklist,node);
     freezeMoves(node);
 }
@@ -635,6 +644,7 @@ void get_interval_set(PriorityQueue* queue){
 }
 
 void selectSpill(Function* cur_func){
+    interval_queue = PriorityQueueInit();
     build_live_interval(cur_func->ToPoBlocks,interval_queue);
     HashMap *lenMap = cal_interval_len(interval_queue);
 
@@ -646,10 +656,15 @@ void selectSpill(Function* cur_func){
 //    if(n->type == Virtual) {
     if(n->type == USUAL) {
         int *len = HashMapGet(lenMap,n);
-        if(*len<5)
+        //TODO 感觉有点问题
+        if(*len<5 || (get_name_index(n->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num))
             max = 0;
     }
     for(Node* node = HashSetNext(spillWorklist); node!=NULL; node = HashSetNext(spillWorklist)){
+        //参数不溢出
+        if(get_name_index(node->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num)
+            continue;
+
         double h = heuristicVal(node);
 
         if(node->type == USUAL) {
@@ -816,20 +831,23 @@ void rewriteLabel(Function* func){
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
         if(v!=NULL && v->name!=NULL && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))) {
-            if(HashSetFind(spilledNodes, get_Node_with_value(v)))
-                cur_node->inst->_reg_[0] = -14;
+            if(HashSetFind(spilledNodes, get_Node_with_value(v))){
+                cur_node->inst->_reg_[0] = -1;
+            }
         }
 
         //TODO type排除只做了int
         if(vl!=NULL && vl->name!=NULL && vl->VTy->ID!=Int && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
                 value_type(vl)){
-            if(HashSetFind(spilledNodes, get_Node_with_value(vl)))
-                cur_node->inst->_reg_[1] = 114;
+            if(HashSetFind(spilledNodes, get_Node_with_value(vl))){
+                cur_node->inst->_reg_[1] = 101;
+            }
         }
         if(vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode !=GIVE_PARAM &&
                 value_type(vr)){
-            if(HashSetFind(spilledNodes, get_Node_with_value(vr)))
+            if(HashSetFind(spilledNodes, get_Node_with_value(vr))){
                 cur_node->inst->_reg_[2] = 100;
+            }
         }
 
 
@@ -847,7 +865,7 @@ void labelRegister(Function* func){
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
 
-        if(v!=NULL && v->name!=NULL && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))){
+        if(cur_node->inst->_reg_[0] == 0 && v!=NULL && v->name!=NULL && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))){
             int reg ;
             if(cur_node->inst->Opcode == CopyOperation)
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_dest(cur_node->inst)->alias)))->reg;
@@ -855,13 +873,13 @@ void labelRegister(Function* func){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_dest(cur_node->inst))))->reg;
             cur_node->inst->_reg_[0] = reg;
         }
-        if(vl!=NULL && vl->name!=NULL && vl->VTy->ID!=Int && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
+        if(cur_node->inst->_reg_[1] == 0 && vl!=NULL && vl->name!=NULL && vl->VTy->ID!=Int && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
                 value_type(vl)){
             int reg ;
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_lhs(cur_node->inst))))->reg;
             cur_node->inst->_reg_[1] = reg;
         }
-        if(vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
+        if(cur_node->inst->_reg_[2] == 0 && vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
                 value_type(vr)){
             int reg;
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_rhs(cur_node->inst))))->reg;
@@ -873,7 +891,6 @@ void labelRegister(Function* func){
 }
 
 void putInLineScanReg(Function* func){
-    func->lineScanReg = HashMapInit();
     HashMapFirst(colorMap);
     for(Pair* p = HashMapNext(colorMap); p!=NULL; p = HashMapNext(colorMap)){
         Node *node = p->key;
@@ -883,41 +900,51 @@ void putInLineScanReg(Function* func){
 
 void reg_alloca_(Function *start){
     for(Function *curFunction = start;curFunction!=NULL;curFunction=curFunction->Next){
-        init();
         restore_spillNodes = HashSetInit();
+        curFunction->lineScanReg = HashMapInit();
+        while (true){
+            init();
 
-        //先获取活跃区间
-        build_live_interval(curFunction->ToPoBlocks,interval_queue);
-        get_interval_set(interval_queue);
+            //先获取活跃区间
+            build_live_interval(curFunction->ToPoBlocks,interval_queue);
+            get_interval_set(interval_queue);
 
-        build(curFunction);
+            build(curFunction);
 
-        //makeWorkList
-        HashSetFirst(nodeSet);
-        for(Node* node = HashSetNext(nodeSet); node!=NULL; node = HashSetNext(nodeSet)){
-            if(node->degree >= K){
-                HashSetAdd(spillWorklist,node);              //加入高度数结点表
-            } else if(HashSetSize(MoveRelated(node)) > 0){
-                HashSetAdd(freezeWorklist,node);                 //加入低度数传送有关结点
-            } else {
-                HashSetAdd(simplifyWorklist,node);            //直接简化
+            //makeWorkList
+            HashSetFirst(nodeSet);
+            for(Node* node = HashSetNext(nodeSet); node!=NULL; node = HashSetNext(nodeSet)){
+                if(node->degree >= K){
+                    HashSetAdd(spillWorklist,node);              //加入高度数结点表
+                } else if(HashSetSize(MoveRelated(node)) > 0){
+                    HashSetAdd(freezeWorklist,node);                 //加入低度数传送有关结点
+                } else {
+                    HashSetAdd(simplifyWorklist,node);            //直接简化
+                }
+            }
+
+            regAllocIteration(curFunction);
+            assignColors();
+
+            if(HashSetSize(spilledNodes) > 0) {
+                //rewriteProgram(curFunction);
+                rewriteLabel(curFunction);
+            } else{
+                labelRegister(curFunction);
+                putInLineScanReg(curFunction);
+                break;
             }
         }
+    }
+}
 
-//        int size1= HashSetSize(spillWorklist);
-//        int size2 = HashSetSize(freezeWorklist);
-//        int size3 = HashSetSize(simplifyWorklist);
-
-        regAllocIteration(curFunction);
-        assignColors();
-
-        if(HashSetSize(spilledNodes) > 0) {
-            rewriteProgram(curFunction);
-            //rewriteLabel(curFunction);
-            reg_alloca_(curFunction);
-        } else{
-            labelRegister(curFunction);
-            putInLineScanReg(curFunction);
-        }
+void adjust_i(InstNode* instNode){
+    instNode = get_next_inst(instNode);
+    int i = 0;
+    while (instNode!=NULL && instNode->inst->Opcode!=ALLBEGIN)
+    {
+        instNode->inst->i = i;
+        i++;
+        instNode = get_next_inst(instNode);
     }
 }
