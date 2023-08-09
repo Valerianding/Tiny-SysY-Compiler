@@ -10,7 +10,7 @@
 
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
-int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
+int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
 //考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
 int arm_flag_lr=1;
 //考虑释放r3
@@ -422,6 +422,7 @@ void printf_vpush_rlist2(){
             }
         }
     }
+    int k=vfpRaveNum;
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
@@ -439,7 +440,7 @@ void printf_vpush_rlist2(){
         printf("}\n");
         fprintf(fp,"}\n");
     }
-    sp_offset_to_r11+=(vfpRaveNum*4);
+    sp_offset_to_r11+=(k*4);
 }
 void printf_vpop_rlist2(){
     int vfpRaveNum=0;
@@ -448,6 +449,7 @@ void printf_vpop_rlist2(){
             vfpRaveNum++;
         }
     }
+    int k=vfpRaveNum;
     if(vfpRaveNum!=0){
         printf("\tvpop\t{");
         fprintf(fp,"\tvpop\t{");
@@ -465,7 +467,7 @@ void printf_vpop_rlist2(){
         printf("}\n");
         fprintf(fp,"}\n");
     }
-    sp_offset_to_r11-=(vfpRaveNum*4);
+    sp_offset_to_r11-=(k*4);
 }
 
 void handle_vfp_reg_save(int sreg){
@@ -7901,15 +7903,23 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
                 if(left_reg>=100){
                     int x= get_value_offset_sp(hashMap,value1);
                     vfp_handle_illegal_imm(left_reg,x,1); //已经将浮点数加载到了left_reg-100
-                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
-                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
-                    printf("\tvmov\tr0,s%d\n",left_reg-100);
-                    fprintf(fp,"\tvmov\tr0,s%d\n",left_reg-100);
+                    printf("\tvmov\ts0,s%d\n",left_reg-100);
+                    fprintf(fp,"\tvmov\ts0,s%d\n",left_reg-100);
+                    printf("\tvcvt.s32.f32\ts0,s0\n");
+                    fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
+                    printf("\tvmov\tr0,s0\n");
+                    fprintf(fp,"\tvmov\tr0,s0\n");
+//                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
+//                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg-100,left_reg-100);
+//                    printf("\tvmov\tr0,s%d\n",left_reg-100);
+//                    fprintf(fp,"\tvmov\tr0,s%d\n",left_reg-100);
                 }else{
-                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
-                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
-                    printf("\tvmov\tr0,s%d\n",left_reg);
-                    fprintf(fp,"\tvmov\tr0,s%d\n",left_reg);
+                    printf("\tvmov\ts0,s%d\n",left_reg);
+                    fprintf(fp,"\tvmov\ts0,s%d\n",left_reg);
+                    printf("\tvcvt.s32.f32\ts0,s0\n");
+                    fprintf(fp,"\tvcvt.s32.f32\ts0,s0\n");
+                    printf("\tvmov\tr0,s0\n");
+                    fprintf(fp,"\tvmov\tr0,s0\n");
                 }
 
             }
@@ -8092,7 +8102,6 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //                        传入为int,接受为float
                         int_to_float(i,i);
                     }
-
                 } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
                     handle_illegal_imm1(i,value1->pdata->var_pdata.iVal);
                     if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID==Var_FLOAT){
@@ -10426,10 +10435,10 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
                     printf("\tvstr\ts%d,[r%d,#0]\n",left_reg-100,right_reg_end);
                     fprintf(fp,"\tvstr\ts%d,[r%d,#0]\n",left_reg-100,right_reg_end);
                 }else{
-                    printf("\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
-                    fprintf(fp,"\tvcvt.s32.f32\ts%d,s%d\n",left_reg,left_reg);
-                    printf("\tvstr\ts%d,[r%d,#0]\n",left_reg,right_reg_end);
-                    fprintf(fp,"\tvstr\ts%d,[r%d,#0]\n",left_reg,right_reg_end);
+                    printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg);
+                    fprintf(fp,"\tvcvt.s32.f32\ts0,s%d\n",left_reg);
+                    printf("\tvstr\ts0,[r%d,#0]\n",right_reg_end);
+                    fprintf(fp,"\tvstr\ts0,[r%d,#0]\n",right_reg_end);
                 }
             }
 
