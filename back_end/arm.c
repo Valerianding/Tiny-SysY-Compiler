@@ -365,7 +365,7 @@ void printf_vpush_rlist(){
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
-        for(int i=6;i<=31;i++){
+        for(int i=16;i<=31;i++){
             if(vfpreg_save[i]==1 && vfpRaveNum!=1){
                 printf("s%d,",i);
                 fprintf(fp,"s%d,",i);
@@ -414,7 +414,7 @@ void printf_vpush_rlist2(){
     }
 //    进行调整，确保保护栈帧之后，sp还是8字节对齐的
     if((vfpRaveNum%2)!=0){
-        for(int i=15;i>=6;i++){
+        for(int i=15;i>=6;i--){
             if(vfpreg_save[i]==0){
                 vfpRaveNum++;
                 vfpreg_save[i]=1;
