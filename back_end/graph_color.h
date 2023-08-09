@@ -13,6 +13,7 @@
 #include "line_scan.h"
 #include "dominance.h"
 #include "travel.h"
+#include "inliner.h"
 #include <math.h>
 
 #define K 11
