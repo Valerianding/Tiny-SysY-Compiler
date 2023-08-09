@@ -254,7 +254,7 @@ void VFP_expire_old_intervals(Function *curFunction,value_live_range *i){
         if((j->end>i->start)||(!(j->end==i->start)&&(j->lastisuse&&i->firstisdef))){
             return;
 #else
-        if(j->end>i->start){
+        if(j->end>=i->start){
             return;
 #endif
         }else{
