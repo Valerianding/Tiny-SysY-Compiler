@@ -162,6 +162,9 @@ void printf_ldmfd_rlist();
 //保护浮点寄存器
 void printf_vpush_rlist();
 void printf_vpop_rlist();
+//保护浮点寄存器s6-s15
+void printf_vpush_rlist2();
+void printf_vpop_rlist2();
 int count_bit(int value); //输入正数
 //返回0优化失败（不符合优化条件），返回1成功优化.
 int optimization_mul(int dest_reg,int left_reg,int imm); //进入函数之前先把其加载到寄存器
