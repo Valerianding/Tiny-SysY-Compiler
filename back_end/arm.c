@@ -10,7 +10,7 @@
 
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
-int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s31,s15和s16做为通用用来处理内存。
+int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
 //考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
 int arm_flag_lr=1;
 //考虑释放r3
@@ -354,7 +354,7 @@ void printf_vpush_rlist(){
     }
 //    进行调整，确保保护栈帧之后，sp还是8字节对齐的
     if((vfpRaveNum%2)!=0){
-        for(int i=16;i<=31;i++){
+        for(int i=31;i>=16;i--){
             if(vfpreg_save[i]==0){
                 vfpRaveNum++;
                 vfpreg_save[i]=1;
@@ -365,7 +365,7 @@ void printf_vpush_rlist(){
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
-        for(int i=16;i<=31;i++){
+        for(int i=6;i<=31;i++){
             if(vfpreg_save[i]==1 && vfpRaveNum!=1){
                 printf("s%d,",i);
                 fprintf(fp,"s%d,",i);
@@ -405,6 +405,69 @@ void printf_vpop_rlist(){
         fprintf(fp,"}\n");
     }
 }
+void printf_vpush_rlist2(){
+    int vfpRaveNum=0;
+    for(int i=6;i<=15;i++){
+        if(vfpreg_save[i]==1){
+            vfpRaveNum++;
+        }
+    }
+//    进行调整，确保保护栈帧之后，sp还是8字节对齐的
+    if((vfpRaveNum%2)!=0){
+        for(int i=15;i>=6;i++){
+            if(vfpreg_save[i]==0){
+                vfpRaveNum++;
+                vfpreg_save[i]=1;
+                break;
+            }
+        }
+    }
+    if(vfpRaveNum!=0){
+        printf("\tvpush\t{");
+        fprintf(fp,"\tvpush\t{");
+        for(int i=6;i<=15;i++){
+            if(vfpreg_save[i]==1 && vfpRaveNum!=1){
+                printf("s%d,",i);
+                fprintf(fp,"s%d,",i);
+                vfpRaveNum--;
+            }else if(vfpreg_save[i]==1 && vfpRaveNum==1){
+                printf("s%d",i);
+                fprintf(fp,"s%d",i);
+                vfpRaveNum--;
+            }
+        }
+        printf("}\n");
+        fprintf(fp,"}\n");
+    }
+    sp_offset_to_r11+=(vfpRaveNum*4);
+}
+void printf_vpop_rlist2(){
+    int vfpRaveNum=0;
+    for(int i=6;i<=15;i++){
+        if(vfpreg_save[i]==1){
+            vfpRaveNum++;
+        }
+    }
+    if(vfpRaveNum!=0){
+        printf("\tvpop\t{");
+        fprintf(fp,"\tvpop\t{");
+        for(int i=6;i<=15;i++){
+            if(vfpreg_save[i]==1 && vfpRaveNum!=1){
+                printf("s%d,",i);
+                fprintf(fp,"s%d,",i);
+                vfpRaveNum--;
+            }else if(vfpreg_save[i]==1 && vfpRaveNum==1){
+                printf("s%d",i);
+                fprintf(fp,"s%d",i);
+                vfpRaveNum--;
+            }
+        }
+        printf("}\n");
+        fprintf(fp,"}\n");
+    }
+    sp_offset_to_r11-=(vfpRaveNum*4);
+}
+
 void handle_vfp_reg_save(int sreg){
     int sreg_abs=abs(sreg);
     int sreg_dest;
@@ -6631,6 +6694,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         printf("\tsub\tsp,sp,#4\n");
         fprintf(fp,"\tsub\tsp,sp,#4\n");
         sp_offset_to_r11+=16;
+        if(ARM_enable_vfp==1){
+            printf_vpush_rlist2();
+        }
         printf("\tbl\t__aeabi_idivmod\n");
         fprintf(fp,"\tbl\t__aeabi_idivmod\n");
 //        printf("\tadd\tsp,sp,#8\n");
@@ -6638,6 +6704,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //        sp_offset_to_r11=0;
 //        printf("\tldr\tr3,[sp,#-4]\n");
 //        fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
+        if(ARM_enable_vfp==1){
+            printf_vpop_rlist2();
+        }
         printf("\tadd\tsp,sp,#4\n");
         fprintf(fp,"\tadd\tsp,sp,#4\n");
         printf("\tpop\t{ r3,r12,r14 }\n");
@@ -6831,11 +6900,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 printf("\tmov\tr1,#%d\n",x2);
                 fprintf(fp,"\tmov\tr1,#%d\n",x2);
                 watchReg.generalReg[1]=1;
+                if(left_reg==101){
+                    left_reg=100;
+                }
                 if(left_reg > 100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    printf("\tmov\tr0,r%d\n",left_reg-100);
-                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    if((left_reg-100)!=0){
+                        printf("\tmov\tr0,r%d\n",left_reg-100);
+                        fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    }
                 } else{
                     printf("\tmov\tr0,r%d\n",left_reg);
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
@@ -6843,11 +6917,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             }else{
                 handle_illegal_imm1(1,x2);
                 watchReg.generalReg[1]=1;
+                if(left_reg==101){
+                    left_reg=100;
+                }
                 if(left_reg>=100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    printf("\tmov\tr0,r%d\n",left_reg-100);
-                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    if((left_reg-100)!=0){
+                        printf("\tmov\tr0,r%d\n",left_reg-100);
+                        fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    }
                 } else{
                     printf("\tmov\tr0,r%d\n",left_reg);
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
@@ -6858,6 +6937,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tsub\tsp,sp,#4\n");
             fprintf(fp,"\tsub\tsp,sp,#4\n");
             sp_offset_to_r11+=16;
+            if(ARM_enable_vfp==1){
+                printf_vpush_rlist2();
+            }
 //            printf("\tstr\tr3,[sp,#-4]!\n");
 //            fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
 //            sp_offset_to_r11+=4;
@@ -6871,6 +6953,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //            sp_offset_to_r11=0;
 //            printf("\tldr\tr3,[sp,#-4]\n");
 //            fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
+            if(ARM_enable_vfp==1){
+                printf_vpop_rlist2();
+            }
             printf("\tadd\tsp,sp,#4\n");
             fprintf(fp,"\tadd\tsp,sp,#4\n");
             printf("\tpop\t{ r3,r12,r14 }\n");
@@ -6965,6 +7050,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         printf("\tsub\tsp,sp,#4\n");
         fprintf(fp,"\tsub\tsp,sp,#4\n");
         sp_offset_to_r11+=16;
+        if(ARM_enable_vfp==1){
+            printf_vpush_rlist2();
+        }
 //        printf("\tstr\tr3,[sp,#-4]!\n");
 //        fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
 //        sp_offset_to_r11+=4;
@@ -6978,6 +7066,9 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //        sp_offset_to_r11=0;
 //        printf("\tldr\tr3,[sp,#-4]\n");
 //        fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
+        if(ARM_enable_vfp==1){
+            printf_vpop_rlist2();
+        }
         printf("\tadd\tsp,sp,#4\n");
         fprintf(fp,"\tadd\tsp,sp,#4\n");
         printf("\tpop\t{ r3,r12,r14 }\n");
@@ -7072,7 +7163,9 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     printf("\tsub\tsp,sp,#4\n");
     fprintf(fp,"\tsub\tsp,sp,#4\n");
     sp_offset_to_r11+=16;
-
+    if(ARM_enable_vfp==1){
+        printf_vpush_rlist2();
+    }
     if(param_num_>4 && (((param_num_)-4)%2)!=0){
         printf("\tsub\tsp,sp,#4\n");
         fprintf(fp,"\tsub\tsp,sp,#4\n");
@@ -7096,7 +7189,9 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     printf("\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
 
-
+    if(ARM_enable_vfp==1){
+        printf_vpop_rlist2();
+    }
     memset(give_param_flag,0, sizeof(give_param_flag));
 
 //    这里还需要调整sp,去掉压入栈的参数，这里可以使用add直接调整sp，也可以使用mov sp,fp直接调整
@@ -7227,7 +7322,9 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     printf("\tsub\tsp,sp,#4\n");
     fprintf(fp,"\tsub\tsp,sp,#4\n");
     sp_offset_to_r11+=16;
-
+    if(ARM_enable_vfp==1){
+        printf_vpush_rlist2();
+    }
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
     memset(order_of_param,0, sizeof(order_of_param));
@@ -7236,7 +7333,9 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
 
     printf("\tbl\tmemset\n");
     fprintf(fp,"\tbl\tmemset\n");
-
+    if(ARM_enable_vfp==1){
+        printf_vpop_rlist2();
+    }
 //    printf("\tadd\tsp,sp,#8\n");
 //    fprintf(fp,"\tadd\tsp,sp,#8\n");
 //    sp_offset_to_r11=0;
@@ -7260,7 +7359,9 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
     printf("\tsub\tsp,sp,#4\n");
     fprintf(fp,"\tsub\tsp,sp,#4\n");
     sp_offset_to_r11+=16;
-
+    if(ARM_enable_vfp==1){
+        printf_vpush_rlist2();
+    }
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
     memset(order_of_param,0, sizeof(order_of_param));
@@ -7269,7 +7370,9 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
 
     printf("\tbl\tmemcpy\n");
     fprintf(fp,"\tbl\tmemcpy\n");
-
+    if(ARM_enable_vfp==1){
+        printf_vpop_rlist2();
+    }
     printf("\tadd\tsp,sp,#4\n");
     fprintf(fp,"\tadd\tsp,sp,#4\n");
     printf("\tpop\t{ r3,r12,r14 }\n");
@@ -10094,7 +10197,9 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
         printf("\tsub\tsp,sp,#4\n");
         fprintf(fp,"\tsub\tsp,sp,#4\n");
         sp_offset_to_r11+=16;
-
+        if(ARM_enable_vfp==1){
+            printf_vpush_rlist2();
+        }
         int x=get_value_offset_sp(hashMap,value1);
         if(imm_is_valid(x)){
             printf("\tadd\tr0,sp,#%d\n",x);
@@ -10121,7 +10226,9 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
         }
         printf("\tbl\tmemset\n");
         fprintf(fp,"\tbl\tmemset\n");
-
+        if(ARM_enable_vfp==1){
+            printf_vpop_rlist2();
+        }
 //        printf("\tadd\tsp,sp,#8\n");
 //        fprintf(fp,"\tadd\tsp,sp,#8\n");
 //        sp_offset_to_r11=0;
