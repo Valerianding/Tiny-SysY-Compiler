@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -188,7 +188,7 @@ int main(int argc, char* argv[]){
         //重新构建Function
         start = ReconstructFunction(instruction_list);
 
-        //global2local(instruction_list);
+        global2local(instruction_list);
 
         printf_llvm_ir(instruction_list,argv[4],1);
 
@@ -252,7 +252,7 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 
-//     printf_llvm_ir(instruction_list,argv[4],1);
+     printf_llvm_ir(instruction_list,argv[4],1);
 
 
 #if ALL
