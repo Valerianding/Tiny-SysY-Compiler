@@ -49,7 +49,7 @@ add_executable(compiler
         ${DIR_LIB}
         ${DIR_CONTAINER}
         ${DIR_BACK}
-        tacmain.c ir/opt/loopnorm.c ir/opt/loopnorm.h ir/opt/loop2memcpy.c ir/opt/loop2memcpy.h ir/opt/loopconv.c ir/opt/loopconv.h)
+        tacmain.c ir/opt/loopnorm.c ir/opt/loopnorm.h ir/opt/loop2memcpy.c ir/opt/loop2memcpy.h ir/opt/loopconv.c ir/opt/loopconv.h test_cases/140_my_test.c)
 
 
 

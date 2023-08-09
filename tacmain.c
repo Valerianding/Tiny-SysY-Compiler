@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -66,8 +66,6 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-    Optimize = true;
-
 
     yyin=fopen(argv[4], "r");
 
@@ -183,7 +181,7 @@ int main(int argc, char* argv[]){
 
 
     if(Optimize){
-        func_inline(instruction_list,124);
+        //func_inline(instruction_list,124);
 
         //重新构建Function
         start = ReconstructFunction(instruction_list);
