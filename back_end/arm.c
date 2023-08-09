@@ -6900,11 +6900,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                 printf("\tmov\tr1,#%d\n",x2);
                 fprintf(fp,"\tmov\tr1,#%d\n",x2);
                 watchReg.generalReg[1]=1;
+                if(left_reg==101){
+                    left_reg=100;
+                }
                 if(left_reg > 100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    printf("\tmov\tr0,r%d\n",left_reg-100);
-                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    if((left_reg-100)!=0){
+                        printf("\tmov\tr0,r%d\n",left_reg-100);
+                        fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    }
                 } else{
                     printf("\tmov\tr0,r%d\n",left_reg);
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
@@ -6912,11 +6917,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             }else{
                 handle_illegal_imm1(1,x2);
                 watchReg.generalReg[1]=1;
+                if(left_reg==101){
+                    left_reg=100;
+                }
                 if(left_reg>=100){
                     int x= get_value_offset_sp(hashMap,value1);
                     handle_illegal_imm(left_reg,x,1);
-                    printf("\tmov\tr0,r%d\n",left_reg-100);
-                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    if((left_reg-100)!=0){
+                        printf("\tmov\tr0,r%d\n",left_reg-100);
+                        fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                    }
                 } else{
                     printf("\tmov\tr0,r%d\n",left_reg);
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
