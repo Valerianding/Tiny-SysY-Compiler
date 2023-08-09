@@ -6,7 +6,7 @@
 #define S 26
 #define R 11
 //#define YAOWEI_TEST
-int enable_vfp=1; //浮点寄存器分配开关
+int enable_vfp=0; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
 int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
 
