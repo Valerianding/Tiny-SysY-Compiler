@@ -527,6 +527,10 @@ void Schedule_Late(Instruction *ins){
                 blockHead = get_next_inst(blockHead);
             }
 
+            if(blockHead->inst->Opcode == FunEnd){
+                blockHead = get_prev_inst(blockHead);
+            }
+
             if(blockHead->inst->Opcode == br_i1){
                 blockHead = get_prev_inst(blockHead);
             }
