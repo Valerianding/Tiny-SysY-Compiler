@@ -191,6 +191,8 @@ void handle_def(Value*dvalue,int ins_id){
     if(range!=NULL){
         if(range->start==ins_head->inst->i){
             range->start=ins_id;
+            range->firstisdef=1;
+            range->lastisuse=0;
         }
     }
 }
@@ -224,10 +226,14 @@ void handle_use(Value*uvalue,int ins_id){
         range=(live_range*) malloc(sizeof(live_range));
         memset(range,0,sizeof(live_range));
         range->start=ins_head->inst->i;
+        range->firstisdef=0;
         range->end=ins_id;
+        range->lastisuse=1;
         HashMapPut(hashmap,uvalue,range);
     }else{
+        if(range->start>ins_head->inst->i)  range->firstisdef=0;
         range->start=MIN(range->start,ins_head->inst->i);
+        if(range->end<ins_id) range->lastisuse=1;
         range->end=MAX(range->end,ins_id);
     }
 }

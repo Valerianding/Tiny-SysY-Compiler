@@ -22,11 +22,15 @@
 typedef struct _live_range{
     int start;
     int end;
+    int firstisdef;
+    int lastisuse;
 }live_range;
 typedef struct _value_live_range{
     Value *value;
     int start;
     int end;
+    int firstisdef;
+    int lastisuse;
 }value_live_range;
 
 #define MAX(a,b) ((a)>(b)? (a) : (b))

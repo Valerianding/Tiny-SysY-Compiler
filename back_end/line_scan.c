@@ -5,6 +5,7 @@
 
 #define S 16
 #define R 11
+//#define YAOWEI_TEST
 int enable_vfp=0; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
 int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
@@ -174,8 +175,13 @@ void expire_old_intervals(Function *curFunction,value_live_range *i){
         PriorityQueueTop(active,&elem);
         j=(value_live_range*)elem;
 //        if endpoint[j] ≥ startpoint[i]
-        if(j->end>=i->start){
+#ifdef YAOWEI_TEST
+        if((j->end>i->start)||(!(j->end==i->start)&&(j->lastisuse&&i->firstisdef))){
             return;
+#else
+        if(j->end>=i->start){ //等号删除是有点问题的
+            return;
+#endif
         }else{
 //            remove j from active
             PriorityQueuePop(active);
@@ -244,8 +250,13 @@ void VFP_expire_old_intervals(Function *curFunction,value_live_range *i){
         PriorityQueueTop(VFPactive,&elem);
         j=(value_live_range*)elem;
 //        if endpoint[j] ≥ startpoint[i]
-        if(j->end>=i->start){
+#ifdef YAOWEI_TEST
+        if((j->end>i->start)||(!(j->end==i->start)&&(j->lastisuse&&i->firstisdef))){
             return;
+#else
+        if(j->end>i->start){
+            return;
+#endif
         }else{
 //            remove j from active
             PriorityQueuePop(VFPactive);

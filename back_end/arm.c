@@ -6925,27 +6925,33 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
     }
 
     if(isLocalVarIntType(value1->VTy)&&isLocalVarIntType(value2->VTy)){
+        if(left_reg==101){
+            left_reg=100;
+        }
+        if(right_reg==100){
+            right_reg=101;
+        }
         if(left_reg>=100&&right_reg>=100){
             int x1= get_value_offset_sp(hashMap,value1);
             handle_illegal_imm(left_reg,x1,1);
             int x2= get_value_offset_sp(hashMap,value2);
             handle_illegal_imm(right_reg,x2,2);
-            printf("\tmov\tr0,r%d\n",left_reg-100);
-            fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-            printf("\tmov\tr1,r%d\n",right_reg-100);
-            fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+//            printf("\tmov\tr0,r%d\n",left_reg-100);
+//            fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+//            printf("\tmov\tr1,r%d\n",right_reg-100);
+//            fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
         } else if(left_reg>=100){
             int x1= get_value_offset_sp(hashMap,value1);
             handle_illegal_imm(left_reg,x1,1);
-            printf("\tmov\tr0,r%d\n",left_reg-100);
-            fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+//            printf("\tmov\tr0,r%d\n",left_reg-100);
+//            fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
             printf("\tmov\tr1,r%d\n",right_reg);
             fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
         }else if(right_reg>=100){
             int x2= get_value_offset_sp(hashMap,value2);
             handle_illegal_imm(right_reg,x2,2);
-            printf("\tmov\tr1,r%d\n",right_reg-100);
-            fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+//            printf("\tmov\tr1,r%d\n",right_reg-100);
+//            fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
             printf("\tmov\tr0,r%d\n",left_reg);
             fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
         } else{
@@ -6991,12 +6997,16 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                     vfp_handle_illegal_imm(dest_reg_abs,x,0);
                 }
             }else{
+                if(dest_reg_abs!=1){
+                    printf("\tmov\tr%d,r1\n",dest_reg_abs);
+                    fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+                }
+            }
+        }else{
+            if(dest_reg_abs!=1){
                 printf("\tmov\tr%d,r1\n",dest_reg_abs);
                 fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
             }
-        }else{
-            printf("\tmov\tr%d,r1\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
         }
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
