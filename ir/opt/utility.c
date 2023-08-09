@@ -340,6 +340,7 @@ void calculateNonLocals(Function *currentFunction){
     for(Value *nonLocalValue = HashSetNext(nonLocals); nonLocalValue != NULL; nonLocalValue = HashSetNext(nonLocals)){
         printf("%s ", nonLocalValue->name);
     }
+    printf("here!\n");
     HashSetDeinit(killed);
     clear_visited_flag(entry);
 }

@@ -503,31 +503,24 @@ void Schedule_Late(Instruction *ins){
 
             //because the phi's use is considered at the predecessor
             //so current block's phi must have no use!!
+            while(blockHead != blockTail){
+                int numOfOperands = blockHead->inst->user.value.NumUserOperands;
+                Value *lhs = NULL;
+                Value *rhs = NULL;
+                if(numOfOperands == 1){
+                    lhs = ins_get_lhs(blockHead->inst);
+                }else if(numOfOperands == 2){
+                    lhs = ins_get_lhs(blockHead->inst);
+                    rhs = ins_get_rhs(blockHead->inst);
+                }
 
-            bool HaveUse = false;
+                if(lhs != NULL && lhs == insDest){
+                    break;
+                }
+                if(rhs != NULL && rhs == insDest){
+                    break;
+                }
 
-//            while(blockHead != blockTail){
-//                int numOfOperands = blockHead->inst->user.value.NumUserOperands;
-//                Value *lhs = NULL;
-//                Value *rhs = NULL;
-//                if(numOfOperands == 1){
-//                    lhs = ins_get_lhs(blockHead->inst);
-//                }else if(numOfOperands == 2){
-//                    lhs = ins_get_lhs(blockHead->inst);
-//                    rhs = ins_get_rhs(blockHead->inst);
-//                }
-//
-//                if(lhs != NULL && lhs == insDest){
-//                    break;
-//                }
-//                if(rhs != NULL && rhs == insDest){
-//                    break;
-//                }
-//
-//                blockHead = get_next_inst(blockHead);
-//            }
-
-            while(blockHead->inst->Opcode == Phi){
                 blockHead = get_next_inst(blockHead);
             }
 

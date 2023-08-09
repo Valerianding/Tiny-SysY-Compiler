@@ -1,113 +1,112 @@
-int a;
-int sum;
-int count = 0;
+int sheet1[500][500] = {};
+int sheet2[500][500] = {};
+int active = 1;
+int width;
+int height;
+int steps;
 
-int getA() {
-    count = count + 1;
-    return count;
-}
+void read_map() {
+    width = getint();
+    height = getint();
+    // width <= 498, height <= 498
+    steps = getint();
+    getch();
 
-void f1(int a) {
-    sum = sum + a;
-    a = getA();
-    sum = sum + a;
-    {
-        if (1) {
-            int a = getA();
-            sum = sum + a;
-        }
-        sum = sum + a;
-    }
-    sum = sum + a;
-}
+    int i = 1;
+    int j = 1;
 
-void f2() {
-    sum = sum + a;
-    {
-        {
-            {
-                int a = getA();
+    while (j <= height) {
+        i = 1;
+        while (i <= width) {
+            int get = getch();
+            if (get == 35) {
+                sheet1[j][i] = 1;
+            } else {
+                sheet1[j][i] = 0;
             }
+            i = i + 1;
         }
-        sum = sum + a;
+        // line feed
+        getch();
+        j = j + 1;
     }
 }
 
-void f3() {
-    int a = getA();
-    sum = sum + a;
-    {
-        {
-            {
-                a = getA();
+void put_map() {
+    int i = 1;
+    int j = 1;
+
+    while (j <= height) {
+        i = 1;
+        while (i <= width) {
+            if (sheet1[j][i] == 1) {
+                putch(35);
+            } else {
+                putch(46);
             }
-            sum = sum + a;
-            int a = getA();
+            i = i + 1;
         }
-        sum = sum + a;
+        // line feed
+        putch(10);
+        j = j + 1;
     }
 }
 
+void swap12() {
+    int i = 1;
+    int j = 1;
+
+    while (j <= height) {
+        i = 1;
+        while (i <= width) {
+            sheet1[j][i] = sheet2[j][i];
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+}
+
+void step(int source[][500], int target[][500]) {
+    int i = 1;
+    int j = 1;
+
+    while (j <= height) {
+        i = 1;
+        while (i <= width) {
+            int alive_count = source[j - 1][i - 1] + source[j - 1][i] +
+                              source[j - 1][i + 1] + source[j][i - 1] +
+                              source[j][i + 1] + source[j + 1][i - 1] +
+                              source[j + 1][i] + source[j + 1][i + 1];
+            if (source[j][i] == 1 && alive_count == 2 ) {
+                target[j][i] = 1;
+            } else if (alive_count == 3) {
+                target[j][i] = 1;
+            } else {
+                target[j][i] = 0;
+            }
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+}
 
 int main() {
-    sum = 0;
-    a = getA();
-    sum = sum + a;
-    int a = getA();
-    f1(a);f2();f3();
-    {
-        {
-            f1(a);f2();f3();
-            int a = getA();
+    read_map();
+    starttime();
+    while (steps > 0) {
+        if (active == 1) {
+            step(sheet1, sheet2);
+            active = 2;
+        } else {
+            step(sheet2, sheet1);
+            active = 1;
         }
-        f1(a);f2();f3();
-        {
-            int a = getA();
-            {
-                int a = getA();
-                {
-                    f1(a);f2();f3();
-                    int a = getA();
-                    f1(a);f2();f3();
-                    {
-                        a = getA();
-                    }
-                    f1(a);f2();f3();
-                }
-            }
-        }
-        f1(a);f2();f3();
+        steps = steps - 1;
     }
-    while(1) {
-        while(1) {
-            int i = 0;
-            while(i < 3) {
-                while(1) {
-                    if (1) {
-                        f1(a);f2();f3();
-                        break;
-                    }
-                    a = getA();
-                }
-                {
-                    if (i == 1) {
-                        int a = getA();
-                        f1(a);f2();f3();
-                        i = i + 1;
-                        continue;
-                    }
-                    else{
-                        f1(a);f2();f3();
-                    }
-                    a = getA();
-                }
-                i = i + 1;
-            }
-            break;
-            break;
-        }
-        break;
+    stoptime();
+    if (active == 2) {
+        swap12();
     }
-    putint(sum);
+    put_map();
     return 0;
 }
