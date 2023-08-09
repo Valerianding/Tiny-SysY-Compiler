@@ -506,32 +506,44 @@ void Schedule_Late(Instruction *ins){
 
             bool HaveUse = false;
 
-//            while(blockHead != blockTail){
-//                int numOfOperands = blockHead->inst->user.value.NumUserOperands;
-//                Value *lhs = NULL;
-//                Value *rhs = NULL;
-//                if(numOfOperands == 1){
-//                    lhs = ins_get_lhs(blockHead->inst);
-//                }else if(numOfOperands == 2){
-//                    lhs = ins_get_lhs(blockHead->inst);
-//                    rhs = ins_get_rhs(blockHead->inst);
-//                }
-//
-//                if(lhs != NULL && lhs == insDest){
-//                    break;
-//                }
-//                if(rhs != NULL && rhs == insDest){
-//                    break;
-//                }
-//
-//                blockHead = get_next_inst(blockHead);
-//            }
+            while(blockHead != blockTail){
+                int numOfOperands = blockHead->inst->user.value.NumUserOperands;
+                Value *lhs = NULL;
+                Value *rhs = NULL;
+                if(numOfOperands == 1){
+                    lhs = ins_get_lhs(blockHead->inst);
+                }else if(numOfOperands == 2){
+                    lhs = ins_get_lhs(blockHead->inst);
+                    rhs = ins_get_rhs(blockHead->inst);
+                }
 
-            while(blockHead->inst->Opcode == Phi){
+                if(lhs != NULL && lhs == insDest){
+                    break;
+                }
+                if(rhs != NULL && rhs == insDest){
+                    break;
+                }
+
                 blockHead = get_next_inst(blockHead);
             }
 
-            ins_insert_before(insNode,blockHead);
+            if(blockHead->inst->Opcode == FunEnd){
+                blockHead = get_prev_inst(blockHead);
+            }
+
+            if(blockHead->inst->Opcode == br_i1){
+                blockHead = get_prev_inst(blockHead);
+            }
+
+            if(blockHead->inst->Opcode == GIVE_PARAM){
+                while(blockHead->inst->Opcode == GIVE_PARAM){
+                    blockHead = get_prev_inst(blockHead);
+                }
+                ins_insert_after(insNode,blockHead);
+            }else{
+                ins_insert_before(insNode,blockHead);
+            }
+
 
             insNode->inst->Parent = bestBlock;
         }

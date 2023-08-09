@@ -3,9 +3,10 @@
 //
 #include "line_scan.h"
 
-#define S 16
+#define S 26
 #define R 11
-int enable_vfp=0; //浮点寄存器分配开关
+//#define YAOWEI_TEST
+int enable_vfp=1; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
 int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
 
@@ -174,8 +175,13 @@ void expire_old_intervals(Function *curFunction,value_live_range *i){
         PriorityQueueTop(active,&elem);
         j=(value_live_range*)elem;
 //        if endpoint[j] ≥ startpoint[i]
+#ifdef YAOWEI_TEST
+        if((j->end>i->start)||(!(j->end==i->start)&&(j->lastisuse&&i->firstisdef))){
+            return;
+#else
         if(j->end>=i->start){ //等号删除是有点问题的
             return;
+#endif
         }else{
 //            remove j from active
             PriorityQueuePop(active);
@@ -244,8 +250,13 @@ void VFP_expire_old_intervals(Function *curFunction,value_live_range *i){
         PriorityQueueTop(VFPactive,&elem);
         j=(value_live_range*)elem;
 //        if endpoint[j] ≥ startpoint[i]
-        if(j->end>=i->start){
+#ifdef YAOWEI_TEST
+        if((j->end>i->start)||(!(j->end==i->start)&&(j->lastisuse&&i->firstisdef))){
             return;
+#else
+        if(j->end>i->start){
+            return;
+#endif
         }else{
 //            remove j from active
             PriorityQueuePop(VFPactive);
@@ -513,7 +524,14 @@ void free_register(int i){
     myreg[i]=0;
 }
 int get_an_availabel_VFPregister(){
-    for(int i=16;i<=31;i++){
+//    for(int i=6;i<=31;i++){
+//        if(VFPreg[i]==0){
+//            VFPreg[i]=1;
+//            free_VFPreg_num--;
+//            return i;
+//        }
+//    }
+    for(int i=31;i>=6;i--){
         if(VFPreg[i]==0){
             VFPreg[i]=1;
             free_VFPreg_num--;

@@ -158,7 +158,7 @@ void mem2reg(Function *currentFunction){
         //先看一下我们的这个是否是正确的
         Value *val = pair->key;
         HashSet *storeSet = pair->value;  //这个value对应的所有defBlocks
-        //printf("value : %s store(defBlocks) : ", val->name);
+//        printf("value : %s store(defBlocks) : ", val->name);
         // 只有non-Locals 我们才需要放置phi函数
         if(HashSetFind(nonLocals, val)){
             HashSetFirst(storeSet);
@@ -334,7 +334,6 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                     //可以直接这样更新
                     stack *allocStack = HashMapGet(IncomingVals, store);
                     assert(allocStack != nullptr);
-                    printf("store %s\n",data->name);
                     stackPush(allocStack, data);
                     //记录define的次数
                     int *defineTime = HashMapGet(countDefine,store);
@@ -388,7 +387,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
             //对应的是哪个
             Value *alias = nextBlockCurr->inst->user.value.alias;
             assert(alias != NULL);
-            printf("alias name %s\n",alias->name);
+            //printf("alias name %s\n",alias->name);
             //去找对应需要更新的
             stack *allocStack = HashMapGet(IncomingVals,alias);
             //global 2 local之后我们不想分析那些已经好了的Phi
