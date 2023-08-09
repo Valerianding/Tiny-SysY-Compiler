@@ -10,7 +10,7 @@
 
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
-int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
+int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
 //考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
 int arm_flag_lr=1;
 //考虑释放r3
@@ -365,7 +365,7 @@ void printf_vpush_rlist(){
     if(vfpRaveNum!=0){
         printf("\tvpush\t{");
         fprintf(fp,"\tvpush\t{");
-        for(int i=6;i<=31;i++){
+        for(int i=16;i<=31;i++){
             if(vfpreg_save[i]==1 && vfpRaveNum!=1){
                 printf("s%d,",i);
                 fprintf(fp,"s%d,",i);
@@ -414,7 +414,7 @@ void printf_vpush_rlist2(){
     }
 //    进行调整，确保保护栈帧之后，sp还是8字节对齐的
     if((vfpRaveNum%2)!=0){
-        for(int i=15;i>=6;i++){
+        for(int i=15;i>=6;i--){
             if(vfpreg_save[i]==0){
                 vfpRaveNum++;
                 vfpreg_save[i]=1;

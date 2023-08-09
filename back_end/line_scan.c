@@ -6,7 +6,7 @@
 #define S 26
 #define R 11
 //#define YAOWEI_TEST
-int enable_vfp=1; //浮点寄存器分配开关
+int enable_vfp=0; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
 int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
 
@@ -254,7 +254,7 @@ void VFP_expire_old_intervals(Function *curFunction,value_live_range *i){
         if((j->end>i->start)||(!(j->end==i->start)&&(j->lastisuse&&i->firstisdef))){
             return;
 #else
-        if(j->end>i->start){
+        if(j->end>=i->start){
             return;
 #endif
         }else{
@@ -436,11 +436,11 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
         value_register *node= HashMapGet(curFunction->lineScanVFPReg,value);
         if(node==NULL){
             if(i==0){
-                ins->inst->_vfpReg_[i]=-15;
+                ins->inst->_vfpReg_[i]=-4;
             }else if(i==1){
-                ins->inst->_vfpReg_[i]=115;
+                ins->inst->_vfpReg_[i]=104;
             } else if(i==2){
-                ins->inst->_vfpReg_[i]=116;
+                ins->inst->_vfpReg_[i]=105;
             }
             return;
         }
