@@ -140,24 +140,11 @@ void addEdge(Node* u, Node* v){
         if(u->type != PreColored){
             u->degree++;
             HashSetAdd(u->adjOpdSet,v);
-//            if(strcmp(u->value->name,"%121")==0 && u->degree >2){
-//                printf("%%121: ");
-//                HashSetFirst(u->adjOpdSet);
-//                for(Node* n = HashSetNext(u->adjOpdSet); n!=NULL; n = HashSetNext(u->adjOpdSet))
-//                    printf(", %s ",n->value->name);
-//                printf("\n");
 //            }
         }
         if(v->type != PreColored){
             v->degree++;
             HashSetAdd(v->adjOpdSet,u);
-//            if(strcmp(v->value->name,"%121")==0 && v->degree >2){
-//                printf("%%121: ");
-//                HashSetFirst(v->adjOpdSet);
-//                for(Node* n = HashSetNext(v->adjOpdSet); n!=NULL; n = HashSetNext(v->adjOpdSet))
-//                    printf(", %s ",n->value->name);
-//                printf("\n");
-//            }
         }
     }
 }
@@ -356,7 +343,13 @@ void build(Function* func){
     while(currNode != func->tail->tail_node){
         BasicBlock *currNodeParent = currNode->inst->Parent;
         if(currNodeParent->visited == false){
-            HashSet *live = currNodeParent->out;
+            //!!! 使用copy的out, 不然不能连跑多轮!!
+            HashSet *live = HashSetInit();
+            HashSetFirst(currNodeParent->out);
+            for(Value* v_live = HashSetNext(currNodeParent->out); v_live!=NULL; v_live = HashSetNext(currNodeParent->out)){
+                HashSetAdd(live,v_live);
+            }
+           // HashSet *live = currNodeParent->out;
 
             //进到了一个block的第一条ir,一定是label
             InstNode *first_node = currNodeParent->head_node;
@@ -749,6 +742,7 @@ void preAssignColors(){
         for(int i=3;i<=12;i++){
             myreg[i] = 0;
         }
+        myreg[14] = 0;
 
         // 把待分配颜色的结点的邻接结点的颜色去除
         //TODO 好像没有必要调整alloca的type
@@ -855,8 +849,7 @@ void rewriteLabel(Function* func){
     //删去溢出结点,再进行一次图着色
     HashSetFirst(spilledNodes);
     for(Node* node = HashSetNext(spilledNodes); node!=NULL; node = HashSetNext(spilledNodes)){
-        if(strcmp("%25",node->value->name)==0)
-            printf("fhj");
+
         HashSetAdd(restore_spillNodes, node);
     }
 
@@ -869,7 +862,8 @@ void rewriteLabel(Function* func){
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
         if(v!=NULL) {
-            if(HashSetFind(spilledNodes, get_Node_with_value(v))){
+            if(HashSetFind(spilledNodes, get_Node_with_value(v)) || (cur_node->inst->Opcode == CopyOperation &&
+                    HashSetFind(spilledNodes, get_Node_with_value(v->alias)))){
                 cur_node->inst->_reg_[0] = -1;
             }
         }
