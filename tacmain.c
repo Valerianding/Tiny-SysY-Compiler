@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -66,7 +66,7 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-    Optimize = true;
+//    Optimize = true;
 
     yyin=fopen(argv[4], "r");
 
