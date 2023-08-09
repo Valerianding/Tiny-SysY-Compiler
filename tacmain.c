@@ -66,7 +66,7 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-//    Optimize = true;
+    Optimize = true;
 
     yyin=fopen(argv[4], "r");
 
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]){
         //Loop invariant code motion 需要使用live-out信息
         calculateLiveness(currentFunction);
 
-        printLiveness(currentFunction);
+//        printLiveness(currentFunction);
     }
 
 //    //mem2reg之后，优化前
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
 
 
     if(Optimize){
-        func_inline(instruction_list,124);
+//        func_inline(instruction_list,124);
 
         //重新构建Function
         start = ReconstructFunction(instruction_list);
@@ -267,7 +267,7 @@ int main(int argc, char* argv[]){
         clear_visited_flag(currentFunction->entry);
         //printf("after out of SSA!\n");
         calculateLiveness(currentFunction);
-        printLiveness(currentFunction);
+//        printLiveness(currentFunction);
     }
 
     //  printf_llvm_ir(instruction_list,argv[4],0);
@@ -287,7 +287,7 @@ int main(int argc, char* argv[]){
 //    线性扫描
     line_scan(instruction_list,start);
 
-//    reg_control(instruction_list,start);
+    reg_control(instruction_list,start);
     for(InstNode *tmp=instruction_list;tmp!=NULL;tmp= get_next_inst(tmp)){
         if((tmp->inst->_reg_[1] == tmp->inst->_reg_[2]) && tmp->inst->_reg_[1] != 0){
             Value *lhs = ins_get_lhs(tmp->inst);
