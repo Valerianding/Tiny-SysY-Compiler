@@ -63,8 +63,8 @@ bool value_type(Value* uvalue){
         return false;
     }
 
-    if(uvalue->VTy->ID == tmp_mem)
-        return false;
+//    if(uvalue->VTy->ID == tmp_mem)
+//        return false;
     return true;
 }
 
@@ -79,6 +79,9 @@ bool check_spilled(Value* value){
 
 //寻找当前nodeSet有没有对应Value的Node,如果有则返回，没有则新建
 Node *get_Node_with_value(Value* value){
+    //应该走不到这里来吧
+    assert(!isLocalVarFloat(value));
+
     HashSetFirst(nodeSet);
     for(Node* node = HashSetNext(nodeSet);node!=NULL; node = HashSetNext(nodeSet)){
         if(node->value == value)
@@ -116,6 +119,26 @@ void init(){
     intervalMap = HashMapInit();
 }
 
+void deinit(){
+    HashSetDeinit(simplifyWorklist);
+    HashSetDeinit(worklistMoves);
+    HashSetDeinit(freezeWorklist);
+    HashSetDeinit(spillWorklist);
+    HashSetDeinit(spilledNodes);
+    stackDeinit(selectStack);
+    HashSetDeinit(selectSet);
+    HashSetDeinit(coalescedNodes);
+    HashSetDeinit(coalescedMoves);
+    HashSetDeinit(constrainedMoves);
+    HashSetDeinit(frozenMoves);
+    HashSetDeinit(activeMoves);
+    HashSetDeinit(adjSet);
+    HashSetDeinit(nodeSet);
+    HashMapDeinit(colorMap);
+    PriorityQueueDeinit(interval_queue);
+    HashMapDeinit(intervalMap);
+}
+
 bool find_pair(Node* u,Node* v){
     HashSetFirst(adjSet);
     for(AdjPair* adjPair = HashSetNext(adjSet); adjPair!=NULL; adjPair = HashSetNext(adjSet)){
@@ -150,7 +173,7 @@ void addEdge(Node* u, Node* v){
 }
 
 void handle_def_(HashSet* live, Value* def, int loopDepth){
-    if(check_spilled(def))
+    if(check_spilled(def) || isLocalVarFloat(def))
         return;
 
     Node *node = get_Node_with_value(def);
@@ -173,7 +196,7 @@ void handle_def_(HashSet* live, Value* def, int loopDepth){
 
 void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
 
-    if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
+    if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy) || isLocalVarFloat(uvalue)){
         return;
     }
     if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
@@ -184,8 +207,8 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
         return;
     }
 
-    if(uvalue->VTy->ID == tmp_mem)
-        return;
+//    if(uvalue->VTy->ID == tmp_mem)
+//        return;
 
     if(check_spilled(uvalue))
         return;
@@ -213,7 +236,7 @@ void addEdge_within_live(HashSet* live){
 
     HashSetFirst(live);
     for(Value* v = HashSetNext(live); v!=NULL; v = HashSetNext(live)){
-        if(check_spilled(v))
+        if(check_spilled(v) || isLocalVarFloat(v))
             continue;
 
         Node *new_node = get_Node_with_value(v);
@@ -347,7 +370,7 @@ void build(Function* func){
             HashSet *live = HashSetInit();
             HashSetFirst(currNodeParent->out);
             for(Value* v_live = HashSetNext(currNodeParent->out); v_live!=NULL; v_live = HashSetNext(currNodeParent->out)){
-                if(!check_spilled(v_live))
+                if(!check_spilled(v_live) && !isLocalVarFloat(v_live))
                     HashSetAdd(live,v_live);
             }
            // HashSet *live = currNodeParent->out;
@@ -361,8 +384,9 @@ void build(Function* func){
                     //为什么要live <---live\use(I)
                     //mov dst,src不应是直接冲突关系，而是潜在可合并关系
                     value_live_range *range = HashMapGet(intervalMap, ins_get_lhs(curr_node->inst));
-                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)->alias) && !check_spilled(
-                            ins_get_lhs(curr_node->inst))){
+                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || ins_get_lhs(curr_node->inst)->VTy->ID == Float || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)->alias) && !check_spilled(
+                            ins_get_lhs(curr_node->inst)) && !isLocalVarFloat(ins_get_lhs(curr_node->inst)) &&
+                            !isLocalVarFloat(ins_get_dest(curr_node->inst)->alias)){
 
                         //lsy, 比书上加一个, 如果已经有冲突关系，就不加入了
                         //其实不用这样，后面constrainedMoves应该能解决了
@@ -608,6 +632,7 @@ void freezeMoves(Node* node){
     }
 }
 
+//冻结的启发式函数
 double customHeuristic(Node* node) {
     int usage = 0;
     Use * use = node->value->use_list;
@@ -658,6 +683,8 @@ HashMap *cal_interval_len(PriorityQueue* queue){
         value_live_range *range;
         PriorityQueueTop(queue,(void**)&range);
         PriorityQueuePop(queue);
+        if(isLocalVarFloat(range->value))
+            continue;
         int *len = malloc(4);
         *len= range->end - range->start;
         HashMapPut(lenMap, get_Node_with_value(range->value),len);
@@ -804,46 +831,46 @@ InstNode *get_node_by_ins(Instruction* ins, InstNode* begin){
 }
 
 //直接在ir上加load和store的方法
-void rewriteProgram(Function* func){
-    //遍历每个block
-    InstNode *cur_node = func->entry->head_node;
-    InstNode *last_node = func->tail->tail_node;
-    while(cur_node != last_node){
-        Value *def = ins_get_lhs(cur_node->inst);
-        if(HashSetFind(spilledNodes, get_Node_with_value(def))){
-            //即如果一条指令的def是溢出结点
-            //新建一个结点
-            //创建一条store语句
-            //创造一个内存地址
-            Value *mem = (Value*) malloc(sizeof (Value));
-            mem->VTy->ID = tmp_mem;
-            mem->name = (char*) malloc(4);
-            mem->alias = def;
-            strcpy(mem->name,"mem");
-            Instruction *ins_store = ins_new_binary_operator(Store,def,mem);
-            InstNode *node_store = new_inst_node(ins_store);
-            ins_insert_after(node_store,cur_node);
-
-            //处理这个结点的所有use, 每个use前加一句load
-            Use* use=def->use_list;
-            while(use != NULL){
-                Instruction *ins_load = ins_new_unary_operator(Load, mem);
-                Value *new_left = ins_get_value_with_name_and_index(ins_load,tmp_num++);
-                InstNode *node_load = new_inst_node(ins_load);
-                Instruction *ins = (Instruction*)use->Parent;
-                ins_insert_before(node_load, get_node_by_ins(ins,cur_node));
-
-                Use *use_store = use;
-                use = use->Next;
-                use_set_value(use_store,new_left);
-            }
-        }
-
-        cur_node = get_next_inst(cur_node);
-    }
-
-
-}
+//void rewriteProgram(Function* func){
+//    //遍历每个block
+//    InstNode *cur_node = func->entry->head_node;
+//    InstNode *last_node = func->tail->tail_node;
+//    while(cur_node != last_node){
+//        Value *def = ins_get_lhs(cur_node->inst);
+//        if(HashSetFind(spilledNodes, get_Node_with_value(def))){
+//            //即如果一条指令的def是溢出结点
+//            //新建一个结点
+//            //创建一条store语句
+//            //创造一个内存地址
+//            Value *mem = (Value*) malloc(sizeof (Value));
+//            mem->VTy->ID = tmp_mem;
+//            mem->name = (char*) malloc(4);
+//            mem->alias = def;
+//            strcpy(mem->name,"mem");
+//            Instruction *ins_store = ins_new_binary_operator(Store,def,mem);
+//            InstNode *node_store = new_inst_node(ins_store);
+//            ins_insert_after(node_store,cur_node);
+//
+//            //处理这个结点的所有use, 每个use前加一句load
+//            Use* use=def->use_list;
+//            while(use != NULL){
+//                Instruction *ins_load = ins_new_unary_operator(Load, mem);
+//                Value *new_left = ins_get_value_with_name_and_index(ins_load,tmp_num++);
+//                InstNode *node_load = new_inst_node(ins_load);
+//                Instruction *ins = (Instruction*)use->Parent;
+//                ins_insert_before(node_load, get_node_by_ins(ins,cur_node));
+//
+//                Use *use_store = use;
+//                use = use->Next;
+//                use_set_value(use_store,new_left);
+//            }
+//        }
+//
+//        cur_node = get_next_inst(cur_node);
+//    }
+//
+//
+//}
 
 //标记的做法
 void rewriteLabel(Function* func){
@@ -862,20 +889,19 @@ void rewriteLabel(Function* func){
         v= ins_get_dest(cur_node->inst);
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
-        if(v!=NULL) {
+        if(v!=NULL && !isLocalVarFloat(v) && (cur_node->inst->Opcode!=CopyOperation || (cur_node->inst->Opcode == CopyOperation && !isLocalVarFloat(v->alias)))) {
             if(HashSetFind(spilledNodes, get_Node_with_value(v)) || (cur_node->inst->Opcode == CopyOperation &&
                     HashSetFind(spilledNodes, get_Node_with_value(v->alias)))){
                 cur_node->inst->_reg_[0] = -1;
             }
         }
 
-        //TODO type排除只做了int
-        if(vl!=NULL){
+        if(vl!=NULL && !isLocalVarFloat(vl)){
             if(HashSetFind(spilledNodes, get_Node_with_value(vl))){
                 cur_node->inst->_reg_[1] = 101;
             }
         }
-        if(vr!=NULL){
+        if(vr!=NULL && !isLocalVarFloat(vr)){
             if(HashSetFind(spilledNodes, get_Node_with_value(vr))){
                 cur_node->inst->_reg_[2] = 100;
             }
@@ -898,22 +924,25 @@ void labelRegister(Function* func){
 
         if(cur_node->inst->_reg_[0] == 0 && v!=NULL && v->name!=NULL && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))){
             int reg ;
-            if(cur_node->inst->Opcode == CopyOperation)
-                reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_dest(cur_node->inst)->alias)))->reg;
-            else
-                reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_dest(cur_node->inst))))->reg;
-            cur_node->inst->_reg_[0] = reg;
+            if(cur_node->inst->Opcode == CopyOperation && !isLocalVarFloat(v->alias)){
+                reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v->alias)))->reg;
+                cur_node->inst->_reg_[0] = reg;
+            }
+            else if(!isLocalVarFloat(v)){
+                reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v)))->reg;
+                cur_node->inst->_reg_[0] = reg;
+            }
         }
-        if(cur_node->inst->_reg_[1] == 0 && vl!=NULL && vl->name!=NULL && vl->VTy->ID!=Int && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
+        if(cur_node->inst->_reg_[1] == 0 && vl!=NULL && vl->name!=NULL && !isLocalVarFloat(vl) && vl->VTy->ID!=Int && vl->VTy->ID!=Float && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
                 value_type(vl)){
             int reg ;
-            reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_lhs(cur_node->inst))))->reg;
+            reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(vl)))->reg;
             cur_node->inst->_reg_[1] = reg;
         }
-        if(cur_node->inst->_reg_[2] == 0 && vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
+        if(cur_node->inst->_reg_[2] == 0 && vr!=NULL && vr->name!=NULL && !isLocalVarFloat(vr) && vr->VTy->ID!=Int && vr->VTy->ID!=Float && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
                 value_type(vr)){
             int reg;
-            reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(ins_get_rhs(cur_node->inst))))->reg;
+            reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(vr)))->reg;
             cur_node->inst->_reg_[2] = reg;
         }
 
@@ -967,15 +996,5 @@ void reg_alloca_(Function *start){
             }
         }
     }
-}
-
-void adjust_i(InstNode* instNode){
-    instNode = get_next_inst(instNode);
-    int i = 0;
-    while (instNode!=NULL && instNode->inst->Opcode!=ALLBEGIN)
-    {
-        instNode->inst->i = i;
-        i++;
-        instNode = get_next_inst(instNode);
-    }
+    deinit();
 }
