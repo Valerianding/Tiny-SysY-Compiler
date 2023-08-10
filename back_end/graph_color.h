@@ -16,7 +16,7 @@
 #include "inliner.h"
 #include <math.h>
 
-#define K 12            //TODO 为什么标12才有14出来啊
+#define K 11          // 8.10 什么标12才有r14出来啊(应该解决了)
 #define  _HEURISTIC_BASE 1.45
 
 extern int myreg[16];

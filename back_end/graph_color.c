@@ -347,7 +347,8 @@ void build(Function* func){
             HashSet *live = HashSetInit();
             HashSetFirst(currNodeParent->out);
             for(Value* v_live = HashSetNext(currNodeParent->out); v_live!=NULL; v_live = HashSetNext(currNodeParent->out)){
-                HashSetAdd(live,v_live);
+                if(!check_spilled(v_live))
+                    HashSetAdd(live,v_live);
             }
            // HashSet *live = currNodeParent->out;
 
@@ -367,7 +368,7 @@ void build(Function* func){
                         //其实不用这样，后面constrainedMoves应该能解决了
                         Node *src = get_Node_with_value(ins_get_lhs(curr_node->inst));
                         Node *dst = get_Node_with_value(ins_get_dest(curr_node->inst)->alias);
-                        if(!HashSetFind(src->adjOpdSet,dst)){
+//                        if(!HashSetFind(src->adjOpdSet,dst)){
                             HashSetRemove(live, ins_get_lhs(curr_node->inst));
                             MachineMove *mv = (MachineMove*) malloc(sizeof (MachineMove));
 
@@ -376,7 +377,7 @@ void build(Function* func){
                             HashSetAdd(mv->src->moveSet,mv);
                             HashSetAdd(mv->dst->moveSet,mv);
                             HashSetAdd(worklistMoves,mv);
-                        }
+//                        }
                     }
                 }
                 dealSDefUse(live,curr_node,currNodeParent);
@@ -470,7 +471,7 @@ void simplify(){
 //当 x 需要被染色, x 并不与 move 相关, x 的度 <= k - 1
 //低度数传送有关结点集 freezeWorkSet 删除 x , 且低度数传送无关结点集 simplifyWorkSet 添加 x
 void addWorkList(Node* node){
-    if(node->type!=PreColored && HashSetSize(MoveRelated(node)) == 0 && node->degree <= K){
+    if(node->type!=PreColored && HashSetSize(MoveRelated(node)) == 0 && node->degree < K){
         HashSetRemove(freezeWorklist,node);
         HashSetAdd(simplifyWorklist,node);
     }
