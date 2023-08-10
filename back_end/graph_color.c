@@ -140,24 +140,11 @@ void addEdge(Node* u, Node* v){
         if(u->type != PreColored){
             u->degree++;
             HashSetAdd(u->adjOpdSet,v);
-//            if(strcmp(u->value->name,"%121")==0 && u->degree >2){
-//                printf("%%121: ");
-//                HashSetFirst(u->adjOpdSet);
-//                for(Node* n = HashSetNext(u->adjOpdSet); n!=NULL; n = HashSetNext(u->adjOpdSet))
-//                    printf(", %s ",n->value->name);
-//                printf("\n");
 //            }
         }
         if(v->type != PreColored){
             v->degree++;
             HashSetAdd(v->adjOpdSet,u);
-//            if(strcmp(v->value->name,"%121")==0 && v->degree >2){
-//                printf("%%121: ");
-//                HashSetFirst(v->adjOpdSet);
-//                for(Node* n = HashSetNext(v->adjOpdSet); n!=NULL; n = HashSetNext(v->adjOpdSet))
-//                    printf(", %s ",n->value->name);
-//                printf("\n");
-//            }
         }
     }
 }
@@ -184,7 +171,8 @@ void handle_def_(HashSet* live, Value* def, int loopDepth){
     HashSetRemove(live, def);
 }
 
-void handle_use_(HashSet* live,Value* uvalue, int loopDepth){
+void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
+
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
         return;
     }
@@ -207,6 +195,16 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth){
 //    if(node->type == PreColored || node->type == Virtual){
     if(node->type == USUAL && !HashSetFind(live,uvalue)){
         HashSetAdd(live,uvalue);
+
+        //如果是参数，要马上与目前的live建立冲突关系, 因为没有def
+        if(get_name_index(node->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num){
+            HashSetFirst(live);
+            for(Value * v = HashSetNext(live); v!=NULL; v = HashSetNext(live)){
+                Node *n = get_Node_with_value(v);
+
+                addEdge(node,n);
+            }
+        }
     }
 }
 
@@ -245,8 +243,8 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth);
-            handle_use_(live,value2,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case Call:
             if(!returnValueNotUsed(ins)){
@@ -258,24 +256,24 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             opNum=ins->inst->user.value.NumUserOperands;
             if(opNum!=0){
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
-                handle_use_(live,value1,loopDepth);
+                handle_use_(live,value1,loopDepth,cur_block->Parent);
             }
             break;
         case Store:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_use_(live,value1,loopDepth);
-            handle_use_(live,value2,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case Load:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case GIVE_PARAM:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_use_(live,value1,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case LESS:
         case GREAT:
@@ -287,16 +285,17 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth);
-            handle_use_(live,value2,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case br_i1:
             //各个out变量之间需要建边
             addEdge_within_live(live);
             value1=user_get_operand_use(&ins->inst->user,0)->Val; //真值
-            handle_use_(live,value1,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case br:
+        case FunEnd:
             //各个out变量之间需要建边
             addEdge_within_live(live);
             break;
@@ -306,28 +305,28 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case GEP:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth);
-            handle_use_(live,value2,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case CopyOperation:
             value0=ins->inst->user.value.alias;
             value1= user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case fptosi:
         case sitofp:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         default:
             break;
@@ -344,7 +343,13 @@ void build(Function* func){
     while(currNode != func->tail->tail_node){
         BasicBlock *currNodeParent = currNode->inst->Parent;
         if(currNodeParent->visited == false){
-            HashSet *live = currNodeParent->out;
+            //!!! 使用copy的out, 不然不能连跑多轮!!
+            HashSet *live = HashSetInit();
+            HashSetFirst(currNodeParent->out);
+            for(Value* v_live = HashSetNext(currNodeParent->out); v_live!=NULL; v_live = HashSetNext(currNodeParent->out)){
+                HashSetAdd(live,v_live);
+            }
+           // HashSet *live = currNodeParent->out;
 
             //进到了一个block的第一条ir,一定是label
             InstNode *first_node = currNodeParent->head_node;
@@ -355,10 +360,11 @@ void build(Function* func){
                     //为什么要live <---live\use(I)
                     //mov dst,src不应是直接冲突关系，而是潜在可合并关系
                     value_live_range *range = HashMapGet(intervalMap, ins_get_lhs(curr_node->inst));
-                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)) && !check_spilled(
+                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)->alias) && !check_spilled(
                             ins_get_lhs(curr_node->inst))){
 
                         //lsy, 比书上加一个, 如果已经有冲突关系，就不加入了
+                        //其实不用这样，后面constrainedMoves应该能解决了
                         Node *src = get_Node_with_value(ins_get_lhs(curr_node->inst));
                         Node *dst = get_Node_with_value(ins_get_dest(curr_node->inst)->alias);
                         if(!HashSetFind(src->adjOpdSet,dst)){
@@ -470,17 +476,10 @@ void addWorkList(Node* node){
     }
 }
 
-AdjPair *newAdjPair(Node* u,Node* v){
-    AdjPair * adjPair = (AdjPair*) malloc(sizeof (AdjPair));
-    adjPair->v = v;
-    adjPair->u = u;
-    return adjPair;
-}
-
 //TODO 是什么意思呢
 //合并预着色寄存器的启发式函数
 bool OK(Node* t,Node* r){
-    return t->degree < K || t->type == PreColored || HashSetFind(adjSet, newAdjPair(t,r));
+    return t->degree < K || t->type == PreColored || find_pair(t,r);
 }
 
 bool adjOK(Node* v,Node* u){
@@ -570,7 +569,7 @@ void coalesce(){
     if(u == v){
         HashSetAdd(coalescedMoves,m);
         addWorkList(u);
-    } else if(v->type == PreColored || HashSetFind(adjSet, newAdjPair(u,v))){           //TODO 我们应该走不到这
+    } else if(v->type == PreColored || find_pair(u,v)){
         // 两边都是预着色则不可能合并
         HashSetAdd(constrainedMoves,m);
         addWorkList(u);
@@ -608,9 +607,40 @@ void freezeMoves(Node* node){
     }
 }
 
-void freeze(){
+double customHeuristic(Node* node) {
+    int usage = 0;
+    Use * use = node->value->use_list;
+    while (use != NULL){
+        usage++;
+        use = use->Next;
+    }
+
+    double loopCounterWeight = 1.0;  // 可以根据需要调整权重
+    double degreeWeight = 1.0;  // 可以根据需要调整权重
+    double usageWeight = 1.0;  // 可以根据需要调整权重
+
+    double heuristicVal = (pow(node->loopCounter, loopCounterWeight) * pow(node->degree, degreeWeight))
+                          * pow(usage, usageWeight);
+
+    return heuristicVal;
+}
+
+Node *selectFroze(){
     HashSetFirst(freezeWorklist);
-    Node * node = HashSetNext(freezeWorklist);
+    Node *choice = HashSetNext(freezeWorklist);
+    double max = customHeuristic(choice);
+    for(Node* node = HashSetNext(freezeWorklist); node!=NULL; node = HashSetNext(freezeWorklist)){
+        double h = customHeuristic(node);
+        if(h > max){
+            max = h;
+            choice = node;
+        }
+    }
+    return choice;
+}
+
+void freeze(){
+    Node *node = selectFroze();
     HashSetRemove(freezeWorklist,node);
     HashSetAdd(simplifyWorklist,node);
     freezeMoves(node);
@@ -712,6 +742,7 @@ void preAssignColors(){
         for(int i=3;i<=12;i++){
             myreg[i] = 0;
         }
+        myreg[14] = 0;
 
         // 把待分配颜色的结点的邻接结点的颜色去除
         //TODO 好像没有必要调整alloca的type
@@ -751,7 +782,6 @@ void assignColors(){
     if(HashSetSize(spilledNodes) > 0)
         return;
 
-    int size = HashSetSize(coalescedNodes);
     HashSetFirst(coalescedNodes);
     for(Node* node = HashSetNext(coalescedNodes); node!=NULL; node = HashSetNext(coalescedNodes)){
         Node *a = getAlias(node);
@@ -819,6 +849,7 @@ void rewriteLabel(Function* func){
     //删去溢出结点,再进行一次图着色
     HashSetFirst(spilledNodes);
     for(Node* node = HashSetNext(spilledNodes); node!=NULL; node = HashSetNext(spilledNodes)){
+
         HashSetAdd(restore_spillNodes, node);
     }
 
@@ -830,21 +861,20 @@ void rewriteLabel(Function* func){
         v= ins_get_dest(cur_node->inst);
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
-        if(v!=NULL && v->name!=NULL && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))) {
-            if(HashSetFind(spilledNodes, get_Node_with_value(v))){
+        if(v!=NULL) {
+            if(HashSetFind(spilledNodes, get_Node_with_value(v)) || (cur_node->inst->Opcode == CopyOperation &&
+                    HashSetFind(spilledNodes, get_Node_with_value(v->alias)))){
                 cur_node->inst->_reg_[0] = -1;
             }
         }
 
         //TODO type排除只做了int
-        if(vl!=NULL && vl->name!=NULL && vl->VTy->ID!=Int && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
-                value_type(vl)){
+        if(vl!=NULL){
             if(HashSetFind(spilledNodes, get_Node_with_value(vl))){
                 cur_node->inst->_reg_[1] = 101;
             }
         }
-        if(vr!=NULL && vr->name!=NULL && vr->VTy->ID!=Int && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode !=GIVE_PARAM &&
-                value_type(vr)){
+        if(vr!=NULL){
             if(HashSetFind(spilledNodes, get_Node_with_value(vr))){
                 cur_node->inst->_reg_[2] = 100;
             }
