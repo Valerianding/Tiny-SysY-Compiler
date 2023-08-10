@@ -55,4 +55,5 @@ void topCfg(Function *currentFunction);
 void cleanBlock(BasicBlock *block);
 bool containFloat(InstNode *node);
 bool usedInPhi(Value *value, Function *function);
+bool isRegionalConstant(Value *value,struct Loop *loop);
 #endif //C22V1_UTILITY_H

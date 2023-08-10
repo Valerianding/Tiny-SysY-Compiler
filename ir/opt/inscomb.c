@@ -57,7 +57,7 @@ bool isDeadInst(InstNode *instNode){
 //add all users of current instruction to workList
 //also we only want to consider the possible operations
 void AddUsesToWorklist(InstNode *inst){
-    printf("%d\n",inst->inst->i);
+    //printf("%d\n",inst->inst->i);
     assert(checkType(inst->inst));
     Value *dest = ins_get_dest(inst->inst);
     Use *uses = dest->use_list;

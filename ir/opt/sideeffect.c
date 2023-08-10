@@ -13,10 +13,9 @@ HashSet *visitedCall;
 
 //当全局数组传递参数的时候存在问题
 //那我们默认如果传递了数组 并且使用了那就是算对内存有写操作不能优化
-//修改visitedObject语意是我们 在本次函数以及子函数里面访问的全局变量
-//意味着我们将不考虑参数的情况
-//通过contain memoryOperations来进行判断
-void sideEffect(Function *currentFunction){
+//修改visitedObject语意: -> 代表是我们 在本次函数以及子函数里面访问的全局变量
+//意味着我们将不考虑参数的情况 -> 通过contain memoryOperations来进行判断
+void sideEffectAnalysis(Function *currentFunction){
     BasicBlock *entry = currentFunction->entry;
     BasicBlock *tail = currentFunction->tail;
 
@@ -28,6 +27,8 @@ void sideEffect(Function *currentFunction){
     int paramNum = funcHead->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
     Type *paramTypes = funcHead->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_type_lists;
     printf("param Num is %d!\n",paramNum);
+
+    //如果参数有传递数组默认含有内存操作不可优化
     for(int i = 0; i < paramNum; i++){
         if(paramTypes[i].ID == AddressTyID){
             function->containMemoryOperations = true;
@@ -54,18 +55,11 @@ void sideEffect(Function *currentFunction){
         }else if(funcHead->inst->Opcode == Call){
             //同时我们构建callGraphNode
 
-
-
             //看看call的是哪个function
             Value *calledFunction = ins_get_lhs(funcHead->inst);
             //if is the same as its self
             if(calledFunction == function){
                 //do nothing
-
-                //递归函数
-                //child是自己 parent是否需要是自己呢？
-//                CallGraphNode *callGraphNode = HashMapGet(callGraph,function);
-//                HashSetAdd(callGraphNode->children,callGraphNode);
 
             }else if(isInputFunction(calledFunction)) {
                 //如果是库函数
@@ -80,13 +74,13 @@ void sideEffect(Function *currentFunction){
                 for(Value *visitedObject = HashSetNext(calledFunction->visitedObjects); visitedObject != NULL; visitedObject = HashSetNext(calledFunction->visitedObjects)){
                     HashSetAdd(function->visitedObjects,visitedObject);
                 }
+
                 function->containOutput |= calledFunction->containOutput;
                 function->containInput |= calledFunction->containInput;
 
-
                 printf("called function name is %s\n",calledFunction->name);
 
-                //callGraph
+                //callGraph -> need to be constructed before!!
                 CallGraphNode *callGraphNode = HashMapGet(callGraph,function);
                 CallGraphNode *calledGraphNode = HashMapGet(callGraph,calledFunction);
 
@@ -143,10 +137,8 @@ bool isRemoveAble(Value *function){
     return true;
 }
 
-
-//logical wrong
-//only for specific test cases (sad)
-void traversal(CallGraphNode *node){
+//遍历callGraphNode的root
+void UselessCallSimplify(CallGraphNode *node){
     //看看
     //判断里面是否存在useless call
     Function *func = node->function;
@@ -170,13 +162,13 @@ void traversal(CallGraphNode *node){
             if(!isSySYFunction(called) && (returnType.ID != VoidTyID)){
 
                 //OK let's see the dest uses
-                //
+                //TODO 是否还需要考虑phi函数的情况？？  -> solved
                 Use *uses = dest->use_list;
-                if(uses == NULL) {
+                if(uses == NULL && !usedInPhi(dest,func)) {
                     printf("function %s calls %s return value is not used\n", curFunc->name, called->name);
 
-                    //OK we can remove the called function
-                    //let's first get the function
+
+                    //OK we need to examine if all other function doesn't use this function's return value
                     CallGraphNode *calledGraphNode = HashMapGet(callGraph,called);
 
                     assert(calledGraphNode != NULL);
@@ -204,7 +196,9 @@ void traversal(CallGraphNode *node){
 
                     //according to the test cases if calledReturnValue is produced by another call
                     //and this another call doesn't have time / input / output / memory operation
-                    //we can remove this call and remove
+                    //we can remove this call
+
+
 
                     //TODO plz check this break
                     if(isImm(calledReturnValue)){
@@ -382,7 +376,7 @@ void traversal(CallGraphNode *node){
 
     HashSetFirst(node->children);
     for(CallGraphNode *child = HashSetNext(node->children); child != NULL; child = HashSetNext(node->children)){
-        traversal(child);
+
     }
 }
 
@@ -397,7 +391,6 @@ void travel(){
         if(strcmp(function->name,"main") == 0){
             //do optimization pass
             CallGraphNode *main = value2graph->value;
-            traversal(main);
             break;
         }
     }

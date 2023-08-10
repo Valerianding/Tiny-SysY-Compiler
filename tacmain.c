@@ -16,7 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -210,13 +210,6 @@ int main(int argc, char* argv[]){
     //inline 之后的IR
 //     printf_llvm_ir(instruction_list,argv[4],1);
 
-
-
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        //这里build CallGraphNode 需要在内联之后进行callgraph的
-        buildCallGraphNode(currentFunction);
-    }
-
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
         if(!NOTOK)
             RunBasicPasses(currentFunction);
@@ -231,6 +224,8 @@ int main(int argc, char* argv[]){
                 changed = InstCombine(currentFunction);
             }
 
+            //loop simplify requires loop normalize
+            LoopNormalize(currentFunction);
             LoopSimplify(currentFunction);
 
             changed = true;
@@ -240,6 +235,7 @@ int main(int argc, char* argv[]){
 
             renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
+
         }
     }
 //    printf_llvm_ir(instruction_list,argv[4],1);
