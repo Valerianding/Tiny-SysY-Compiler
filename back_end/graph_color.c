@@ -360,7 +360,7 @@ void build(Function* func){
                     //为什么要live <---live\use(I)
                     //mov dst,src不应是直接冲突关系，而是潜在可合并关系
                     value_live_range *range = HashMapGet(intervalMap, ins_get_lhs(curr_node->inst));
-                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)) && !check_spilled(
+                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)->alias) && !check_spilled(
                             ins_get_lhs(curr_node->inst))){
 
                         //lsy, 比书上加一个, 如果已经有冲突关系，就不加入了
