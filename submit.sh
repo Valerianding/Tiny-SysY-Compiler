@@ -18,10 +18,10 @@ git commit -m '佳雯push'
 # git push  origin submit:submit
 git push
 echo "提交成功"
-echo "20秒后自动清空仓库："
-for i in $(seq 20 -1 1)
-do
-    echo -e "$i";sleep 1
-done
-git reset a90b003d49e84ee7e30531c85760784d54a7b581
-git push -f
+#echo "20秒后自动清空仓库："
+#for i in $(seq 20 -1 1)
+#do
+#    echo -e "$i";sleep 1
+#done
+#git reset a90b003d49e84ee7e30531c85760784d54a7b581
+#git push -f

@@ -67,7 +67,6 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-    Optimize = true;
 
     yyin=fopen(argv[4], "r");
 
