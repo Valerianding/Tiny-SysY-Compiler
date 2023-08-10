@@ -66,7 +66,6 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-//    Optimize = true;
 
     yyin=fopen(argv[4], "r");
 
@@ -147,7 +146,7 @@ int main(int argc, char* argv[]){
         //Loop invariant code motion 需要使用live-out信息
         calculateLiveness(currentFunction);
 
-        printLiveness(currentFunction);
+//        printLiveness(currentFunction);
     }
 
 //    //mem2reg之后，优化前
@@ -267,7 +266,7 @@ int main(int argc, char* argv[]){
         clear_visited_flag(currentFunction->entry);
         //printf("after out of SSA!\n");
         calculateLiveness(currentFunction);
-        printLiveness(currentFunction);
+//        printLiveness(currentFunction);
     }
 
     //  printf_llvm_ir(instruction_list,argv[4],0);

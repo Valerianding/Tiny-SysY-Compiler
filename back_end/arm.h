@@ -39,6 +39,7 @@ void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag);
 void arm_open_file(char argv[]);
 void arm_close_file();
 bool param_type_is_int();
+
 void int_to_float(int si,int ri);
 void int_to_float2(int si,int srcri,int destri);
 void float_to_int(int si,int ri);
