@@ -6,7 +6,8 @@
 #define C22V1_SIDEEFFECT_H
 
 //简单的副作用分析
-
+//current not used -> inline + mark + sweep already perform well
+//target at median -> meaning less calculation!
 #include "function.h"
 #include "utility.h"
 typedef struct CallGraphNode{
@@ -18,7 +19,6 @@ typedef struct CallGraphNode{
 
 
 void buildCallGraphNode(Function *currentFunction);
-void sideEffect(Function *currentFunction);
+void sideEffectAnalysis(Function *currentFunction);
 CallGraphNode* createCallGraph(Function *function);
-void travel();
 #endif //C22V1_SIDEEFFECT_H

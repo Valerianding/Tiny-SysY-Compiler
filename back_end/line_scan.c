@@ -6,7 +6,8 @@
 #define S 26
 #define R 11
 //#define YAOWEI_TEST
-int enable_vfp=1; //浮点寄存器分配开关
+int enable_ordinary=1; //通用寄存器分配开关
+int enable_vfp=0; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
 int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
 
@@ -36,15 +37,20 @@ void get_function_live_interval(Function*curFunction){
 //    queue->set_compare(queue,CompareNumerics);
 
     assert(curFunction!=NULL);
-    assert(curFunction->live_interval!=NULL);
     assert(curFunction->ToPoBlocks!=NULL);
-    build_live_interval(curFunction->ToPoBlocks,curFunction->live_interval);
-//    printf("pqueuesize =%d\n", PriorityQueueSize(queue));
-    if(enable_vfp==1){
-        build_vfp_live_interval(curFunction->ToPoBlocks,curFunction->vfp_live_interval);
+    if(enable_ordinary==1){
+        assert(curFunction->live_interval!=NULL);
+        build_live_interval(curFunction->ToPoBlocks,curFunction->live_interval);
     }
 
-    print_live_interval(curFunction->live_interval);
+//    printf("pqueuesize =%d\n", PriorityQueueSize(queue));
+    if(enable_vfp==1){
+        assert(curFunction->vfp_live_interval!=NULL);
+        build_vfp_live_interval(curFunction->ToPoBlocks,curFunction->vfp_live_interval);
+    }
+    if(enable_ordinary==1){
+        print_live_interval(curFunction->live_interval);
+    }
     if(enable_vfp==1){
         printf("Var_Float:\n");
         print_live_interval(curFunction->vfp_live_interval);
@@ -55,13 +61,13 @@ void get_function_live_interval(Function*curFunction){
 void line_scan(InstNode*ins,Function* start){
     Function *curFunction=start;
     for(;curFunction!=NULL;curFunction=curFunction->Next){
+        if(enable_ordinary==1){
 //        初始化函数的活跃变量表
-        curFunction->live_interval=PriorityQueueInit();
-        curFunction->live_interval->set_compare(curFunction->live_interval,CompareNumerics);
-        assert(curFunction->live_interval!=NULL);
+            curFunction->live_interval=PriorityQueueInit();
+            curFunction->live_interval->set_compare(curFunction->live_interval,CompareNumerics);
 //        初始化函数的寄存器分配结果表
-        curFunction->lineScanReg=HashMapInit();
-        assert(curFunction->lineScanReg!=NULL);
+            curFunction->lineScanReg=HashMapInit();
+        }
 
         if(enable_vfp==1){
             curFunction->vfp_live_interval=PriorityQueueInit();
@@ -71,9 +77,11 @@ void line_scan(InstNode*ins,Function* start){
 //        获取函数的活跃变量表
         get_function_live_interval(curFunction);
 //        active <-- {}
-        active=PriorityQueueInit();
-        active->set_compare(active,CompareNumerics2);
-        location=HashSetInit();
+        if(enable_ordinary==1){
+            active=PriorityQueueInit();
+            active->set_compare(active,CompareNumerics2);
+            location=HashSetInit();
+        }
         if(enable_vfp==1){
             VFPactive=PriorityQueueInit();
             VFPactive->set_compare(VFPactive,CompareNumerics2);
@@ -83,11 +91,12 @@ void line_scan(InstNode*ins,Function* start){
         memset(myreg,0,sizeof(myreg));
         free_reg_num=11;
         memset(VFPreg,0, sizeof(VFPreg));
-        free_VFPreg_num=14;
+        free_VFPreg_num=26;
 //      到这里为止
 
-
-        line_scan_alloca(curFunction,curFunction->live_interval);
+        if(enable_ordinary==1){
+            line_scan_alloca(curFunction,curFunction->live_interval);
+        }
         if(enable_vfp==1){
             VFP_line_scan_alloca(curFunction,curFunction->vfp_live_interval);
         }
@@ -96,24 +105,28 @@ void line_scan(InstNode*ins,Function* start){
 
 
 
-//      打印寄存器分配的结果
-        printf("in register:\n");
+
         Pair *ptr_pair;
-        HashMapFirst(curFunction->lineScanReg);
-        while ((ptr_pair= HashMapNext(curFunction->lineScanReg))!=NULL){
-            Value *value=(Value*)ptr_pair->key;
-            value_register *node=(value_register*)ptr_pair->value;
-            printf("%s --> r%d\n",value->name,node->reg);
-        }
-        printf("in memory:\n");
         void *elem;
         value_live_range *tmp;
-        HashSetFirst(location);
-        while ((elem= HashSetNext(location))!=NULL){
-            tmp=(value_live_range*)elem;
-            printf("%s statr %d,end %d\n",tmp->value->name,tmp->start,tmp->end);
+//      打印寄存器分配的结果,打印通用寄存器
+        if(enable_ordinary==1){
+            printf("in register:\n");
+            HashMapFirst(curFunction->lineScanReg);
+            while ((ptr_pair= HashMapNext(curFunction->lineScanReg))!=NULL){
+                Value *value=(Value*)ptr_pair->key;
+                value_register *node=(value_register*)ptr_pair->value;
+                printf("%s --> r%d\n",value->name,node->reg);
+            }
+            printf("in memory:\n");
+            HashSetFirst(location);
+            while ((elem= HashSetNext(location))!=NULL){
+                tmp=(value_live_range*)elem;
+                printf("%s statr %d,end %d\n",tmp->value->name,tmp->start,tmp->end);
+            }
         }
         if(enable_vfp==1){
+//            打印浮点寄存器的分配结果
             printf("Var_Float in register:\n");
             HashMapFirst(curFunction->lineScanVFPReg);
             while ((ptr_pair= HashMapNext(curFunction->lineScanVFPReg))!=NULL){
@@ -132,8 +145,10 @@ void line_scan(InstNode*ins,Function* start){
 
 
 //        在这里可以把active,location,VFPactive和VFPlocation释放掉
-        PriorityQueueDeinit(active);
-        HashSetDeinit(location);
+        if(enable_ordinary==1){
+            PriorityQueueDeinit(active);
+            HashSetDeinit(location);
+        }
         if(enable_vfp==1){
             PriorityQueueDeinit(VFPactive);
             HashSetDeinit(VFPlocation);
@@ -427,7 +442,9 @@ void label_the_result_of_linescan_register(Function *curFunction,InstNode * ins)
     }
 }
 void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
-    assert(curFunction->lineScanReg!=NULL);
+    if(enable_ordinary==1){
+        assert(curFunction->lineScanReg!=NULL);
+    }
     if(enable_vfp==1){
         assert(curFunction->lineScanVFPReg!=NULL);
     }
@@ -448,39 +465,42 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
         return;
     }
 //    标通用
-    value_register *node= HashMapGet(curFunction->lineScanReg,value);
-    if(node==NULL){
-        if(isImmIntType(value->VTy) || isImmFloatType(value->VTy)){
-            return;
-        }
-        if(isGlobalArrayFloatType(value->VTy)|| isGlobalArrayIntType(value->VTy) || isGlobalVarFloatType(value->VTy) ||
-           isGlobalVarIntType(value->VTy)){
-            return;
-        }
-        if(isLocalArrayFloatType(value->VTy) || isLocalArrayIntType(value->VTy)){
-            return;
-        }
-        if(flag_lr==1){
-            if(i==0){
-                ins->inst->_reg_[i]=-1;
-            }else if(i==1){
-                ins->inst->_reg_[i]=101;
-            } else if(i==2){
-                ins->inst->_reg_[i]=100;
+    if(enable_ordinary==1){
+        value_register *node= HashMapGet(curFunction->lineScanReg,value);
+        if(node==NULL){
+            if(isImmIntType(value->VTy) || isImmFloatType(value->VTy)){
+                return;
             }
-        }else{
-            if(i==0){
-                ins->inst->_reg_[i]=-10;
-            }else if(i==1){
-                ins->inst->_reg_[i]=110;
-            } else if(i==2){
-                ins->inst->_reg_[i]=112;
+            if(isGlobalArrayFloatType(value->VTy)|| isGlobalArrayIntType(value->VTy) || isGlobalVarFloatType(value->VTy) ||
+               isGlobalVarIntType(value->VTy)){
+                return;
             }
+            if(isLocalArrayFloatType(value->VTy) || isLocalArrayIntType(value->VTy)){
+                return;
+            }
+            if(flag_lr==1){
+                if(i==0){
+                    ins->inst->_reg_[i]=-1;
+                }else if(i==1){
+                    ins->inst->_reg_[i]=101;
+                } else if(i==2){
+                    ins->inst->_reg_[i]=100;
+                }
+            }else{
+                if(i==0){
+                    ins->inst->_reg_[i]=-10;
+                }else if(i==1){
+                    ins->inst->_reg_[i]=110;
+                } else if(i==2){
+                    ins->inst->_reg_[i]=112;
+                }
+            }
+            return;
         }
-
+        ins->inst->_reg_[i]=node->reg;
         return;
     }
-    ins->inst->_reg_[i]=node->reg;
+
 }
 
 

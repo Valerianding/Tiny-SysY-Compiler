@@ -6,8 +6,7 @@
 
 //load 明显是pinned 同时也代表乐store必须是pinned
 //call 和 give_param 也是pinned是因为我们想避免不必要的讨论了
-
-
+//好像这个Pass没什么用，加了还可能负优化 难崩
 //当前还没有考虑memset 和 sysymemset
 const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_PARAM,EQ,NOTEQ,GREAT,GREATEQ,LESS,LESSEQ,Div,Mod,SysYMemset,SysYMemcpy};
 

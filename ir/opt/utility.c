@@ -915,3 +915,24 @@ bool usedInPhi(Value *value, Function *function){
     }
     return false;
 }
+
+bool isRegionalConstant(Value *value,struct Loop *loop){
+    assert(value != NULL);
+
+    assert(loop != NULL);
+
+
+    Function *currentFunction = loop->head->Parent;
+
+    int paramNum = currentFunction->entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
+
+    if(isImmInt(value) || isParam(value,paramNum)) return true;
+
+    //find the instruction
+    Instruction *ins = (Instruction *)value;
+
+    //
+    BasicBlock *insParent = ins->Parent;
+
+
+}

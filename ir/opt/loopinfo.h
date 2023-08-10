@@ -48,6 +48,8 @@ typedef struct Loop{
 
     //it is true if the condition changes during the iteration of execution
     bool conditionChangeWithinLoop;
+
+    HashMap *inductionVariables; // Vale * -> BIVExpression*
 }Loop;
 
 
