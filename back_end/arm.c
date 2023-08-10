@@ -7016,7 +7016,24 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
         fprintf(fp,"\tsdiv\tr2,r0,r1\n");
         printf("\tmls\tr1,r2,r1,r0\n");
         fprintf(fp,"\tmls\tr1,r2,r1,r0\n");
-
+//        printf("\tpush\t{ r3,r12,r14 }\n");
+//        fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
+//        printf("\tsub\tsp,sp,#4\n");
+//        fprintf(fp,"\tsub\tsp,sp,#4\n");
+//        sp_offset_to_r11+=16;
+//        if(ARM_enable_vfp==1){
+//            printf_vpush_rlist2();
+//        }
+//        printf("\tbl\t__aeabi_idivmod\n");
+//        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+//        if(ARM_enable_vfp==1){
+//            printf_vpop_rlist2();
+//        }
+//        printf("\tadd\tsp,sp,#4\n");
+//        fprintf(fp,"\tadd\tsp,sp,#4\n");
+//        printf("\tpop\t{ r3,r12,r14 }\n");
+//        fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
+//        sp_offset_to_r11=0;
         if(ARM_enable_vfp==1){
             if(isLocalVarFloatType(value0->VTy)){
                 dest_reg=ins->inst->_vfpReg_[0];
@@ -10019,13 +10036,26 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     int n= power_of_two(result);
                     int x2= get_value_offset_sp(hashMap,value2);
                     handle_illegal_imm(right_reg,x2,2);
-                    printf("\tadd\tr%d,r%d,r%d,lsl r%d\n",dest_reg_abs,left_reg,right_reg-100,n);
-                    fprintf(fp,"\tadd\tr%d,r%d,r%d,lsl r%d\n",dest_reg_abs,left_reg,right_reg-100,n);
+                    printf("\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg,right_reg-100,n);
+                    fprintf(fp,"\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg,right_reg-100,n);
                 }
 
             }else{
-                printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
-                fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                if(power_of_two(result)==-1){
+                    if(imm_is_valid(result)){
+                        printf("\tmov\tr2,#%d\n",result);
+                        fprintf(fp,"\tmov\tr2,#%d\n",result);
+                    }else{
+                        handle_illegal_imm1(2,result);
+                    }
+                    watchReg.generalReg[2]=1;
+                    printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                    fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg);
+                }else{
+                    int n= power_of_two(result);
+                    printf("\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg,right_reg,n);
+                    fprintf(fp,"\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg,right_reg,n);
+                }
             }
             if(dest_reg_abs==1){
                 watchReg.generalReg[1]=1;
