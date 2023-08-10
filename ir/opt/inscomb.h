@@ -20,11 +20,6 @@
 #include "stdbool.h"
 #include "utility.h"
 void instruction_combination(Function *currentFunction);
-bool check(Instruction *instruction,int location);
-int get_const_location(Instruction* instruction);
-Value *get_value(Instruction *instruction,bool special);
-Value *get_const(Instruction *instruction, bool special);
-void combination(Instruction *instruction_A,Instruction * instruction_B);
 
 
 //djf

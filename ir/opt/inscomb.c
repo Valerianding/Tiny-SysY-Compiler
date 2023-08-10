@@ -808,79 +808,89 @@ bool check(Instruction *instruction,int location)
     return false;
 }
 
-//获取常数value的位置,value1或value2
-int get_const_location(Instruction* instruction)
+Value *get_const(Instruction *instruction, int *location)
 {
-    if(ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float)
-        return 1;
-    return 2;
-}
-
-Value *get_value(Instruction *instruction,bool special)
-{
-    //如果两边都是int,但是是特殊情况
-    if(special && ((ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float) && (ins_get_rhs(instruction)->VTy->ID==Int || ins_get_rhs(instruction)->VTy->ID==Float)))
+    if(ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float){
+        *location = 1;
         return ins_get_lhs(instruction);
-
-    //如果两边都是int,取左边作为const，右边作value
-    if((ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float) && (ins_get_rhs(instruction)->VTy->ID==Int || ins_get_rhs(instruction)->VTy->ID==Float))
-        return ins_get_rhs(instruction);
-
-    if(ins_get_lhs(instruction)->VTy->ID!=Int && ins_get_lhs(instruction)->VTy->ID!=Float)
-        return ins_get_lhs(instruction);
+    }
+    *location = 2;
     return ins_get_rhs(instruction);
 }
 
-Value *get_const(Instruction *instruction, bool special)
-{
-    if((ins_get_rhs(instruction)->VTy->ID==Int || ins_get_rhs(instruction)->VTy->ID==Float) && special)
-        return ins_get_rhs(instruction);
-
-    if(ins_get_lhs(instruction)->VTy->ID==Int || ins_get_lhs(instruction)->VTy->ID==Float)
-        return ins_get_lhs(instruction);
-    return ins_get_rhs(instruction);
-}
-
-//合并
-void combination(Instruction *instruction_A,Instruction * instruction_B)
-{
-    bool special = false;
-    if(instruction_A->Opcode==Sub && instruction_B->Opcode==Sub)
-        special = true;
-
+void combination(Instruction* instruction_A,Instruction* instruction_B){
+    int location1 , location2;
     //合并得到常值
-    Value *v_A_const= get_const(instruction_A,special);
-    Value *v_A_value= get_value(instruction_A,special);
-    Value *v_B_const= get_const(instruction_B,false);
+    Value *v_A_const= get_const(instruction_A,&location1);
+    Value *v_A_value = NULL;
+    if(ins_get_lhs(instruction_A) == v_A_const)
+        v_A_value = ins_get_rhs(instruction_A);
+    else
+        v_A_value = ins_get_lhs(instruction_A);
+    Value *v_B_const= get_const(instruction_B,&location2);
 
     Value *v_num=(Value*) malloc(sizeof (Value));
     //以第二条的opcode为准
-    if((instruction_A->Opcode==Add && instruction_B->Opcode==Add) || (instruction_A->Opcode==Sub && instruction_B->Opcode==Sub))  //+ +
+    //1. 双add不用分类
+    if(instruction_A->Opcode==Add && instruction_B->Opcode==Add){
         value_init_int(v_num,v_A_const->pdata->var_pdata.iVal+v_B_const->pdata->var_pdata.iVal);
-    else if(instruction_A->Opcode==Add && instruction_B->Opcode==Sub)
-        value_init_int(v_num,v_B_const->pdata->var_pdata.iVal-v_A_const->pdata->var_pdata.iVal);
-    else if(instruction_A->Opcode==Sub && instruction_B->Opcode==Add && get_const_location(instruction_A)==1)     //要改opcode,并且生成后value一定在右边
-        value_init_int(v_num,v_B_const->pdata->var_pdata.iVal+v_A_const->pdata->var_pdata.iVal);
-    else
-        value_init_int(v_num,v_B_const->pdata->var_pdata.iVal-v_A_const->pdata->var_pdata.iVal);
-
-    //B的左值作为最终左值,不动
-    //替换常数值和另一个value
-    if(instruction_A->Opcode==Sub && instruction_B->Opcode==Add && get_const_location(instruction_A)==1)
-    {
-        instruction_B->Opcode=Sub;
-        replace_lhs_operand(instruction_B,v_num);
-        replace_rhs_operand(instruction_B,v_A_value);
+        if(location2 == 2){
+            //第二个add的第二个是常数
+            replace_lhs_operand(instruction_B,v_A_value);
+            replace_rhs_operand(instruction_B,v_num);
+        } else {
+            replace_rhs_operand(instruction_B,v_A_value);
+            replace_lhs_operand(instruction_B,v_num);
+        }
     }
-    if(get_const_location(instruction_B)==1)
-    {
-        replace_lhs_operand(instruction_B,v_num);
-        replace_rhs_operand(instruction_B,v_A_value);
+    //2.
+    else if (instruction_A->Opcode==Add && instruction_B->Opcode==Sub){
+        value_init_int(v_num,v_B_const->pdata->var_pdata.iVal-v_A_const->pdata->var_pdata.iVal);
+        if(location2 == 2){
+            replace_lhs_operand(instruction_B,v_A_value);
+            replace_rhs_operand(instruction_B,v_num);
+        } else {
+            replace_rhs_operand(instruction_B,v_A_value);
+            replace_lhs_operand(instruction_B,v_num);
+        }
     }
-    else
-    {
-        replace_rhs_operand(instruction_B,v_num);
-        replace_lhs_operand(instruction_B,v_A_value);
+    //3.
+    else if(instruction_A->Opcode==Sub && instruction_B->Opcode==Add){
+        if(location1 == 2){
+            value_init_int(v_num,v_B_const->pdata->var_pdata.iVal-v_A_const->pdata->var_pdata.iVal);
+            if(location2 == 2){
+                replace_lhs_operand(instruction_B,v_A_value);
+                replace_rhs_operand(instruction_B,v_num);
+            } else {
+                replace_rhs_operand(instruction_B,v_A_value);
+                replace_lhs_operand(instruction_B,v_num);
+            }
+        } else {
+            value_init_int(v_num,v_B_const->pdata->var_pdata.iVal+v_A_const->pdata->var_pdata.iVal);
+            instruction_B->Opcode = Sub;
+            replace_lhs_operand(instruction_B,v_num);
+            replace_rhs_operand(instruction_B,v_A_value);
+        }
+    }
+    //4.
+    else {
+        if(location1 == 2 && location2 == 2){
+            value_init_int(v_num,v_A_const->pdata->var_pdata.iVal+v_B_const->pdata->var_pdata.iVal);
+            replace_lhs_operand(instruction_B,v_A_value);
+            replace_rhs_operand(instruction_B,v_num);
+        } else if(location1 == 2){
+            value_init_int(v_num,v_A_const->pdata->var_pdata.iVal+v_B_const->pdata->var_pdata.iVal);
+            replace_lhs_operand(instruction_B,v_num);
+            replace_rhs_operand(instruction_B,v_A_value);
+        } else if(location1 == 1 && location2 == 2){
+            value_init_int(v_num,v_A_const->pdata->var_pdata.iVal-v_B_const->pdata->var_pdata.iVal);
+            replace_lhs_operand(instruction_B,v_num);
+            replace_rhs_operand(instruction_B,v_A_value);
+        } else{
+            instruction_B->Opcode = Add;
+            replace_lhs_operand(instruction_B,v_A_value);
+            replace_rhs_operand(instruction_B,v_num);
+        }
     }
 }
 
