@@ -471,7 +471,7 @@ void simplify(){
 //当 x 需要被染色, x 并不与 move 相关, x 的度 <= k - 1
 //低度数传送有关结点集 freezeWorkSet 删除 x , 且低度数传送无关结点集 simplifyWorkSet 添加 x
 void addWorkList(Node* node){
-    if(node->type!=PreColored && HashSetSize(MoveRelated(node)) == 0 && node->degree <= K){
+    if(node->type!=PreColored && HashSetSize(MoveRelated(node)) == 0 && node->degree < K){
         HashSetRemove(freezeWorklist,node);
         HashSetAdd(simplifyWorklist,node);
     }
