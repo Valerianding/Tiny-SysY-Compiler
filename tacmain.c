@@ -16,6 +16,7 @@
 #include "sideeffect.h"
 #include "fix_array.h"
 #include "line_scan.h"
+#include "graph_color.h"
 #define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
@@ -285,27 +286,27 @@ int main(int argc, char* argv[]){
 
 
 //    线性扫描
-    line_scan(instruction_list,start);
-
-//    reg_control(instruction_list,start);
-    for(InstNode *tmp=instruction_list;tmp!=NULL;tmp= get_next_inst(tmp)){
-        if((tmp->inst->_reg_[1] == tmp->inst->_reg_[2]) && tmp->inst->_reg_[1] != 0){
-            Value *lhs = ins_get_lhs(tmp->inst);
-            Value *rhs = ins_get_rhs(tmp->inst);
-            if( (lhs!=NULL) && (rhs!=NULL) ){
-                if(lhs!=rhs){
-                    assert(false);
-                }
-            }
-        }
-//        if(tmp->inst->Opcode==CopyOperation){
-//            printf("dest r%d,left r%d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
+//    line_scan(instruction_list,start);
+//
+////    reg_control(instruction_list,start);
+//    for(InstNode *tmp=instruction_list;tmp!=NULL;tmp= get_next_inst(tmp)){
+//        if((tmp->inst->_reg_[1] == tmp->inst->_reg_[2]) && tmp->inst->_reg_[1] != 0){
+//            Value *lhs = ins_get_lhs(tmp->inst);
+//            Value *rhs = ins_get_rhs(tmp->inst);
+//            if( (lhs!=NULL) && (rhs!=NULL) ){
+//                if(lhs!=rhs){
+//                    assert(false);
+//                }
+//            }
 //        }
-    }
+////        if(tmp->inst->Opcode==CopyOperation){
+////            printf("dest r%d,left r%d\n",tmp->inst->_reg_[0],tmp->inst->_reg_[1]);
+////        }
+//    }
 
 //    gcp_allocate(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
-
+    reg_alloca_(start);
 
     arm_open_file(argv[3]);
     arm_translate_ins(instruction_list,argv[3]);
