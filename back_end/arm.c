@@ -6595,8 +6595,6 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
 //    int left_reg=abs(src_leftreg);
 //    int right_reg=abs(src_rightreg);
 
-    assert((watchReg.generalReg[0]==0 && watchReg.generalReg[1]==0 && watchReg.generalReg[2]==0));
-
     if(isImmIntType(value1->VTy)&& isImmIntType(value2->VTy)){
         int x1=value1->pdata->var_pdata.iVal;
         int x2=value2->pdata->var_pdata.iVal;
@@ -6664,10 +6662,13 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             fprintf(fp,"\tmov\tr0,#%d\n",x1);
             watchReg.generalReg[0]=1;
             if(right_reg>=100){
+                if(right_reg==100){
+                    right_reg=101;
+                }
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
-                printf("\tmov\tr1,r%d\n",right_reg-100);
-                fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+//                printf("\tmov\tr1,r%d\n",right_reg-100);
+//                fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
             }else{
                 printf("\tmov\tr1,r%d\n",right_reg);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
@@ -6676,44 +6677,41 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             handle_illegal_imm1(0,x1);
             watchReg.generalReg[0]=1;
             if(right_reg>=100){
+                if(right_reg==100){
+                    right_reg=101;
+                }
                 int x= get_value_offset_sp(hashMap,value2);
                 handle_illegal_imm(right_reg,x,2);
-                printf("\tmov\tr1,r%d\n",right_reg-100);
-                fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+//                printf("\tmov\tr1,r%d\n",right_reg-100);
+//                fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
             }else{
                 printf("\tmov\tr1,r%d\n",right_reg);
                 fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
             }
         }
-//        printf("\tstr\tr3,[sp,#-4]!\n");
-//        fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
-//        sp_offset_to_r11+=4;
+        watchReg.generalReg[1]=1;
+        printf("\tsdiv\tr2,r0,r1\n");
+        fprintf(fp,"\tsdiv\tr2,r0,r1\n");
+        printf("\tmls\tr1,r2,r1,r0\n");
+        fprintf(fp,"\tmls\tr1,r2,r1,r0\n");
+//        printf("\tpush\t{ r3,r12,r14 }\n");
+//        fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
 //        printf("\tsub\tsp,sp,#4\n");
 //        fprintf(fp,"\tsub\tsp,sp,#4\n");
-//        sp_offset_to_r11+=4;
-        printf("\tpush\t{ r3,r12,r14 }\n");
-        fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
-        printf("\tsub\tsp,sp,#4\n");
-        fprintf(fp,"\tsub\tsp,sp,#4\n");
-        sp_offset_to_r11+=16;
-        if(ARM_enable_vfp==1){
-            printf_vpush_rlist2();
-        }
-        printf("\tbl\t__aeabi_idivmod\n");
-        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-//        printf("\tadd\tsp,sp,#8\n");
-//        fprintf(fp,"\tadd\tsp,sp,#8\n");
+//        sp_offset_to_r11+=16;
+//        if(ARM_enable_vfp==1){
+//            printf_vpush_rlist2();
+//        }
+//        printf("\tbl\t__aeabi_idivmod\n");
+//        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
+//        if(ARM_enable_vfp==1){
+//            printf_vpop_rlist2();
+//        }
+//        printf("\tadd\tsp,sp,#4\n");
+//        fprintf(fp,"\tadd\tsp,sp,#4\n");
+//        printf("\tpop\t{ r3,r12,r14 }\n");
+//        fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
 //        sp_offset_to_r11=0;
-//        printf("\tldr\tr3,[sp,#-4]\n");
-//        fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-        if(ARM_enable_vfp==1){
-            printf_vpop_rlist2();
-        }
-        printf("\tadd\tsp,sp,#4\n");
-        fprintf(fp,"\tadd\tsp,sp,#4\n");
-        printf("\tpop\t{ r3,r12,r14 }\n");
-        fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
-        sp_offset_to_r11=0;
 
         if(ARM_enable_vfp==1){
             if(isLocalVarFloatType(value0->VTy)){
@@ -6934,38 +6932,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
                 }
             }
-            printf("\tpush\t{ r3,r12,r14 }\n");
-            fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
-            printf("\tsub\tsp,sp,#4\n");
-            fprintf(fp,"\tsub\tsp,sp,#4\n");
-            sp_offset_to_r11+=16;
-            if(ARM_enable_vfp==1){
-                printf_vpush_rlist2();
-            }
-//            printf("\tstr\tr3,[sp,#-4]!\n");
-//            fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
-//            sp_offset_to_r11+=4;
-//            printf("\tsub\tsp,sp,#4\n");
-//            fprintf(fp,"\tsub\tsp,sp,#4\n");
-//            sp_offset_to_r11+=4;
-            printf("\tbl\t__aeabi_idivmod\n");
-            fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-//            printf("\tadd\tsp,sp,#8\n");
-//            fprintf(fp,"\tadd\tsp,sp,#8\n");
-//            sp_offset_to_r11=0;
-//            printf("\tldr\tr3,[sp,#-4]\n");
-//            fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-            if(ARM_enable_vfp==1){
-                printf_vpop_rlist2();
-            }
-            printf("\tadd\tsp,sp,#4\n");
-            fprintf(fp,"\tadd\tsp,sp,#4\n");
-            printf("\tpop\t{ r3,r12,r14 }\n");
-            fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
-            sp_offset_to_r11=0;
-
-            printf("\tmov\tr%d,r1\n",dest_reg_abs);
-            fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+            printf("\tsdiv\tr2,r0,r1\n");
+            fprintf(fp,"\tsdiv\tr2,r0,r1\n");
+            printf("\tmls\tr%d,r2,r1,r0\n",dest_reg_abs);
+            fprintf(fp,"\tmls\tr%d,r2,r1,r0\n",dest_reg_abs);
         }
         if(isLocalVarIntType(value0->VTy)){
             if(dest_reg<0){
@@ -7023,22 +6993,17 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             handle_illegal_imm(left_reg,x1,1);
             int x2= get_value_offset_sp(hashMap,value2);
             handle_illegal_imm(right_reg,x2,2);
-//            printf("\tmov\tr0,r%d\n",left_reg-100);
-//            fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-//            printf("\tmov\tr1,r%d\n",right_reg-100);
-//            fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+
         } else if(left_reg>=100){
             int x1= get_value_offset_sp(hashMap,value1);
             handle_illegal_imm(left_reg,x1,1);
-//            printf("\tmov\tr0,r%d\n",left_reg-100);
-//            fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+
             printf("\tmov\tr1,r%d\n",right_reg);
             fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
         }else if(right_reg>=100){
             int x2= get_value_offset_sp(hashMap,value2);
             handle_illegal_imm(right_reg,x2,2);
-//            printf("\tmov\tr1,r%d\n",right_reg-100);
-//            fprintf(fp,"\tmov\tr1,r%d\n",right_reg-100);
+
             printf("\tmov\tr0,r%d\n",left_reg);
             fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
         } else{
@@ -7047,35 +7012,10 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tmov\tr1,r%d\n",right_reg);
             fprintf(fp,"\tmov\tr1,r%d\n",right_reg);
         }
-        printf("\tpush\t{ r3,r12,r14 }\n");
-        fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
-        printf("\tsub\tsp,sp,#4\n");
-        fprintf(fp,"\tsub\tsp,sp,#4\n");
-        sp_offset_to_r11+=16;
-        if(ARM_enable_vfp==1){
-            printf_vpush_rlist2();
-        }
-//        printf("\tstr\tr3,[sp,#-4]!\n");
-//        fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
-//        sp_offset_to_r11+=4;
-//        printf("\tsub\tsp,sp,#4\n");
-//        fprintf(fp,"\tsub\tsp,sp,#4\n");
-//        sp_offset_to_r11+=4;
-        printf("\tbl\t__aeabi_idivmod\n");
-        fprintf(fp,"\tbl\t__aeabi_idivmod\n");
-//        printf("\tadd\tsp,sp,#8\n");
-//        fprintf(fp,"\tadd\tsp,sp,#8\n");
-//        sp_offset_to_r11=0;
-//        printf("\tldr\tr3,[sp,#-4]\n");
-//        fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
-        if(ARM_enable_vfp==1){
-            printf_vpop_rlist2();
-        }
-        printf("\tadd\tsp,sp,#4\n");
-        fprintf(fp,"\tadd\tsp,sp,#4\n");
-        printf("\tpop\t{ r3,r12,r14 }\n");
-        fprintf(fp,"\tpop\t{ r3,r12,r14 }\n");
-        sp_offset_to_r11=0;
+        printf("\tsdiv\tr2,r0,r1\n");
+        fprintf(fp,"\tsdiv\tr2,r0,r1\n");
+        printf("\tmls\tr1,r2,r1,r0\n");
+        fprintf(fp,"\tmls\tr1,r2,r1,r0\n");
 
         if(ARM_enable_vfp==1){
             if(isLocalVarFloatType(value0->VTy)){
