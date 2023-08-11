@@ -117,7 +117,7 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins);
 InstNode * arm_trans_FunBegin(InstNode *ins,int*stack_size);
 InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int stack_size);
 
-//打印固定的文字池
+//打印固定的文字池,已经不适用ldr伪指令，文字池已经没什么用了
 InstNode * arm_trans_FuncEnd(InstNode*ins);
 
 InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap);
