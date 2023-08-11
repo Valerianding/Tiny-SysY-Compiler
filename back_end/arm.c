@@ -7270,12 +7270,6 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymemset
     memset(give_param_flag,0, sizeof(give_param_flag));
 
-//    printf("\tstr\tr3,[sp,#-4]!\n");
-//    fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
-//    sp_offset_to_r11+=4;
-//    printf("\tsub\tsp,sp,#4\n");
-//    fprintf(fp,"\tsub\tsp,sp,#4\n");
-//    sp_offset_to_r11+=4;
     printf("\tpush\t{ r3,r12,r14 }\n");
     fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
     printf("\tsub\tsp,sp,#4\n");
@@ -7295,11 +7289,7 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     if(ARM_enable_vfp==1){
         printf_vpop_rlist2();
     }
-//    printf("\tadd\tsp,sp,#8\n");
-//    fprintf(fp,"\tadd\tsp,sp,#8\n");
-//    sp_offset_to_r11=0;
-//    printf("\tldr\tr3,[sp,#-4]\n");
-//    fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
+
     printf("\tadd\tsp,sp,#4\n");
     fprintf(fp,"\tadd\tsp,sp,#4\n");
     printf("\tpop\t{ r3,r12,r14 }\n");
