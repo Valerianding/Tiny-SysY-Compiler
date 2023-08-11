@@ -77,6 +77,16 @@ bool check_spilled(Value* value){
     return false;
 }
 
+//看当前溢出的有没有对应这个value的Node
+Node *spill_contain_node(Value* value){
+    HashSetFirst(restore_spillNodes);
+    for(Node* node = HashSetNext(restore_spillNodes);node!=NULL; node = HashSetNext(restore_spillNodes)){
+        if(node->value == value)
+            return node;
+    }
+    return NULL;
+}
+
 //寻找当前nodeSet有没有对应Value的Node,如果有则返回，没有则新建
 Node *get_Node_with_value(Value* value){
     //应该走不到这里来吧
@@ -384,9 +394,10 @@ void build(Function* func){
                     //为什么要live <---live\use(I)
                     //mov dst,src不应是直接冲突关系，而是潜在可合并关系
                     value_live_range *range = HashMapGet(intervalMap, ins_get_lhs(curr_node->inst));
-                    if((ins_get_lhs(curr_node->inst)->VTy->ID == Int || ins_get_lhs(curr_node->inst)->VTy->ID == Float || curr_node->inst->i == range->end) && !check_spilled(ins_get_dest(curr_node->inst)->alias) && !check_spilled(
-                            ins_get_lhs(curr_node->inst)) && !isLocalVarFloat(ins_get_lhs(curr_node->inst)) &&
-                            !isLocalVarFloat(ins_get_dest(curr_node->inst)->alias)){
+                    //如果range为空就证明这是一个已经溢出的结点 emmm好像也不是, 但是range!=NULL还是留下吧
+                    if(range && (ins_get_lhs(curr_node->inst)->VTy->ID == Int || ins_get_lhs(curr_node->inst)->VTy->ID == Float || curr_node->inst->i == range->end) &&
+                      !check_spilled(ins_get_dest(curr_node->inst)->alias) && !check_spilled(ins_get_lhs(curr_node->inst)) &&
+                      !isLocalVarFloat(ins_get_lhs(curr_node->inst)) && !isLocalVarFloat(ins_get_dest(curr_node->inst)->alias)){
 
                         //lsy, 比书上加一个, 如果已经有冲突关系，就不加入了
                         //其实不用这样，后面constrainedMoves应该能解决了
@@ -683,7 +694,7 @@ HashMap *cal_interval_len(PriorityQueue* queue){
         value_live_range *range;
         PriorityQueueTop(queue,(void**)&range);
         PriorityQueuePop(queue);
-        if(isLocalVarFloat(range->value))
+        if(isLocalVarFloat(range->value) || spill_contain_node(range->value))
             continue;
         int *len = malloc(4);
         *len= range->end - range->start;
