@@ -653,7 +653,7 @@ double customHeuristic(Node* node) {
     }
 
     double loopCounterWeight = 1.0;  // 可以根据需要调整权重
-    double degreeWeight = 1.0;  // 可以根据需要调整权重
+    double degreeWeight = 1.45;  // 可以根据需要调整权重
     double usageWeight = 1.0;  // 可以根据需要调整权重
 
     double heuristicVal = (pow(node->loopCounter, loopCounterWeight) * pow(node->degree, degreeWeight))
@@ -726,14 +726,10 @@ void selectSpill(Function* cur_func){
     if(n->type == USUAL) {
         int *len = HashMapGet(lenMap,n);
         //TODO 感觉有点问题
-        if(*len<5 || (get_name_index(n->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num))
+        if(*len<5)
             max = 0;
     }
     for(Node* node = HashSetNext(spillWorklist); node!=NULL; node = HashSetNext(spillWorklist)){
-        //参数不溢出
-        if(get_name_index(node->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num)
-            continue;
-
         double h = heuristicVal(node);
 
         if(node->type == USUAL) {
