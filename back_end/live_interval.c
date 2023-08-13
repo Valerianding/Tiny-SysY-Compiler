@@ -133,11 +133,7 @@ void analyze_block(){
                     }
                 }
             }
-
         }
-
-
-
     }
     while (ins!=block->head_node){
 //        printf("curr at %d opcode %d\n",ins->inst->i,ins->inst->Opcode);
@@ -169,8 +165,10 @@ void handle_def(Value*dvalue,int ins_id){
     if(isImmIntType(dvalue->VTy) || isImmFloatType(dvalue->VTy)){
         return;
     }
+//    Global不可能出现在def中
     if(isGlobalArrayFloatType(dvalue->VTy)|| isGlobalArrayIntType(dvalue->VTy) || isGlobalVarFloatType(dvalue->VTy) ||
        isGlobalVarIntType(dvalue->VTy)){
+        assert(false);
         return;
     }
     if(isLocalArrayFloatType(dvalue->VTy) || isLocalArrayIntType(dvalue->VTy)){
@@ -203,8 +201,22 @@ void handle_use(Value*uvalue,int ins_id){
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
         return;
     }
+//    全局变量的地址需要进行通用寄存器分配，计算其活跃范围为0 ~ use（最后一次use），只需要在计算通用寄存器分配对应的活跃变量表时计算即可，在计算浮点分配表时不用计算
     if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
             isGlobalVarIntType(uvalue->VTy)){
+        if(vfp_flag==0){
+            live_range *range= HashMapGet(hashmap,uvalue);
+            if(range==NULL){
+                range=(live_range*) malloc(sizeof(live_range));
+                memset(range,0,sizeof(live_range));
+                range->start=0;
+                range->end=ins_id;
+                HashMapPut(hashmap,uvalue,range);
+            }else{
+                range->start=MIN(range->start,ins_head->inst->i);
+                range->end=MAX(range->end,ins_id);
+            }
+        }
         return;
     }
     if(isLocalArrayFloatType(uvalue->VTy) || isLocalArrayIntType(uvalue->VTy)){
