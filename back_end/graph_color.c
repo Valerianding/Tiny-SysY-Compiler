@@ -153,11 +153,16 @@ void deinit(){
 }
 
 bool find_pair(Node* u,Node* v){
-    HashSetFirst(adjSet);
-    for(AdjPair* adjPair = HashSetNext(adjSet); adjPair!=NULL; adjPair = HashSetNext(adjSet)){
-        if((adjPair->u == u && adjPair->v == v) || (adjPair->v == u && adjPair->u == v))
-            return true;
-    }
+//    HashSetFirst(adjSet);
+//    for(AdjPair* adjPair = HashSetNext(adjSet); adjPair!=NULL; adjPair = HashSetNext(adjSet)){
+//        if((adjPair->u == u && adjPair->v == v) || (adjPair->v == u && adjPair->u == v))
+//            return true;
+//    }
+//    return false;
+
+//CHECK: 应该只看一边就行了
+    if(HashSetFind(u->adjOpdSet,v))
+        return true;
     return false;
 }
 
@@ -173,6 +178,7 @@ void addEdge(Node* u, Node* v){
         adj_pair->v = u;
         HashSetAdd(adjSet,adj_pair);
 
+        //我们应该都没有这种type
         if(u->type != PreColored){
             u->degree++;
             HashSetAdd(u->adjOpdSet,v);
@@ -190,6 +196,10 @@ void handle_def_(HashSet* live, Value* def, int loopDepth){
         return;
 
     if(isLocalArrayFloatType(def->VTy) || isLocalArrayIntType(def->VTy))
+        return;
+
+    //如果是无用左值，不加入
+    if(def->use_list == NULL)
         return;
 
     Node *node = get_Node_with_value(def);
@@ -284,6 +294,8 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
     Value *value0,*value1,*value2;
     int opNum ;
     int loopDepth = cur_block->domTreeNode->loopNest;
+//    if(HashSetSize(live) > 140)
+//        printf("j");
     switch (ins->inst->Opcode) {
         //def = 1, use = 2
         case Add:
@@ -718,6 +730,7 @@ HashMap *cal_interval_len(PriorityQueue* queue){
         value_live_range *range;
         PriorityQueueTop(queue,(void**)&range);
         PriorityQueuePop(queue);
+
         if(isLocalVarFloat(range->value) || spill_contain_node(range->value))
             continue;
         int *len = malloc(4);
@@ -953,7 +966,7 @@ void labelRegister(Function* func){
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
 
-        if(cur_node->inst->_reg_[0] == 0 && v!=NULL && v->name!=NULL && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))){
+        if(cur_node->inst->_reg_[0] == 0 && v!=NULL && v->name!=NULL && v->use_list && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))){
             int reg ;
             if(cur_node->inst->Opcode == CopyOperation && !isLocalVarFloat(v->alias)){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v->alias)))->reg;
