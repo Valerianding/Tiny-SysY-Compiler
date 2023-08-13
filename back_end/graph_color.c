@@ -1,6 +1,6 @@
 #include "graph_color.h"
 
-int tmp_num = 0;
+//int tmp_num = 0;
 
 //低度数的传送无关结点,元素为Node
 HashSet *simplifyWorklist;
@@ -206,7 +206,7 @@ void handle_def_(HashSet* live, Value* def, int loopDepth){
     HashSetRemove(live, def);
 }
 
-void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
+void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func,InstNode* cur_node){
 
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy) || isLocalVarFloat(uvalue)){
         return;
@@ -237,6 +237,17 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
                 isGlobalType(uvalue->VTy)){
             HashSetFirst(live);
             for(Value * v = HashSetNext(live); v!=NULL; v = HashSetNext(live)){
+                Node *n = get_Node_with_value(v);
+
+                addEdge(node,n);
+            }
+        }
+
+        //如果是全局变量分配寄存器, 且并不是该全局变量在本函数中最后一次使用, 不仅需要与当前live建立冲突关系, 还需要和所有这个基本块的live建立冲突关系
+        value_live_range *range = HashMapGet(intervalMap, uvalue);
+        if(isGlobalType(uvalue->VTy) && range->end != cur_node->inst->i){
+            HashSetFirst(cur_node->inst->Parent->out);
+            for(Value * v = HashSetNext(cur_node->inst->Parent->out); v!=NULL; v = HashSetNext(cur_node->inst->Parent->out)){
                 Node *n = get_Node_with_value(v);
 
                 addEdge(node,n);
@@ -280,8 +291,8 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
-            handle_use_(live,value2,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
             break;
         case Call:
             if(!returnValueNotUsed(ins)){
@@ -293,24 +304,24 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             opNum=ins->inst->user.value.NumUserOperands;
             if(opNum!=0){
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
-                handle_use_(live,value1,loopDepth,cur_block->Parent);
+                handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
             }
             break;
         case Store:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
-            handle_use_(live,value2,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
             break;
         case Load:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
             break;
         case GIVE_PARAM:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
             break;
         case LESS:
         case GREAT:
@@ -322,14 +333,14 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
-            handle_use_(live,value2,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
             break;
         case br_i1:
             //各个out变量之间需要建边
             addEdge_within_live(live);
             value1=user_get_operand_use(&ins->inst->user,0)->Val; //真值
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
             break;
         case br:
         case FunEnd:
@@ -342,21 +353,21 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
             break;
         case GEP:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
-            handle_use_(live,value2,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
             break;
         case CopyOperation:
             value0=ins->inst->user.value.alias;
             value1= user_get_operand_use(&ins->inst->user,0)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
             break;
         case fptosi:
         case sitofp:
@@ -364,7 +375,7 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             if(value0->name!=NULL && value1->name!=NULL){
                 handle_def_(live,value0,loopDepth);
-                handle_use_(live,value1,loopDepth,cur_block->Parent);
+                handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
             }
             break;
         default:
