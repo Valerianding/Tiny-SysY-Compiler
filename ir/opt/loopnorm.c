@@ -27,14 +27,20 @@ void dfsTravelLoop(Loop *loop){
     assert(n == 1);
     assert(guard != NULL);
     BasicBlock *preHeader = bb_create();
+    if(guard->true_block == guard->false_block){
+        assert(false);
+    }
+
     if(guard->true_block == loopEntry){
         guard->true_block = preHeader;
+        guard->false_block = NULL;
     }else{
-        guard->false_block = preHeader;
+        assert(false);
     }
 
 
     preHeader->true_block = loopEntry;
+    preHeader->false_block = NULL;
 
     HashSetRemove(loopEntry->preBlocks,guard);
     HashSetAdd(loopEntry->preBlocks,preHeader);
@@ -52,9 +58,6 @@ void dfsTravelLoop(Loop *loop){
     // 进行一些链接
     ins_insert_after(newBlockLabelNode,prevTail);
     ins_insert_after(newBlockBrNode,newBlockLabelNode);
-
-    newBlockBrNode->list.next = &prevNext->list;
-    prevNext->list.prev = &newBlockBrNode->list;
 
     bb_set_block(preHeader,newBlockLabelNode,newBlockBrNode);
     assert(preHeader->head_node == newBlockLabelNode && preHeader->tail_node == newBlockBrNode);
@@ -75,6 +78,23 @@ void dfsTravelLoop(Loop *loop){
         }
         entryHead = get_next_inst(entryHead);
     }
+
+
+//    Function *currentFunction = loopEntry->Parent;
+//    InstNode *funcHead = currentFunction->entry->head_node;
+//    InstNode *funcTail = currentFunction->tail->tail_node;
+//    while(funcHead != funcTail){
+//        if(funcHead->inst->Opcode == Phi){
+//            HashSet *phiSet = funcHead->inst->user.value.pdata->pairSet;
+//            HashSetFirst(phiSet);
+//            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+//                if(phiInfo->from == guard){
+//                    phiInfo->from = preHeader;
+//                }
+//            }
+//        }
+//        funcHead = get_next_inst(funcHead);
+//    }
 
     assert(guard != NULL && preHeader != NULL);
     loop->guard = guard;

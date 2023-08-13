@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-    Optimize = true;
+
 
     yyin=fopen(argv[4], "r");
 
@@ -179,8 +179,6 @@ int main(int argc, char* argv[]){
         }
     }
 
-//    printf_llvm_ir(instruction_list,argv[4],1);
-
 
     if(Optimize){
         func_inline(instruction_list,124);
@@ -209,7 +207,7 @@ int main(int argc, char* argv[]){
     start = ReconstructFunction(instruction_list);
 
     //inline 之后的IR
-//     printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
         if(!NOTOK)
@@ -219,37 +217,39 @@ int main(int argc, char* argv[]){
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
+            renameVariables(currentFunction);
+        }
 
+        printf_llvm_ir(instruction_list,argv[4],1);
+
+
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+            RunOptimizePasses(currentFunction);
             bool changed = true;
             while(changed){
                 changed = InstCombine(currentFunction);
+                renameVariables(currentFunction);
             }
-
             //loop simplify requires loop normalize
             LoopNormalize(currentFunction);
             LoopSimplify(currentFunction);
-
             changed = true;
             while(changed){
                 changed = InstCombine(currentFunction);
+                renameVariables(currentFunction);
             }
-
-            renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
-
         }
     }
-//    printf_llvm_ir(instruction_list,argv[4],1);
 
-
-    //OK 现在开始我们不会对
+//    //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         Clean(currentFunction);
         renameVariables(currentFunction);
     }
-
-//     printf_llvm_ir(instruction_list,argv[4],1);
-
+//
+     printf_llvm_ir(instruction_list,argv[4],1);
+//
 
 #if ALL
     //phi上的优化

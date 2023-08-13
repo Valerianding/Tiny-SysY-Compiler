@@ -24,7 +24,7 @@ void RunOptimizePasses(Function *currentFunction){
 
     //for loopAnalysis
     loopAnalysis(currentFunction);
-
+//
     LICM(currentFunction);
 
     Loop2Memset(currentFunction);
@@ -40,6 +40,8 @@ void RunOptimizePasses(Function *currentFunction){
     Mark(currentFunction);
 
     Sweep(currentFunction);
+
+    removeUnreachable(currentFunction);
 
     renameVariables(currentFunction);
 }

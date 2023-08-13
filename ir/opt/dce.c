@@ -7,8 +7,10 @@ const Opcode EssentialOpcodes[] = {GIVE_PARAM, FunBegin,FunEnd,Label,SysYMemset}
 BasicBlock *findNearestMarkedPostDominator(PostDomNode *postDomNode){
     BasicBlock *parent = postDomNode->parent;
     InstNode *currNode = parent->head_node;
-    while(currNode != parent->tail_node){
-        if(currNode->inst->isCritical == true && currNode->inst->Opcode != br){
+    InstNode *tailNode = get_next_inst(parent->tail_node);
+    while(currNode != tailNode){
+        //TODO original we consider br is critical
+        if(currNode->inst->isCritical == true || currNode->inst->Opcode == br){
             return parent;
         }
         currNode = get_next_inst(currNode);
@@ -275,6 +277,9 @@ bool Sweep(Function *currentFunction) {
 
                 BasicBlock *markedPostDominator = findNearestMarkedPostDominator(postDomNode);
 
+                printf("block %d marked post Dominator %d\n",block->id,markedPostDominator->id);
+
+
                 //修改它的后继节点
                 block->true_block = markedPostDominator;
                 block->false_block = NULL;
@@ -299,7 +304,7 @@ bool Sweep(Function *currentFunction) {
                 deleteIns(branchNode);
                 currNode = nextNode;
 
-                // TODO 解决掉后面可能会引起的phi函数的冲突问题
+                // TODO 解决掉后面可能会引起的phi函数的冲突问题 如果后面
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
                 currNode = get_next_inst(currNode);
