@@ -93,6 +93,7 @@ Node *get_Node_with_value(Value* value){
 //    assert(!isLocalVarFloat(value));
 //    assert(!isImmFloatType(value->VTy));
 //    assert(!isImmIntType(value->VTy));
+//      assert(!isLocalArrayIntType(value->VTy));
 
     HashSetFirst(nodeSet);
     for(Node* node = HashSetNext(nodeSet);node!=NULL; node = HashSetNext(nodeSet)){
@@ -186,6 +187,9 @@ void addEdge(Node* u, Node* v){
 
 void handle_def_(HashSet* live, Value* def, int loopDepth){
     if(check_spilled(def) || isLocalVarFloat(def))
+        return;
+
+    if(isLocalArrayFloatType(def->VTy) || isLocalArrayIntType(def->VTy))
         return;
 
     Node *node = get_Node_with_value(def);
@@ -360,7 +364,10 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
             handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            //TODO address处理
+            if(isGlobalArray(value1) || isAddress(value1)){
+                handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            }
             handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
             break;
         case CopyOperation:
