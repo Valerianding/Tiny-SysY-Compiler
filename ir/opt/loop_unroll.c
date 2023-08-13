@@ -75,6 +75,14 @@ void connect_blocks(HashMap* block_map,Loop* loop,BasicBlock* block){
                 }
             }
         }
+
+        //加上dom,
+        // TODO 具体块中的dom好像不一定要加?
+        b_new->dom = HashSetInit();
+        HashSetFirst(b_loop->dom);
+        for(BasicBlock* b = HashSetNext(b_loop->dom); b!=NULL; b = HashSetNext(b_loop->dom)){
+            HashSetAdd(b_new->dom, b);
+        }
     }
 }
 
@@ -798,6 +806,13 @@ BasicBlock *copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v
         connect_blocks(block_map,loop,block);
         reduce_phi_(phi_map,other_new_valueMap,block_map,v_new_valueMap,loop);
         HashMapClean(phi_map);
+    }else {
+        //将curr_block的dom补了
+        curr_block->dom = HashSetInit();
+        HashSetFirst(loop->tail->dom);
+        for(BasicBlock* b = HashSetNext(loop->tail->dom); b!=NULL; b = HashSetNext(loop->tail->dom)){
+            HashSetAdd(curr_block->dom,b);
+        }
     }
 
     if(last && curr_block!=NULL){
@@ -1078,6 +1093,13 @@ BasicBlock *copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,
         connect_blocks(block_map,loop,block);
         reduce_phi_(phi_map,other_new_valueMap,block_map,v_new_valueMap,loop);
         HashMapClean(phi_map);
+    }else {
+        //将curr_block的dom补了
+        curr_block->dom = HashSetInit();
+        HashSetFirst(loop->tail->dom);
+        for(BasicBlock* b = HashSetNext(loop->tail->dom); b!=NULL; b = HashSetNext(loop->tail->dom)){
+            HashSetAdd(curr_block->dom,b);
+        }
     }
 
     //多次复制感觉没做完
@@ -1409,6 +1431,13 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
         connect_blocks(block_map,loop,block);
         reduce_phi_(phi_map,other_new_valueMap,block_map,v_new_valueMap,loop);
         HashMapClean(phi_map);
+    } else {
+        //将curr_block的dom补了
+        curr_block->dom = HashSetInit();
+        HashSetFirst(loop->tail->dom);
+        for(BasicBlock* b = HashSetNext(loop->tail->dom); b!=NULL; b = HashSetNext(loop->tail->dom)){
+            HashSetAdd(curr_block->dom,b);
+        }
     }
 
     //将新块都加入loop body, 改变loop tail, 并改变head phi中的from
