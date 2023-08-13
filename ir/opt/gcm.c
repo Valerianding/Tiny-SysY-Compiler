@@ -387,7 +387,6 @@ DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
         //printf("use %d\n",use->block->id);
         return use;
     }
-    printf("lca %d use %d\n",lca->block->id,use->block->id);
     while(lca->depth > use->depth){
         lca = lca->parent->domTreeNode;
     }
@@ -396,12 +395,10 @@ DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
         use = use->parent->domTreeNode;
     }
 
-    printf("now lca %d use %d\n",lca->block->id,use->block->id);
     //
     while(use != lca){
         assert(use->parent != NULL && lca->parent != NULL);
         assert(lca->parent->domTreeNode != NULL && use->parent->domTreeNode != NULL);
-        printf("lca parent %d use parent %d\n",lca->parent->id,use->parent->id);
 
         use = use->parent->domTreeNode;
         lca = lca->parent->domTreeNode;
@@ -414,7 +411,6 @@ DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
 }
 
 void Schedule_Late(Instruction *ins){
-    printf("ins %d\n",ins->i);
     if(ins->visited == true){
         return;
     }
@@ -445,7 +441,6 @@ void Schedule_Late(Instruction *ins){
         assert(use != NULL);
         //it can't be phi so we just find the lca
 
-        printf("yIns %d\n",yIns->i);
         lca = Find_LCA(lca,use);
 
         assert(lca != NULL);
@@ -460,7 +455,7 @@ void Schedule_Late(Instruction *ins){
     InstNode *funcTail = tail->tail_node;
     while(phiNode != funcTail){
         if(phiNode->inst->Opcode == Phi){
-            printf("phi ins %d parent %d\n",phiNode->inst->i,phiNode->inst->Parent->id);
+            //printf("phi ins %d parent %d\n",phiNode->inst->i,phiNode->inst->Parent->id);
             HashSet *phiSet = phiNode->inst->user.value.pdata->pairSet;
             HashSetFirst(phiSet);
             for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
@@ -468,8 +463,6 @@ void Schedule_Late(Instruction *ins){
                 if(define == insDest){
                     //
                     use = phiInfo->from->domTreeNode;
-                    if(lca != NULL)
-                        printf("!!!! lca %d use %d\n",lca->block->id,use->block->id);
                     lca = Find_LCA(lca,use);
                 }
             }
@@ -603,7 +596,7 @@ void ScheduleLate(Function *function){
 
                     if(usedInPhi){
                         Value *phiDest = ins_get_dest(tempNode->inst);
-                        printf("tempNode %d parent %d phi %s\n",tempNode->inst->i,tempNode->inst->Parent->id,phiDest->name);
+                        //printf("tempNode %d parent %d phi %s\n",tempNode->inst->i,tempNode->inst->Parent->id,phiDest->name);
                         Schedule_Late(tempNode->inst);
                     }
                 }
@@ -644,9 +637,6 @@ void bfdDomTreeNode(DomTreeNode *root,int level){
     }
     printf("b%d child:\n",root->block->id);
     HashSetFirst(root->children);
-    if(root->block->id == 59){
-        printf("what! parent %d\n",root->parent->id);
-    }
     for(DomTreeNode *child = HashSetNext(root->children); child != NULL; child = HashSetNext(root->children)) {
         assert(child->parent == root->block);
         bfdDomTreeNode(child,level + 1);
@@ -670,16 +660,11 @@ void GCM(Function *currentFunction){
 
     markDominanceDepth(currentFunction);
 
-    printf("once!\n");
-
     markLoopNest(currentFunction);
-
-    printf("here!\n");
 
     ScheduleEarly(currentFunction);
 
-    printf("here!\n");
-//    DVNT(currentFunction);
+    DVNT(currentFunction);
 
     clearInsVisited(currentFunction);
 

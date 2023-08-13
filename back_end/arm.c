@@ -10,7 +10,7 @@
 
 int lineScan=1; //使用线性扫描寄存器分配
 //#define ARM_enable_vfp 1
-int ARM_enable_vfp=0;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
+int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
 //考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
 int arm_flag_lr=1;
 //考虑释放r3
@@ -61,7 +61,7 @@ Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
 //用来记录开辟的文字池
 int ltorg_num=0;
 int give_param_flag[4];
-char return_message[100000];
+//char return_message[100000];
 int stm_num; //8字节对齐
 int order_param_flag;
 int order_of_param[4];
@@ -7270,12 +7270,6 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
 InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymemset
     memset(give_param_flag,0, sizeof(give_param_flag));
 
-//    printf("\tstr\tr3,[sp,#-4]!\n");
-//    fprintf(fp,"\tstr\tr3,[sp,#-4]!\n");
-//    sp_offset_to_r11+=4;
-//    printf("\tsub\tsp,sp,#4\n");
-//    fprintf(fp,"\tsub\tsp,sp,#4\n");
-//    sp_offset_to_r11+=4;
     printf("\tpush\t{ r3,r12,r14 }\n");
     fprintf(fp,"\tpush\t{ r3,r12,r14 }\n");
     printf("\tsub\tsp,sp,#4\n");
@@ -7295,11 +7289,7 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     if(ARM_enable_vfp==1){
         printf_vpop_rlist2();
     }
-//    printf("\tadd\tsp,sp,#8\n");
-//    fprintf(fp,"\tadd\tsp,sp,#8\n");
-//    sp_offset_to_r11=0;
-//    printf("\tldr\tr3,[sp,#-4]\n");
-//    fprintf(fp,"\tldr\tr3,[sp,#-4]\n");
+
     printf("\tadd\tsp,sp,#4\n");
     fprintf(fp,"\tadd\tsp,sp,#4\n");
     printf("\tpop\t{ r3,r12,r14 }\n");
@@ -7342,28 +7332,30 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
     return ins;
 }
 InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
-    memset(return_message,0, sizeof(return_message));
+//    memset(return_message,0, sizeof(return_message));
     int k;
     printf(
-            "\t.align\t2\n"
-            "\t.global\t%s\n"
-            "\t.arch armv7ve\n"
-            "\t.syntax unified\n"
-            "\t.arm\n"
-            "\t.fpu neon-vfpv4\n"
-            "\t.type\t%s, %%function\n"
+//            "\t.align\t2\n"
+            "\n\t.global\t%s\n"
+//            "\t.arch armv7ve\n"
+//            "\t.syntax unified\n"
+//            "\t.arm\n"
+//            "\t.fpu neon-vfpv4\n"
+//            "\t.type\t%s, %%function\n"
             ,user_get_operand_use(&ins->inst->user,0)->Val->name
-            ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+//            ,user_get_operand_use(&ins->inst->user,0)->Val->name
+            );
     fprintf(fp,
-            "\t.align\t2\n"
-            "\t.global\t%s\n"
-            "\t.arch armv7ve\n"
-            "\t.syntax unified\n"
-            "\t.arm\n"
-            "\t.fpu neon-vfpv4\n"
-            "\t.type\t%s, %%function\n"
+//            "\t.align\t2\n"
+            "\n\t.global\t%s\n"
+//            "\t.arch armv7ve\n"
+//            "\t.syntax unified\n"
+//            "\t.arm\n"
+//            "\t.fpu neon-vfpv4\n"
+//            "\t.type\t%s, %%function\n"
             ,user_get_operand_use(&ins->inst->user,0)->Val->name
-            ,user_get_operand_use(&ins->inst->user,0)->Val->name);
+//            ,user_get_operand_use(&ins->inst->user,0)->Val->name
+            );
 
     memset(reg_save,0, sizeof(reg_save));
     memset(vfpreg_save,0, sizeof(vfpreg_save));
@@ -7967,30 +7959,30 @@ InstNode * arm_trans_Return(InstNode *ins,InstNode *head,HashMap*hashMap,int sta
     printf("\tbx\tlr\n");
     fprintf(fp,"\tbx\tlr\n");
 
-//    这里先加入一个固定的文字池
-    char mesg[30];
-    sprintf(mesg,"\tb\t.ROG_%d\n",ltorg_num);
-    strcat(return_message,mesg);
-
-    strcat(return_message,"\t.ltorg\n\t.space 200\n");
-
-    memset(mesg,0, sizeof(mesg));
-    sprintf(mesg,".ROG_%d:\n",ltorg_num);
-    strcat(return_message,mesg);
-    ltorg_num++;
-    char mesg2[1000];
-    sprintf(mesg2,"\t.size\t%s, .-%s\n\n",funcName,funcName);
-    strcat(return_message,mesg2);
+//    这里先加入一个固定的文字池，文字池已经没有用了
+//    char mesg[30];
+//    sprintf(mesg,"\tb\t.ROG_%d\n",ltorg_num);
+//    strcat(return_message,mesg);
+//
+//    strcat(return_message,"\t.ltorg\n\t.space 200\n");
+//
+//    memset(mesg,0, sizeof(mesg));
+//    sprintf(mesg,".ROG_%d:\n",ltorg_num);
+//    strcat(return_message,mesg);
+//    ltorg_num++;
+//    char mesg2[1000];
+//    sprintf(mesg2,"\t.size\t%s, .-%s\n\n",funcName,funcName);
+//    strcat(return_message,mesg2);
 
     return ins;
 }
 InstNode *arm_trans_FuncEnd(InstNode*ins){
 //    Value *value0=&ins->inst->user.value;
-    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
+//    Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
 //    printf("here is FuncEnd\n");
-    printf("%s",return_message);
-    fprintf(fp,"%s",return_message);
-    memset(return_message,0, sizeof(return_message));
+//    printf("%s",return_message);
+//    fprintf(fp,"%s",return_message);
+//    memset(return_message,0, sizeof(return_message));
     return ins;
 }
 InstNode * arm_trans_Alloca(InstNode *ins,HashMap*hashMap){
@@ -8389,146 +8381,24 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             give_param_flag[i]=1;
             i= get_order_param(4);
         }
-//        填充r0
-//        tmp=one_param[0];
-//        int left_reg=tmp->inst->_reg_[1];
-//        int left_reg_abs;
-//        Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
-//
-//        if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
-//            if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
-//                printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-//                fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
-//                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-//                    int_to_float(0,0);
-//                }
-//            } else if(isImmIntType(value1->VTy)&& !imm_is_valid(value1->pdata->var_pdata.iVal)){
-//                handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
-//                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-//                    int_to_float(0,0);
-//                }
-//            } else if(isImmFloatType(value1->VTy)){
-//                handle_illegal_imm1(0,value1->pdata->var_pdata.iVal);
-//
-//                if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-//                    printf("\tvmov\ts0,r0\n");
-//                    fprintf(fp,"\tvmov\ts0,r0\n");
-//                }else if(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
-//                    float_to_int(0,0);
-//                }
-//            }
-//        }
-//
-//        if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
-//            if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-//                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
-//                if(left_reg>=100){
-//                    int x= get_value_offset_sp(hashMap,value1);
-//                    handle_illegal_imm(left_reg,x,1);
-//                    printf("\tmov\tr0,r%d\n",left_reg-100);
-//                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-//                }else{
-//                    printf("\tmov\tr0,r%d\n",left_reg);
-//                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-//                }
-//                if(isLocalVarIntType(value1->VTy)){
-//                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-//                        int_to_float(0,0);
-//                    }
-//                }else if(isLocalVarFloatType(value1->VTy)){
-//                    if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-//                        printf("\tvmov\ts0,r0\n");
-//                        fprintf(fp,"\tvmov\ts0,r0\n");
-//                    }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
-//                        float_to_int(0,0);
-//                    }
-//                }
-//            }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-//                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID!=AddressTyID);
-//                left_reg=tmp->inst->_vfpReg_[1];
-//                if(left_reg>=100){
-//                    int x= get_value_offset_sp(hashMap,value1);
-//                    vfp_handle_illegal_imm(left_reg,x,1);
-//                    left_reg_abs=left_reg-100;
-//                }else{
-//                    left_reg_abs=left_reg;
-//                }
-//                if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_FLOAT){
-//                    printf("\tvmov\ts0,s%d\n",left_reg_abs);
-//                    fprintf(fp,"\tvmov\ts0,s%d\n",left_reg_abs);
-//                    //这里为了和之前的版本匹配，就是即传到si，也传到通用寄存器，因为在自己的函数中，函数开始时是使用通用寄存器来处理的
-//                    printf("\tvmov\tr0,s0\n");
-//                    fprintf(fp,"\tvmov\tr0,s0\n");
-//                }else if(func_param_type!=NULL && func_param_type->pdata->symtab_func_pdata.param_type_lists[0].ID==Var_INT){
-//                    printf("\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
-//                    fprintf(fp,"\tvcvt.s32.f32\ts0,s%d\n",left_reg_abs);
-//                    printf("\tvmov\tr0,s0\n");
-//                    fprintf(fp,"\tvmov\tr0,s0\n");
-//                }
-//            }
-//        }
-//
-//
-//        else if(value1->VTy->ID==AddressTyID){
-//            if(left_reg>=100){
-//                int x= get_value_offset_sp(hashMap,value1);
-//                handle_illegal_imm(left_reg,x,1);
-//
-//                printf("\tmov\tr0,r%d\n",left_reg-100);
-//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
-//            }else{
-//                printf("\tmov\tr0,r%d\n",left_reg);
-//                fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
-//            }
-//        }
     }
-
-
 
     return NULL;
 }
 
 InstNode * arm_trans_ALLBEGIN(InstNode *ins){
-//    int i=ins->inst->i;
-//    printf("**********ALLBEGIN**************\n");
     printf("\t.arch armv7ve\n"
-           //           "\t.eabi_attribute 28, 1\n"
-           //           "\t.eabi_attribute 20, 1\n"
-           //           "\t.eabi_attribute 21, 1\n"
-           //           "\t.eabi_attribute 23, 3\n"
-           //           "\t.eabi_attribute 24, 1\n"
-           //           "\t.eabi_attribute 25, 1\n"
-           //           "\t.eabi_attribute 26, 2\n"
-           //           "\t.eabi_attribute 30, 6\n"
-           //           "\t.eabi_attribute 34, 1\n"
-           //           "\t.eabi_attribute 18, 4\n"
-           //           "\t.file\t\"%s\"\n"
-           "\t.text\n");
+           "\t.text\n"
+           "\t.align\t2\n"
+           "\t.syntax\tunified\n"
+           "\t.arm\n"
+           "\t.fpu\tneon-vfpv4\n");
     fprintf(fp,"\t.arch armv7ve\n"
-               //            "\t.eabi_attribute 28, 1\n"
-               //            "\t.eabi_attribute 20, 1\n"
-               //            "\t.eabi_attribute 21, 1\n"
-               //            "\t.eabi_attribute 23, 3\n"
-               //            "\t.eabi_attribute 24, 1\n"
-               //            "\t.eabi_attribute 25, 1\n"
-               //            "\t.eabi_attribute 26, 2\n"
-               //            "\t.eabi_attribute 30, 6\n"
-               //            "\t.eabi_attribute 34, 1\n"
-               //            "\t.eabi_attribute 18, 4\n"
-               //           "\t.file\t\"%s\"\n"
-               "\t.text\n");
-//    printf("\t.text\n"
-//           "\t.align\t2\n"
-//           "\t.global\tmain\n"
-//           "\t.fpu\tvfp\n"
-//           "\t.type\tmain, %%function\n"
-//           "\t.code\t32\n");
-//    fprintf(fp,"\t.text\n"
-//           "\t.align\t2\n"
-//           "\t.global\tmain\n"
-//           "\t.fpu\tvfp\n"
-//           "\t.type\tmain, %%function\n"
-//           "\t.code\t32\n");
+           "\t.text\n"
+           "\t.align\t2\n"
+           "\t.syntax\tunified\n"
+           "\t.arm\n"
+           "\t.fpu\tneon-vfpv4\n");
     return ins;
 }
 

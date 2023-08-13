@@ -682,7 +682,8 @@ BasicBlock *copy_one_time(Loop* loop, bool mod_flag,BasicBlock* block,HashMap* v
                 //然后other_new_valueMap中%6与它复制的下一条左值%8有了%6----%8对应，进行替换
                 if(currNode->inst->Opcode != Store && currNode->inst->Opcode != GIVE_PARAM && has_dest) {
                     new_dest->alias = v_dest->alias;
-                    new_dest->pdata = v_dest->pdata;
+                    new_dest->pdata->var_pdata.iVal = v_dest->pdata->var_pdata.iVal;
+                    new_dest->pdata->var_pdata.is_offset = v_dest->pdata->var_pdata.is_offset;
                     new_dest->VTy = v_dest->VTy;
 
                     if(HashMapContain(other_new_valueMap,v_dest) && !mod_before)
@@ -932,7 +933,8 @@ BasicBlock *copy_for_mod(Loop* loop, BasicBlock* block, HashMap* v_new_valueMap,
                 //TODO 其他v_new_phiMap的使用
                 if(currNode->inst->Opcode != Store && currNode->inst->Opcode != GIVE_PARAM && has_dest){
                     new_dest->alias = v_dest->alias;
-                    new_dest->pdata = v_dest->pdata;
+                    new_dest->pdata->var_pdata.iVal = v_dest->pdata->var_pdata.iVal;
+                    new_dest->pdata->var_pdata.is_offset = v_dest->pdata->var_pdata.is_offset;
                     new_dest->VTy = v_dest->VTy;
                     if(v_new_phiMap == NULL){
                         if(HashMapContain(other_new_valueMap,v_dest)){
@@ -1281,7 +1283,8 @@ BasicBlock *copy_one_time_icmp(Loop* loop, BasicBlock* block,HashMap* v_new_valu
                 //然后other_new_valueMap中%6与它复制的下一条左值%8有了%6----%8对应，进行替换
                 if (currNode->inst->Opcode != Store && currNode->inst->Opcode != GIVE_PARAM && has_dest) {
                     new_dest->alias = v_dest->alias;
-                    new_dest->pdata = v_dest->pdata;
+                    new_dest->pdata->var_pdata.iVal = v_dest->pdata->var_pdata.iVal;
+                    new_dest->pdata->var_pdata.is_offset = v_dest->pdata->var_pdata.is_offset;
                     new_dest->VTy = v_dest->VTy;
                     if (HashMapContain(other_new_valueMap, v_dest) && !mod_before)
                         update_replace_value(v_new_valueMap, HashMapGet(other_new_valueMap, v_dest), new_dest);

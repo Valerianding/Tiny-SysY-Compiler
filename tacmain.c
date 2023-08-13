@@ -67,8 +67,6 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-
-
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -280,14 +278,15 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],0);
 
 
-
+//    图着色
+    reg_alloca_(start);
 //    线性扫描
     line_scan(instruction_list,start);
+//    printf_llvm_ir(instruction_list,argv[4],0);
 //
 
 //    gcp_allocate(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
-//    reg_alloca_(start);
 
     arm_open_file(argv[3]);
     arm_translate_ins(instruction_list,argv[3]);
