@@ -55,10 +55,10 @@ bool value_type(Value* uvalue){
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
         return false;
     }
-    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
-       isGlobalVarIntType(uvalue->VTy)){
-        return false;
-    }
+//    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
+//       isGlobalVarIntType(uvalue->VTy)){
+//        return false;
+//    }
     if(isLocalArrayFloatType(uvalue->VTy) || isLocalArrayIntType(uvalue->VTy)){
         return false;
     }
@@ -211,10 +211,10 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy) || isLocalVarFloat(uvalue)){
         return;
     }
-    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
-       isGlobalVarIntType(uvalue->VTy)){
-        return;
-    }
+//    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
+//       isGlobalVarIntType(uvalue->VTy)){
+//        return;
+//    }
     if(isLocalArrayFloatType(uvalue->VTy) || isLocalArrayIntType(uvalue->VTy)){
         return;
     }
@@ -232,7 +232,9 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
         HashSetAdd(live,uvalue);
 
         //如果是参数，要马上与目前的live建立冲突关系, 因为没有def
-        if(get_name_index(node->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num){
+        //8.13 全局变量也分配寄存器的话, 全局变量也没有def
+        if(get_name_index(node->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num ||
+                isGlobalType(uvalue->VTy)){
             HashSetFirst(live);
             for(Value * v = HashSetNext(live); v!=NULL; v = HashSetNext(live)){
                 Node *n = get_Node_with_value(v);
@@ -647,6 +649,11 @@ void freezeMoves(Node* node){
     }
 }
 
+//启发式溢出结点
+double heuristicVal(Node* node){
+    return (node->degree << 10) / pow(_HEURISTIC_BASE,node->loopCounter);
+}
+
 //冻结的启发式函数
 double customHeuristic(Node* node) {
     int usage = 0;
@@ -685,11 +692,6 @@ void freeze(){
     HashSetRemove(freezeWorklist,node);
     HashSetAdd(simplifyWorklist,node);
     freezeMoves(node);
-}
-
-//启发式溢出结点
-double heuristicVal(Node* node){
-    return (node->degree << 10) / pow(_HEURISTIC_BASE,node->loopCounter);
 }
 
 HashMap *cal_interval_len(PriorityQueue* queue){
@@ -944,13 +946,13 @@ void labelRegister(Function* func){
                 cur_node->inst->_reg_[0] = reg;
             }
         }
-        if(cur_node->inst->_reg_[1] == 0 && vl!=NULL && vl->name!=NULL && !isLocalVarFloat(vl) && vl->VTy->ID!=Int && vl->VTy->ID!=Float && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
+        if(cur_node->inst->_reg_[1] == 0 && vl!=NULL && vl->name!=NULL && !isLocalVarFloat(vl) && vl->VTy->ID!=Int && vl->VTy->ID!=Float &&  cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
                 value_type(vl)){
             int reg ;
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(vl)))->reg;
             cur_node->inst->_reg_[1] = reg;
         }
-        if(cur_node->inst->_reg_[2] == 0 && vr!=NULL && vr->name!=NULL && !isLocalVarFloat(vr) && vr->VTy->ID!=Int && vr->VTy->ID!=Float && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
+        if(cur_node->inst->_reg_[2] == 0 && vr!=NULL && vr->name!=NULL && !isLocalVarFloat(vr) && vr->VTy->ID!=Int && vr->VTy->ID!=Float &&  !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
                 value_type(vr)){
             int reg;
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(vr)))->reg;
