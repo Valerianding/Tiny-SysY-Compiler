@@ -90,7 +90,9 @@ Node *spill_contain_node(Value* value){
 //寻找当前nodeSet有没有对应Value的Node,如果有则返回，没有则新建
 Node *get_Node_with_value(Value* value){
     //应该走不到这里来吧
-    assert(!isLocalVarFloat(value));
+//    assert(!isLocalVarFloat(value));
+//    assert(!isImmFloatType(value->VTy));
+//    assert(!isImmIntType(value->VTy));
 
     HashSetFirst(nodeSet);
     for(Node* node = HashSetNext(nodeSet);node!=NULL; node = HashSetNext(nodeSet)){
@@ -358,8 +360,10 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
         case sitofp:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            if(value0->name!=NULL && value1->name!=NULL){
+                handle_def_(live,value0,loopDepth);
+                handle_use_(live,value1,loopDepth,cur_block->Parent);
+            }
             break;
         default:
             break;
@@ -896,7 +900,7 @@ void rewriteLabel(Function* func){
         v= ins_get_dest(cur_node->inst);
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
-        if(v!=NULL && !isLocalVarFloat(v) && (cur_node->inst->Opcode!=CopyOperation || (cur_node->inst->Opcode == CopyOperation && !isLocalVarFloat(v->alias)))) {
+        if(v!=NULL && !isLocalVarFloat(v)  && (cur_node->inst->Opcode!=CopyOperation || (cur_node->inst->Opcode == CopyOperation && !isLocalVarFloat(v->alias)))) {
             if(HashSetFind(spilledNodes, get_Node_with_value(v)) || (cur_node->inst->Opcode == CopyOperation &&
                     HashSetFind(spilledNodes, get_Node_with_value(v->alias)))){
                 cur_node->inst->_reg_[0] = -1;
@@ -935,7 +939,7 @@ void labelRegister(Function* func){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v->alias)))->reg;
                 cur_node->inst->_reg_[0] = reg;
             }
-            else if(!isLocalVarFloat(v)){
+            else if(cur_node->inst->Opcode != CopyOperation && !isLocalVarFloat(v)){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v)))->reg;
                 cur_node->inst->_reg_[0] = reg;
             }
