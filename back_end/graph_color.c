@@ -191,7 +191,7 @@ void addEdge(Node* u, Node* v){
     }
 }
 
-void handle_def_(HashSet* live, Value* def, int loopDepth){
+void handle_def_(HashSet* live, Value* def, int loopDepth,InstNode* cur_node){
     if(check_spilled(def) || isLocalVarFloat(def))
         return;
 
@@ -199,7 +199,8 @@ void handle_def_(HashSet* live, Value* def, int loopDepth){
         return;
 
     //如果是无用左值，不加入
-    if(def->use_list == NULL)
+    ///要把copyOperation排除
+    if(def->use_list == NULL && cur_node->inst->Opcode!= CopyOperation)
         return;
 
     Node *node = get_Node_with_value(def);
@@ -220,7 +221,7 @@ void handle_def_(HashSet* live, Value* def, int loopDepth){
     HashSetRemove(live, def);
 }
 
-void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func,InstNode* cur_node){
+void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
 
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy) || isLocalVarFloat(uvalue)){
         return;
@@ -251,17 +252,6 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func,I
                 isGlobalType(uvalue->VTy)){
             HashSetFirst(live);
             for(Value * v = HashSetNext(live); v!=NULL; v = HashSetNext(live)){
-                Node *n = get_Node_with_value(v);
-
-                addEdge(node,n);
-            }
-        }
-
-        //如果是全局变量分配寄存器, 且并不是该全局变量在本函数中最后一次使用, 不仅需要与当前live建立冲突关系, 还需要和所有这个基本块的live建立冲突关系
-        value_live_range *range = HashMapGet(intervalMap, uvalue);
-        if(isGlobalType(uvalue->VTy) && range->end != cur_node->inst->i){
-            HashSetFirst(cur_node->inst->Parent->out);
-            for(Value * v = HashSetNext(cur_node->inst->Parent->out); v!=NULL; v = HashSetNext(cur_node->inst->Parent->out)){
                 Node *n = get_Node_with_value(v);
 
                 addEdge(node,n);
@@ -306,38 +296,38 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
-            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
+            handle_def_(live,value0,loopDepth,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case Call:
             if(!returnValueNotUsed(ins)){
                 value0=&ins->inst->user.value;
-                handle_def_(live,value0,loopDepth);
+                handle_def_(live,value0,loopDepth,ins);
             }
             break;
         case Return:
             opNum=ins->inst->user.value.NumUserOperands;
             if(opNum!=0){
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
-                handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+                handle_use_(live,value1,loopDepth,cur_block->Parent);
             }
             break;
         case Store:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
-            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case Load:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_def_(live,value0,loopDepth,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case GIVE_PARAM:
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case LESS:
         case GREAT:
@@ -348,15 +338,15 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
-            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
+            handle_def_(live,value0,loopDepth,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case br_i1:
             //各个out变量之间需要建边
             addEdge_within_live(live);
             value1=user_get_operand_use(&ins->inst->user,0)->Val; //真值
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case br:
         case FunEnd:
@@ -368,33 +358,33 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
         case XOR:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_def_(live,value0,loopDepth,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case GEP:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_def_(live,value0,loopDepth);
+            handle_def_(live,value0,loopDepth,ins);
             //TODO address处理
             if(isGlobalArray(value1) || isAddress(value1)){
-                handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+                handle_use_(live,value1,loopDepth,cur_block->Parent);
             }
-            handle_use_(live,value2,loopDepth,cur_block->Parent,ins);
+            handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case CopyOperation:
             value0=ins->inst->user.value.alias;
             value1= user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+            handle_def_(live,value0,loopDepth,ins);
+            handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case fptosi:
         case sitofp:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             if(value0->name!=NULL && value1->name!=NULL){
-                handle_def_(live,value0,loopDepth);
-                handle_use_(live,value1,loopDepth,cur_block->Parent,ins);
+                handle_def_(live,value0,loopDepth,ins);
+                handle_use_(live,value1,loopDepth,cur_block->Parent);
             }
             break;
         default:
@@ -762,7 +752,7 @@ void selectSpill(Function* cur_func){
 //    if(n->type == Virtual) {
     if(n->type == USUAL) {
         int *len = HashMapGet(lenMap,n);
-        //TODO 感觉有点问题
+        //如果全局能不溢出尽量不溢出, 可能有点问题
         if(*len<5)
             max = 0;
     }
@@ -966,13 +956,13 @@ void labelRegister(Function* func){
         vl= ins_get_lhs(cur_node->inst);
         vr= ins_get_rhs(cur_node->inst);
 
-        if(cur_node->inst->_reg_[0] == 0 && v!=NULL && v->name!=NULL && v->use_list && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))){
+        if(cur_node->inst->_reg_[0] == 0 && v!=NULL && v->name!=NULL && !type_alloca(cur_node->inst->Opcode) && (cur_node->inst->Opcode!=Call || (cur_node->inst->Opcode == Call && !returnValueNotUsed(cur_node)))){
             int reg ;
             if(cur_node->inst->Opcode == CopyOperation && !isLocalVarFloat(v->alias)){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v->alias)))->reg;
                 cur_node->inst->_reg_[0] = reg;
             }
-            else if(cur_node->inst->Opcode != CopyOperation && !isLocalVarFloat(v)){
+            else if(cur_node->inst->Opcode != CopyOperation && !isLocalVarFloat(v) && v->use_list){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v)))->reg;
                 cur_node->inst->_reg_[0] = reg;
             }
