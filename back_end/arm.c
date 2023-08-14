@@ -8438,13 +8438,13 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 InstNode * arm_trans_ALLBEGIN(InstNode *ins){
     printf("\t.arch armv7ve\n"
            "\t.text\n"
-           "\t.align\t2\n"
+//           "\t.align\t2\n"
            "\t.syntax\tunified\n"
            "\t.arm\n"
            "\t.fpu\tneon-vfpv4\n");
     fprintf(fp,"\t.arch armv7ve\n"
            "\t.text\n"
-           "\t.align\t2\n"
+//           "\t.align\t2\n"
            "\t.syntax\tunified\n"
            "\t.arm\n"
            "\t.fpu\tneon-vfpv4\n");
@@ -10029,7 +10029,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
             if(value1->pdata->symtab_array_pdata.is_init==1){
 //                这里处理的是已经初始化了的全局数组
                 char name[270];
-                sprintf(name,"\t.data\n%s:",value1->name+1);
+                sprintf(name,"\t.data\n\t.align\t4\n%s:",value1->name+1);
                 strcat(globalvar_message,name);
                 int zero_count=0;
                 for(int i=0;i<arr_num;i++){
@@ -10069,7 +10069,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
             }else{
 //                这里处理的是未初始化的全局数组
                 char name[270];
-                sprintf(name,"\t.bss\n%s:",value1->name+1);
+                sprintf(name,"\t.bss\n\t.align\t4\n%s:",value1->name+1);
                 strcat(globalvar_message,name);
                 strcat(globalvar_message,"\n\t.zero\t");
                 char value_int[12];
@@ -10084,7 +10084,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
             if(value1->pdata->symtab_array_pdata.is_init==1){
 //                这里处理的是已经初始化了的全局数组
                 char name[270];
-                sprintf(name,"\t.data\n%s:",value1->name+1);
+                sprintf(name,"\t.data\n\t.align\t4\n%s:",value1->name+1);
                 strcat(globalvar_message,name);
                 int zero_count=0;
                 for(int i=0;i<arr_num;i++){
@@ -10122,7 +10122,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
             }else{
 //                这里处理的是未初始化的全局数组
                 char name[270];
-                sprintf(name,"\t.bss\n%s:",value1->name+1);
+                sprintf(name,"\t.bss\n\t.align\t4\n%s:",value1->name+1);
                 strcat(globalvar_message,name);
                 strcat(globalvar_message,"\n\t.zero\t");
                 char value_int[12];
@@ -10136,7 +10136,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
     }
     if(isGlobalVarIntType(value1->VTy)){
         char name[270];
-        sprintf(name,"\t.data\n%s:",value1->name+1);
+        sprintf(name,"\t.data\n\t.align\t4\n%s:",value1->name+1);
         strcat(globalvar_message,name);
         strcat(globalvar_message,"\n\t.long\t");
         char value_int[12];
@@ -10146,7 +10146,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 
     } else if(isGlobalVarFloatType(value1->VTy)){
         char name[270];
-        sprintf(name,"\t.data\n%s:",value1->name+1);
+        sprintf(name,"\t.data\n\t.align\t4\n%s:",value1->name+1);
         strcat(globalvar_message,name);
         strcat(globalvar_message,"\n\t.long\t");
 //        这里直接使用IEEE754格式的值就可以，不需要使用16进制
