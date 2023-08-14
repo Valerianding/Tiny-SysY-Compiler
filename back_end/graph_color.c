@@ -671,7 +671,10 @@ void freezeMoves(Node* node){
 
 //启发式溢出结点
 double heuristicVal(Node* node){
-    return (node->degree << 10) / pow(_HEURISTIC_BASE,node->loopCounter);
+    double num = (node->degree << 10) / pow(_HEURISTIC_BASE,node->loopCounter);
+    if(isGlobalType(node->value->VTy))
+        num = num * 1.52;
+    return num;
 }
 
 //冻结的启发式函数
