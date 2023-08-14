@@ -38,8 +38,10 @@ extern InstNode *one_param[];
 extern InstNode *params[];
 extern HashMap *global_hashmap;
 int give_count=0;
-
-int globalvar_num;
+//定义的全局变量个数，包括var和array
+int globalvar_num=0;
+int globalVarStackStart=0;
+HashSet *globalVarAddress;
 //定义数据段的全局变量的信息
 char globalvar_message[100000];
 
@@ -134,6 +136,40 @@ void handle_VFPlineScan_extra_reg(InstNode*ins,int param_num){
                 vfp_handle_illegal_imm(r->sreg+100,node->offset_sp,1);
             }
         }
+    }
+}
+void handle_global_var_address(HashMap *hashMap,InstNode*ins){
+    void *elem;
+    Function *curFunction=ins->inst->Parent->Parent;
+    Pair *ptr_pair;
+    HashMapFirst(curFunction->lineScanReg);
+    while ((ptr_pair= HashMapNext(curFunction->lineScanReg))!=NULL){
+        Value *value=(Value*)ptr_pair->key;
+        value_register *r=(value_register*)ptr_pair->value;
+        if(value->name!=NULL && value->name[0]=='@'){ //全局变量
+            HashSetRemove(globalVarAddress,value);
+            assert(!HashSetFind(globalVarAddress,value));
+            printf("\tmovw\tr%d,#:lower16:%s\n",r->reg,value->name+1);
+            fprintf(fp,"\tmovw\tr%d,#:lower16:%s\n",r->reg,value->name+1);
+            printf("\tmovt\tr%d,#:upper16:%s\n",r->reg,value->name+1);
+            fprintf(fp,"\tmovt\tr%d,#:upper16:%s\n",r->reg,value->name+1);
+        }
+    }
+
+    HashSetFirst(globalVarAddress);
+    while ((elem= HashSetNext(globalVarAddress))!=NULL){
+        Value *value=(Value*)elem;
+        assert(value->name!=NULL);
+        printf("\tmovw\tr0,#:lower16:%s\n",value->name+1);
+        fprintf(fp,"\tmovw\tr0,#:lower16:%s\n",value->name+1);
+        printf("\tmovt\tr0,#:upper16:%s\n",value->name+1);
+        fprintf(fp,"\tmovt\tr0,#:upper16:%s\n",value->name+1);
+        printf("\tstr\tr0,[sp,#%d]\n",globalVarStackStart);
+        fprintf(fp,"\tstr\tr0,[sp,#%d]\n",globalVarStackStart);
+        offset *node=offset_node();
+        node->offset_sp=globalVarStackStart;
+        HashMapPut(hashMap,value,node);
+        globalVarStackStart+=4;
     }
 }
 //eabi不会保存r12
@@ -893,6 +929,10 @@ void FuncBegin_hashmap_add(HashMap*hashMap,Value *value,char *name,int *local_st
             HashMapPut(hashMap,value,node);
         }
     }
+
+    if(value->name!=NULL && value->name[0]=='@'){
+        HashSetAdd(globalVarAddress,value);
+    }
     return;
 }
 void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack){
@@ -977,6 +1017,7 @@ void usage_of_global_variables(){
 }
 void arm_translate_ins(InstNode *ins,char argv[]){
 //    global_hashmap=HashMapInit();
+    globalVarAddress=HashSetInit();
     char new_ext[] = ".c";
     char *dot_ptr = strrchr(argv, '.');
     if(dot_ptr) {
@@ -1001,6 +1042,8 @@ void arm_translate_ins(InstNode *ins,char argv[]){
             stm_num=0;
             global_hashmap=HashMapInit();
             lineScan_param=HashMapInit();
+            globalVarStackStart=0;
+            globalVarAddress=HashSetInit();
             stack_size=0;
             func_call_func=1; //现在必须保存lr
             ins= arm_trans_FunBegin(ins,&stack_size);
@@ -1024,7 +1067,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
                 }
             }
             hashMap=offset_init(ins,&local_var_num,k,lineScan_param);
-
+            handle_global_var_address(hashMap,ins);
 //            如果使用了线性扫描，需要处理多余的寄存器,将多余的寄存器提前加载到给对应参数分配的寄存器中
             if(lineScan==1){
                 handle_lineScan_extra_reg(ins,param_num);
@@ -1042,6 +1085,7 @@ void arm_translate_ins(InstNode *ins,char argv[]){
 //            usage_of_global_variables();
             HashMapDeinit(global_hashmap);
             HashMapDeinit(lineScan_param);
+            HashSetDeinit(globalVarAddress);
             global_hashmap=NULL;
             hashMap=NULL;
         }
@@ -7687,7 +7731,9 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
             }
         }
     }
-
+    local_stack+=4;
+    globalVarStackStart=local_stack;
+    local_stack+=(globalvar_num*4);
     if((local_stack%8)!=0){
         local_stack+=4;
     }
@@ -8073,9 +8119,9 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
-                            handle_illegal_imm(left_reg,x,1);
-                            printf("\tmov\tr%d,r%d\n",i,left_reg-100);
-                            fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+                            handle_illegal_imm(i+100,x,1);
+//                            printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+//                            fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
                         }else{
                             printf("\tmov\tr%d,r%d\n",i,left_reg);
                             fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
@@ -8120,10 +8166,10 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 else if(value1->VTy->ID==AddressTyID){
                     if(left_reg>=100){
                         int x= get_value_offset_sp(hashMap,value1);
-                        handle_illegal_imm(left_reg,x,1);
-
-                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
-                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+                        handle_illegal_imm(i+100,x,1);
+//
+//                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+//                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
                     }else{
                         printf("\tmov\tr%d,r%d\n",i,left_reg);
                         fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
@@ -8148,10 +8194,13 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     }
                 }
                 else if(isGlobalArrayIntType(value1->VTy) || isGlobalArrayFloatType(value1->VTy)){
-                    printf("\tmovw\tr%d,#:lower16:%s\n",i,value1->name+1);
-                    fprintf(fp,"\tmovw\tr%d,#:lower16:%s\n",i,value1->name+1);
-                    printf("\tmovt\tr%d,#:upper16:%s\n",i,value1->name+1);
-                    fprintf(fp,"\tmovt\tr%d,#:upper16:%s\n",i,value1->name+1);
+                    if(left_reg>=100){
+                        int x= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(i+100,x,1);
+                    }else{
+                        printf("\tmov\tr%d,r%d\n",i,left_reg);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
+                    }
                 }
                 else{
                     assert(false);
@@ -8203,9 +8252,9 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID!=AddressTyID);
                     if(left_reg>=100){
                         int x= get_value_offset_sp(hashMap,value1);
-                        handle_illegal_imm(left_reg,x,1);
-                        printf("\tmov\tr0,r%d\n",left_reg-100);
-                        fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+                        handle_illegal_imm(100,x,1);
+//                        printf("\tmov\tr0,r%d\n",left_reg-100);
+//                        fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
                     }else{
                         printf("\tmov\tr0,r%d\n",left_reg);
                         fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
@@ -8258,10 +8307,10 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             else if(value1->VTy->ID==AddressTyID){
                 if(left_reg>=100){
                     int x= get_value_offset_sp(hashMap,value1);
-                    handle_illegal_imm(left_reg,x,1);
+                    handle_illegal_imm(100,x,1);
 
-                    printf("\tmov\tr0,r%d\n",left_reg-100);
-                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
+//                    printf("\tmov\tr0,r%d\n",left_reg-100);
+//                    fprintf(fp,"\tmov\tr0,r%d\n",left_reg-100);
                 }else{
                     printf("\tmov\tr0,r%d\n",left_reg);
                     fprintf(fp,"\tmov\tr0,r%d\n",left_reg);
@@ -8321,9 +8370,9 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
-                            handle_illegal_imm(left_reg,x,1);
-                            printf("\tmov\tr%d,r%d\n",i,left_reg-100);
-                            fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+                            handle_illegal_imm(i+100,x,1);
+//                            printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+//                            fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
                         }else{
                             printf("\tmov\tr%d,r%d\n",i,left_reg);
                             fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
@@ -8368,10 +8417,10 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                 else if(value1->VTy->ID==AddressTyID){
                     if(left_reg>=100){
                         int x= get_value_offset_sp(hashMap,value1);
-                        handle_illegal_imm(left_reg,x,1);
+                        handle_illegal_imm(i+100,x,1);
 
-                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
-                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
+//                        printf("\tmov\tr%d,r%d\n",i,left_reg-100);
+//                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg-100);
                     }else{
                         printf("\tmov\tr%d,r%d\n",i,left_reg);
                         fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
@@ -9605,22 +9654,26 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //            }
 //            printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
 //            fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-            printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-            fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-            printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-            fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            if(left_reg>=100){
+                int y= get_value_offset_sp(hashMap,value1);
+                handle_illegal_imm(left_reg,y,1);
+                left_reg_abs=left_reg-100;
+                watchReg.generalReg[1]=1;
+            }else{
+                left_reg_abs=left_reg;
+            }
             if(imm_is_valid(x)){
                 if(x!=0){
-                    printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
-                    fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,x);
+                    printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,x);
+                    fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,x);
                 }else{
-                    printf("\tmov\tr%d,r1\n",dest_reg_abs);
-                    fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+                    printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
+                    fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
                 }
             }else{
                 handle_illegal_imm1(0,x);
-                printf("\tadd\tr%d,r1,r0\n",dest_reg_abs);
-                fprintf(fp,"\tadd\tr%d,r1,r0\n",dest_reg_abs);
+                printf("\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg_abs);
+                fprintf(fp,"\tadd\tr%d,r%d,r0\n",dest_reg_abs,left_reg_abs);
             }
             if(dest_reg_abs==1){
                 watchReg.generalReg[1]=1;
@@ -9645,20 +9698,23 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //                }
 //                printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
 //                fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-                printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-                fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-                printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-                fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-                watchReg.generalReg[1]=1;
+                if(left_reg>=100){
+                    int y= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,y,1);
+                    left_reg_abs=left_reg-100;
+                    watchReg.generalReg[1]=1;
+                }else{
+                    left_reg_abs=left_reg;
+                }
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 if(imm_is_valid(y)){
                     if(y!=0){
-                        printf("\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
-                        fprintf(fp,"\tadd\tr%d,r1,#%d\n",dest_reg_abs,y);
+                        printf("\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
+                        fprintf(fp,"\tadd\tr%d,r%d,#%d\n",dest_reg_abs,left_reg_abs,y);
                     }else{
-                        printf("\tmov\tr%d,r1\n",dest_reg_abs);
-                        fprintf(fp,"\tmov\tr%d,r1\n",dest_reg_abs);
+                        printf("\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
+                        fprintf(fp,"\tmov\tr%d,r%d\n",dest_reg_abs,left_reg_abs);
                     }
 
                 }else{
@@ -9666,53 +9722,51 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                     watchReg.generalReg[2]=1;
                     printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
                     fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
-
                 }
             } else{
-
-                if(left_reg==0){
-                    int x;
+                int x;
 //                    LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
 //                    if(lcptLabel==NULL){
 //                        printf("GEP Global error\n");
 //                    }
 //                    printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
 //                    fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-                    printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-                    fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-                    printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-                    fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                if(left_reg>=100){
+                    int y= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,y,1);
+                    left_reg_abs=left_reg-100;
                     watchReg.generalReg[1]=1;
-                    if(power_of_two(result)==-1){
-                        if(imm_is_valid(result)){
-                            printf("\tmov\tr2,#%d\n",result);
-                            fprintf(fp,"\tmov\tr2,#%d\n",result);
-                        }else{
-                            handle_illegal_imm1(2,result);
-                        }
-                        watchReg.generalReg[2]=1;
-                        if(right_reg>=100){
-                            int x2= get_value_offset_sp(hashMap,value2);
-                            handle_illegal_imm(right_reg,x2,2);
-                            printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
-                            fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg-100);
-                        }else{
-                            printf("\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                            fprintf(fp,"\tmla\tr%d,r%d,r2,r1\n",dest_reg_abs,right_reg);
-                        }
+                }else{
+                    left_reg_abs=left_reg;
+                }
+                if(power_of_two(result)==-1){
+                    if(imm_is_valid(result)){
+                        printf("\tmov\tr2,#%d\n",result);
+                        fprintf(fp,"\tmov\tr2,#%d\n",result);
                     }else{
-                        int n= power_of_two(result);
-                        if(right_reg>=100){
-                            int x2= get_value_offset_sp(hashMap,value2);
-                            handle_illegal_imm(right_reg,x2,2);
-                            printf("\tadd\tr%d,r1,r%d,lsl %d\n",dest_reg_abs,right_reg-100,n);
-                            fprintf(fp,"\tadd\tr%d,r1,r%d,lsl %d\n",dest_reg_abs,right_reg-100,n);
-                        }else{
-                            printf("\tadd\tr%d,r1,r%d,lsl %d\n",dest_reg_abs,right_reg,n);
-                            fprintf(fp,"\tadd\tr%d,r1,r%d,lsl %d\n",dest_reg_abs,right_reg,n);
-                        }
+                        handle_illegal_imm1(2,result);
                     }
-
+                    watchReg.generalReg[2]=1;
+                    if(right_reg>=100){
+                        int x2= get_value_offset_sp(hashMap,value2);
+                        handle_illegal_imm(right_reg,x2,2);
+                        printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg_abs);
+                        fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg-100,left_reg_abs);
+                    }else{
+                        printf("\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg_abs);
+                        fprintf(fp,"\tmla\tr%d,r%d,r2,r%d\n",dest_reg_abs,right_reg,left_reg_abs);
+                    }
+                }else{
+                    int n= power_of_two(result);
+                    if(right_reg>=100){
+                        int x2= get_value_offset_sp(hashMap,value2);
+                        handle_illegal_imm(right_reg,x2,2);
+                        printf("\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg_abs,right_reg-100,n);
+                        fprintf(fp,"\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg_abs,right_reg-100,n);
+                    }else{
+                        printf("\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg_abs,right_reg,n);
+                        fprintf(fp,"\tadd\tr%d,r%d,r%d,lsl %d\n",dest_reg_abs,left_reg_abs,right_reg,n);
+                    }
                 }
             }
             if(dest_reg_abs==1){
@@ -10105,7 +10159,8 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
         strcat(globalvar_message,"\n");
 
     }
-
+    globalvar_num++;
+    HashSetAdd(globalVarAddress,value0);
 //    printf("arm_trans_GLOBAL_VAR\n");
     return ins;
 }
@@ -10195,6 +10250,8 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
     Value *value2=user_get_operand_use(&ins->inst->user,1)->Val;
     int left_reg=ins->inst->_reg_[1];//需要存的值，能是变量，也可能是立即数
     int right_reg=ins->inst->_reg_[2];
+    int left_reg_abs;
+    int right_reg_abs;
     assert(value2->alias!=NULL);
 //    表示将某个值存放到数组中，这个数组可能是全局数组也可能是局部数组，这个数组给定直接就是绝对地址
     if(value2->VTy->ID==AddressTyID){
@@ -10377,34 +10434,26 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 //  表示将一个值存放到全局变量中
     int left_int_float=-1;
     if(isGlobalVarIntType(value1->VTy)){
-//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-//        if(lcptLabel==NULL){
-//            printf("HashMapGet(global_hashmap,value1); error\n");
-////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-//        }
-//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-        printf("\tldr\tr1,[r1]\n");
-        fprintf(fp,"\tldr\tr1,[r1]\n");
+        if(left_reg>=100){
+            int y= get_value_offset_sp(hashMap,value1);
+            handle_illegal_imm(101,y,1);
+            left_reg_abs=1;
+        }else{
+            left_reg_abs=left_reg;
+        }
+        printf("\tldr\tr1,[r%d]\n",left_reg_abs);
+        fprintf(fp,"\tldr\tr1,[r%d]\n",left_reg_abs);
         left_int_float=0;
     } else if(isGlobalVarFloatType(value1->VTy)){
-//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value1);
-//        if(lcptLabel==NULL){
-//            printf("HashMapGet(global_hashmap,value1); error\n");
-////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-//        }
-//        printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-//        fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-        printf("\tldr\tr1,[r1]\n");
-        fprintf(fp,"\tldr\tr1,[r1]\n");
+        if(left_reg>=100){
+            int y= get_value_offset_sp(hashMap,value1);
+            handle_illegal_imm(101,y,1);
+            left_reg_abs=1;
+        }else{
+            left_reg_abs=left_reg;
+        }
+        printf("\tldr\tr1,[r%d]\n",left_reg_abs);
+        fprintf(fp,"\tldr\tr1,[r%d]\n",left_reg_abs);
         left_int_float=1;
     }else if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
         printf("\tmov\tr1,#%d\n",value1->pdata->var_pdata.iVal);
@@ -10461,20 +10510,16 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 
 //    value2
     if(isGlobalVarIntType(value2->VTy)){
-//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
-//        if(lcptLabel==NULL){
-//            printf("HashMapGet(global_hashmap,value1); error\n");
-////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-//        }
-//        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
-//        fprintf(fp,"\tldr\tr2,%s\n",lcptLabel->LCPI);
-        printf("\tmovw\tr2,#:lower16:%s\n",value2->name+1);
-        fprintf(fp,"\tmovw\tr2,#:lower16:%s\n",value2->name+1);
-        printf("\tmovt\tr2,#:upper16:%s\n",value2->name+1);
-        fprintf(fp,"\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+        if(right_reg>=100){
+            int y= get_value_offset_sp(hashMap,value2);
+            handle_illegal_imm(102,y,2);
+            right_reg_abs=2;
+        }else{
+            right_reg_abs=right_reg;
+        }
         if(left_int_float==0){
-            printf("\tstr\tr1,[r2]\n");
-            fprintf(fp,"\tstr\tr1,[r2]\n");
+            printf("\tstr\tr1,[r%d]\n",right_reg_abs);
+            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_abs);
         }else{
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
@@ -10482,25 +10527,21 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             fprintf(fp,"\tvcvt.s32.f32\ts1,s1\n");
             printf("\tvmov\tr1,s1\n");
             fprintf(fp,"\tvmov\tr1,s1\n");
-            printf("\tstr\tr1,[r2]\n");
-            fprintf(fp,"\tstr\tr1,[r2]\n");
+            printf("\tstr\tr1,[r%d]\n",right_reg_abs);
+            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_abs);
         }
 
     } else if(isGlobalVarFloatType(value2->VTy)){
-//        LCPTLabel *lcptLabel=(LCPTLabel*)HashMapGet(global_hashmap,value2);
-//        if(lcptLabel==NULL){
-//            printf("HashMapGet(global_hashmap,value1); error\n");
-////            fprintf(fp,"HashMapGet(global_hashmap,value1); error\n");
-//        }
-//        printf("\tldr\tr2,%s\n",lcptLabel->LCPI);
-//        fprintf(fp,"\tldr\tr2,%s\n",lcptLabel->LCPI);
-        printf("\tmovw\tr2,#:lower16:%s\n",value2->name+1);
-        fprintf(fp,"\tmovw\tr2,#:lower16:%s\n",value2->name+1);
-        printf("\tmovt\tr2,#:upper16:%s\n",value2->name+1);
-        fprintf(fp,"\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+        if(right_reg>=100){
+            int y= get_value_offset_sp(hashMap,value2);
+            handle_illegal_imm(102,y,2);
+            right_reg_abs=2;
+        }else{
+            right_reg_abs=right_reg;
+        }
         if(left_int_float==1){
-            printf("\tstr\tr1,[r2]\n");
-            fprintf(fp,"\tstr\tr1,[r2]\n");
+            printf("\tstr\tr1,[r%d]\n",right_reg_abs);
+            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_abs);
         }else{
             printf("\tvmov\ts1,r1\n");
             fprintf(fp,"\tvmov\ts1,r1\n");
@@ -10508,8 +10549,8 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
             fprintf(fp,"\tvcvt.f32.s32\ts1,s1\n");
             printf("\tvmov\tr1,s1\n");
             fprintf(fp,"\tvmov\tr1,s1\n");
-            printf("\tstr\tr1,[r2]\n");
-            fprintf(fp,"\tstr\tr1,[r2]\n");
+            printf("\tstr\tr1,[r%d]\n",right_reg_abs);
+            fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_abs);
         }
 
     }
@@ -10531,6 +10572,7 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
     int dest_reg=ins->inst->_reg_[0];
     int dest_reg_abs=abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
+    int left_reg_abs;
     assert(value1->alias!=NULL);
     if(value1->VTy->ID==AddressTyID){
 //        这个是跟store差不多的，处理局部数组的和全局数组load问题
@@ -10640,45 +10682,51 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
 //    处理普通全局变量,处理全局变量的类型问题先不改,默认value1和value0是同一种类型的type，如同为int或者说是同为float
     if(isGlobalVarIntType(value1->VTy)){
 
-        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+        if(left_reg>=100){
+            int y= get_value_offset_sp(hashMap,value1);
+            handle_illegal_imm(left_reg,y,1);
+            left_reg_abs=left_reg-100;
+        }else{
+            left_reg_abs=left_reg;
+        }
         if(dest_reg<0){
-            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
-            fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
+            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
+            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
             int x= get_value_offset_sp(hashMap,value0);
             handle_illegal_imm(dest_reg_abs,x,0);
         }else{
-            printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
-            fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
+            printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
+            fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
         }
     } else if(isGlobalVarFloatType(value1->VTy)){
-        printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
-        printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
-        fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+        if(left_reg>=100){
+            int y= get_value_offset_sp(hashMap,value1);
+            handle_illegal_imm(left_reg,y,1);
+            left_reg_abs=left_reg-100;
+        }else{
+            left_reg_abs=left_reg;
+        }
         if(ARM_enable_vfp==1){
             dest_reg=ins->inst->_vfpReg_[0];
             dest_reg_abs=abs(dest_reg);
             if(dest_reg<0){
-                printf("\tvldr\ts%d,[r1,#0]\n",dest_reg_abs);
-                fprintf(fp,"\tvldr\ts%d,[r1,#0]\n",dest_reg_abs);
+                printf("\tvldr\ts%d,[r%d,#0]\n",dest_reg_abs,left_reg_abs);
+                fprintf(fp,"\tvldr\ts%d,[r%d,#0]\n",dest_reg_abs,left_reg_abs);
                 int x= get_value_offset_sp(hashMap,value0);
                 vfp_handle_illegal_imm(dest_reg_abs,x,0);
             }else{
-                printf("\tvldr\ts%d,[r1,#0]\n",dest_reg_abs);
-                fprintf(fp,"\tvldr\ts%d,[r1,#0]\n",dest_reg_abs);
+                printf("\tvldr\ts%d,[r%d,#0]\n",dest_reg_abs,left_reg_abs);
+                fprintf(fp,"\tvldr\ts%d,[r%d,#0]\n",dest_reg_abs,left_reg_abs);
             }
         }else if(ARM_enable_vfp==0){
             if(dest_reg<0){
-                printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
-                fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
+                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
+                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
             }else{
-                printf("\tldr\tr%d,[r1]\n",dest_reg_abs);
-                fprintf(fp,"\tldr\tr%d,[r1]\n",dest_reg_abs);
+                printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
+                fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg);
             }
         }
     }

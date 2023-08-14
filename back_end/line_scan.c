@@ -472,10 +472,10 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
             if(isImmIntType(value->VTy) || isImmFloatType(value->VTy)){
                 return;
             }
-            if(isGlobalArrayFloatType(value->VTy)|| isGlobalArrayIntType(value->VTy) || isGlobalVarFloatType(value->VTy) ||
-               isGlobalVarIntType(value->VTy)){
-                return;
-            }
+//            if(isGlobalArrayFloatType(value->VTy)|| isGlobalArrayIntType(value->VTy) || isGlobalVarFloatType(value->VTy) ||
+//               isGlobalVarIntType(value->VTy)){
+//                return;
+//            }
             if(isLocalArrayFloatType(value->VTy) || isLocalArrayIntType(value->VTy)){
                 return;
             }
