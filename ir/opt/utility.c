@@ -916,6 +916,7 @@ bool usedInPhi(Value *value, Function *function){
     return false;
 }
 
+//TODO could have Bug???
 bool isRegionalConstant(Value *value,struct Loop *loop){
     assert(value != NULL);
 
@@ -928,11 +929,22 @@ bool isRegionalConstant(Value *value,struct Loop *loop){
 
     if(isImmInt(value) || isParam(value,paramNum)) return true;
 
+    //must be an int
+    if(!isInt(value)) return false;
+
     //find the instruction
     Instruction *ins = (Instruction *)value;
 
-    //
+    //must not come from a load
+    if(ins->Opcode == Load) return false;
+
+    //must be defined outside the loop
     BasicBlock *insParent = ins->Parent;
 
+    if(HashSetFind(loop->loopBody,insParent)){
+        return false;
+    }
 
+    //
+    return true;
 }

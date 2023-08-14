@@ -67,6 +67,7 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
+
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -262,20 +263,22 @@ int main(int argc, char* argv[]){
         clear_visited_flag(currentFunction->entry);
         //printf("after out of SSA!\n");
         calculateLiveness(currentFunction);
-//        printLiveness(currentFunction);
+        printLiveness(currentFunction);
     }
 
     //  printf_llvm_ir(instruction_list,argv[4],0);
 
     for(Function *currentFunction = start;
         currentFunction != NULL; currentFunction = currentFunction->Next) {
+        printf("before dominance!\n");
         dominanceAnalysis(currentFunction);
+        printf("after dominance!\n");
         topCfg(currentFunction);
     }
 
-
+    printf("Here!\n");
     fix_array(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[4],0);
+//    printf_llvm_ir(instru//    printf_llvm_ir(instruction_list,argv[4],0);ction_list,argv[4],0);
 
 
 //    图着色

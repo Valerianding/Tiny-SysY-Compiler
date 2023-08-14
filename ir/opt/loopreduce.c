@@ -73,11 +73,11 @@ void LoopReduceCheckNode(InstNode *instNode,Loop *loop){
             Instruction *otherIns = (Instruction *)other;
 
             //this instruction must be ( add / sub phi, constant)
-            if(otherIns->Opcode != Add && otherIns->Opcode != Sub){
+
+            //TODO Now we let the opcode must be add
+            if(otherIns->Opcode != Add){
                 return;
             }
-
-            assert(otherIns->Opcode == Add || otherIns->Opcode == Sub);
 
             op = otherIns->Opcode;
 
@@ -108,6 +108,31 @@ void LoopReduceCheckNode(InstNode *instNode,Loop *loop){
     HashMapPut(loop->inductionVariables,phiDest,bivExpression);
 }
 
+//Only consider Add、Sub、Mul
+bool couldSimplify(InstNode *instNode,Loop *loop){
+    switch (instNode->inst->Opcode) {
+        case Add:case Sub:case Mul: break;
+        default: return false;
+    }
+
+    //check Type
+    Value *dest = ins_get_dest(instNode->inst);
+    Value *lhs = ins_get_lhs(instNode->inst);
+    Value *rhs = ins_get_rhs(instNode->inst);
+    if(!isInt(dest) || !isInt(lhs) || !isInt(rhs)) return false;
+
+    //must be -> add/sub/mul basicInductionVariable, Regional Constant
+    if(!HashMapContain(loop->inductionVariables,lhs)){
+        return false;
+    }
+
+    if(!isRegionalConstant(rhs,loop)){
+        return false;
+    }
+
+    return true;
+}
+
 bool loopReduce(Loop *loop){
     //handle child first
     HashSetFirst(loop->child);
@@ -115,9 +140,9 @@ bool loopReduce(Loop *loop){
         loopReduce(child);
     }
 
-    //Value * -> RecExpression
     if(!CheckLoopReduce(loop)) return false;
 
+    //Value * -> RecExpression
     loop->inductionVariables = HashMapInit(); // only used in this function -> needs to be Destroy after
 
 
@@ -133,7 +158,7 @@ bool loopReduce(Loop *loop){
     }
 
     //find those can be simplified -> iterated induction variables
-    //add / sub /
+    //add / sub / Mul
     //
     HashSetFirst(loop->loopBody);
     for(BasicBlock *loopBody = HashSetNext(loop->loopBody); loopBody != NULL; loopBody = HashSetNext(loop->loopBody)){
@@ -142,7 +167,70 @@ bool loopReduce(Loop *loop){
 
         //
         while(blockHead != blockTail){
-            if(blockHead)
+            if(couldSimplify(blockHead,loop)){
+                //if this node could Simplify
+
+                Value *lhs = ins_get_lhs(blockHead->inst);
+
+                Value *modify = ins_get_rhs(blockHead->inst);
+
+                assert(HashMapContain(loop->inductionVariables,lhs));
+
+                BIVExpression *bivExpression = (BIVExpression *)HashMapGet(loop->inductionVariables,lhs);
+
+                assert(bivExpression != NULL);
+
+                //get the initValue & Step
+                Value *initValue = bivExpression->initValue;
+
+                Value *step = bivExpression->step;
+
+                assert(HashSetSize(loopEntry->preBlocks) == 2);
+
+                //create initValue in the preHeader!
+                BasicBlock *preHeader = NULL;
+
+                HashSetFirst(loopEntry->preBlocks);
+                for(BasicBlock *preBlock = HashSetNext(loopEntry->preBlocks); preBlock != NULL; preBlock = HashSetNext(loopEntry->preBlocks)){
+                    if(!HashSetFind(loop->loopBody,preBlock)){
+                        preHeader = preBlock;
+                    }
+                }
+
+                assert(preHeader != NULL);
+
+                InstNode *preHeaderTail = preHeader->tail_node;
+
+                //cal init value in the preHeader
+                Opcode op = blockHead->inst->Opcode;
+                Instruction *newPhiInitValue = ins_new_binary_operator(op,initValue,modify);
+                newPhiInitValue->user.value.name = (char *)malloc(sizeof(char) * 10);
+                strcpy(newPhiInitValue->user.value.name,"%newInit");
+                newPhiInitValue->user.value.VTy->ID = Var_INT;
+                newPhiInitValue->Parent = preHeader;
+                InstNode *newPhiInitNode = new_inst_node(newPhiInitValue);
+                ins_insert_before(newPhiInitNode,preHeaderTail);
+
+                //cal modifier for new phi
+                Instruction *newModify = ins_new_binary_operator(op,step,modify);
+                newModify->user.value.name = (char *)malloc(sizeof(char) * 10);
+                strcpy(newModify->user.value.name,"%newStep");
+                newModify->user.value.VTy->ID = Var_INT;
+                newModify->Parent = preHeader;
+                InstNode *newModifyNode = new_inst_node(newModify);
+                ins_insert_before(newModifyNode,preHeaderTail);
+
+                //insert a new phi instruction in the loopEntry
+                Instruction *newPhi = ins_new_zero_operator(Phi);
+                newPhi->user.value.name = (char *)malloc(sizeof(char) * 10);
+                newPhi->user.value.VTy->ID = Var_INT;
+                newPhi->user.value.pdata->pairSet = HashSetInit();
+
+                //insert initValue to phiInfo
+                //insert a new instruction to modify this phi in current Place
+
+                //replace use of current dest with this new modified value
+            }
             blockHead = get_next_inst(blockHead);
         }
     }
