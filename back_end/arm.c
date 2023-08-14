@@ -9720,8 +9720,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 }else{
                     handle_illegal_imm1(2,y);
                     watchReg.generalReg[2]=1;
-                    printf("\tadd\tr%d,r1,r2\n",dest_reg_abs);
-                    fprintf(fp,"\tadd\tr%d,r1,r2\n",dest_reg_abs);
+                    printf("\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
+                    fprintf(fp,"\tadd\tr%d,r%d,r2\n",dest_reg_abs,left_reg_abs);
                 }
             } else{
                 int x;
