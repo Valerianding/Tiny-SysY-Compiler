@@ -275,6 +275,7 @@ void calculateLiveness1(Function *currentFunction){
 
 // 包含phi函数的 活跃变量分析
 //用作 loopAnalysis invariant等地方
+// WARN: This includes global variable、Arrayß
 void calculateLiveness(Function *currentFunction){
 
 
@@ -473,14 +474,14 @@ void calculateLiveness(Function *currentFunction){
                     }
                 }
 
-                if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs) && !isGlobalArray(lhs) && !isGlobalVar(lhs)){
+                if(lhs != NULL && !isImm(lhs) && !isLocalArray(lhs)){
                     if(!HashSetFind(tempSet,lhs)){
                         //printf("lhs add %s\n",lhs->name);
                         HashSetAdd(tempSet,lhs);
                     }
                 }
 
-                if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs) && !isGlobalArray(rhs) && !isGlobalVar(rhs)){
+                if(rhs != NULL && !isImm(rhs) && !isLocalArray(rhs)){
                     if(!HashSetFind(tempSet,rhs)){
                         //printf("rhs add %s\n",rhs->name);
                         HashSetAdd(tempSet,rhs);

@@ -486,7 +486,6 @@ InstNode *RunOnSub(InstNode *instNode){
     }
 
     //x - x -> 0
-    //TODO not finished
     if(isSame(lhs,rhs)){
         Value *constZero = (Value *)malloc(sizeof(Value));
         value_init_int(constZero,0);
@@ -541,6 +540,7 @@ InstNode *RunOnSub(InstNode *instNode){
     }
 
     //TODO Y - (X + Y) -> -X
+    //-> not supported
     return NULL;
 }
 
@@ -611,6 +611,46 @@ InstNode *RunOnDiv(InstNode *instNode){
 
 //TODO finish this
 InstNode *RunOnMod(InstNode *instNode){
+    if(!checkType(instNode->inst)){
+        return NULL;
+    }
+
+    Function *currentFunction = instNode->inst->Parent->Parent;
+    int paramNum = currentFunction->entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
+
+    Value *rhs = ins_get_rhs(instNode->inst);
+    if(isImmInt(rhs)){
+        //x % 1 -> X
+        if(rhs->pdata->var_pdata.iVal == 1){
+            Value *lhs = ins_get_lhs(instNode->inst);
+            return ReplaceInstUsesWith(instNode,lhs);
+        }
+
+        // %1 = X * C
+        // %2 = %1 % C
+        //=> X % C
+        Value *lhs = ins_get_lhs(instNode->inst);
+        if(isSame(UselessCastMul(lhs,paramNum),rhs)){
+            Instruction *lhsIns = (Instruction *)lhs;
+            assert(checkType(lhsIns));
+            Value *lhsLhs = ins_get_lhs(lhsIns);
+            Value *constant = ins_get_rhs(instNode->inst);
+            assert(isImmInt(constant));
+            Instruction *newRem = ins_new_binary_operator(Mod,lhsLhs,constant);
+            newRem->user.value.name = (char *)malloc(sizeof(char) * 10);
+            strcpy(newRem->user.value.name,"%rem");
+            newRem->user.value.VTy->ID = Var_INT;
+            InstNode *remNode = new_inst_node(newRem);
+            return remNode;
+        }
+    }
+
+    //0 % X -> 0
+    Value *lhs = ins_get_lhs(instNode->inst);
+    if(isImmInt(lhs) && lhs->pdata->var_pdata.iVal == 0){
+        //
+        return ReplaceInstUsesWith(instNode,lhs);
+    }
 
     return NULL;
 }

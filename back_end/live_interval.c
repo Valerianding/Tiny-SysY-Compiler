@@ -213,7 +213,6 @@ void handle_use(Value*uvalue,int ins_id){
                 range->end=ins_id;
                 HashMapPut(hashmap,uvalue,range);
             }else{
-                range->start=MIN(range->start,ins_head->inst->i);
                 range->end=MAX(range->end,ins_id);
             }
         }
