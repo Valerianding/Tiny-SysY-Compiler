@@ -67,7 +67,6 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -206,7 +205,7 @@ int main(int argc, char* argv[]){
     start = ReconstructFunction(instruction_list);
 
     //inline 之后的IR
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
         if(!NOTOK)
@@ -219,7 +218,7 @@ int main(int argc, char* argv[]){
             renameVariables(currentFunction);
         }
 
-        printf_llvm_ir(instruction_list,argv[4],1);
+//        printf_llvm_ir(instruction_list,argv[4],1);
 
 
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
@@ -247,7 +246,7 @@ int main(int argc, char* argv[]){
         renameVariables(currentFunction);
     }
 //
-     printf_llvm_ir(instruction_list,argv[4],1);
+//     printf_llvm_ir(instruction_list,argv[4],1);
 //
 
 #if ALL
@@ -270,24 +269,20 @@ int main(int argc, char* argv[]){
 
     for(Function *currentFunction = start;
         currentFunction != NULL; currentFunction = currentFunction->Next) {
-        printf("before dominance!\n");
         dominanceAnalysis(currentFunction);
-        printf("after dominance!\n");
         topCfg(currentFunction);
     }
 
-    printf("Here!\n");
+
     fix_array(instruction_list);
-//    printf_llvm_ir(instru//    printf_llvm_ir(instruction_list,argv[4],0);ction_list,argv[4],0);
+//    printf_llvm_ir(instruction_list,argv[4],0);
 
 
 //    图着色
     reg_alloca_(start);
 //    线性扫描
     line_scan(instruction_list,start);
-//    printf_llvm_ir(instruction_list,argv[4],0);
-//
-
+//    reg_control(instruction_list,start);
 //    gcp_allocate(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
 
