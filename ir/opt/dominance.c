@@ -347,6 +347,7 @@ void DomTreePrinter(DomTreeNode *root){
 
 PostDomNode *createPostDomNode(BasicBlock *block, BasicBlock *ipDom){
     PostDomNode *postDomNode = (PostDomNode*) malloc(sizeof(PostDomNode));
+    memset(postDomNode,0,sizeof(PostDomNode));
     postDomNode->block = block;
     postDomNode->parent = ipDom;
     postDomNode->children = HashSetInit();

@@ -3,7 +3,7 @@
 //
 
 #include "memlvn.h"
-
+//Local Value Numbering for Array
 
 //TODO 还没有考虑传递是参数数组的情况！！
 Array *arrayCreate(Value *array, unsigned int index){
@@ -50,6 +50,7 @@ bool memlvn(Function *current){
         nextBlock->visited = true;
 
         //
+
         changed |= mem_lvn(nextBlock,arrays,current);
         if(nextBlock->true_block && nextBlock->true_block->visited == false){
             HashSetAdd(workList,nextBlock->true_block);
@@ -86,7 +87,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                     assert(false);
                 }
                 cout++;
-                //printf("load : %d\n",cout);
+//                printf("load : %d\n",cout);
                 Vector *indexVector = VectorInit(10);
                 //lhs 是位置 rhs是偏移量
                 Value *gepValue = loadPlace;

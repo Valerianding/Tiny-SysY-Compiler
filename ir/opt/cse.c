@@ -56,6 +56,7 @@ unsigned int hash_expr(int Opcode, Value* lhs, Value* rhs) {
     assert(sizeof(unsigned ) == sizeof(int));
 
     unsigned *memory = (unsigned *)malloc(sizeof(unsigned) * 3);
+    memset(memory,0,sizeof(unsigned) * 3);
     memory[0] = Opcode;
     memory[1] = p1;
     memory[2] = p2;
@@ -83,9 +84,6 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
             Value *lhs = ins_get_lhs(currNode->inst);
             Value *rhs = ins_get_rhs(currNode->inst);
             Value *dest = ins_get_dest(currNode->inst);
-//            if ((isImm(lhs) || isLocalVar(lhs) || isLocalArray(lhs) || isGlobalArray(lhs) || isGlobalVar(lhs) ||
-//                 isAddress(lhs)) && (isImm(rhs) || isLocalVar(rhs))) {
-
                 //construct a hash key
                 unsigned long int hash_value = hash_expr(currNode->inst->Opcode,lhs,rhs);
                 //printf("construct a hash_valus : %d ",hash_value);
@@ -93,7 +91,9 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
 
                 //see if we have seen before
                 Value *key = HashMapGet(num2var,(void *)hash_value);
-                if(key != NULL){
+
+                //make sure we do not mess up with types
+                if(key != NULL && dest->VTy->ID == key->VTy->ID){
                     //printf("has seen before!\n");
                     //has seen before
 
@@ -101,16 +101,15 @@ bool commonSubexpression(BasicBlock *block, Function *currentFunction){
                     valueReplaceAll(dest,key,currentFunction);
 
                     //delete this instruction
-                    InstNode *nextNode = get_next_inst(currNode);
-                    deleteIns(currNode);
-                    currNode = nextNode;
+                    printf("Here!\n");
+                    currNode = get_next_inst(currNode);
+
                 }else{
                     //printf("first see!\n");
                     //not seen before
                     HashMapPut(num2var,(void *)hash_value,dest);
                     currNode = get_next_inst(currNode);
                 }
-//            }
         }else{
             currNode = get_next_inst(currNode);
         }

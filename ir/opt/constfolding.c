@@ -78,6 +78,8 @@ bool ConstFolding(Function *currentFunction){
                     }
                     // 还要记得删除这里的语句
                     //我们直接改了dest所以就不用value replace
+
+                    //TODO May Have bug here！！
                     effective = true;
                     InstNode *nextNode = get_next_inst(currNode);
                     deleteIns(currNode);

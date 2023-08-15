@@ -130,6 +130,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
 
                 //remove this instruction!!
+
+
+                //This is correct!!
                 InstNode *tempNode = get_next_inst(phiNode);
                 deleteIns(phiNode);
                 phiNode = tempNode;

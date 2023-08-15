@@ -159,7 +159,7 @@ int main(int argc, char* argv[]){
 
 
     bool NOTOK = containFloat(instruction_list);
-
+    NOTOK = false;
 
     //构建Function
     Function *start = ReconstructFunction(instruction_list);
@@ -230,8 +230,9 @@ int main(int argc, char* argv[]){
                 renameVariables(currentFunction);
             }
             //loop simplify requires loop normalize
-            LoopNormalize(currentFunction);
-            LoopSimplify(currentFunction);
+//            LoopNormalize(currentFunction);
+//            LoopSimplify(currentFunction);
+//            LoopReduce(currentFunction);
             changed = true;
             while(changed){
                 changed = InstCombine(currentFunction);

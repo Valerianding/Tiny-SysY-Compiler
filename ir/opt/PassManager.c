@@ -8,8 +8,8 @@ void RunBasicPasses(Function *currentFunction){
 
     while(effective){
         effective = false;
-        effective |= ConstFolding(currentFunction);
-        effective |=  commonSubexpressionElimination(currentFunction);
+        ConstFolding(currentFunction);
+        commonSubexpressionElimination(currentFunction);
     }
 
     renameVariables(currentFunction);
@@ -22,9 +22,11 @@ void RunOptimizePasses(Function *currentFunction){
 
     DVNT(currentFunction); // 浮点情况还有可能有错
 
+    memlvn(currentFunction);
+
     //for loopAnalysis
     loopAnalysis(currentFunction);
-//
+
     LICM(currentFunction);
 
     Loop2Memset(currentFunction);

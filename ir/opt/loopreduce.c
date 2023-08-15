@@ -20,17 +20,9 @@ BIVExpression *newBIVExpression(Value *initValue,Opcode op, Value *step){
     return bivExpression;
 }
 
-//simple check, we strengthen check in
+//simple check, we strengthen check later ??
 bool CheckLoopReduce(Loop *loop){
-    if(HashSetSize(loop->loopBody) != 2) return false;
-
-    if(!loop->body_block) return false;
-
-    if(!loop->exit_block) return false;
-
-    if(!loop->end_cond) return false;
-
-    if(!loop->modifier) return false;
+    if(HashSetSize(loop->head->preBlocks) != 2) return false;
 
     return true;
 }
@@ -157,6 +149,7 @@ bool loopReduce(Loop *loop){
         loopHead = get_next_inst(loopHead);
     }
 
+
     //find those can be simplified -> iterated induction variables
     //add / sub / Mul
     //
@@ -169,6 +162,7 @@ bool loopReduce(Loop *loop){
         while(blockHead != blockTail){
             if(couldSimplify(blockHead,loop)){
                 //if this node could Simplify
+                printf("instNode %d could be simplified!\n",blockHead->inst->i);
 
                 Value *lhs = ins_get_lhs(blockHead->inst);
 
@@ -200,6 +194,7 @@ bool loopReduce(Loop *loop){
                 assert(preHeader != NULL);
 
                 InstNode *preHeaderTail = preHeader->tail_node;
+                InstNode *loopEntryHead = loopEntry->head_node;
 
                 //cal init value in the preHeader
                 Opcode op = blockHead->inst->Opcode;
@@ -223,12 +218,23 @@ bool loopReduce(Loop *loop){
                 //insert a new phi instruction in the loopEntry
                 Instruction *newPhi = ins_new_zero_operator(Phi);
                 newPhi->user.value.name = (char *)malloc(sizeof(char) * 10);
+                strcpy(newPhi->user.value.name,"%phi");
                 newPhi->user.value.VTy->ID = Var_INT;
                 newPhi->user.value.pdata->pairSet = HashSetInit();
+                newPhi->Parent = loopEntry;
+                InstNode *newPhiNode = new_inst_node(newPhi);
+                ins_insert_after(newPhiNode,loopEntryHead);
 
                 //insert initValue to phiInfo
-                //insert a new instruction to modify this phi in current Place
+                Value *phiInit = ins_get_dest(newPhiInitValue);
+                pair *info1 = (pair *)malloc(sizeof(pair));
+                info1->define = phiInit;
+                info1->from = preHeader;
+                HashSetAdd(newPhi->user.value.pdata->pairSet,info1);
 
+                //insert a new instruction to modify this phi in current Place
+//                Value *
+//                Instruction *d
                 //replace use of current dest with this new modified value
             }
             blockHead = get_next_inst(blockHead);
