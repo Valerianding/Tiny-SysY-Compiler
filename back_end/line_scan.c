@@ -173,6 +173,7 @@ void line_scan_alloca(Function *curFunction,PriorityQueue*queue){
             spill_at_interval(curFunction,i);
         }else{
             value_register *r=(value_register*) malloc(sizeof(value_register));
+            memset(r,0, sizeof(value_register));
             r->reg=get_an_availabel_register();
             assert(r->reg!=-1);
             HashMapPut(curFunction->lineScanReg,i->value,r);
@@ -218,6 +219,7 @@ void spill_at_interval(Function *curFunction,value_live_range *i){
         HashMapRemove(curFunction->lineScanReg,spill->value);
 
         value_register *node=(value_register*) malloc(sizeof(value_register));
+        memset(node,0, sizeof(value_register));
         node->reg=r->reg;
         assert(node->reg!=-1);
         HashMapPut(curFunction->lineScanReg,i->value,node);
@@ -248,6 +250,7 @@ void VFP_line_scan_alloca(Function *curFunction,PriorityQueue*queue){
             VFP_spill_at_interval(curFunction,i);
         }else{
             value_register *r=(value_register*) malloc(sizeof(value_register));
+            memset(r,0, sizeof(value_register));
             r->sreg=get_an_availabel_VFPregister();
             assert(r->sreg!=-1);
             HashMapPut(curFunction->lineScanVFPReg,i->value,r);
@@ -294,6 +297,7 @@ void VFP_spill_at_interval(Function *curFunction,value_live_range *i){
         HashMapRemove(curFunction->lineScanVFPReg,spill->value);
 
         value_register *node=(value_register*) malloc(sizeof(value_register));
+        memset(node,0, sizeof(value_register));
         node->sreg=r->sreg;
         assert(node->sreg!=-1);
         HashMapPut(curFunction->lineScanVFPReg,i->value,node);

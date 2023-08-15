@@ -32,6 +32,7 @@ PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
         Value *key=(Value*)ptr_pair->key;
         live_range *range=(live_range*)ptr_pair->value;
         value_live_range *vlr=(value_live_range*) malloc(sizeof(value_live_range));
+        memset(vlr,0, sizeof(value_live_range));
         vlr->value=key;
         vlr->start=range->start;
         vlr->end=range->end;
@@ -57,6 +58,7 @@ PriorityQueue *build_vfp_live_interval(Vector* vector,PriorityQueue*pqueue){
         Value *key=(Value*)ptr_pair->key;
         live_range *range=(live_range*)ptr_pair->value;
         value_live_range *vlr=(value_live_range*) malloc(sizeof(value_live_range));
+        memset(vlr,0, sizeof(value_live_range));
         vlr->value=key;
         vlr->start=range->start;
         vlr->end=range->end;

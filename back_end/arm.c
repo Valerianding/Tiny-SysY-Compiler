@@ -14,7 +14,7 @@ int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s31+s
 //考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
 int arm_flag_lr=1;
 //考虑释放r3
-int arm_flag_r3=1;
+//int arm_flag_r3=1;
 UsageOfTmpReg watchReg;
 //如果说使用浮点寄存器分配的话，Var_Float放在_vfpReg_寄存器中，其对应的所有Var_Float分配结果在lineScanVFPReg,遍历取出
 HashMap * lineScan_param;
@@ -56,12 +56,12 @@ int param_off[4];
 char fileName[256];
 char funcName[256];
 int save_r11;
-int global_flag=0;
+//int global_flag=0;
 int give_param_num;
 Value *func_return_type=NULL; //用来进行函数return返回值类型转换
 Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
 //用来记录开辟的文字池
-int ltorg_num=0;
+//int ltorg_num=0;
 int give_param_flag[4];
 //char return_message[100000];
 int stm_num; //8字节对齐
@@ -86,6 +86,7 @@ int get_a_tem_reg(){
 //        assert(false);
         return -1;
     }
+    return -1;
 }
 void free_a_tmp_reg(int i){
     if(i>=0 && i<=2){
@@ -977,7 +978,7 @@ void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,i
 }
 
 int get_siezof_sp(HashMap*hashMap){
-    return HashMapSize(hashMap);
+    return (int)HashMapSize(hashMap);
 }
 
 int get_value_pdata_inspdata_true(Value*value){
@@ -9830,8 +9831,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+                int y= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,y,0);
             }
         }else if(isImmIntType(value2->VTy)){
 //            非第一条GEP，且常数，其后是非常数,这里可以直接value2.ival*维数计算之后的值，再和基准相加
