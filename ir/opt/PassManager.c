@@ -35,6 +35,12 @@ void RunOptimizePasses(Function *currentFunction){
 
     GCM(currentFunction);
 
+    bool changed = true;
+    while(changed){
+        changed =  InstCombine(currentFunction);
+    }
+
+
     instruction_combination(currentFunction);
 
     postDominanceAnalysis(currentFunction);

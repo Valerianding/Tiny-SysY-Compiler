@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "graph_color.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -230,25 +230,23 @@ int main(int argc, char* argv[]){
                 renameVariables(currentFunction);
             }
             //loop simplify requires loop normalize
-//            LoopNormalize(currentFunction);
-//            LoopSimplify(currentFunction);
-//            LoopReduce(currentFunction);
-            changed = true;
-            while(changed){
-                changed = InstCombine(currentFunction);
-                renameVariables(currentFunction);
-            }
+            LoopNormalize(currentFunction);
+            LoopSimplify(currentFunction);
+            LoopReduce(currentFunction);
+            renameVariables(currentFunction);
+//            changed = true;
             RunOptimizePasses(currentFunction);
         }
     }
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 //    //OK 现在开始我们不会对
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
-        renameVariables(currentFunction);
-    }
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        Clean(currentFunction);
 //
-     printf_llvm_ir(instruction_list,argv[4],1);
+//    }
+//
+//     printf_llvm_ir(instruction_list,argv[4],1);
 //
 
 #if ALL

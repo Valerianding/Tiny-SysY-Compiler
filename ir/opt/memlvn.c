@@ -59,6 +59,7 @@ bool memlvn(Function *current){
             HashSetAdd(workList,nextBlock->false_block);
         }
     }
+    return changed;
 }
 
 bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
@@ -317,4 +318,5 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
             currNode = get_next_inst(currNode);
         }
     }
+    return changed;
 }

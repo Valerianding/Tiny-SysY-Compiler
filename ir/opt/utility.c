@@ -935,9 +935,17 @@ bool isRegionalConstant(Value *value,struct Loop *loop){
     //find the instruction
     Instruction *ins = (Instruction *)value;
 
-    //must not come from a load
-    if(ins->Opcode == Load) return false;
+    //must come from + - * / mod phi
+    switch (ins->Opcode) {
+     case Add:case Sub:case Mul:case Div:
+     case Mod:case Phi: break;
+     default: return false;
+    }
 
+    //if the value comes from
+    if(ins->Opcode == Phi){
+
+    }
     //must be defined outside the loop
     BasicBlock *insParent = ins->Parent;
 
