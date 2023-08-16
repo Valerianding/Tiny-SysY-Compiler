@@ -7,10 +7,11 @@
 #define R 11
 //#define YAOWEI_TEST
 int enable_ordinary=0; //通用寄存器分配开关
+int enable_globalVar=0;//在启用通用寄存器开关时该开关才有效，控制是否为全局变量地址分配寄存器
 
 int enable_vfp=1; //浮点寄存器分配开关
 int flag_lr=1; //释放lr
-int flag_r11=1; //释放r11,释放了r11，那么就是8个可用寄存器
+int flag_r11=1; //释放r11,释放了r11
 
 //还需要一个active(这个可以是PriorityQueue)，和location(这个可以是HashSet)。
 PriorityQueue *active;
@@ -476,10 +477,12 @@ void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
             if(isImmIntType(value->VTy) || isImmFloatType(value->VTy)){
                 return;
             }
-//            if(isGlobalArrayFloatType(value->VTy)|| isGlobalArrayIntType(value->VTy) || isGlobalVarFloatType(value->VTy) ||
-//               isGlobalVarIntType(value->VTy)){
-//                return;
-//            }
+            if(isGlobalArrayFloatType(value->VTy)|| isGlobalArrayIntType(value->VTy) || isGlobalVarFloatType(value->VTy) ||
+               isGlobalVarIntType(value->VTy)){
+                if(enable_globalVar==0){ //不为全局变量地址标寄存器
+                    return;
+                }
+            }
             if(isLocalArrayFloatType(value->VTy) || isLocalArrayIntType(value->VTy)){
                 return;
             }
