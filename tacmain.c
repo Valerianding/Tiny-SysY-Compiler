@@ -158,6 +158,7 @@ int main(int argc, char* argv[]){
 
 
     bool NOTOK = containFloat(instruction_list);
+//    NOTOK=false;
 
 
     //构建Function
@@ -180,6 +181,7 @@ int main(int argc, char* argv[]){
 
     if(Optimize){
         func_inline(instruction_list,124);
+
 
         //重新构建Function
         start = ReconstructFunction(instruction_list);
@@ -279,7 +281,7 @@ int main(int argc, char* argv[]){
 
 
 //    图着色
-    reg_alloca_(start);
+//    reg_alloca_(start);
 //    线性扫描
     line_scan(instruction_list,start);
 //    reg_control(instruction_list,start);
