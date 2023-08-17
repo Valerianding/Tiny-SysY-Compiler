@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "graph_color.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -176,7 +176,6 @@ int main(int argc, char* argv[]){
         }
     }
 
-
     if(Optimize){
         func_inline(instruction_list,124);
 
@@ -230,7 +229,7 @@ int main(int argc, char* argv[]){
         Clean(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化
