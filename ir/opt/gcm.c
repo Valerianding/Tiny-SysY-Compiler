@@ -282,6 +282,8 @@ void ScheduleEarly(Function *currentFunction){
 
     //for all instructions i
     while(pinnedNode != tailNode){
+        //ALSO KEEP the next node
+        InstNode *nextNode = get_next_inst(pinnedNode);
         //if i is pinned
         if(isPinnedIns(pinnedNode)){
             //printf("at pinned instruction %d\n",pinnedNode->inst->i);
@@ -377,7 +379,7 @@ void ScheduleEarly(Function *currentFunction){
                 }
             }
         }
-        pinnedNode = get_next_inst(pinnedNode);
+        pinnedNode = nextNode;
     }
 }
 
@@ -414,6 +416,7 @@ void Schedule_Late(Instruction *ins){
     if(ins->visited == true){
         return;
     }
+
     //printf("now ins %d\n",ins->i);
     BasicBlock *block = ins->Parent;
     Function *function = block->Parent;
@@ -474,9 +477,7 @@ void Schedule_Late(Instruction *ins){
     InstNode *insNode = findNode(ins->Parent,ins);
     //printf("insNode %d\n",insNode->inst->i);
     if(!isPinnedIns(insNode)){
-
         if(lca == NULL) return;
-
         //selecting the best block for this instruction
         //also we need to count loopAnalysis depth nest first;
         //
@@ -488,7 +489,6 @@ void Schedule_Late(Instruction *ins){
             }
             lca = lca->parent->domTreeNode;
         }
-        //printf("best %d\n",best->block->id);
         if(best != ins->Parent->domTreeNode){
             //insert at front but we need to insert
 
@@ -559,6 +559,7 @@ void ScheduleLate(Function *function){
     InstNode *funcTail = tail->tail_node;
 
     while(pinnedNode != funcTail){
+        InstNode *nextNode = get_next_inst(pinnedNode);
         if(isPinnedIns(pinnedNode)){
             pinnedNode->inst->visited = true;
 
@@ -582,6 +583,7 @@ void ScheduleLate(Function *function){
             //special count for phi
             InstNode *tempNode = entry->head_node;
             while(tempNode != funcTail){
+                InstNode *tempNext = get_next_inst(tempNode);
                 if(tempNode->inst->Opcode == Phi){
                     HashSet *phiSet = tempNode->inst->user.value.pdata->pairSet;
                     bool usedInPhi = false;
@@ -600,19 +602,23 @@ void ScheduleLate(Function *function){
                         Schedule_Late(tempNode->inst);
                     }
                 }
-                tempNode = get_next_inst(tempNode);
+                tempNode = tempNext;
             }
         }
-        pinnedNode = get_next_inst(pinnedNode);
+        pinnedNode = nextNode;
     }
 
     //Schedule late the rest instructions -> avoid
     pinnedNode = entry->head_node;
     while(pinnedNode != funcTail){
+        //because this instruction could be scheduled late
+        //-> cause not all the instruction are scheduled late
+        //so we need to first reserve the nextNode
+        InstNode *nextNode = get_next_inst(pinnedNode);
         if(pinnedNode->inst->visited == false && pinnedNode->inst->Opcode != Alloca){
             Schedule_Late(pinnedNode->inst);
         }
-        pinnedNode = get_next_inst(pinnedNode);
+        pinnedNode = nextNode;
     }
 }
 
@@ -655,6 +661,8 @@ void printDomTreeInfo(Function *currentFunction){
 
 void GCM(Function *currentFunction){
     clear_visited_flag(currentFunction->entry);
+
+    clearInsVisited(currentFunction);
 
     dominanceAnalysis(currentFunction);
 
