@@ -103,6 +103,7 @@ void RedundantCallElimination(Function *currentFunction) {
                                 blockHead = prevNode;
                                 paramNum--;
                             }
+                            blockHead = nextNode;
                         }else{
                             HashMapPut(num2Node,(void *)paramValues,blockHead);
                             blockHead = get_next_inst(blockHead);
