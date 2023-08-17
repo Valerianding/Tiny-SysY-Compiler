@@ -139,7 +139,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
             }else{
                 //create a new value number for this phi
 
-                unsigned int *pNewValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                unsigned volatile int *pNewValueNumber = (unsigned volatile int*)malloc(sizeof(unsigned int));
                 *pNewValueNumber = value_number_seed;
                 value_number_seed++;
                 //put it into the var2num table
@@ -162,7 +162,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 case Call: {
                     //无论call的是什么都需要给左边新建一个value number
                     Value *dest = ins_get_dest(currNode->inst);
-                    unsigned int *pValue_number = (unsigned int *)malloc(sizeof(unsigned int));
+                    unsigned volatile int *pValue_number = (unsigned volatile int *)malloc(sizeof(unsigned int));
                     *pValue_number = value_number_seed;
                     //每个应该是自己独有的
                     //对于call而言我们直接
@@ -175,7 +175,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 case Alloca:{
                     //为alloca新建一个value number
                     Value *dest = ins_get_dest(currNode->inst);
-                    unsigned int *pValue_number = (unsigned  int *)malloc(sizeof(unsigned int));
+                    unsigned volatile int *pValue_number = (unsigned volatile int *)malloc(sizeof(unsigned int));
                     *pValue_number = value_number_seed;
                     value_number_seed++;
 
@@ -190,7 +190,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     unsigned int *pLhs = HashMapGet(var2num,lhs);
 
                     //same
-                    unsigned int *pValue_number = (unsigned int *)malloc(sizeof(unsigned int));
+                    unsigned volatile int *pValue_number = (unsigned volatile int *)malloc(sizeof(unsigned int));
                     *pValue_number = *pLhs;
                     HashSetAdd(newScope,dest);
                     HashMapPut(var2num,dest,pValue_number);
@@ -199,7 +199,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 case Load:{
                     //如果是load我们也需要分配一个
                     Value *dest = ins_get_dest(currNode->inst);
-                    unsigned int *pValue_number = (unsigned int *)malloc(sizeof(unsigned int));
+                    unsigned volatile int *pValue_number = (unsigned volatile int *)malloc(sizeof(unsigned int));
                     *pValue_number = value_number_seed;
                     value_number_seed++;
                     HashSetAdd(newScope,dest);
@@ -209,7 +209,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 case fptosi:{
                     //assign a new value number for it
                     Value *dest = ins_get_dest(currNode->inst);
-                    unsigned int *pValue_number = (unsigned int*)malloc(sizeof(unsigned int));
+                    unsigned volatile int *pValue_number = (unsigned volatile int*)malloc(sizeof(unsigned int));
                     *pValue_number = value_number_seed;
                     value_number_seed++;
                     HashSetAdd(newScope,dest);
@@ -218,7 +218,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 }
                 case sitofp:{
                     Value *dest = ins_get_dest(currNode->inst);
-                    unsigned int *pValue_number = (unsigned int*)malloc(sizeof(unsigned int));
+                    unsigned volatile int *pValue_number = (unsigned volatile int*)malloc(sizeof(unsigned int));
                     *pValue_number = value_number_seed;
                     value_number_seed++;
                     HashSetAdd(newScope,dest);
@@ -245,7 +245,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                 //还有可能是参数所以无法取出来，对于参数而言我们也是var_num_seed去存
                                 if(isParam(lhs,paramNum) || isGlobalArray(lhs)){
                                     //assign a new ValueNumber to this
-                                    unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                                    unsigned volatile int *pValueNumber = (unsigned volatile int*)malloc(sizeof(unsigned int));
                                     *pValueNumber = value_number_seed;
                                     value_number_seed++;
                                     HashMapPut(var2num,lhs,pValueNumber);
@@ -272,7 +272,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             pRhsNumber = HashMapGet(var2num, rhs);
                             if(pRhsNumber == NULL){
                                 if(isParam(rhs,paramNum) || isGlobalArray(rhs)){
-                                    unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
+                                    unsigned volatile int *pValueNumber = (unsigned volatile int*)malloc(sizeof(unsigned int));
                                     *pValueNumber = value_number_seed;
                                     value_number_seed++;
                                     HashMapPut(var2num,rhs,pValueNumber);
@@ -398,7 +398,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         assert(pReplaceValueNumber != NULL);
                         unsigned int replaceValueNumber = *pReplaceValueNumber;
 
-                        unsigned int *pDestValueNumber = (unsigned int*) malloc(sizeof(unsigned int));
+                        unsigned volatile int *pDestValueNumber = (unsigned volatile int*) malloc(sizeof(unsigned int));
                         *pDestValueNumber = replaceValueNumber;
                         // var2put
                         HashMapPut(var2num,dest,pDestValueNumber);
@@ -407,7 +407,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                         //不存在，我们需要new hash
                         HashExpression *newExpression =  (HashExpression *)malloc(sizeof(HashExpression));
                         unsigned int hashValueNumber = getHashValueNumber(currNode->inst->Opcode,LhsNumber,RhsNumber);
-                        unsigned int *pHashValueNumber = (unsigned int *)malloc(sizeof(unsigned int));
+                        unsigned volatile int *pHashValueNumber = (unsigned volatile int *)malloc(sizeof(unsigned int));
                         *pHashValueNumber = hashValueNumber;
                         HashMapPut(var2num,dest,pHashValueNumber);
 

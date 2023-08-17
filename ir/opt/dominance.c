@@ -294,7 +294,7 @@ void calculate_DomTree(Function *currentFunction){
                 DomTreeNode *prevNode = iDom->domTreeNode;
                 assert(prevNode != NULL);
                 DomTreeAddChild(prevNode, domTreeNode);
-                printf("b%d add child b%d\n",prevNode->block->id,block->id);
+                //printf("b%d add child b%d\n",prevNode->block->id,block->id);
                 assert(HashSetFind(prevNode->children,domTreeNode));
             }
         }
@@ -316,17 +316,17 @@ void calculate_DomTree(Function *currentFunction){
         if(parent->visited == false){
             parent->visited = true;
             DomTreeNode *domTreeNode = parent->domTreeNode;
-            printf("now b%d ",parent->id);
-            if(parent->iDom != nullptr){
-                printf("idom : b%d ",parent->iDom->id);
-            }
+//            printf("now b%d ",parent->id);
+//            if(parent->iDom != nullptr){
+//                printf("idom : b%d ",parent->iDom->id);
+//            }
             HashSet *childSet = domTreeNode->children;
             HashSetFirst(childSet);
-            printf("child: ");
-            for(DomTreeNode *childNode = HashSetNext(childSet); childNode != NULL; childNode = HashSetNext(childSet)){
-                printf("b%d ",childNode->block->id);
-            }
-            printf("\n");
+            //printf("child: ");
+//            for(DomTreeNode *childNode = HashSetNext(childSet); childNode != NULL; childNode = HashSetNext(childSet)){
+//                printf("b%d ",childNode->block->id);
+//            }
+//            printf("\n");
         }
         checkNode = get_next_inst(checkNode);
     }

@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "graph_color.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -67,7 +67,6 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -146,8 +145,6 @@ int main(int argc, char* argv[]){
 
         //Loop invariant code motion 需要使用live-out信息
         calculateLiveness(currentFunction);
-
-//        printLiveness(currentFunction);
     }
 
 //    //mem2reg之后，优化前
@@ -159,7 +156,6 @@ int main(int argc, char* argv[]){
 
 
     bool NOTOK = containFloat(instruction_list);
-    NOTOK = false;
 
     //构建Function
     Function *start = ReconstructFunction(instruction_list);
@@ -167,16 +163,22 @@ int main(int argc, char* argv[]){
     //先跑一次
     //如果要fuc inline一定要dom一下
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK)
+        if(!NOTOK){
             RunBasicPasses(currentFunction);
+            buildCallGraphNode(currentFunction);
+        }
     }
 
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
+            sideEffectAnalysis(currentFunction);
+            RedundantCallElimination(currentFunction);
             RunOptimizePasses(currentFunction);
         }
     }
+
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     if(Optimize){
@@ -186,8 +188,6 @@ int main(int argc, char* argv[]){
         start = ReconstructFunction(instruction_list);
 
         global2local(instruction_list);
-
-//        printf_llvm_ir(instruction_list,argv[4],1);
 
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
 
@@ -205,23 +205,13 @@ int main(int argc, char* argv[]){
     //重新构建Function
     start = ReconstructFunction(instruction_list);
 
-    //inline 之后的IR
-    printf_llvm_ir(instruction_list,argv[4],1);
-
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK)
+        if(!NOTOK){
             RunBasicPasses(currentFunction);
+        }
     }
 
     if(!NOTOK && Optimize){
-        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunOptimizePasses(currentFunction);
-            renameVariables(currentFunction);
-        }
-
-        printf_llvm_ir(instruction_list,argv[4],1);
-
-
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
             bool changed = true;
@@ -232,22 +222,18 @@ int main(int argc, char* argv[]){
             //loop simplify requires loop normalize
             LoopNormalize(currentFunction);
             LoopSimplify(currentFunction);
-            LoopReduce(currentFunction);
+//            LoopReduce(currentFunction);
             renameVariables(currentFunction);
-//            changed = true;
             RunOptimizePasses(currentFunction);
         }
     }
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 //    //OK 现在开始我们不会对
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        Clean(currentFunction);
-//
-//    }
-//
-//     printf_llvm_ir(instruction_list,argv[4],1);
-//
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+        Clean(currentFunction);
+    }
+
 
 #if ALL
     //phi上的优化
@@ -269,24 +255,20 @@ int main(int argc, char* argv[]){
 
     for(Function *currentFunction = start;
         currentFunction != NULL; currentFunction = currentFunction->Next) {
-        printf("before dominance!\n");
         dominanceAnalysis(currentFunction);
-        printf("after dominance!\n");
         topCfg(currentFunction);
     }
 
-    printf("Here!\n");
+
     fix_array(instruction_list);
-//    printf_llvm_ir(instru//    printf_llvm_ir(instruction_list,argv[4],0);ction_list,argv[4],0);
+//    printf_llvm_ir(instruction_list,argv[4],0);
 
 
 //    图着色
-    reg_alloca_(start);
+//    reg_alloca_(start);
 //    线性扫描
     line_scan(instruction_list,start);
-//    printf_llvm_ir(instruction_list,argv[4],0);
-//
-
+//    reg_control(instruction_list,start);
 //    gcp_allocate(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
 

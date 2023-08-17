@@ -12,7 +12,7 @@ const Opcode pinnedOperations[] = {Load,Store, Phi,br,br_i1, Call, Return,GIVE_P
 
 void bfsTravelDomTree(DomTreeNode *root,int level){
     root->depth = level;
-    printf("%d depth %d\n",root->block->id,level);
+    //printf("%d depth %d\n",root->block->id,level);
     HashSetFirst(root->children);
     for(DomTreeNode *child = HashSetNext(root->children); child != NULL; child = HashSetNext(root->children)){
         bfsTravelDomTree(child,level + 1);
@@ -633,9 +633,9 @@ void clearInsVisited(Function *function){
 
 void bfdDomTreeNode(DomTreeNode *root,int level){
     for(int i = 0; i < level; i++){
-        printf(" ");
+        //printf (" ");
     }
-    printf("b%d child:\n",root->block->id);
+    //printf("b%d child:\n",root->block->id);
     HashSetFirst(root->children);
     for(DomTreeNode *child = HashSetNext(root->children); child != NULL; child = HashSetNext(root->children)) {
         assert(child->parent == root->block);

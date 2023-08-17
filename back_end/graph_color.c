@@ -1,6 +1,6 @@
 #include "graph_color.h"
 
-int tmp_num = 0;
+//int tmp_num = 0;
 
 //低度数的传送无关结点,元素为Node
 HashSet *simplifyWorklist;
@@ -55,10 +55,10 @@ bool value_type(Value* uvalue){
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
         return false;
     }
-    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
-       isGlobalVarIntType(uvalue->VTy)){
-        return false;
-    }
+//    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
+//       isGlobalVarIntType(uvalue->VTy)){
+//        return false;
+//    }
     if(isLocalArrayFloatType(uvalue->VTy) || isLocalArrayIntType(uvalue->VTy)){
         return false;
     }
@@ -93,6 +93,7 @@ Node *get_Node_with_value(Value* value){
 //    assert(!isLocalVarFloat(value));
 //    assert(!isImmFloatType(value->VTy));
 //    assert(!isImmIntType(value->VTy));
+//      assert(!isLocalArrayIntType(value->VTy));
 
     HashSetFirst(nodeSet);
     for(Node* node = HashSetNext(nodeSet);node!=NULL; node = HashSetNext(nodeSet)){
@@ -152,11 +153,16 @@ void deinit(){
 }
 
 bool find_pair(Node* u,Node* v){
-    HashSetFirst(adjSet);
-    for(AdjPair* adjPair = HashSetNext(adjSet); adjPair!=NULL; adjPair = HashSetNext(adjSet)){
-        if((adjPair->u == u && adjPair->v == v) || (adjPair->v == u && adjPair->u == v))
-            return true;
-    }
+//    HashSetFirst(adjSet);
+//    for(AdjPair* adjPair = HashSetNext(adjSet); adjPair!=NULL; adjPair = HashSetNext(adjSet)){
+//        if((adjPair->u == u && adjPair->v == v) || (adjPair->v == u && adjPair->u == v))
+//            return true;
+//    }
+//    return false;
+
+//CHECK: 应该只看一边就行了
+    if(HashSetFind(u->adjOpdSet,v))
+        return true;
     return false;
 }
 
@@ -172,6 +178,7 @@ void addEdge(Node* u, Node* v){
         adj_pair->v = u;
         HashSetAdd(adjSet,adj_pair);
 
+        //我们应该都没有这种type
         if(u->type != PreColored){
             u->degree++;
             HashSetAdd(u->adjOpdSet,v);
@@ -184,8 +191,16 @@ void addEdge(Node* u, Node* v){
     }
 }
 
-void handle_def_(HashSet* live, Value* def, int loopDepth){
+void handle_def_(HashSet* live, Value* def, int loopDepth,InstNode* cur_node){
     if(check_spilled(def) || isLocalVarFloat(def))
+        return;
+
+    if(isLocalArrayFloatType(def->VTy) || isLocalArrayIntType(def->VTy))
+        return;
+
+    //如果是无用左值，不加入
+    ///要把copyOperation排除
+    if(def->use_list == NULL && cur_node->inst->Opcode!= CopyOperation)
         return;
 
     Node *node = get_Node_with_value(def);
@@ -211,10 +226,10 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy) || isLocalVarFloat(uvalue)){
         return;
     }
-    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
-       isGlobalVarIntType(uvalue->VTy)){
-        return;
-    }
+//    if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
+//       isGlobalVarIntType(uvalue->VTy)){
+//        return;
+//    }
     if(isLocalArrayFloatType(uvalue->VTy) || isLocalArrayIntType(uvalue->VTy)){
         return;
     }
@@ -232,7 +247,9 @@ void handle_use_(HashSet* live,Value* uvalue, int loopDepth,Function* cur_func){
         HashSetAdd(live,uvalue);
 
         //如果是参数，要马上与目前的live建立冲突关系, 因为没有def
-        if(get_name_index(node->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num){
+        //8.13 全局变量也分配寄存器的话, 全局变量也没有def
+        if(get_name_index(node->value) < ins_get_lhs(cur_func->entry->head_node->inst)->pdata->symtab_func_pdata.param_num ||
+                isGlobalType(uvalue->VTy)){
             HashSetFirst(live);
             for(Value * v = HashSetNext(live); v!=NULL; v = HashSetNext(live)){
                 Node *n = get_Node_with_value(v);
@@ -267,6 +284,8 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
     Value *value0,*value1,*value2;
     int opNum ;
     int loopDepth = cur_block->domTreeNode->loopNest;
+//    if(HashSetSize(live) > 140)
+//        printf("j");
     switch (ins->inst->Opcode) {
         //def = 1, use = 2
         case Add:
@@ -277,14 +296,14 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_def_(live,value0,loopDepth);
+            handle_def_(live,value0,loopDepth,ins);
             handle_use_(live,value1,loopDepth,cur_block->Parent);
             handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case Call:
             if(!returnValueNotUsed(ins)){
                 value0=&ins->inst->user.value;
-                handle_def_(live,value0,loopDepth);
+                handle_def_(live,value0,loopDepth,ins);
             }
             break;
         case Return:
@@ -303,7 +322,7 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
         case Load:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_def_(live,value0,loopDepth);
+            handle_def_(live,value0,loopDepth,ins);
             handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case GIVE_PARAM:
@@ -319,7 +338,7 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_def_(live,value0,loopDepth);
+            handle_def_(live,value0,loopDepth,ins);
             handle_use_(live,value1,loopDepth,cur_block->Parent);
             handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
@@ -339,21 +358,24 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
         case XOR:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_def_(live,value0,loopDepth);
+            handle_def_(live,value0,loopDepth,ins);
             handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case GEP:
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             value2= user_get_operand_use(&ins->inst->user,1)->Val;
-            handle_def_(live,value0,loopDepth);
-            handle_use_(live,value1,loopDepth,cur_block->Parent);
+            handle_def_(live,value0,loopDepth,ins);
+            //TODO address处理
+            if(isGlobalArray(value1) || isAddress(value1)){
+                handle_use_(live,value1,loopDepth,cur_block->Parent);
+            }
             handle_use_(live,value2,loopDepth,cur_block->Parent);
             break;
         case CopyOperation:
             value0=ins->inst->user.value.alias;
             value1= user_get_operand_use(&ins->inst->user,0)->Val;
-            handle_def_(live,value0,loopDepth);
+            handle_def_(live,value0,loopDepth,ins);
             handle_use_(live,value1,loopDepth,cur_block->Parent);
             break;
         case fptosi:
@@ -361,7 +383,7 @@ void dealSDefUse(HashSet* live, InstNode* ins, BasicBlock* cur_block){
             value0=&ins->inst->user.value;
             value1=user_get_operand_use(&ins->inst->user,0)->Val;
             if(value0->name!=NULL && value1->name!=NULL){
-                handle_def_(live,value0,loopDepth);
+                handle_def_(live,value0,loopDepth,ins);
                 handle_use_(live,value1,loopDepth,cur_block->Parent);
             }
             break;
@@ -647,6 +669,14 @@ void freezeMoves(Node* node){
     }
 }
 
+//启发式溢出结点
+double heuristicVal(Node* node){
+    double num = (node->degree << 10) / pow(_HEURISTIC_BASE,node->loopCounter);
+    if(isGlobalType(node->value->VTy))
+        num = num * 1.52;
+    return num;
+}
+
 //冻结的启发式函数
 double customHeuristic(Node* node) {
     int usage = 0;
@@ -687,17 +717,13 @@ void freeze(){
     freezeMoves(node);
 }
 
-//启发式溢出结点
-double heuristicVal(Node* node){
-    return (node->degree << 10) / pow(_HEURISTIC_BASE,node->loopCounter);
-}
-
 HashMap *cal_interval_len(PriorityQueue* queue){
     HashMap *lenMap = HashMapInit();
     while (PriorityQueueSize(queue) > 0){
         value_live_range *range;
         PriorityQueueTop(queue,(void**)&range);
         PriorityQueuePop(queue);
+
         if(isLocalVarFloat(range->value) || spill_contain_node(range->value))
             continue;
         int *len = malloc(4);
@@ -729,7 +755,7 @@ void selectSpill(Function* cur_func){
 //    if(n->type == Virtual) {
     if(n->type == USUAL) {
         int *len = HashMapGet(lenMap,n);
-        //TODO 感觉有点问题
+        //如果全局能不溢出尽量不溢出, 可能有点问题
         if(*len<5)
             max = 0;
     }
@@ -939,18 +965,18 @@ void labelRegister(Function* func){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v->alias)))->reg;
                 cur_node->inst->_reg_[0] = reg;
             }
-            else if(cur_node->inst->Opcode != CopyOperation && !isLocalVarFloat(v)){
+            else if(cur_node->inst->Opcode != CopyOperation && !isLocalVarFloat(v) && v->use_list){
                 reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(v)))->reg;
                 cur_node->inst->_reg_[0] = reg;
             }
         }
-        if(cur_node->inst->_reg_[1] == 0 && vl!=NULL && vl->name!=NULL && !isLocalVarFloat(vl) && vl->VTy->ID!=Int && vl->VTy->ID!=Float && !begin_global(vl->name) && cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
+        if(cur_node->inst->_reg_[1] == 0 && vl!=NULL && vl->name!=NULL && !isLocalVarFloat(vl) && vl->VTy->ID!=Int && vl->VTy->ID!=Float &&  cur_node->inst->Opcode != Call && !type_alloca(cur_node->inst->Opcode) &&
                 value_type(vl)){
             int reg ;
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(vl)))->reg;
             cur_node->inst->_reg_[1] = reg;
         }
-        if(cur_node->inst->_reg_[2] == 0 && vr!=NULL && vr->name!=NULL && !isLocalVarFloat(vr) && vr->VTy->ID!=Int && vr->VTy->ID!=Float && !begin_global(vr->name) && !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
+        if(cur_node->inst->_reg_[2] == 0 && vr!=NULL && vr->name!=NULL && !isLocalVarFloat(vr) && vr->VTy->ID!=Int && vr->VTy->ID!=Float &&  !type_alloca(cur_node->inst->Opcode) && cur_node->inst->Opcode != GIVE_PARAM &&
                 value_type(vr)){
             int reg;
             reg = ((value_register*)HashMapGet(colorMap, get_Node_with_value(vr)))->reg;

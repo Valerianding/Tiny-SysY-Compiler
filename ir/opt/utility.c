@@ -420,41 +420,23 @@ void HashSetCopy(HashSet *dest,HashSet *src){
 }
 
 //TODO 利用Hash库实现
-unsigned long int hash_values(Vector *valueVector) {
-    int count = VectorSize(valueVector);
-    unsigned int seed = 0x9747b28c;
-    unsigned int m = 0x5bd1e995;
-    unsigned int r = 24;
-    unsigned int h = seed ^ (count * 4);
-
-    Value *val = NULL;
+//TODO
+unsigned hash_values(Vector *valueVector) {
+    unsigned count = VectorSize(valueVector);
+    unsigned volatile *Memory = (unsigned *)malloc(sizeof(unsigned ) * count);
+    Value *value = NULL;
     for(int i = 0; i < count; i++) {
-        VectorGet(valueVector,i,(void *)&val);
-        assert(val != NULL);
-        unsigned int k;
-        //尝试在hash里面解决掉这个立即数的问题
-        if(isImm(val)){
-            if(isImmInt(val)){
-                k = val->pdata->var_pdata.iVal;
-            }else{
-                k = val->pdata->var_pdata.fVal;
-            }
+        VectorGet(valueVector,i,(void *)&value);
+        assert(value != NULL);
+        if(isImmInt(value)){
+            Memory[i] = (unsigned )value->pdata->var_pdata.iVal;
+        }else if(isImmFloat(value)){
+            Memory[i] = (unsigned )value->pdata->var_pdata.fVal;
         }else{
-            k = *((unsigned int *)val);
+            Memory[i] = (unsigned )value;
         }
-
-        k *= m;
-        k ^= k >> r;
-        k *= m;
-        h *= m;
-        h ^= k;
     }
-
-    h ^= h >> 13;
-    h *= m;
-    h ^= h >> 15;
-
-    return (unsigned long int)h;
+    return HashMurMur32((void *)Memory,count);
 }
 
 bool isSySYFunction(Value *function){

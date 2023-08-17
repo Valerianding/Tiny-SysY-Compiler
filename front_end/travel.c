@@ -1,5 +1,6 @@
 #include "travel.h"
 #include "tree_balancing.h"
+#include "utility.h"
 
 extern Symtab *this;
 extern struct _InstNode *instruction_list;
@@ -4183,10 +4184,11 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
     while (instruction_node!=NULL && instruction_node->inst->Opcode!=ALLBEGIN)
     {
         Instruction *instruction=instruction_node->inst;
-        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
-        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
-        if(instruction->user.value.alias!= NULL && instruction->user.value.alias->name!= NULL && instruction->user.value.alias->alias!= NULL && instruction->user.value.alias->alias->name!= NULL)
-            printf("%s . ",instruction->user.value.alias->name);
+        printf("%d(id) :",instruction->i);
+//        printf("%d(id) : %d ",instruction->i,instruction->user.value.pdata->var_pdata.iVal);
+//        printf("%d .",instruction->user.value.pdata->var_pdata.is_offset);
+//        if(instruction->user.value.alias!= NULL && instruction->user.value.alias->name!= NULL && instruction->user.value.alias->alias!= NULL && instruction->user.value.alias->alias->name!= NULL)
+//            printf("%s . ",instruction->user.value.alias->name);
         switch (instruction_node->inst->Opcode)
         {
             case Alloca:
@@ -4835,7 +4837,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                 break;
             case Label:
                 printf("%d:                  ; preds = ",instruction->user.value.pdata->instruction_pdata.true_goto_location);
-                fprintf(fptr,"%d:\n",instruction->user.value.pdata->instruction_pdata.true_goto_location);
+                fprintf(fptr,"%d: ",instruction->user.value.pdata->instruction_pdata.true_goto_location);
                 if(instruction->Parent){
                     BasicBlock *parent = instruction->Parent;
                     HashSetFirst(parent->preBlocks);
@@ -4844,15 +4846,15 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
                     }
                 }
                 printf("\n");
-                if(instruction->Parent){
-                    BasicBlock *parent = instruction->Parent;
-                    if(parent->true_block)
-                        printf("                                   ; true = %%%d , ",parent->true_block->id);
-                    if(parent->false_block)
-                        printf("false = %%%d",parent->false_block->id);
-                }
-
-                printf("\n");
+//                if(instruction->Parent){
+//                    BasicBlock *parent = instruction->Parent;
+//                    if(parent->true_block)
+//                        printf("                                   ; true = %%%d , ",parent->true_block->id);
+//                    if(parent->false_block)
+//                        printf("false = %%%d",parent->false_block->id);
+//                }
+//
+//                printf("\n");
                 break;
             case Add:
                 if(instruction->user.use_list->Val->VTy->ID==Int)
@@ -5371,41 +5373,38 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n\n");
-////
-        if(instruction->isCritical){
-            printf("isCritical\n\n");
-        }
-//
-//        if(instruction->isCritical){
-//            printf("isCritical\n\n");
-//        }
-
 //        Value *v,*vl,*vr;
 //        v= ins_get_dest(instruction_node->inst);
 //        vl= ins_get_lhs(instruction_node->inst);
 //        vr= ins_get_rhs(instruction_node->inst);
 //        if(v!=NULL)
-//            printf("left:%p,\t",v);
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
 //        if(vl!=NULL)
-//            printf("value1:%p,\t",vl);
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
 //        if(vr!=NULL)
-//            printf("value2:%p,\t",vr);
-//        printf("\n\n");
-
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n");
+//////
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
 //        }
+//
+//        if(instruction->isCritical){
+//            printf("isCritical\n\n");
+//        }
+
+        Value *v,*vl,*vr;
+        v= ins_get_dest(instruction_node->inst);
+        vl= ins_get_lhs(instruction_node->inst);
+        vr= ins_get_rhs(instruction_node->inst);
+        if(v!=NULL && v->name!=NULL && (instruction_node->inst->Opcode!=Call || (instruction_node->inst->Opcode == Call && !returnValueNotUsed(instruction_node))))
+            printf("left:%d,\t",instruction_node->inst->_reg_[0]);
+        if(vl!=NULL && vl->name!=NULL && instruction_node->inst->Opcode != Call)
+            printf("value1:%d,\t",instruction_node->inst->_reg_[1]);
+        if(vr!=NULL && vr->name!=NULL)
+            printf("value2:%d,\t",instruction_node->inst->_reg_[2]);
+        printf("\n\n");
+
         instruction_node= get_next_inst(instruction_node);
     }
     if(flag_func)

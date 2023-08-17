@@ -141,6 +141,7 @@ void hashmap_add(HashMap*hashMap,Value*key,char *name,int *sub_sp,int *add_sp,in
 //                }else
 //                {
                 offset *temp=(offset*) malloc(sizeof(offset));
+                memset(temp,0, sizeof(offset));
                 temp->offset_sp=(*add_sp);
 //                printf("str %s,%d\n",key->name,temp->offset_sp);
 //                printf("add_sp=%d\n",*add_sp);

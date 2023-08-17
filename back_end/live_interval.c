@@ -5,7 +5,7 @@
 
 
 int vfpFlag=1; //启用浮点寄存器分配
-
+int calculateGlobalVar=0;//计算全局变量活跃区间
 HashMap *hashmap;
 BasicBlock *block;
 InstNode *ins_end;
@@ -32,6 +32,7 @@ PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
         Value *key=(Value*)ptr_pair->key;
         live_range *range=(live_range*)ptr_pair->value;
         value_live_range *vlr=(value_live_range*) malloc(sizeof(value_live_range));
+        memset(vlr,0, sizeof(value_live_range));
         vlr->value=key;
         vlr->start=range->start;
         vlr->end=range->end;
@@ -57,6 +58,7 @@ PriorityQueue *build_vfp_live_interval(Vector* vector,PriorityQueue*pqueue){
         Value *key=(Value*)ptr_pair->key;
         live_range *range=(live_range*)ptr_pair->value;
         value_live_range *vlr=(value_live_range*) malloc(sizeof(value_live_range));
+        memset(vlr,0, sizeof(value_live_range));
         vlr->value=key;
         vlr->start=range->start;
         vlr->end=range->end;
@@ -118,18 +120,39 @@ void analyze_block(){
 //            printf("extend %s %d %d\n",v->name,range->start,range->end);
                 }
             } else if(vfpFlag==1 && vfp_flag==0 ){ //只计算非浮点数
-                if(!isLocalVarFloatType(v->VTy)){
-                    if(range==NULL){ //添加新range
-                        range=(live_range*) malloc(sizeof(live_range));
-                        memset(range,0, sizeof(live_range));
-                        range->start=ins_head->inst->i;
-                        range->end=ins_end->inst->i;
-                        HashMapPut(hashmap,(Value*) elem, range);
+                if(calculateGlobalVar==1){  //计算全局变量地址的活跃区间
+                    if(!isLocalVarFloatType(v->VTy)){
+                        if(range==NULL){ //添加新range
+                            range=(live_range*) malloc(sizeof(live_range));
+                            memset(range,0, sizeof(live_range));
+                            range->start=ins_head->inst->i;
+                            range->end=ins_end->inst->i;
+                            HashMapPut(hashmap,(Value*) elem, range);
 //            printf("new %s %d %d\n",v->name,range->start,range->end);
-                    }else{ //延长range
-                        range->start=MIN(range->start,ins_head->inst->i);
-                        range->end=MAX(range->end,ins_end->inst->i);
+                        }else{ //延长range
+                            range->start=MIN(range->start,ins_head->inst->i);
+                            range->end=MAX(range->end,ins_end->inst->i);
 //            printf("extend %s %d %d\n",v->name,range->start,range->end);
+                        }
+                    }
+                }else{  //不计算全局变量的活跃区间
+                    if(!isLocalVarFloatType(v->VTy)){
+                        if(isGlobalArrayFloatType(v->VTy)|| isGlobalArrayIntType(v->VTy) || isGlobalVarFloatType(v->VTy) ||
+                           isGlobalVarIntType(v->VTy))
+                            continue;
+                        if(range==NULL){ //添加新range
+                            range=(live_range*) malloc(sizeof(live_range));
+                            memset(range,0, sizeof(live_range));
+                            range->start=ins_head->inst->i;
+                            range->end=ins_end->inst->i;
+                            HashMapPut(hashmap,(Value*) elem, range);
+//            printf("new %s %d %d\n",v->name,range->start,range->end);
+                        }else{ //延长range
+                            range->start=MIN(range->start,ins_head->inst->i);
+                            range->end=MAX(range->end,ins_end->inst->i);
+//            printf("extend %s %d %d\n",v->name,range->start,range->end);
+                        }
+
                     }
                 }
             }
@@ -204,17 +227,18 @@ void handle_use(Value*uvalue,int ins_id){
 //    全局变量的地址需要进行通用寄存器分配，计算其活跃范围为0 ~ use（最后一次use），只需要在计算通用寄存器分配对应的活跃变量表时计算即可，在计算浮点分配表时不用计算
     if(isGlobalArrayFloatType(uvalue->VTy)|| isGlobalArrayIntType(uvalue->VTy) || isGlobalVarFloatType(uvalue->VTy) ||
             isGlobalVarIntType(uvalue->VTy)){
-        if(vfp_flag==0){
-            live_range *range= HashMapGet(hashmap,uvalue);
-            if(range==NULL){
-                range=(live_range*) malloc(sizeof(live_range));
-                memset(range,0,sizeof(live_range));
-                range->start=0;
-                range->end=ins_id;
-                HashMapPut(hashmap,uvalue,range);
-            }else{
-                range->start=MIN(range->start,ins_head->inst->i);
-                range->end=MAX(range->end,ins_id);
+        if(calculateGlobalVar==1){
+            if(vfp_flag==0){
+                live_range *range= HashMapGet(hashmap,uvalue);
+                if(range==NULL){
+                    range=(live_range*) malloc(sizeof(live_range));
+                    memset(range,0,sizeof(live_range));
+                    range->start=0;
+                    range->end=ins_id;
+                    HashMapPut(hashmap,uvalue,range);
+                }else{
+                    range->end=MAX(range->end,ins_id);
+                }
             }
         }
         return;
