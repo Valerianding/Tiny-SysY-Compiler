@@ -5,7 +5,7 @@
 
 
 int vfpFlag=1; //启用浮点寄存器分配
-int calculateGlobalVar=0;//计算全局变量活跃区间
+int calculateGlobalVar=1;//计算全局变量活跃区间
 HashMap *hashmap;
 BasicBlock *block;
 InstNode *ins_end;
