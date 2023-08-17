@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "graph_color.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -147,9 +147,6 @@ int main(int argc, char* argv[]){
         calculateLiveness(currentFunction);
     }
 
-//    //mem2reg之后，优化前
-
-
     CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
@@ -179,7 +176,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 
     if(Optimize){
@@ -235,7 +232,7 @@ int main(int argc, char* argv[]){
         Clean(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化

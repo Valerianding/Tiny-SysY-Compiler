@@ -1,96 +1,67 @@
-/*
- * Max flow EK with DFS.
- */
-const int INF = 0x70000000;
+int set(int a[], int pos, int d){
+    const int bitcount = 30;
+    int x[bitcount + 1] = {};
 
-int size[10];
-int to[10][10];
-int cap[10][10];
-int rev[10][10];
-int used[10];
+    x[0] = 1;
+    x[1] = x[0] * 2;
+    x[2] = x[1] * 2;
+    x[3] = x[2] * 2;
+    x[4] = x[3] * 2;
+    x[5] = x[4] * 2;
+    x[6] = x[5] * 2;
+    x[7] = x[6] * 2;
+    x[8] = x[7] * 2;
+    x[9] = x[8] * 2;
+    x[10] = x[9] * 2;
 
-void my_memset(int arr[], int val, int n)
-{
-    int i = 0;
-    while (i < n) {
-        arr[i] = val;
+    int i = 10;
+    while (i < bitcount){
         i = i + 1;
+        x[i] = x[i - 1] * 2;
     }
-}
 
-void add_node(int u, int v, int c)
-{
-    to[u][size[u]] = v;
-    cap[u][size[u]] = c;
-    rev[u][size[u]] = size[v];
+    int v = 0;
 
-    to[v][size[v]] = u;
-    cap[v][size[v]] = 0;
-    rev[v][size[v]] = size[u];
+    if (pos / bitcount >= 10000) return 0;
 
-    size[u] = size[u] + 1;
-    size[v] = size[v] + 1;
-}
+    if (a[pos / bitcount] / (x[pos % bitcount]) % 2 != d){
+        if (a[pos / bitcount] / (x[pos % bitcount]) % 2 == 0)
+            if (d == 1)
+                v = x[pos % bitcount];
 
-int dfs(int s, int t, int f)
-{
-    if (s == t)
-        return f;
-    used[s] = 1;
-
-    int i = 0;
-    while (i < size[s]) {
-        if (used[to[s][i]]) { i = i + 1; continue; }
-        if (cap[s][i] <= 0) { i = i + 1; continue; }
-
-        int min_f;
-        if (f < cap[s][i])
-            min_f = f;
-        else
-            min_f = cap[s][i];
-        int d = dfs(to[s][i], t, min_f);
-
-        if (d > 0) {
-            cap[s][i] = cap[s][i] - d;
-            cap[to[s][i]][rev[s][i]] = cap[to[s][i]][rev[s][i]] + d;
-            return d;
-        }
-        i = i + 1;
+        if (a[pos / bitcount] / x[pos % bitcount] % 2 == 1)
+            if (d == 0)
+                v = v - x[pos % bitcount];
     }
+
+    a[pos / bitcount] = a[pos / bitcount] + v;
     return 0;
 }
 
-int max_flow(int s, int t)
-{
-    int flow = 0;
+int seed[3] = {19971231, 19981013, 1000000000 + 7};
+int staticvalue = 0;
 
-    while (1) {
-        my_memset(used, 0, 10);
-
-        int f = dfs(s, t, INF);
-        if (f == 0)
-            return flow;
-        flow = flow + f;
-    }
+int rand(){
+    staticvalue = staticvalue * seed[0] + seed[1];
+    staticvalue = staticvalue % seed[2];
+    if (staticvalue < 0) staticvalue = seed[2] + staticvalue;
+    return staticvalue;
 }
 
-int main()
-{
-    int V, E;
-    V = getint();
-    E = getint();
-    my_memset(size, 0, 10);
+int a[10000] = {};
+int main(){
 
-    while (E > 0) {
-        int u, v;
-        u = getint();
-        v = getint();
-        int c = getint();
-        add_node(u, v, c);
-        E = E - 1;
+    int n = getint();
+    staticvalue = getint();
+    starttime();
+    int x, y;
+    while (n > 0){
+        n = n - 1;
+        x = rand() % 300000;
+        y = rand() % 2;
+        set(a, x, y);
     }
-
-    putint(max_flow(1, V));
-    putch(10);
+    stoptime();
+    putarray(10000, a);
     return 0;
 }

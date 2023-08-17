@@ -61,6 +61,10 @@ void RedundantCallElimination(Function *currentFunction) {
         while(blockHead != blockTail){
             if(blockHead->inst->Opcode == Call){
                 Value *calledFunction = ins_get_lhs(blockHead->inst);
+                if(isSySYFunction(calledFunction)){
+                    blockHead = get_next_inst(blockHead);
+                    continue;
+                }
                 int paramNum = calledFunction->pdata->symtab_func_pdata.param_num;
                 Type *paramTypes = calledFunction->pdata->symtab_func_pdata.param_type_lists;
                 bool containAddress = false;
