@@ -14,7 +14,7 @@ int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s31+s
 //考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
 int arm_flag_lr=1;
 // 全局变量地是否进行了寄存器分配，1 true
-int globalVarRegAllocate=0;
+int globalVarRegAllocate=1;
 //考虑释放r3
 //int arm_flag_r3=1;
 UsageOfTmpReg watchReg;

@@ -6,7 +6,7 @@
 #define S 26
 #define R 11
 //#define YAOWEI_TEST
-int enable_ordinary=1; //通用寄存器分配开关
+int enable_ordinary=0; //通用寄存器分配开关
 int enable_globalVar=0;//在启用通用寄存器开关时该开关才有效，控制是否为全局变量地址分配寄存器
 
 int enable_vfp=1; //浮点寄存器分配开关
