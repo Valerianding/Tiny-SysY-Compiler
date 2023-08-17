@@ -38,6 +38,7 @@ void RunOptimizePasses(Function *currentFunction){
     bool changed = true;
     while(changed){
         changed =  InstCombine(currentFunction);
+        renameVariables(currentFunction);
     }
 
 

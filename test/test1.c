@@ -1,67 +1,63 @@
-int set(int a[], int pos, int d){
-    const int bitcount = 30;
-    int x[bitcount + 1] = {};
+const int width = 1024;
+const int height = 1024;
+int image_in[width * height];
+int image_out[width * height];
 
-    x[0] = 1;
-    x[1] = x[0] * 2;
-    x[2] = x[1] * 2;
-    x[3] = x[2] * 2;
-    x[4] = x[3] * 2;
-    x[5] = x[4] * 2;
-    x[6] = x[5] * 2;
-    x[7] = x[6] * 2;
-    x[8] = x[7] * 2;
-    x[9] = x[8] * 2;
-    x[10] = x[9] * 2;
-
-    int i = 10;
-    while (i < bitcount){
-        i = i + 1;
-        x[i] = x[i - 1] * 2;
+int cutout(int val){
+    if(val < 0){
+        val = 0;
     }
-
-    int v = 0;
-
-    if (pos / bitcount >= 10000) return 0;
-
-    if (a[pos / bitcount] / (x[pos % bitcount]) % 2 != d){
-        if (a[pos / bitcount] / (x[pos % bitcount]) % 2 == 0)
-            if (d == 1)
-                v = x[pos % bitcount];
-
-        if (a[pos / bitcount] / x[pos % bitcount] % 2 == 1)
-            if (d == 0)
-                v = v - x[pos % bitcount];
+    else{
+        if(val > 255){
+            val = 255;
+        }
     }
-
-    a[pos / bitcount] = a[pos / bitcount] + v;
-    return 0;
+    return val;
 }
 
-int seed[3] = {19971231, 19981013, 1000000000 + 7};
-int staticvalue = 0;
-
-int rand(){
-    staticvalue = staticvalue * seed[0] + seed[1];
-    staticvalue = staticvalue % seed[2];
-    if (staticvalue < 0) staticvalue = seed[2] + staticvalue;
-    return staticvalue;
-}
-
-int a[10000] = {};
 int main(){
+    int i;
+    int j;
+    int num = getarray(image_in);
 
-    int n = getint();
-    staticvalue = getint();
     starttime();
-    int x, y;
-    while (n > 0){
-        n = n - 1;
-        x = rand() % 300000;
-        y = rand() % 2;
-        set(a, x, y);
+    j = 1;
+    while(j < width - 1){
+        i = 1;
+        while(i < height - 1){
+            int im1jm1 =(i-1)*width + j-1;
+            int im1j   =(i-1)*width + j;
+            int im1jp1 =(i-1)*width + j+1;
+            int ijm1   =(i  )*width + j-1;
+            int ij     =(i  )*width + j;
+            int ijp1   =(i  )*width + j+1;
+            int ip1jm1 =(i+1)*width + j-1;
+            int ip1j   =(i+1)*width + j;
+            int ip1jp1 =(i+1)*width + j+1;
+            int val = 8*image_in[ij] - image_in[im1jm1] - image_in[im1j] - image_in[im1jp1] -image_in[ijm1] - image_in[ijp1] - image_in[ip1jm1] - image_in[ip1j] - image_in[ip1jp1];
+
+            image_out[i*width + j] = cutout(val);
+            i = i + 1;
+        }
+        j = j + 1;
     }
+
+    i = 0;
+    while(i < height){
+        image_out[i * width] = image_in[i * width];
+        image_out[i * width + width - 1] = image_in[i * width + width - 1];
+        i = i + 1;
+    }
+
+    j = 0;
+    while(j < width){
+        image_out[j] = image_in[j];
+        image_out[(height - 1) * width + j] = image_in[(height - 1) * width + j];
+        j = j + 1;
+    }
+
     stoptime();
-    putarray(10000, a);
-    return 0;
+
+    putarray(width * height, image_out);
+    return num;
 }
