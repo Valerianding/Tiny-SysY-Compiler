@@ -263,6 +263,7 @@ int main(int argc, char* argv[]){
 //    printf_llvm_ir(instruction_list,argv[4],0);
 
 
+
 //    图着色
     reg_alloca_(start);
 //    线性扫描
