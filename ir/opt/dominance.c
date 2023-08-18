@@ -684,6 +684,7 @@ void cleanAll(Function *currentFunction){
             HashSetAdd(workList,block->false_block);
         }
     }
+    HashSetDeinit(workList);
 }
 
 void cleanDominance(Function *currentFunction){

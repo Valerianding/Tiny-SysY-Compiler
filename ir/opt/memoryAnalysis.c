@@ -141,4 +141,6 @@ void RedundantCallElimination(Function *currentFunction) {
             HashSetAdd(workList,block->false_block);
         }
     }
+
+    HashSetDeinit(workList);
 }

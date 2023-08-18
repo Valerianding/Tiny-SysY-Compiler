@@ -255,6 +255,7 @@ void Mark(Function *currentFunction){
             }
 //        }
     }
+    HashSetDeinit(workList);
 }
 
 bool Sweep(Function *currentFunction) {
