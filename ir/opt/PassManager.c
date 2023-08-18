@@ -22,7 +22,8 @@ void RunOptimizePasses(Function *currentFunction){
 
     DVNT(currentFunction); // 浮点情况还有可能有错
 
-    memlvn(currentFunction);
+    //TODO BUG & NOT Simplified
+    //memlvn(currentFunction);
 
     //for loopAnalysis
     loopAnalysis(currentFunction);

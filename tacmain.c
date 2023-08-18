@@ -215,8 +215,8 @@ int main(int argc, char* argv[]){
                 renameVariables(currentFunction);
             }
             //loop simplify requires loop normalize
-//            LoopNormalize(currentFunction);
-//            LoopSimplify(currentFunction);
+            LoopNormalize(currentFunction);
+            LoopSimplify(currentFunction);
 //            LoopReduce(currentFunction);
             renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
