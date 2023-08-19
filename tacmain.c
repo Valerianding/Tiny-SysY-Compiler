@@ -229,7 +229,7 @@ int main(int argc, char* argv[]){
         Clean(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+   // printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化
