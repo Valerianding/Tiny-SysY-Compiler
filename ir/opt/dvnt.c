@@ -130,6 +130,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
 
                 //remove this instruction!!
+
+
+                //This is correct!!
                 InstNode *tempNode = get_next_inst(phiNode);
                 deleteIns(phiNode);
                 phiNode = tempNode;
@@ -172,7 +175,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                 case Alloca:{
                     //为alloca新建一个value number
                     Value *dest = ins_get_dest(currNode->inst);
-                    unsigned int *pValue_number = (unsigned  int *)malloc(sizeof(unsigned int));
+                    unsigned int *pValue_number = (unsigned int *)malloc(sizeof(unsigned int));
                     *pValue_number = value_number_seed;
                     value_number_seed++;
 
@@ -219,7 +222,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     *pValue_number = value_number_seed;
                     value_number_seed++;
                     HashSetAdd(newScope,dest);
-                    HashMapPut(var2num,dest,pValue_number);
+                    HashMapPut(var2num,dest,(void *)pValue_number);
                     break;
                 }
                 default: {
@@ -245,7 +248,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                     unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
                                     *pValueNumber = value_number_seed;
                                     value_number_seed++;
-                                    HashMapPut(var2num,lhs,pValueNumber);
+                                    HashMapPut(var2num,lhs,(void *)pValueNumber);
                                 }else{
                                     assert(false);
                                 }
@@ -272,7 +275,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                     unsigned int *pValueNumber = (unsigned int*)malloc(sizeof(unsigned int));
                                     *pValueNumber = value_number_seed;
                                     value_number_seed++;
-                                    HashMapPut(var2num,rhs,pValueNumber);
+                                    HashMapPut(var2num,rhs,(void *)pValueNumber);
                                 }else{
                                     assert(false);
                                 }

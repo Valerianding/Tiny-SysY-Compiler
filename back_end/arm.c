@@ -13,8 +13,10 @@ int lineScan=1; //使用线性扫描寄存器分配
 int ARM_enable_vfp=1;  //支持浮点寄存器分配,现在暂时使用s16-s31+s6-s15(这个在调用函数之前需要保存),s4和s5做为通用用来处理内存。
 //考虑释放lr，释放了lr之后，r10回被分配出去，需要被保护
 int arm_flag_lr=1;
+// 全局变量地是否进行了寄存器分配，1 true
+int globalVarRegAllocate=1;
 //考虑释放r3
-int arm_flag_r3=1;
+//int arm_flag_r3=1;
 UsageOfTmpReg watchReg;
 //如果说使用浮点寄存器分配的话，Var_Float放在_vfpReg_寄存器中，其对应的所有Var_Float分配结果在lineScanVFPReg,遍历取出
 HashMap * lineScan_param;
@@ -56,12 +58,12 @@ int param_off[4];
 char fileName[256];
 char funcName[256];
 int save_r11;
-int global_flag=0;
+//int global_flag=0;
 int give_param_num;
 Value *func_return_type=NULL; //用来进行函数return返回值类型转换
 Value *func_param_type=NULL; //用来进行函数调用和接受类型转换
 //用来记录开辟的文字池
-int ltorg_num=0;
+//int ltorg_num=0;
 int give_param_flag[4];
 //char return_message[100000];
 int stm_num; //8字节对齐
@@ -86,6 +88,7 @@ int get_a_tem_reg(){
 //        assert(false);
         return -1;
     }
+    return -1;
 }
 void free_a_tmp_reg(int i){
     if(i>=0 && i<=2){
@@ -977,7 +980,7 @@ void FuncBegin_hashmap_bitcast_add(HashMap*hashMap,Value *value0,Value *value1,i
 }
 
 int get_siezof_sp(HashMap*hashMap){
-    return HashMapSize(hashMap);
+    return (int)HashMapSize(hashMap);
 }
 
 int get_value_pdata_inspdata_true(Value*value){
@@ -1067,7 +1070,9 @@ void arm_translate_ins(InstNode *ins,char argv[]){
                 }
             }
             hashMap=offset_init(ins,&local_var_num,k,lineScan_param);
-            handle_global_var_address(hashMap,ins);
+            if(globalVarRegAllocate==1){
+                handle_global_var_address(hashMap,ins);
+            }
 //            如果使用了线性扫描，需要处理多余的寄存器,将多余的寄存器提前加载到给对应参数分配的寄存器中
             if(lineScan==1){
                 handle_lineScan_extra_reg(ins,param_num);
@@ -8194,12 +8199,19 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     }
                 }
                 else if(isGlobalArrayIntType(value1->VTy) || isGlobalArrayFloatType(value1->VTy)){
-                    if(left_reg>=100){
-                        int x= get_value_offset_sp(hashMap,value1);
-                        handle_illegal_imm(i+100,x,1);
+                    if(globalVarRegAllocate==1){
+                        if(left_reg>=100){
+                            int x= get_value_offset_sp(hashMap,value1);
+                            handle_illegal_imm(i+100,x,1);
+                        }else{
+                            printf("\tmov\tr%d,r%d\n",i,left_reg);
+                            fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
+                        }
                     }else{
-                        printf("\tmov\tr%d,r%d\n",i,left_reg);
-                        fprintf(fp,"\tmov\tr%d,r%d\n",i,left_reg);
+                        printf("\tmovw\tr%d,#:lower16:%s\n",i,value1->name+1);
+                        fprintf(fp,"\tmovw\tr%d,#:lower16:%s\n",i,value1->name+1);
+                        printf("\tmovt\tr%d,#:upper16:%s\n",i,value1->name+1);
+                        fprintf(fp,"\tmovt\tr%d,#:upper16:%s\n",i,value1->name+1);
                     }
                 }
                 else{
@@ -9648,19 +9660,21 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         if(flag<0){
 //            常数的计算
             int x=value2->pdata->var_pdata.iVal*4;
-//            LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
-//            if(lcptLabel==NULL){
-//                printf("GEP Global error\n");
-//            }
-//            printf("\tldr\tr1,%s\n",lcptLabel->LCPI);
-//            fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-            if(left_reg>=100){
-                int y= get_value_offset_sp(hashMap,value1);
-                handle_illegal_imm(left_reg,y,1);
-                left_reg_abs=left_reg-100;
-                watchReg.generalReg[1]=1;
+            if(globalVarRegAllocate==1){
+                if(left_reg>=100){
+                    int y= get_value_offset_sp(hashMap,value1);
+                    handle_illegal_imm(left_reg,y,1);
+                    left_reg_abs=left_reg-100;
+                    watchReg.generalReg[1]=1;
+                }else{
+                    left_reg_abs=left_reg;
+                }
             }else{
-                left_reg_abs=left_reg;
+                printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                left_reg_abs=1;
             }
             if(imm_is_valid(x)){
                 if(x!=0){
@@ -9692,20 +9706,23 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
 //                assert(false);
                 int x;
-//                LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
-//                if(lcptLabel==NULL){
-//                    printf("GEP Global error\n");
-//                }
-//                printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
-//                fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-                if(left_reg>=100){
-                    int y= get_value_offset_sp(hashMap,value1);
-                    handle_illegal_imm(left_reg,y,1);
-                    left_reg_abs=left_reg-100;
-                    watchReg.generalReg[1]=1;
+                if(globalVarRegAllocate==1){
+                    if(left_reg>=100){
+                        int y= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,y,1);
+                        left_reg_abs=left_reg-100;
+                        watchReg.generalReg[1]=1;
+                    }else{
+                        left_reg_abs=left_reg;
+                    }
                 }else{
-                    left_reg_abs=left_reg;
+                    printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    left_reg_abs=1;
                 }
+
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 if(imm_is_valid(y)){
@@ -9725,20 +9742,23 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 }
             } else{
                 int x;
-//                    LCPTLabel *lcptLabel=(LCPTLabel*) HashMapGet(global_hashmap,value1);
-//                    if(lcptLabel==NULL){
-//                        printf("GEP Global error\n");
-//                    }
-//                    printf("\tldr\tr1,%s\n",lcptLabel->LCPI); //数组首地址的偏移量的绝对地址，而再局部数组中是数组首地址的偏移量+r11
-//                    fprintf(fp,"\tldr\tr1,%s\n",lcptLabel->LCPI);
-                if(left_reg>=100){
-                    int y= get_value_offset_sp(hashMap,value1);
-                    handle_illegal_imm(left_reg,y,1);
-                    left_reg_abs=left_reg-100;
-                    watchReg.generalReg[1]=1;
+                if(globalVarRegAllocate==1){
+                    if(left_reg>=100){
+                        int y= get_value_offset_sp(hashMap,value1);
+                        handle_illegal_imm(left_reg,y,1);
+                        left_reg_abs=left_reg-100;
+                        watchReg.generalReg[1]=1;
+                    }else{
+                        left_reg_abs=left_reg;
+                    }
                 }else{
-                    left_reg_abs=left_reg;
+                    printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+                    printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+                    left_reg_abs=1;
                 }
+
                 if(power_of_two(result)==-1){
                     if(imm_is_valid(result)){
                         printf("\tmov\tr2,#%d\n",result);
@@ -9784,9 +9804,6 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         assert(left_reg_flag!=0);
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
-//            printf("GEP next1\n");
-//            非第一条GEP而且是常数的偏移（其后不含变量）,常数的偏移的话直接add就可以了
-//            想这种情况right_reg=0,直接取value2里面的值就可以了
             int x=value2->pdata->var_pdata.iVal*4;
 
             if(imm_is_valid(x)){
@@ -9830,8 +9847,8 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
                 watchReg.generalReg[1]=1;
             }
             if(dest_reg<0){
-                int x= get_value_offset_sp(hashMap,value0);
-                handle_illegal_imm(dest_reg_abs,x,0);
+                int y= get_value_offset_sp(hashMap,value0);
+                handle_illegal_imm(dest_reg_abs,y,0);
             }
         }else if(isImmIntType(value2->VTy)){
 //            非第一条GEP，且常数，其后是非常数,这里可以直接value2.ival*维数计算之后的值，再和基准相加
@@ -9887,12 +9904,6 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //            非第一条GEP且非常数的偏移
             int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
             int result= array_suffix(value0->alias,which_dimension);
-//            if(imm_is_valid(result)){
-//                printf("\tmov\tr2,#%d\n",result);
-//                fprintf(fp,"\tmov\tr2,#%d\n",result);
-//            }else{
-//                handle_illegal_imm1(2,result);
-//            }
 //            watchReg.generalReg[2]=1;
             if(left_reg>=100&&right_reg>=100){
                 int x1= get_value_offset_sp(hashMap,value1);
@@ -9987,11 +9998,9 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             if(dest_reg<0){
                 int x= get_value_offset_sp(hashMap,value0);
                 handle_illegal_imm(dest_reg_abs,x,0);
-
             }
         }
     }
-
     memset(&watchReg,0, sizeof(watchReg));
     return ins;
 }
@@ -10019,10 +10028,6 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
     Value *value1= user_get_operand_use(&ins->inst->user,0)->Val;
     Value *value2=NULL;
     if(isGlobalArrayIntType(value1->VTy)|| isGlobalArrayFloatType(value1->VTy)){
-//        说明这个全局变量是全局变量数组类型
-//        它的初始化信息可以通过value1->pdata->symtab_array_pdata.is_init查看，如果为1表示已被初始化，0表示未被初始化
-//        value1->pdata->symtab_array_pdata.array可以知道它被初始化的值，为零表示未被初始化，不为零表示已经进行了初始化
-//        value1->pdata->symtab_array_pdata.f_array表示浮点型数组
         if(isGlobalArrayIntType(value1->VTy)){
             int arr_size= get_array_total_occupy(value1,0);
             int arr_num=arr_size/4;//获取数组总的元素个数
@@ -10039,11 +10044,8 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
                             char value_int[12];
                             sprintf(value_int,"%d",zero_count*4);
                             strcat(globalvar_message,value_int);
-//                            strcat(globalvar_message,"\n");
-//                            printf(".zero %d\n", zero_count * 4);
                             zero_count = 0;
                         }
-//                        printf(".long %d\n", value1->pdata->symtab_array_pdata.array[i]);
                         strcat(globalvar_message,"\n\t.long\t");
                         char value_int[12];
                         sprintf(value_int,"%d",value1->pdata->symtab_array_pdata.array[i]);
@@ -10434,23 +10436,40 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 //  表示将一个值存放到全局变量中
     int left_int_float=-1;
     if(isGlobalVarIntType(value1->VTy)){
-        if(left_reg>=100){
-            int y= get_value_offset_sp(hashMap,value1);
-            handle_illegal_imm(101,y,1);
-            left_reg_abs=1;
+        if(globalVarRegAllocate==1){
+            if(left_reg>=100){
+                int y= get_value_offset_sp(hashMap,value1);
+                handle_illegal_imm(101,y,1);
+                left_reg_abs=1;
+            }else{
+                left_reg_abs=left_reg;
+            }
         }else{
-            left_reg_abs=left_reg;
+            printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            left_reg_abs=1;
         }
+
         printf("\tldr\tr1,[r%d]\n",left_reg_abs);
         fprintf(fp,"\tldr\tr1,[r%d]\n",left_reg_abs);
         left_int_float=0;
     } else if(isGlobalVarFloatType(value1->VTy)){
-        if(left_reg>=100){
-            int y= get_value_offset_sp(hashMap,value1);
-            handle_illegal_imm(101,y,1);
-            left_reg_abs=1;
+        if(globalVarRegAllocate==1){
+            if(left_reg>=100){
+                int y= get_value_offset_sp(hashMap,value1);
+                handle_illegal_imm(101,y,1);
+                left_reg_abs=1;
+            }else{
+                left_reg_abs=left_reg;
+            }
         }else{
-            left_reg_abs=left_reg;
+            printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            left_reg_abs=1;
         }
         printf("\tldr\tr1,[r%d]\n",left_reg_abs);
         fprintf(fp,"\tldr\tr1,[r%d]\n",left_reg_abs);
@@ -10510,13 +10529,22 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 
 //    value2
     if(isGlobalVarIntType(value2->VTy)){
-        if(right_reg>=100){
-            int y= get_value_offset_sp(hashMap,value2);
-            handle_illegal_imm(102,y,2);
-            right_reg_abs=2;
+        if(globalVarRegAllocate==1){
+            if(right_reg>=100){
+                int y= get_value_offset_sp(hashMap,value2);
+                handle_illegal_imm(102,y,2);
+                right_reg_abs=2;
+            }else{
+                right_reg_abs=right_reg;
+            }
         }else{
-            right_reg_abs=right_reg;
+            printf("\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+            fprintf(fp,"\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+            printf("\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+            fprintf(fp,"\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+            right_reg_abs=2;
         }
+
         if(left_int_float==0){
             printf("\tstr\tr1,[r%d]\n",right_reg_abs);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_abs);
@@ -10532,13 +10560,22 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
         }
 
     } else if(isGlobalVarFloatType(value2->VTy)){
-        if(right_reg>=100){
-            int y= get_value_offset_sp(hashMap,value2);
-            handle_illegal_imm(102,y,2);
-            right_reg_abs=2;
+        if(globalVarRegAllocate==1){
+            if(right_reg>=100){
+                int y= get_value_offset_sp(hashMap,value2);
+                handle_illegal_imm(102,y,2);
+                right_reg_abs=2;
+            }else{
+                right_reg_abs=right_reg;
+            }
         }else{
-            right_reg_abs=right_reg;
+            printf("\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+            fprintf(fp,"\tmovw\tr2,#:lower16:%s\n",value2->name+1);
+            printf("\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+            fprintf(fp,"\tmovt\tr2,#:upper16:%s\n",value2->name+1);
+            right_reg_abs=2;
         }
+
         if(left_int_float==1){
             printf("\tstr\tr1,[r%d]\n",right_reg_abs);
             fprintf(fp,"\tstr\tr1,[r%d]\n",right_reg_abs);
@@ -10681,13 +10718,20 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
     }
 //    处理普通全局变量,处理全局变量的类型问题先不改,默认value1和value0是同一种类型的type，如同为int或者说是同为float
     if(isGlobalVarIntType(value1->VTy)){
-
-        if(left_reg>=100){
-            int y= get_value_offset_sp(hashMap,value1);
-            handle_illegal_imm(left_reg,y,1);
-            left_reg_abs=left_reg-100;
+        if(globalVarRegAllocate==1){
+            if(left_reg>=100){
+                int y= get_value_offset_sp(hashMap,value1);
+                handle_illegal_imm(left_reg,y,1);
+                left_reg_abs=left_reg-100;
+            }else{
+                left_reg_abs=left_reg;
+            }
         }else{
-            left_reg_abs=left_reg;
+            printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            left_reg_abs=1;
         }
         if(dest_reg<0){
             printf("\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
@@ -10699,12 +10743,20 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
             fprintf(fp,"\tldr\tr%d,[r%d]\n",dest_reg_abs,left_reg_abs);
         }
     } else if(isGlobalVarFloatType(value1->VTy)){
-        if(left_reg>=100){
-            int y= get_value_offset_sp(hashMap,value1);
-            handle_illegal_imm(left_reg,y,1);
-            left_reg_abs=left_reg-100;
+        if(globalVarRegAllocate==1){
+            if(left_reg>=100){
+                int y= get_value_offset_sp(hashMap,value1);
+                handle_illegal_imm(left_reg,y,1);
+                left_reg_abs=left_reg-100;
+            }else{
+                left_reg_abs=left_reg;
+            }
         }else{
-            left_reg_abs=left_reg;
+            printf("\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovw\tr1,#:lower16:%s\n",value1->name+1);
+            printf("\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            fprintf(fp,"\tmovt\tr1,#:upper16:%s\n",value1->name+1);
+            left_reg_abs=1;
         }
         if(ARM_enable_vfp==1){
             dest_reg=ins->inst->_vfpReg_[0];

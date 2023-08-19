@@ -22,6 +22,7 @@
 #include "loopnorm.h"
 #include "loopconv.h"
 #include "loopreduce.h"
+#include "memoryAnalysis.h"
 void RunBasicPasses(Function *currentFunction);
 void RunOptimizePasses(Function *currentFunction);
 #endif //C22V1_PASSMANAGER_H

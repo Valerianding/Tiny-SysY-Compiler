@@ -28,6 +28,11 @@ void sideEffectAnalysis(Function *currentFunction){
     Type *paramTypes = funcHead->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_type_lists;
     printf("param Num is %d!\n",paramNum);
 
+    //clean visitedObjects
+    if(function->visitedObjects != NULL){
+        HashSetClean(function->visitedObjects);
+    }
+
     //如果参数有传递数组默认含有内存操作不可优化
     for(int i = 0; i < paramNum; i++){
         if(paramTypes[i].ID == AddressTyID){

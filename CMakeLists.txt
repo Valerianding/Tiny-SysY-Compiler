@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.10)
 
 project(c22v1)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_COMPILER clang-10)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_COMPILER "clang-10")
+set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE} -Release")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
 
 find_package(BISON REQUIRED)
@@ -37,7 +37,7 @@ include_directories(front_end)
 include_directories(back_end)
 include_directories(container)
 #debug必备
-add_compile_options(-Wall -g -O0)
+add_compile_options(-Wall -g -O2)
 #生成可以执行文件
 add_executable(compiler
         ${FLEX_mc_lexer_OUTPUTS}
@@ -49,7 +49,7 @@ add_executable(compiler
         ${DIR_LIB}
         ${DIR_CONTAINER}
         ${DIR_BACK}
-        tacmain.c ir/opt/loopnorm.c ir/opt/loopnorm.h ir/opt/loop2memcpy.c ir/opt/loop2memcpy.h ir/opt/loopconv.c ir/opt/loopconv.h ir/opt/loopreduce.c ir/opt/loopreduce.h)
+        tacmain.c ir/opt/loopnorm.c ir/opt/loopnorm.h ir/opt/loop2memcpy.c ir/opt/loop2memcpy.h ir/opt/loopconv.c ir/opt/loopconv.h ir/opt/loopreduce.c ir/opt/loopreduce.h ir/opt/memoryAnalysis.c ir/opt/memoryAnalysis.h)
 
 
 

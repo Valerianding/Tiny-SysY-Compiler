@@ -86,5 +86,4 @@ void bblock_divide(InstNode *head){
         }
         cur = get_next_inst(cur);
     }
-    printf("after second while\n");
 }

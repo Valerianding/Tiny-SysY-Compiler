@@ -8,8 +8,8 @@ void RunBasicPasses(Function *currentFunction){
 
     while(effective){
         effective = false;
-        effective |= ConstFolding(currentFunction);
-        effective |=  commonSubexpressionElimination(currentFunction);
+        ConstFolding(currentFunction);
+        commonSubexpressionElimination(currentFunction);
     }
 
     renameVariables(currentFunction);
@@ -22,9 +22,12 @@ void RunOptimizePasses(Function *currentFunction){
 
     DVNT(currentFunction); // 浮点情况还有可能有错
 
+    //TODO BUG & NOT Simplified
+    //memlvn(currentFunction);
+
     //for loopAnalysis
     loopAnalysis(currentFunction);
-//
+
     LICM(currentFunction);
 
     Loop2Memset(currentFunction);
@@ -32,6 +35,13 @@ void RunOptimizePasses(Function *currentFunction){
     Loop2Memcpy(currentFunction);
 
     GCM(currentFunction);
+
+    bool changed = true;
+    while(changed){
+        changed =  InstCombine(currentFunction);
+        renameVariables(currentFunction);
+    }
+
 
     instruction_combination(currentFunction);
 

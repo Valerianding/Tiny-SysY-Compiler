@@ -9,9 +9,11 @@ void value_add_use(Value *this, Use *U){
 void value_init(Value* this){
     memset(this, 0, sizeof(Value));
     this->VTy = (Type*)malloc(sizeof(Type));
+    memset(this->VTy,0,sizeof(Type));
     this->VTy->ID = Unknown;
     this->name = NULL;
     this->pdata = (PData*)malloc(sizeof(PData));
+    memset(this->pdata,0,sizeof(PData));
     this->visitedObjects = HashSetInit();
     this->containInput = false;
     this->containOutput = false;

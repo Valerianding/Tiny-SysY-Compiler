@@ -145,12 +145,7 @@ int main(int argc, char* argv[]){
 
         //Loop invariant code motion 需要使用live-out信息
         calculateLiveness(currentFunction);
-
-//        printLiveness(currentFunction);
     }
-
-//    //mem2reg之后，优化前
-
 
     CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
@@ -159,24 +154,27 @@ int main(int argc, char* argv[]){
 
     bool NOTOK = containFloat(instruction_list);
 
-
     //构建Function
     Function *start = ReconstructFunction(instruction_list);
 
     //先跑一次
     //如果要fuc inline一定要dom一下
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK)
+        if(!NOTOK){
             RunBasicPasses(currentFunction);
+            buildCallGraphNode(currentFunction);
+        }
     }
 
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
+            sideEffectAnalysis(currentFunction);
+            RedundantCallElimination(currentFunction);
+            renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
         }
     }
-
 
     if(Optimize){
         func_inline(instruction_list,124);
@@ -185,8 +183,6 @@ int main(int argc, char* argv[]){
         start = ReconstructFunction(instruction_list);
 
         global2local(instruction_list);
-
-//        printf_llvm_ir(instruction_list,argv[4],1);
 
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
 
@@ -204,23 +200,13 @@ int main(int argc, char* argv[]){
     //重新构建Function
     start = ReconstructFunction(instruction_list);
 
-    //inline 之后的IR
-//    printf_llvm_ir(instruction_list,argv[4],1);
-
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK)
+        if(!NOTOK){
             RunBasicPasses(currentFunction);
+        }
     }
 
     if(!NOTOK && Optimize){
-        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunOptimizePasses(currentFunction);
-            renameVariables(currentFunction);
-        }
-
-//        printf_llvm_ir(instruction_list,argv[4],1);
-
-
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
             bool changed = true;
@@ -231,23 +217,19 @@ int main(int argc, char* argv[]){
             //loop simplify requires loop normalize
             LoopNormalize(currentFunction);
             LoopSimplify(currentFunction);
-            changed = true;
-            while(changed){
-                changed = InstCombine(currentFunction);
-                renameVariables(currentFunction);
-            }
+//            LoopReduce(currentFunction);
+            renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
         }
     }
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 //    //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         Clean(currentFunction);
-        renameVariables(currentFunction);
     }
-//
-//     printf_llvm_ir(instruction_list,argv[4],1);
-//
+
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化
@@ -276,6 +258,7 @@ int main(int argc, char* argv[]){
 
     fix_array(instruction_list);
 //    printf_llvm_ir(instruction_list,argv[4],0);
+
 
 
 //    图着色

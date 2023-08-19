@@ -951,7 +951,7 @@ void sequentialCopy(Function *currentFunction){
                     Value *src = copyPair->src;
                     Value *tempValue = (Value*)malloc(sizeof(Value));
                     value_init(tempValue);
-                    tempValue->name = (char*)malloc(sizeof(char) * 4);
+                    tempValue->name = (char*)malloc(sizeof(char) * 10);
                     strcpy(tempValue->name,"%temp");
                     // 自己为自己的alias
                     tempValue->alias = tempValue;

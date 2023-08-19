@@ -1,96 +1,89 @@
-/*
- * Max flow EK with DFS.
- */
-const int INF = 0x70000000;
+const int N = 1024;
 
-int size[10];
-int to[10][10];
-int cap[10][10];
-int rev[10][10];
-int used[10];
+void mm(int n, int A[][N], int B[][N], int C[][N]){
+    int i, j, k;
 
-void my_memset(int arr[], int val, int n)
-{
-    int i = 0;
-    while (i < n) {
-        arr[i] = val;
-        i = i + 1;
-    }
-}
-
-void add_node(int u, int v, int c)
-{
-    to[u][size[u]] = v;
-    cap[u][size[u]] = c;
-    rev[u][size[u]] = size[v];
-
-    to[v][size[v]] = u;
-    cap[v][size[v]] = 0;
-    rev[v][size[v]] = size[u];
-
-    size[u] = size[u] + 1;
-    size[v] = size[v] + 1;
-}
-
-int dfs(int s, int t, int f)
-{
-    if (s == t)
-        return f;
-    used[s] = 1;
-
-    int i = 0;
-    while (i < size[s]) {
-        if (used[to[s][i]]) { i = i + 1; continue; }
-        if (cap[s][i] <= 0) { i = i + 1; continue; }
-
-        int min_f;
-        if (f < cap[s][i])
-            min_f = f;
-        else
-            min_f = cap[s][i];
-        int d = dfs(to[s][i], t, min_f);
-
-        if (d > 0) {
-            cap[s][i] = cap[s][i] - d;
-            cap[to[s][i]][rev[s][i]] = cap[to[s][i]][rev[s][i]] + d;
-            return d;
+    i = 0; j = 0;
+    while (i < n){
+        j = 0;
+        while (j < n){
+            C[i][j] = 0;
+            j = j + 1;
         }
         i = i + 1;
     }
-    return 0;
-}
 
-int max_flow(int s, int t)
-{
-    int flow = 0;
+    i = 0; j = 0; k = 0;
 
-    while (1) {
-        my_memset(used, 0, 10);
-
-        int f = dfs(s, t, INF);
-        if (f == 0)
-            return flow;
-        flow = flow + f;
+    while (k < n){
+        i = 0;
+        while (i < n){
+            if (A[i][k] == 0){
+                i = i + 1;
+                continue;
+            }
+            j = 0;
+            while (j < n){
+                C[i][j] = C[i][j] + A[i][k] * B[k][j];
+                j = j + 1;
+            }
+            i = i + 1;
+        }
+        k = k + 1;
     }
 }
 
-int main()
-{
-    int V, E;
-    V = getint();
-    E = getint();
-    my_memset(size, 0, 10);
+int A[N][N];
+int B[N][N];
+int C[N][N];
 
-    while (E > 0) {
-        int u, v;
-        u = getint();
-        v = getint();
-        int c = getint();
-        add_node(u, v, c);
-        E = E - 1;
+int main(){
+    int n = getint();
+    int i, j;
+
+    i = 0;
+    j = 0;
+    while (i < n){
+        j = 0;
+        while (j < n){
+            A[i][j] = getint();
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    i = 0;
+    j = 0;
+    while (i < n){
+        j = 0;
+        while (j < n){
+            B[i][j] = getint();
+            j = j + 1;
+        }
+        i = i + 1;
     }
 
-    putint(max_flow(1, V));
+    starttime();
+
+    i = 0;
+    while (i < 5){
+        mm(n, A, B, C);
+        mm(n, A, C, B);
+        i = i + 1;
+    }
+
+    int ans = 0;
+    i = 0;
+    while (i < n){
+        j = 0;
+        while (j < n){
+            ans = ans + B[i][j];
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    stoptime();
+    putint(ans);
     putch(10);
+
     return 0;
 }
