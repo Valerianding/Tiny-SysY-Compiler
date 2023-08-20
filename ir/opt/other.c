@@ -11,7 +11,7 @@
 
 //check if the preHeader has Store
 
-//dirty pattern
+//pattern recognize
 bool checkMemOptLoop(Loop *loop){
     BasicBlock *head = loop->head;
     if(HashSetSize(head->preBlocks) != 2) return false;
@@ -98,7 +98,7 @@ bool checkMemOptLoop(Loop *loop){
 
                 Value *addLhs = ins_get_lhs(bodyHead->inst);
                 Value *addRhs = ins_get_rhs(bodyHead->inst);
-
+                Value *addDest = ins_get_dest(bodyHead->inst);
                 if(addLhs == loop->inductionVariable){
                     if(!isImmInt(addRhs) || addRhs->pdata->var_pdata.iVal != 1){
                         return false;
@@ -118,6 +118,19 @@ bool checkMemOptLoop(Loop *loop){
                     //rhs must come from load
                     if(addRhs != load){
                         return false;
+                    }
+
+                    //the phi's second operand must be this add
+                    HashSet *phiSet = addLhs->pdata->pairSet;
+                    HashSetFirst(phiSet);
+                    for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                        BasicBlock *from = phiInfo->from;
+                        if(HashSetFind(loop->loopBody,from)){
+                            Value *phiOperand = phiInfo->define;
+                            if(phiOperand != addDest){
+                                return false;
+                            }
+                        }
                     }
                 }
                 break;
@@ -129,6 +142,7 @@ bool checkMemOptLoop(Loop *loop){
 
                 Value *addLhs = ins_get_lhs(bodyHead->inst);
                 Value *addRhs = ins_get_rhs(bodyHead->inst);
+                Value *addDest = ins_get_dest(bodyHead->inst);
 
                 if(addLhs == loop->inductionVariable){
                     if(!isImmInt(addRhs) || addRhs->pdata->var_pdata.iVal != 1){
@@ -151,6 +165,18 @@ bool checkMemOptLoop(Loop *loop){
                         return false;
                     }
 
+                    //the phi's second operand must be this add
+                    HashSet *phiSet = addLhs->pdata->pairSet;
+                    HashSetFirst(phiSet);
+                    for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                        BasicBlock *from = phiInfo->from;
+                        if(HashSetFind(loop->loopBody,from)){
+                            Value *phiOperand = phiInfo->define;
+                            if(phiOperand != addDest){
+                                return false;
+                            }
+                        }
+                    }
                 }
                 break;
             }
@@ -201,6 +227,7 @@ void MemOptOnLoop(Loop *loop){
         //check if have same number of store
         InstNode *preHead = preHeader->head_node;
         InstNode *preTail = preHeader->tail_node;
+        preHead = get_next_inst(preHead);
 
         printf("%d\n",countStore);
 
@@ -216,6 +243,8 @@ void MemOptOnLoop(Loop *loop){
 
                 addNum += stored->pdata->var_pdata.iVal;
                 nowStore++;
+            }else{
+                return;
             }
 
             //store is to the same one dimension array
@@ -223,23 +252,61 @@ void MemOptOnLoop(Loop *loop){
         }
 
 
+        Value *load = NULL;
         //find the load
         InstNode *bodyHead = loop->body_block->head_node;
         InstNode *bodyTail = loop->body_block->tail_node;
         while(bodyHead != bodyTail){
-
+            if(bodyHead->inst->Opcode == Load){
+                load = ins_get_dest(bodyHead->inst);
+                break;
+            }
             bodyHead = get_next_inst(bodyHead);
         }
+
+        assert(load != NULL);
+
+        User *loadUser = NULL;
+
+        Use *loadUses = load->use_list;
+        while(loadUses != NULL){
+            loadUser = loadUses->Parent;
+            loadUses = loadUses->Next;
+        }
+
+
+        //find the use thus find the phi
+        Instruction *addIns = (Instruction *)loadUser;
+
+        assert(addIns->Opcode == Add);
+
+        Value *phiDest = ins_get_lhs(addIns);
+
+        HashSet *phiSet= phiDest->pdata->pairSet;
+
+        Value *phiInitValue = NULL;
+
+        HashSetFirst(phiSet);
+        for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+            BasicBlock *from = phiInfo->from;
+            if(!HashSetFind(loop->loopBody,from)){
+                phiInitValue = phiInfo->define;
+            }
+        }
+
+        //
+        assert(phiInitValue != NULL);
+
+        printf("phi initValue is %s\n",phiInitValue->name);
 
         if(nowStore == countStore){
             printf("stored %d\n",addNum);
             //now we know that all the store are useless
             assert(false);
 
-            //get the phi's intiValue
-
-
-            //add the initValue with all the constants
+//            Value *sum =
+//            //add the initValue with all the constants
+//            Instruction *newAdd = ins_new_binary_operator(Add,phiInitValue,)
         }
     }
 }

@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL,0);
     travel_finish_type(instruction_list);
     move_give_param(instruction_list);
-  printf_llvm_ir(instruction_list,argv[4],1);
+//  printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
@@ -134,6 +134,7 @@ int main(int argc, char* argv[]){
         dominanceAnalysis(currentFunction);
     }
 
+
     //建立phi之前
     global2local(instruction_list);
 
@@ -147,10 +148,10 @@ int main(int argc, char* argv[]){
         calculateLiveness(currentFunction);
     }
 
+
     CheckGlobalVariable(instruction_list);
     JudgeXor(instruction_list);
     combineZext(instruction_list);
-
 
     bool NOTOK = containFloat(instruction_list);
 
@@ -176,8 +177,10 @@ int main(int argc, char* argv[]){
         }
     }
 
+
     if(Optimize) {
         func_inline(instruction_list, 124);
+
 
         //重新构建Function
         start = ReconstructFunction(instruction_list);
@@ -218,6 +221,8 @@ int main(int argc, char* argv[]){
         }
     }
 
+    printf_llvm_ir(instruction_list,argv[4],1);
+
 //    //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         Clean(currentFunction);
@@ -230,7 +235,7 @@ int main(int argc, char* argv[]){
 //        memOpt(currentFunction);
 //    }
 
-//    printf_llvm_ir(instruction_list,argv[4],1);
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化

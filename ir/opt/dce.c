@@ -571,7 +571,7 @@ bool OnePass(Vector* vector) {
 //            printf("processed2 is %d\n",processed);
             //if j has only one predecessor
             BasicBlock *j = block->true_block;
-            if (HashSetSize(j->preBlocks) == 1 && processed == false) {
+            if (HashSetSize(j->preBlocks) == 1 && processed == false && j->tail_node->inst->Opcode != FunEnd) {
                 changed = true;
                 processed = true;
                 HashSetFirst(j->preBlocks);

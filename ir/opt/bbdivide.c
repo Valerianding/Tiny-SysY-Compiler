@@ -37,7 +37,6 @@ void bblock_divide(InstNode *head){
             }
         }
         if(cur->inst->Opcode == br || cur->inst->Opcode == br_i1 || cur->inst->Opcode == FunEnd || cur->inst->Opcode == Return){
-            InstNode *cur_next = get_next_inst(cur);
             BasicBlock *this = bb_create();
             this->id = curBlockLabel;
             bb_set_block(this,prev_in,cur);

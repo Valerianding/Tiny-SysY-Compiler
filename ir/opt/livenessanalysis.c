@@ -275,7 +275,7 @@ void calculateLiveness1(Function *currentFunction){
 
 // 包含phi函数的 活跃变量分析
 //用作 loopAnalysis invariant等地方
-// WARN: This includes global variable、Arrayß
+// WARN: This includes global variable、Array
 void calculateLiveness(Function *currentFunction){
 
 
@@ -322,8 +322,6 @@ void calculateLiveness(Function *currentFunction){
     HashSet *workList = HashSetInit();
 
     HashSetAdd(workList,exit);
-
-    bool firstTime = true;
 
     //for the first time we put all the blocks into the workList
     HashSetCopy(workList,allBlocks);
