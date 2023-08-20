@@ -2896,6 +2896,7 @@ void create_func_def(past root) {
     //如果没有return，即void返回
     if(return_stmt_num[return_index]==0)
     {
+        v->pdata->symtab_func_pdata.return_type.ID = VoidTyID;
         Instruction *ins_ret_void= ins_new_zero_operator(Return);
         //将这个instruction加入总list
         InstNode *node_void = new_inst_node(ins_ret_void);
@@ -5373,18 +5374,18 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
             default:
                 break;
         }
-        Value *v,*vl,*vr;
-        v= ins_get_dest(instruction_node->inst);
-        vl= ins_get_lhs(instruction_node->inst);
-        vr= ins_get_rhs(instruction_node->inst);
-        if(v!=NULL)
-            printf("left:%s,\t",type_str[v->VTy->ID]);
-        if(vl!=NULL)
-            printf("value1:%s,\t",type_str[vl->VTy->ID]);
-        if(vr!=NULL)
-            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-        printf("\n");
-//////
+//        Value *v,*vl,*vr;
+//        v= ins_get_dest(instruction_node->inst);
+//        vl= ins_get_lhs(instruction_node->inst);
+//        vr= ins_get_rhs(instruction_node->inst);
+//        if(v!=NULL)
+//            printf("left:%s,\t",type_str[v->VTy->ID]);
+//        if(vl!=NULL)
+//            printf("value1:%s,\t",type_str[vl->VTy->ID]);
+//        if(vr!=NULL)
+//            printf("value2:%s,\t",type_str[vr->VTy->ID]);
+//        printf("\n");
+//
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
 //        }
