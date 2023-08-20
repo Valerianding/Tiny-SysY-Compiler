@@ -116,121 +116,133 @@ bool BranchOptimizing(Function *currentFunction) {
         InstNode *blockTail = block->tail_node;
 
 
-        while(blockHead != blockTail){
-            if(isCompareOperator(blockHead)){
-                //see if the condition is always true
-                Value *cmpLhs = ins_get_lhs(blockHead->inst);
-                Value *cmpRhs = ins_get_rhs(blockHead->inst);
+        if(blockTail->inst->Opcode == br_i1){
+            InstNode *cmpNode = get_prev_inst(blockTail);
 
-                InstNode *branchNode = get_next_inst(blockHead);
-                assert(branchNode->inst->Opcode == br_i1);
+            assert(isCompareOperator(cmpNode));
+            Value *cmpLhs = ins_get_lhs(blockHead->inst);
+            Value *cmpRhs = ins_get_rhs(blockHead->inst);
 
-                bool condition;
-                if(isImmInt(cmpLhs) && isImmInt(cmpRhs)){
-                    switch (blockHead->inst->Opcode) {
-                        case LESS:{
-                            if(cmpLhs->pdata->var_pdata.iVal < cmpRhs->pdata->var_pdata.iVal){
-                                condition = true;
-                            }else{
-                                condition = false;
-                            }
-                            break;
+            bool condition;
+            if(isImmInt(cmpLhs) && isImmInt(cmpRhs)){
+                switch (blockHead->inst->Opcode) {
+                    case LESS:{
+                        if(cmpLhs->pdata->var_pdata.iVal < cmpRhs->pdata->var_pdata.iVal){
+                            condition = true;
+                        }else{
+                            condition = false;
                         }
-                        case LESSEQ:{
-                            if(cmpLhs->pdata->var_pdata.iVal < cmpRhs->pdata->var_pdata.iVal){
-                                condition = true;
-                            }else{
-                                condition = false;
-                            }
-                            break;
+                        break;
+                    }
+                    case LESSEQ:{
+                        if(cmpLhs->pdata->var_pdata.iVal < cmpRhs->pdata->var_pdata.iVal){
+                            condition = true;
+                        }else{
+                            condition = false;
                         }
-                        case GREAT:{
-                            if(cmpLhs->pdata->var_pdata.iVal > cmpRhs->pdata->var_pdata.iVal){
-                                condition = true;
-                            }else{
-                                condition = false;
-                            }
-                            break;
+                        break;
+                    }
+                    case GREAT:{
+                        if(cmpLhs->pdata->var_pdata.iVal > cmpRhs->pdata->var_pdata.iVal){
+                            condition = true;
+                        }else{
+                            condition = false;
                         }
-                        case GREATEQ:{
-                            if(cmpLhs->pdata->var_pdata.iVal > cmpRhs->pdata->var_pdata.iVal){
-                                condition = true;
-                            }else{
-                                condition = false;
-                            }
-                            break;
+                        break;
+                    }
+                    case GREATEQ:{
+                        if(cmpLhs->pdata->var_pdata.iVal > cmpRhs->pdata->var_pdata.iVal){
+                            condition = true;
+                        }else{
+                            condition = false;
                         }
-                        case EQ:{
-                            if(cmpLhs->pdata->var_pdata.iVal == cmpRhs->pdata->var_pdata.iVal){
-                                condition = true;
-                            }else{
-                                condition = false;
-                            }
-                            break;
+                        break;
+                    }
+                    case EQ:{
+                        if(cmpLhs->pdata->var_pdata.iVal == cmpRhs->pdata->var_pdata.iVal){
+                            condition = true;
+                        }else{
+                            condition = false;
                         }
-                        case NOTEQ:{
-                            if(cmpLhs->pdata->var_pdata.iVal != cmpRhs->pdata->var_pdata.iVal){
-                                condition = true;
-                            }else{
-                                condition = false;
-                            }
-                            break;
+                        break;
+                    }
+                    case NOTEQ:{
+                        if(cmpLhs->pdata->var_pdata.iVal != cmpRhs->pdata->var_pdata.iVal){
+                            condition = true;
+                        }else{
+                            condition = false;
                         }
-                        default:{
-                            assert(false);
-                        }
+                        break;
+                    }
+                    default:{
+                        assert(false);
                     }
                 }
-
-                if(condition){
-                    //condition is true
-                    BasicBlock *falseTarget = block->false_block;
+            }
 
 
-                    //TODO now we just simply say that the unreachable target can't have any phis
+            if(condition){
+                //condition is true
+                BasicBlock *falseTarget = block->false_block;
 
-                    InstNode *falseHead = falseTarget->head_node;
-                    InstNode *falseTail = falseTarget->tail_node;
 
-                    bool containPhi = false;
-                    while(falseHead != falseTail){
-                        if(falseHead->inst->Opcode == Phi){
-                            containPhi = true;
-                        }
-                        falseHead = get_next_inst(falseHead);
+                //TODO now we just simply say that the unreachable target can't have any phis
+
+                InstNode *falseHead = falseTarget->head_node;
+                InstNode *falseTail = falseTarget->tail_node;
+
+                bool containPhi = false;
+                while(falseHead != falseTail){
+                    if(falseHead->inst->Opcode == Phi){
+                        containPhi = true;
                     }
+                    falseHead = get_next_inst(falseHead);
+                }
 
-                    if(containPhi == false){
-                        HashSetRemove(block->false_block->preBlocks,block);
+                if(containPhi == false){
+                    HashSetRemove(block->false_block->preBlocks,block);
 
-                        //delete this branch
+                    Instruction *newJump = ins_new_zero_operator(br);
+                    InstNode *jumpNode = new_inst_node(newJump);
 
+                    ins_insert_before(jumpNode,blockTail);
 
-                    }
-
+                    //delete this branch
+                    deleteIns(blockHead);
 
                 }else{
-                    BasicBlock *trueBlock = block->true_block;
-
-                    InstNode *trueHead = trueBlock->head_node;
-                    InstNode *trueTail = trueBlock->tail_node;
-
-                    bool containPhi = false;
-                    while(trueHead != trueTail){
-                        if(trueHead->inst->Opcode == Phi){
-                            containPhi = true;
-                        }
-                        trueHead = get_next_inst(trueHead);
-                    }
-
-                    if(containPhi == false){
-                        HashSetRemove(block->true_block->preBlocks,block);
-
-                    }
+                    blockHead = get_next_inst(blockHead);
                 }
-            }else{}
 
+
+            }else{
+                BasicBlock *trueBlock = block->true_block;
+
+                InstNode *trueHead = trueBlock->head_node;
+                InstNode *trueTail = trueBlock->tail_node;
+
+                bool containPhi = false;
+                while(trueHead != trueTail){
+                    if(trueHead->inst->Opcode == Phi){
+                        containPhi = true;
+                    }
+                    trueHead = get_next_inst(trueHead);
+                }
+
+                if(containPhi == false){
+                    HashSetRemove(block->true_block->preBlocks,block);
+                }
+            }
+        }else{
             blockHead = get_next_inst(blockHead);
+        }
+
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
+        }
+
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
         }
     }
     return changed;

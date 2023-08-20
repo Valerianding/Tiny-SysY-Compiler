@@ -44,11 +44,11 @@ void RunOptimizePasses(Function *currentFunction){
         renameVariables(currentFunction);
     }
 
-//    postDominanceAnalysis(currentFunction);
-//
-//    Mark(currentFunction);
-//
-//    Sweep(currentFunction);
+    postDominanceAnalysis(currentFunction);
+
+    Mark(currentFunction);
+
+    Sweep(currentFunction);
 
     removeUnreachable(currentFunction);
 
