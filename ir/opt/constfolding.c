@@ -184,7 +184,6 @@ bool BranchOptimizing(Function *currentFunction) {
 
                 if(condition){
                     //condition is true
-                    //rewrite this branch to a jump instruction
                     BasicBlock *falseTarget = block->false_block;
 
 
@@ -193,22 +192,46 @@ bool BranchOptimizing(Function *currentFunction) {
                     InstNode *falseHead = falseTarget->head_node;
                     InstNode *falseTail = falseTarget->tail_node;
 
-//                    bool
-//                    while(falseHead != falseTail){
-//                        if(falseHead->inst->Opcode == Phi){
-//                        }
-//                        falseHead = get_next_inst(falseHead);
-//                    }
-                    HashSetRemove(block->false_block->preBlocks,block);
+                    bool containPhi = false;
+                    while(falseHead != falseTail){
+                        if(falseHead->inst->Opcode == Phi){
+                            containPhi = true;
+                        }
+                        falseHead = get_next_inst(falseHead);
+                    }
+
+                    if(containPhi == false){
+                        HashSetRemove(block->false_block->preBlocks,block);
+
+                        //delete this branch
+
+
+                    }
 
 
                 }else{
+                    BasicBlock *trueBlock = block->true_block;
 
+                    InstNode *trueHead = trueBlock->head_node;
+                    InstNode *trueTail = trueBlock->tail_node;
+
+                    bool containPhi = false;
+                    while(trueHead != trueTail){
+                        if(trueHead->inst->Opcode == Phi){
+                            containPhi = true;
+                        }
+                        trueHead = get_next_inst(trueHead);
+                    }
+
+                    if(containPhi == false){
+                        HashSetRemove(block->true_block->preBlocks,block);
+
+                    }
                 }
-            }
+            }else{}
+
             blockHead = get_next_inst(blockHead);
         }
     }
-
     return changed;
 }

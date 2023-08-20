@@ -170,9 +170,9 @@ int main(int argc, char* argv[]){
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             sideEffectAnalysis(currentFunction);
-//            RedundantCallElimination(currentFunction);
-//            renameVariables(currentFunction);
-//            RunOptimizePasses(currentFunction);
+            RedundantCallElimination(currentFunction);
+            renameVariables(currentFunction);
+            RunOptimizePasses(currentFunction);
         }
     }
 
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]){
 //            LoopSimplify(currentFunction);
 //            LoopReduce(currentFunction);
 //            renameVariables(currentFunction);
-//            RunOptimizePasses(currentFunction);
+            RunOptimizePasses(currentFunction);
         }
     }
 //    printf_llvm_ir(instruction_list,argv[4],1);
