@@ -10226,7 +10226,7 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
         fprintf(fp,"\tsub\tsp,sp,#4\n");
         sp_offset_to_r11+=16;
         if(ARM_enable_vfp==1){
-//            printf_vpush_rlist2();
+            printf_vpush_rlist2();
         }
         int x=get_value_offset_sp(hashMap,value1);
         if(imm_is_valid(x)){
