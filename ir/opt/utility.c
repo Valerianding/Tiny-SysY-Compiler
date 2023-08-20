@@ -938,3 +938,65 @@ bool isRegionalConstant(Value *value,struct Loop *loop){
     //
     return true;
 }
+
+bool hasSingleExit(Function *currentFunction){
+    //收集一下All BasicBlocks
+    HashSet *blocks = HashSetInit();
+    HashSet *workList = HashSetInit();
+
+    BasicBlock *entry = currentFunction->entry;
+    clear_visited_flag(entry);
+
+    HashSetAdd(workList,entry);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+        block->visited = true;
+        HashSetAdd(blocks,block);
+        if(block->true_block && block->true_block->visited == false){
+            HashSetAdd(workList,block->true_block);
+        }
+        if(block->false_block && block->false_block->visited == false){
+            HashSetAdd(workList,block->false_block);
+        }
+    }
+
+
+    //从exit回去能否找到所有的block
+    InstNode *funcTail = currentFunction->tail->tail_node;
+    while(funcTail->inst->Opcode != Return){
+        funcTail = get_prev_inst(funcTail);
+    }
+
+    clear_visited_flag(entry);
+
+    BasicBlock *exit = funcTail->inst->Parent;
+    HashSetClean(workList);
+    HashSetAdd(workList,exit);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        BasicBlock *block = HashSetNext(workList);
+        HashSetRemove(workList,block);
+        block->visited = true;
+        HashSetFirst(block->preBlocks);
+        for(BasicBlock *preBlock = HashSetNext(block->preBlocks); preBlock != NULL; preBlock = HashSetNext(block->preBlocks)){
+            if(preBlock->visited == false){
+                HashSetAdd(workList,preBlock);
+            }
+        }
+    }
+
+    bool hasSingleExit = true;
+    //check now if the blocks all visited;
+    HashSetFirst(blocks);
+    for(BasicBlock *block = HashSetNext(blocks); block != NULL; block = HashSetNext(blocks)){
+        if(block->visited == false){
+            hasSingleExit = false;
+        }
+    }
+
+    HashSetDeinit(blocks);
+    HashSetDeinit(workList);
+    return hasSingleExit;
+}

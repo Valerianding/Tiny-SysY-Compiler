@@ -231,10 +231,10 @@ int main(int argc, char* argv[]){
 
   //  printf_llvm_ir(instruction_list,argv[4],1);
 
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-//        loopAnalysis(currentFunction);
-//        memOpt(currentFunction);
-//    }
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+        loopAnalysis(currentFunction);
+        memOpt(currentFunction);
+    }
 
     printf_llvm_ir(instruction_list,argv[4],1);
 

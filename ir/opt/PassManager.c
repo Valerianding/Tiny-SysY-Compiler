@@ -46,13 +46,17 @@ void RunOptimizePasses(Function *currentFunction){
         renameVariables(currentFunction);
     }
 
-    postDominanceAnalysis(currentFunction);
+    if(hasSingleExit(currentFunction)){
+        printf("here!\n");
 
-    Mark(currentFunction);
+        postDominanceAnalysis(currentFunction);
 
-    Sweep(currentFunction);
+        Mark(currentFunction);
 
-    removeUnreachable(currentFunction);
+        Sweep(currentFunction);
+
+        removeUnreachable(currentFunction);
+    }
 
     renameVariables(currentFunction);
 }

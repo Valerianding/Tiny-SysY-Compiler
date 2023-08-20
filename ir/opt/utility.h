@@ -56,4 +56,5 @@ void cleanBlock(BasicBlock *block);
 bool containFloat(InstNode *node);
 bool usedInPhi(Value *value, Function *function);
 bool isRegionalConstant(Value *value,struct Loop *loop);
+bool hasSingleExit(Function *currentFunction);
 #endif //C22V1_UTILITY_H

@@ -304,9 +304,18 @@ void MemOptOnLoop(Loop *loop){
             //now we know that all the store are useless
             assert(false);
 
-//            Value *sum =
-//            //add the initValue with all the constants
-//            Instruction *newAdd = ins_new_binary_operator(Add,phiInitValue,)
+            Value *sum = (Value *)malloc(sizeof(Value));
+            value_init_int(sum,addNum);
+
+            //add the initValue with all the constants
+            Instruction *newAdd = ins_new_binary_operator(Add,phiInitValue,sum);
+            newAdd->user.value.name = (char *)malloc(sizeof(char) * 10);
+            strcpy(newAdd->user.value.name,"%add");
+            newAdd->user.value.VTy->ID = Var_INT;
+            InstNode *addNode = new_inst_node(newAdd);
+            newAdd->Parent = loopEntry;
+            ins_insert_before(addNode,loopEntry->tail_node);
+
         }
     }
 }
