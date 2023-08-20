@@ -23,6 +23,7 @@ bool commonSubexpressionElimination(Function *currentFunction){
         if(block->false_block && block->false_block->visited == false)
             HashSetAdd(workList,block->false_block);
     }
+    HashSetDeinit(workList);
     renameVariables(currentFunction);
     return effective;
 }
