@@ -200,15 +200,15 @@ int main(int argc, char* argv[]){
     //重新构建Function
     start = ReconstructFunction(instruction_list);
 
-//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//        if(!NOTOK){
-//            RunBasicPasses(currentFunction);
-//        }
-//    }
+    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+        if(!NOTOK){
+            RunBasicPasses(currentFunction);
+        }
+    }
 
-//    if(!NOTOK && Optimize){
-//        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-//            RunOptimizePasses(currentFunction);
+    if(!NOTOK && Optimize){
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+            RunOptimizePasses(currentFunction);
 //            bool changed = true;
 //            while(changed){
 //                changed = InstCombine(currentFunction);
@@ -217,11 +217,11 @@ int main(int argc, char* argv[]){
 //            //loop simplify requires loop normalize
 //            LoopNormalize(currentFunction);
 //            LoopSimplify(currentFunction);
-////            LoopReduce(currentFunction);
+//            LoopReduce(currentFunction);
 //            renameVariables(currentFunction);
 //            RunOptimizePasses(currentFunction);
-//        }
-//    }
+        }
+    }
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 //    //OK 现在开始我们不会对

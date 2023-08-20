@@ -122,7 +122,8 @@ bool BranchOptimizing(Function *currentFunction) {
                 Value *cmpLhs = ins_get_lhs(blockHead->inst);
                 Value *cmpRhs = ins_get_rhs(blockHead->inst);
 
-                InstNode *jumpNode = get_next_inst(blockHead);
+                InstNode *branchNode = get_next_inst(blockHead);
+                assert(branchNode->inst->Opcode == br_i1);
 
                 bool condition;
                 if(isImmInt(cmpLhs) && isImmInt(cmpRhs)){
@@ -175,7 +176,34 @@ bool BranchOptimizing(Function *currentFunction) {
                             }
                             break;
                         }
+                        default:{
+                            assert(false);
+                        }
                     }
+                }
+
+                if(condition){
+                    //condition is true
+                    //rewrite this branch to a jump instruction
+                    BasicBlock *falseTarget = block->false_block;
+
+
+                    //TODO now we just simply say that the unreachable target can't have any phis
+
+                    InstNode *falseHead = falseTarget->head_node;
+                    InstNode *falseTail = falseTarget->tail_node;
+
+//                    bool
+//                    while(falseHead != falseTail){
+//                        if(falseHead->inst->Opcode == Phi){
+//                        }
+//                        falseHead = get_next_inst(falseHead);
+//                    }
+                    HashSetRemove(block->false_block->preBlocks,block);
+
+
+                }else{
+
                 }
             }
             blockHead = get_next_inst(blockHead);

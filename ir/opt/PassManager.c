@@ -36,19 +36,19 @@ void RunOptimizePasses(Function *currentFunction){
 
     GCM(currentFunction);
 
-    instruction_combination(currentFunction);
+//    instruction_combination(currentFunction);
+//
+//    bool changed = true;
+//    while(changed){
+//        changed =  InstCombine(currentFunction);
+//        renameVariables(currentFunction);
+//    }
 
-    bool changed = true;
-    while(changed){
-        changed =  InstCombine(currentFunction);
-        renameVariables(currentFunction);
-    }
-
-    postDominanceAnalysis(currentFunction);
-
-    Mark(currentFunction);
-
-    Sweep(currentFunction);
+//    postDominanceAnalysis(currentFunction);
+//
+//    Mark(currentFunction);
+//
+//    Sweep(currentFunction);
 
     removeUnreachable(currentFunction);
 
