@@ -2976,22 +2976,6 @@ void create_func_def(past root) {
         create_instruction_list(root->next,v_return,0);
 }
 
-//处理!
-//void travel_expr(past* str,int length)
-//{
-//    bool need_xor=false;
-//    for(int i=length-1;i>=0;i--)
-//    {
-//        if(str[i]->iVal=='!')
-//        {
-//            if(need_xor)
-//                str[i]->sVal= bfromcstr("special_!");
-//        }
-//        if(str[i]->iVal=='+' || str[i]->iVal=='-')
-//            need_xor=true;
-//    }
-//}
-
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
 struct _Value *cal_expr(past expr,int type,int* real) {
@@ -5807,4 +5791,19 @@ void test_wrong_ret(InstNode* instNode){
             instNode1 = get_next_inst(instNode1);
     }
 
+    //第三遍, 删掉一个基本块内br后的东西
+    instNode1 = instNode;
+    while(instNode1!=NULL && instNode->inst->Opcode!=ALLBEGIN){
+        if(instNode1->inst->Opcode == br || instNode1->inst->Opcode == br_i1){
+            InstNode *next_node = get_next_inst(instNode1);
+            while(next_node->inst->Opcode != Label && next_node->inst->Opcode != FunEnd){
+                //删掉多余的ir
+                InstNode *now = next_node;
+                next_node = get_next_inst(next_node);
+                deleteIns(now);
+            }
+            instNode1 = next_node;
+        } else
+            instNode1 = get_next_inst(instNode1);
+    }
 }
