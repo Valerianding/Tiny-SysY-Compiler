@@ -170,9 +170,9 @@ int main(int argc, char* argv[]){
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             sideEffectAnalysis(currentFunction);
-            RedundantCallElimination(currentFunction);
-            renameVariables(currentFunction);
-            RunOptimizePasses(currentFunction);
+//            RedundantCallElimination(currentFunction);
+//            renameVariables(currentFunction);
+//            RunOptimizePasses(currentFunction);
         }
     }
 
@@ -200,36 +200,36 @@ int main(int argc, char* argv[]){
     //重新构建Function
     start = ReconstructFunction(instruction_list);
 
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK){
-            RunBasicPasses(currentFunction);
-        }
-    }
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//        if(!NOTOK){
+//            RunBasicPasses(currentFunction);
+//        }
+//    }
 
-    if(!NOTOK && Optimize){
-        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-            RunOptimizePasses(currentFunction);
-            bool changed = true;
-            while(changed){
-                changed = InstCombine(currentFunction);
-                renameVariables(currentFunction);
-            }
-            //loop simplify requires loop normalize
-            LoopNormalize(currentFunction);
-            LoopSimplify(currentFunction);
-//            LoopReduce(currentFunction);
-            renameVariables(currentFunction);
-            RunOptimizePasses(currentFunction);
-        }
-    }
+//    if(!NOTOK && Optimize){
+//        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+//            RunOptimizePasses(currentFunction);
+//            bool changed = true;
+//            while(changed){
+//                changed = InstCombine(currentFunction);
+//                renameVariables(currentFunction);
+//            }
+//            //loop simplify requires loop normalize
+//            LoopNormalize(currentFunction);
+//            LoopSimplify(currentFunction);
+////            LoopReduce(currentFunction);
+//            renameVariables(currentFunction);
+//            RunOptimizePasses(currentFunction);
+//        }
+//    }
 //    printf_llvm_ir(instruction_list,argv[4],1);
 
 //    //OK 现在开始我们不会对
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
-    }
+//    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+//        Clean(currentFunction);
+//    }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化
@@ -257,7 +257,7 @@ int main(int argc, char* argv[]){
 
 
     fix_array(instruction_list);
-//    printf_llvm_ir(instruction_list,argv[4],0);
+    //printf_llvm_ir(instruction_list,argv[4],0);
 
 
 
