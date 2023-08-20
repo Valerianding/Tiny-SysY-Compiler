@@ -513,10 +513,42 @@ void decrementDegree(Node* adj){
     }
 }
 
+int get_usage(Node* node){
+    int usage = 0;
+    Use * use = node->value->use_list;
+    while (use != NULL){
+        usage++;
+        use = use->Next;
+    }
+    return usage;
+}
+
+Node *selectSimplify(){
+    HashSetFirst(simplifyWorklist);
+    Node *choice = HashSetNext(simplifyWorklist);
+    int degree = choice->degree;
+    for(Node* node = HashSetNext(simplifyWorklist); node!=NULL; node = HashSetNext(simplifyWorklist)){
+        int h = node->degree;
+        if(h > degree){
+            degree = h;
+            choice = node;
+        } else if(h == degree){
+            //相等则计算usage
+            if(get_usage(node) > get_usage(choice)){
+                choice = node;
+            }
+        }
+    }
+    return choice;
+}
+
 void simplify(){
     // 从度数低的结点集中随机选择一个从图中删除放到 selectStack 里
-    HashSetFirst(simplifyWorklist);
-    Node *node = HashSetNext(simplifyWorklist);
+//    HashSetFirst(simplifyWorklist);
+//    Node *node = HashSetNext(simplifyWorklist);
+    //改成选择一个度数最低的放
+    Node *node = selectSimplify();
+
     HashSetRemove(simplifyWorklist,node);
     stackPush(selectStack,node);
     HashSetAdd(selectSet,node);
@@ -679,12 +711,7 @@ double heuristicVal(Node* node){
 
 //冻结的启发式函数
 double customHeuristic(Node* node) {
-    int usage = 0;
-    Use * use = node->value->use_list;
-    while (use != NULL){
-        usage++;
-        use = use->Next;
-    }
+    int usage = get_usage(node);
 
     double loopCounterWeight = 1.0;  // 可以根据需要调整权重
     double degreeWeight = 1.45;  // 可以根据需要调整权重
