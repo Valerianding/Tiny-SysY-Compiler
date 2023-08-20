@@ -4,7 +4,7 @@
 #include "live_interval.h"
 
 
-int vfpFlag=0; //启用浮点寄存器分配
+int vfpFlag=1; //启用浮点寄存器分配
 int calculateGlobalVar=1;//计算全局变量活跃区间
 HashMap *hashmap;
 BasicBlock *block;
