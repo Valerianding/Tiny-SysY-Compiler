@@ -5681,9 +5681,13 @@ bool have_label(int label,HashSet* label_set){
     return false;
 }
 
-void fix_wrong_ret(char* cur_func,HashMap* func_begin_node,InstNode* br_node){
+void fix_wrong_ret(char* cur_func,HashMap* func_begin_node,InstNode* br_node,bool true_false){
     //br_node应该是最后一个空的基本块
-    int num = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location+1;
+    int num = 0;
+    if(true_false)
+        num=br_node->inst->user.value.pdata->instruction_pdata.true_goto_location+1;
+    else
+        num=br_node->inst->user.value.pdata->instruction_pdata.false_goto_location+1;
     //加一条alloca在最前面
     InstNode *begin = HashMapGet(func_begin_node,cur_func);
     Value *v_func = ins_get_lhs(begin->inst);
@@ -5705,7 +5709,10 @@ void fix_wrong_ret(char* cur_func,HashMap* func_begin_node,InstNode* br_node){
             deleteIns(begin);
             //br
             Instruction *ins_br = ins_new_zero_operator(br);
-            ins_br->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            if(true_false)
+                ins_br->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            else
+                ins_br->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.false_goto_location;
             InstNode *node_br = new_inst_node(ins_br);
             ins_insert_after(node_br,node_store);
             begin = get_next_inst(node_br);
@@ -5716,7 +5723,10 @@ void fix_wrong_ret(char* cur_func,HashMap* func_begin_node,InstNode* br_node){
     //在函数最后加label和load和ret
     Instruction *ins_label = ins_new_zero_operator(Label);
     InstNode *node_label = new_inst_node(ins_label);
-    ins_label->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location;
+    if(true_false)
+        ins_label->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location;
+    else
+        ins_label->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.false_goto_location;
     ins_insert_before(node_label,begin);
     //load
     Instruction *ins_load = ins_new_unary_operator(Load,v_ret);
@@ -5727,7 +5737,11 @@ void fix_wrong_ret(char* cur_func,HashMap* func_begin_node,InstNode* br_node){
     else if(v_func->pdata->symtab_func_pdata.return_type.ID == Var_FLOAT)
         ins_get_lhs(ins_load)->VTy->ID = Var_FLOAT;
     //ret
-    Instruction *ins_re = ins_new_unary_operator(Return,ins_get_value_with_name_and_index(ins_load,br_node->inst->user.value.pdata->instruction_pdata.true_goto_location+2));
+    Instruction *ins_re = NULL;
+    if(true_false)
+        ins_re = ins_new_unary_operator(Return,ins_get_value_with_name_and_index(ins_load,br_node->inst->user.value.pdata->instruction_pdata.true_goto_location+2));
+    else
+        ins_re = ins_new_unary_operator(Return,ins_get_value_with_name_and_index(ins_load,br_node->inst->user.value.pdata->instruction_pdata.false_goto_location+2));
     InstNode *node_re = new_inst_node(ins_re);
     ins_insert_before(node_re,begin);
 
@@ -5786,13 +5800,26 @@ void test_wrong_ret(InstNode* instNode){
         else if(instNode1->inst->Opcode == br) {
             if(!have_label(instNode1->inst->user.value.pdata->instruction_pdata.true_goto_location,cur_label_set)){
                 //fix
-                fix_wrong_ret(cur_func,func_begin_node,instNode1);
+                fix_wrong_ret(cur_func,func_begin_node,instNode1,true);
                 //直达下一个func
                 while(instNode1 && instNode1->inst->Opcode!=FunBegin)
                     instNode1 = get_next_inst(instNode1);
             }
             else
                 instNode1 = get_next_inst(instNode1);
+        } else if(instNode1->inst->Opcode == br_i1) {
+            //TODO 两个跳转位置应该只会烂一个吧
+            if(!have_label(instNode1->inst->user.value.pdata->instruction_pdata.true_goto_location,cur_label_set)){
+                fix_wrong_ret(cur_func,func_begin_node,instNode1,true);
+                //直达下一个func
+                while(instNode1 && instNode1->inst->Opcode!=FunBegin)
+                    instNode1 = get_next_inst(instNode1);
+            } else if(!have_label(instNode1->inst->user.value.pdata->instruction_pdata.false_goto_location,cur_label_set)){
+                fix_wrong_ret(cur_func,func_begin_node,instNode1,false);
+                //直达下一个func
+                while(instNode1 && instNode1->inst->Opcode!=FunBegin)
+                    instNode1 = get_next_inst(instNode1);
+            }
         }
         else
             instNode1 = get_next_inst(instNode1);
