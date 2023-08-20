@@ -643,7 +643,7 @@ void removeUnreachable(Function *currentFunction){
             }
         }
     }
-
+    HashSetDeinit(workList);
     clear_visited_flag(entry);
 }
 

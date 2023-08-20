@@ -3,7 +3,7 @@
 //
 #include "line_scan.h"
 
-#define S 16
+#define S 26
 #define R 11
 //#define YAOWEI_TEST
 int enable_ordinary=0; //通用寄存器分配开关
@@ -559,7 +559,7 @@ int get_an_availabel_VFPregister(){
 //            return i;
 //        }
 //    }
-    for(int i=31;i>=16;i--){
+    for(int i=31;i>=6;i--){
         if(VFPreg[i]==0){
             VFPreg[i]=1;
             free_VFPreg_num--;

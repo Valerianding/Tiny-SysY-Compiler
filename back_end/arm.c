@@ -734,6 +734,7 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 }
 void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //        r3寄存器用于传参，并且已经被占用,获取一个可用寄存器
+    assert(x!=-1);
     int tmp_reg=get_free_reg();
     if(tmp_reg==-1){
         tmp_reg=3;
@@ -7176,7 +7177,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     fprintf(fp,"\tsub\tsp,sp,#4\n");
     sp_offset_to_r11+=16;
     if(ARM_enable_vfp==1){
-//        printf_vpush_rlist2();
+        printf_vpush_rlist2();
     }
     if(param_num_>4 && (((param_num_)-4)%2)!=0){
         printf("\tsub\tsp,sp,#4\n");
@@ -7202,7 +7203,7 @@ InstNode * arm_trans_Call(InstNode *ins,HashMap*hashMap){
     fprintf(fp,"\tbl\t%s\n", user_get_operand_use(&ins->inst->user,0)->Val->name);
 
     if(ARM_enable_vfp==1){
-//        printf_vpop_rlist2();
+        printf_vpop_rlist2();
     }
     memset(give_param_flag,0, sizeof(give_param_flag));
 
@@ -7329,7 +7330,7 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     fprintf(fp,"\tsub\tsp,sp,#4\n");
     sp_offset_to_r11+=16;
     if(ARM_enable_vfp==1){
-//        printf_vpush_rlist2();
+        printf_vpush_rlist2();
     }
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
@@ -7340,7 +7341,7 @@ InstNode *arm_tarns_SysYMemset(HashMap *hashMap,InstNode *ins){ //翻译sysymems
     printf("\tbl\tmemset\n");
     fprintf(fp,"\tbl\tmemset\n");
     if(ARM_enable_vfp==1){
-//        printf_vpop_rlist2();
+        printf_vpop_rlist2();
     }
 
     printf("\tadd\tsp,sp,#4\n");
@@ -7362,7 +7363,7 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
     fprintf(fp,"\tsub\tsp,sp,#4\n");
     sp_offset_to_r11+=16;
     if(ARM_enable_vfp==1){
-//        printf_vpush_rlist2();
+        printf_vpush_rlist2();
     }
     get_param_list(NULL,&give_count);
     func_param_type=NULL; //memset没有函数调用名对应的value，而且不需要类型匹配
@@ -7373,7 +7374,7 @@ InstNode * arm_tarns_SysYMemcpy(HashMap *hashMap,InstNode *ins){
     printf("\tbl\tmemcpy\n");
     fprintf(fp,"\tbl\tmemcpy\n");
     if(ARM_enable_vfp==1){
-//        printf_vpop_rlist2();
+        printf_vpop_rlist2();
     }
     printf("\tadd\tsp,sp,#4\n");
     fprintf(fp,"\tadd\tsp,sp,#4\n");
@@ -7711,6 +7712,34 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //                break;
             case CopyOperation:
                 value0=ins->inst->user.value.alias;
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                }
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                }
+                break;
+            case sitofp:
+                value0=&ins->inst->user.value;
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                }
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                }
+                break;
+            case fptosi:
+                value0=&ins->inst->user.value;
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
                 if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
                     FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);
@@ -10197,7 +10226,7 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
         fprintf(fp,"\tsub\tsp,sp,#4\n");
         sp_offset_to_r11+=16;
         if(ARM_enable_vfp==1){
-//            printf_vpush_rlist2();
+            printf_vpush_rlist2();
         }
         int x=get_value_offset_sp(hashMap,value1);
         if(imm_is_valid(x)){
@@ -10226,7 +10255,7 @@ InstNode *arm_trans_MEMSET(HashMap *hashMap,InstNode *ins){
         printf("\tbl\tmemset\n");
         fprintf(fp,"\tbl\tmemset\n");
         if(ARM_enable_vfp==1){
-//            printf_vpop_rlist2();
+            printf_vpop_rlist2();
         }
 //        printf("\tadd\tsp,sp,#8\n");
 //        fprintf(fp,"\tadd\tsp,sp,#8\n");

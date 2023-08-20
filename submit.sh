@@ -1,7 +1,7 @@
 echo "start"
 cmake ./
 make
-tar -cvf  submit.tar ./back_end ./container ./front_end ./ir ./libs ./math ./src cds.h tacmain.c util.h lrparser.tab.h lrparser.tab.c lex.yy.c
+tar -cvf  submit.tar ./front_end/auto_lex.l ./front_end/lrparser.y ./back_end ./container ./front_end ./ir ./libs ./math ./src cds.h tacmain.c util.h lrparser.tab.h lrparser.tab.c lex.yy.c
 # mv submit.tar ../compiler_fengliu/
 cd ../
 cd compiler_fengliu
@@ -10,7 +10,7 @@ git checkout main
 # git branch submit
 # git checkout submit
 mv ../Tiny-SysY-Compiler/submit.tar ./
-rm -rf ./back_end ./container ./front_end ./ir ./libs ./math ./src cds.h tacmain.c util.h lrparser.tab.h lrparser.tab.c lex.yy.c
+rm -rf ./back_end ./container ./front_end/auto_lex.l ./front_end/lrparser.y ./front_end ./ir ./libs ./math ./src cds.h tacmain.c util.h lrparser.tab.h lrparser.tab.c lex.yy.c
 tar -xvf submit.tar
 rm -rf submit.tar
 git add .
