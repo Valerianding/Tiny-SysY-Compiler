@@ -5801,7 +5801,7 @@ void test_wrong_ret(InstNode* instNode){
     //第三遍, 删掉一个基本块内br后的东西
     instNode1 = instNode;
     while(instNode1!=NULL && instNode->inst->Opcode!=ALLBEGIN){
-        if(instNode1->inst->Opcode == br || instNode1->inst->Opcode == br_i1){
+        if(instNode1->inst->Opcode == br || instNode1->inst->Opcode == br_i1 || instNode1->inst->Opcode == Return){
             InstNode *next_node = get_next_inst(instNode1);
             while(next_node->inst->Opcode != Label && next_node->inst->Opcode != FunEnd){
                 //删掉多余的ir
