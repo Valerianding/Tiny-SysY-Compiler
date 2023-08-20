@@ -58,7 +58,7 @@ void RunOptimizePasses(Function *currentFunction){
         removeUnreachable(currentFunction);
     }
 
-    Clean(currentFunction);
+//    Clean(currentFunction);
 
     renameVariables(currentFunction);
 }
