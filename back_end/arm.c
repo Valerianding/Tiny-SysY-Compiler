@@ -734,6 +734,7 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 }
 void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //        r3寄存器用于传参，并且已经被占用,获取一个可用寄存器
+    assert(x!=-1);
     int tmp_reg=get_free_reg();
     if(tmp_reg==-1){
         tmp_reg=3;
@@ -7711,6 +7712,34 @@ InstNode * arm_trans_FunBegin(InstNode *ins,int *stakc_size){
 //                break;
             case CopyOperation:
                 value0=ins->inst->user.value.alias;
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                }
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                }
+                break;
+            case sitofp:
+                value0=&ins->inst->user.value;
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_reg_[0]);
+                }
+                if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_vfpReg_[1]);
+                }else{
+                    FuncBegin_hashmap_add(hashMap,value1,name,&local_stack,ins->inst->_reg_[1]);
+                }
+                break;
+            case fptosi:
+                value0=&ins->inst->user.value;
                 value1= user_get_operand_use(&ins->inst->user,0)->Val;
                 if(ARM_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
                     FuncBegin_hashmap_add(hashMap,value0,name,&local_stack,ins->inst->_vfpReg_[0]);

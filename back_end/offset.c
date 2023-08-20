@@ -518,6 +518,34 @@ HashMap *offset_init(InstNode*ins,int *local_var_num,int reg_save_num,HashMap *l
                     hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
                 }
                 break;
+            case fptosi:
+                value0=&ins->inst->user.value;
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
+                break;
+            case sitofp:
+                value0=&ins->inst->user.value;
+                value1= user_get_operand_use(&ins->inst->user,0)->Val;
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value0->VTy)){
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[0],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value0,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[0],lineScan_param);
+                }
+                if(offset_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_vfpReg_[1],lineScan_param);
+                }else{
+                    hashmap_add(hashMap,value1,name,&sub_sp,&add_sp,local_var_num,reg_save_num,ins->inst->_reg_[1],lineScan_param);
+                }
+                break;
             default:
                 break;
         }
