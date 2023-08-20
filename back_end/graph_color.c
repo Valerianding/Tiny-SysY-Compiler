@@ -544,10 +544,10 @@ Node *selectSimplify(){
 
 void simplify(){
     // 从度数低的结点集中随机选择一个从图中删除放到 selectStack 里
-//    HashSetFirst(simplifyWorklist);
-//    Node *node = HashSetNext(simplifyWorklist);
+    HashSetFirst(simplifyWorklist);
+    Node *node = HashSetNext(simplifyWorklist);
     //改成选择一个度数最低的放
-    Node *node = selectSimplify();
+   // Node *node = selectSimplify();
 
     HashSetRemove(simplifyWorklist,node);
     stackPush(selectStack,node);
