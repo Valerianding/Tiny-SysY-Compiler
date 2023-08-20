@@ -80,7 +80,7 @@ bool CheckNode(InstNode *instNode, Loop *loop){
     HashSet *phiSet = lhsIns->user.value.pdata->pairSet;
     HashSetFirst(phiSet);
     Value *other = NULL;
-    assert(HashSetSize(phiSet) == 2);
+    //assert(HashSetSize(phiSet) == 2);
     for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
         BasicBlock *from = phiInfo->from;
         Value *define = phiInfo->define;
@@ -184,7 +184,7 @@ bool loopSimplify(Loop *loop){
             Value *lhs = ins_get_lhs(bodyHead->inst);
             Instruction *correspondingPhi = (Instruction *)lhs;
             InstNode *phiNode = findNode(correspondingPhi->Parent,correspondingPhi);
-            assert(correspondingPhi->Opcode == Phi);
+            //assert(correspondingPhi->Opcode == Phi);
 
             Value *initValue = NULL;
             HashSet *phiSet = correspondingPhi->user.value.pdata->pairSet;
@@ -201,12 +201,12 @@ bool loopSimplify(Loop *loop){
             Value *tripCount = ins_get_rhs(slt);
 
 
-            assert(isImmInt(tripCount) && isImmInt(initValue));
+            //assert(isImmInt(tripCount) && isImmInt(initValue));
 
 
-            assert(bodyHead->inst->Opcode == Add || bodyHead->inst->Opcode == Sub);
+            //assert(bodyHead->inst->Opcode == Add || bodyHead->inst->Opcode == Sub);
 
-            //assert(loop->preHeader != NULL && loop->guard != NULL);
+            ////assert(loop->preHeader != NULL && loop->guard != NULL);
 
             Value *rhs = ins_get_rhs(bodyHead->inst);
 

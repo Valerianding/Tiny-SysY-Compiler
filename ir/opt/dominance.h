@@ -9,7 +9,7 @@
 #include "hash_map.h"
 #include "utility.h"
 #include "function.h"
-#include "assert.h"
+#include "//assert.h"
 extern bool Optimize;
 
 struct _DomNode{

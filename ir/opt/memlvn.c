@@ -46,7 +46,7 @@ bool memlvn(Function *current){
         HashSetFirst(workList);
         nextBlock = HashSetNext(workList);
         HashSetRemove(workList,nextBlock);
-        assert(nextBlock->visited == false);
+        //assert(nextBlock->visited == false);
         nextBlock->visited = true;
 
         //
@@ -65,7 +65,7 @@ bool memlvn(Function *current){
 bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
     bool changed = false;
     InstNode *funcHead = currentFunction->entry->head_node;
-    assert(funcHead->inst->Opcode == FunBegin);
+    //assert(funcHead->inst->Opcode == FunBegin);
     int paramNum = funcHead->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
     //printf("paramNum is %d\n",paramNum);
     HashMap *memory = HashMapInit(); //Array -> StoreInfo
@@ -85,7 +85,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
             if(!isGlobalVar(loadPlace)){
                 Instruction *gepInstruction = (Instruction*)loadPlace;
                 if(gepInstruction->Opcode == bitcast){
-                    assert(false);
+                    //assert(false);
                 }
                 cout++;
 //                printf("load : %d\n",cout);
@@ -127,7 +127,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                         exist = true;
                         StoreInfo *storeInfo = pair->value;
                         Value *replace = storeInfo->storedValue;
-                        assert(replace != NULL);
+                        //assert(replace != NULL);
                         valueReplaceAll(loadValue,replace,currentFunction);
                         //printf("replace !\n");
                         break;
@@ -156,7 +156,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                         exist = true;
                         StoreInfo *storeInfo = pair->value;
                         Value *replace = storeInfo->storedValue;
-                        assert(replace != NULL);
+                        //assert(replace != NULL);
                         valueReplaceAll(loadValue,replace,currentFunction);
                         //printf("replace !\n");
                         break;
@@ -253,7 +253,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
                 currNode = get_next_inst(currNode);
             }
         }else if(currNode->inst->Opcode == Call){
-            //assert(false);
+            ////assert(false);
 
             Value *functionValue = ins_get_lhs(currNode->inst);
 
@@ -288,7 +288,7 @@ bool mem_lvn(BasicBlock *block, HashSet *arrays,Function *currentFunction){
             //往前找
             while(calledParamNum--){
                 paramNode = get_prev_inst(paramNode);
-                assert(paramNode->inst->Opcode == GIVE_PARAM);
+                //assert(paramNode->inst->Opcode == GIVE_PARAM);
                 paramValue = ins_get_lhs(paramNode->inst);
                 //看看give Param的Value是啥！
                 //如果是地址的话 找到对应的数组 清除memory里面对应数组的信息

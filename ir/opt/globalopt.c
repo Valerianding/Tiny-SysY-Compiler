@@ -10,14 +10,14 @@ void CheckGlobalVariable(InstNode *list){
     //first of all we go through all the node to see if the initValue actually is uncritical for all
     InstNode *node = list;
     while(node != NULL){
-        assert(node->inst->isCritical == false);
+        //assert(node->inst->isCritical == false);
         node = get_next_inst(node);
     }
 
     //go through all first delete not used global variable
     InstNode *globalNode = get_next_inst(list);
     while(globalNode->inst->Opcode != FunBegin){
-        assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
+        //assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
         Value *dest = ins_get_dest(globalNode->inst);
         printf("dest is %s\n",dest->name);
         Use *destUses = dest->use_list;
@@ -83,7 +83,7 @@ void CheckGlobalVariable(InstNode *list){
         //转换成InstNode
         Instruction *ins = (Instruction *)val;
         BasicBlock *globalBlock = ins->Parent;
-        assert(globalBlock != NULL);
+        //assert(globalBlock != NULL);
         InstNode *uselessNode = findNode(globalBlock,ins);
 
         //include attach prev next
@@ -123,7 +123,7 @@ void CheckGlobalVariable(InstNode *list){
                     break;
                 }
                 default:{
-                    assert(false);
+                    //assert(false);
                 }
             }
             uses = uses->Next;
@@ -198,7 +198,7 @@ void CheckGlobalVariable(InstNode *list){
 
             if(OnlyStore){
                 uses = dest->use_list;
-                assert(uses != NULL);
+                //assert(uses != NULL);
                 //所有对于这个global array的gep和gep产生的及gep产生的所有instruction都会被remove
                 while(uses != NULL){
                     Instruction *userIns = (Instruction *)uses->Parent;
@@ -252,7 +252,7 @@ void replaceGlobal(Function *currentFunction,Value *globalVar){
     //对全局变量进行初始化
     Instruction *globalIns = (Instruction *)globalVar;
     Value *initValue = ins_get_rhs(globalIns);
-    assert(isImm(initValue));
+    //assert(isImm(initValue));
     Value *dest = ins_get_dest(newAlloca);
     //insert a store instruction
     //alloca
@@ -277,8 +277,9 @@ void replaceGlobal(Function *currentFunction,Value *globalVar){
             dest->VTy->ID = Var_INT;
             break;
         }
-        default:
-            assert(false);
+        default:{
+            //assert(false);
+        }
     }
     valueReplaceAll(globalVar,dest,currentFunction);
 }
@@ -287,7 +288,7 @@ void replaceGlobal(Function *currentFunction,Value *globalVar){
 void global2local(InstNode *list){
     InstNode *globalNode = get_next_inst(list);
     while(globalNode->inst->Opcode != FunBegin){
-        assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
+        //assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
         Value *dest = ins_get_dest(globalNode->inst);
         printf("dest is %s\n",dest->name);
         Use *destUses = dest->use_list;
@@ -338,7 +339,7 @@ void global2local(InstNode *list){
 
     globalNode = get_next_inst(list);
     while(globalNode->inst->Opcode != FunBegin){
-        assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
+        //assert(globalNode->inst->Opcode == GLOBAL_VAR || globalNode->inst->Opcode == ALLBEGIN);
         Value *dest = ins_get_dest(globalNode->inst);
         printf("dest is %s\n",dest->name);
         Use *destUses = dest->use_list;

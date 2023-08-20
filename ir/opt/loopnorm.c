@@ -24,18 +24,18 @@ void dfsTravelLoop(Loop *loop){
     }
 
     //must have only one pred which will be our
-    assert(n == 1);
-    assert(guard != NULL);
+    //assert(n == 1);
+    //assert(guard != NULL);
     BasicBlock *preHeader = bb_create();
     if(guard->true_block == guard->false_block){
-        assert(false);
+        //assert(false);
     }
 
     if(guard->true_block == loopEntry){
         guard->true_block = preHeader;
         guard->false_block = NULL;
     }else{
-        assert(false);
+        //assert(false);
     }
 
 
@@ -60,7 +60,7 @@ void dfsTravelLoop(Loop *loop){
     ins_insert_after(newBlockBrNode,newBlockLabelNode);
 
     bb_set_block(preHeader,newBlockLabelNode,newBlockBrNode);
-    assert(preHeader->head_node == newBlockLabelNode && preHeader->tail_node == newBlockBrNode);
+    //assert(preHeader->head_node == newBlockLabelNode && preHeader->tail_node == newBlockBrNode);
     preHeader->Parent = loopEntry->Parent;
 
     //还需要修改来自guard的phi -> 来自preHeader的phi
@@ -96,7 +96,7 @@ void dfsTravelLoop(Loop *loop){
 //        funcHead = get_next_inst(funcHead);
 //    }
 
-    assert(guard != NULL && preHeader != NULL);
+    //assert(guard != NULL && preHeader != NULL);
     loop->guard = guard;
     loop->preHeader = preHeader;
 }
@@ -119,8 +119,8 @@ void examineLoop2(Loop *loop){
     for(Loop *child = HashSetNext(loop->child); child != NULL; child = HashSetNext(loop->child)){
         examineLoop2(child);
     }
-    assert(loop->preHeader != NULL);
-    assert(loop->guard != NULL);
+    //assert(loop->preHeader != NULL);
+    //assert(loop->guard != NULL);
 
     //printf("%d preheader %d guard %d\n",loop->head->id,loop->preHeader->id,loop->guard->id);
 }

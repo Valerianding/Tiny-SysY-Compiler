@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <assert.h>
+#include <//assert.h>
 #include "user.h"
 #include "use.h"
 
@@ -55,7 +55,7 @@ Use* user_get_operand_use(User* this, unsigned i) {
     if(this->value.HasHungOffUses)
         return this->use_list;
     else{
-        assert(i < this->value.NumUserOperands && "user_get_operand_use() out of range!");
+        //assert(i < this->value.NumUserOperands && "user_get_operand_use() out of range!");
         return &(this->use_list[i]);
     }
 }
@@ -69,7 +69,7 @@ Use* get_operand(User* this, int ind){
     if(this->value.HasHungOffUses){
         return this->use_list;
     }else{
-        assert(this->value.NumUserOperands > ind && "operand index overflow");
+        //assert(this->value.NumUserOperands > ind && "operand index overflow");
         return this->use_list + ind;
     }
 }

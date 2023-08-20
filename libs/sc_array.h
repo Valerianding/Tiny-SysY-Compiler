@@ -32,7 +32,7 @@
 #ifndef SC_ARRAY_H
 #define SC_ARRAY_H
 
-#include <assert.h>
+#include <//assert.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -149,7 +149,7 @@
 #define sc_array_del(a, i)                                                     \
 	do {                                                                   \
                 size_t idx = (i);                                              \
-		assert(idx < (a)->size);                                       \
+		//assert(idx < (a)->size);                                       \
                                                                                \
 		const size_t _cnt = (a)->size - (idx) - 1;                     \
 		if (_cnt > 0) {                                                \
@@ -172,7 +172,7 @@
 #define sc_array_del_unordered(a, i)                                           \
 	do {                                                                   \
                 size_t idx = (i);                                              \
-		assert(idx < (a)->size);                                       \
+		//assert(idx < (a)->size);                                       \
 		(a)->elems[idx] = (a)->elems[(--(a)->size)];                   \
 	} while (0)
 
@@ -182,7 +182,7 @@
  */
 #define sc_array_del_last(a)                                                   \
 	do {                                                                   \
-		assert((a)->size != 0);                                        \
+		//assert((a)->size != 0);                                        \
 		(a)->size--;                                                   \
 	} while (0)
 

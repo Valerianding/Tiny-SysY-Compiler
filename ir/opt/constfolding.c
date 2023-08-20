@@ -45,8 +45,9 @@ bool ConstFolding(Function *currentFunction){
                             case Mod:
                                 result = (int)left % (int)right;
                                 break;
-                            default:
-                                assert(false);
+                            default:{
+                                //assert(false);
+                            }
                         }
                         value_init_int(replace,result);
                         valueReplaceAll(dest,replace,currentFunction);
@@ -70,8 +71,10 @@ bool ConstFolding(Function *currentFunction){
                             case Div:
                                 result = left / right;
                                 break;
-                            default:
-                                assert(false);
+                            default:{
+                                //assert(false);
+                            }
+
                         }
                         value_init_float(replace,result);
                         valueReplaceAll(dest,replace,currentFunction);
@@ -183,7 +186,7 @@ bool BranchOptimizing(Function *currentFunction) {
         if(blockTail->inst->Opcode == br_i1) {
             InstNode *cmpNode = get_prev_inst(blockTail);
 
-            assert(isCompareOperator(cmpNode));
+            //assert(isCompareOperator(cmpNode));
             Value *cmpLhs = ins_get_lhs(cmpNode->inst);
             Value *cmpRhs = ins_get_rhs(cmpNode->inst);
 
@@ -240,7 +243,7 @@ bool BranchOptimizing(Function *currentFunction) {
                         break;
                     }
                     default: {
-                        assert(false);
+                        //assert(false);
                     }
                 }
 

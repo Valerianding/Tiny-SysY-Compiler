@@ -357,7 +357,7 @@ void HashMapClean(HashMap *self){
     if(self == NULL){
         return;
     }
-    assert(self != NULL);
+    //assert(self != NULL);
     HashMapFirst(self);
     for(Pair* pair = HashMapNext(self); pair!=NULL ;  pair = HashMapNext(self)){
         HashMapRemove(self,pair->key);

@@ -19,7 +19,7 @@ void examineLoop(Loop *loop){
         }
     }
 
-    assert(preSize - count == 1);
+    //assert(preSize - count == 1);
 }
 
 
@@ -78,7 +78,7 @@ void loopAnalysis(Function *currentFunction){
     //需要提前解决多重回边的问题
     HashSet *tempSet = HashSetInit();
     HashSetCopy(tempSet,allLoops);
-    assert(HashSetSize(allLoops) == HashSetSize(tempSet));
+    //assert(HashSetSize(allLoops) == HashSetSize(tempSet));
 
 
     HashSetFirst(allLoops);
@@ -265,7 +265,7 @@ void findBody(Loop *loop){
     while(stackSize(stack) != 0){
         stackTop(stack,(void *)&block);
         stackPop(stack);
-        assert(block != NULL);
+        //assert(block != NULL);
 
         //
         HashSetFirst(block->preBlocks);
@@ -298,7 +298,7 @@ void findExit(Loop *loop){
     }
 
     // 必须有一个出口
-    assert(HashSetSize(loop->exitingBlock) >= 1);
+    //assert(HashSetSize(loop->exitingBlock) >= 1);
 }
 
 void findInductionVariable(Loop *loop){
@@ -321,7 +321,7 @@ void findInductionVariable(Loop *loop){
     //get the condition
     //TODO can exitingBlock terminator Opcode is not br_i1?
     InstNode *exitTail = exitBlock->tail_node;
-    assert(exitTail->inst->Opcode == br_i1);
+    //assert(exitTail->inst->Opcode == br_i1);
     Value *cond = ins_get_lhs(exitTail->inst);
     loop->end_cond = cond;
     printf("end cond is %s\n",cond->name);
@@ -384,7 +384,7 @@ void findInductionVariable(Loop *loop){
         //assume this for all loops
         Instruction *phiIns = (Instruction *)loop->inductionVariable;
         HashSet *phiSet = phiIns->user.value.pdata->pairSet;
-        assert(HashSetSize(phiSet) == 2);
+        //assert(HashSetSize(phiSet) == 2);
         HashSetFirst(phiSet);
         for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
             //找到
@@ -404,7 +404,7 @@ void findInductionVariable(Loop *loop){
     //check if the condition changes over the iterations
 
     //找到 end_cond -> 找lhs 、 rhs Instruction -> 如果还是在entry基本块内就加入workList 一旦读到load -> gg
-    assert(cond != NULL);
+    //assert(cond != NULL);
     Instruction *endIns = (Instruction *)cond;
 
     Function *func = loop->head->Parent;

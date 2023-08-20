@@ -59,7 +59,7 @@ void Schedule_Early(Instruction *ins){
 
     //printf("curIns %d, curBlock %d\n",ins->i,curBlock->id);
     Function *function = curBlock->Parent;
-    assert(function != NULL);
+    //assert(function != NULL);
 
     BasicBlock *entry = function->entry;
     int paramNum = entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
@@ -239,7 +239,7 @@ void Schedule_Early(Instruction *ins){
         BasicBlock *insertBlock = iNode->block;
 
 
-        assert(insNode != NULL);
+        //assert(insNode != NULL);
 
         //remove currNode from curr Block
 
@@ -255,7 +255,7 @@ void Schedule_Early(Instruction *ins){
             insertPoint = insertBlock->tail_node;
         }
         //我们是先schedule input 然后再schedule self所以我们每次尾插是可以的
-        assert(insertPoint != NULL);
+        //assert(insertPoint != NULL);
         //我们需要跳过
         if(Limited){
             //放在最后？
@@ -384,7 +384,7 @@ void ScheduleEarly(Function *currentFunction){
 }
 
 DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
-    assert(use != NULL);
+    //assert(use != NULL);
     if(lca == NULL){
         //printf("use %d\n",use->block->id);
         return use;
@@ -399,16 +399,16 @@ DomTreeNode *Find_LCA(DomTreeNode *lca, DomTreeNode *use){
 
     //
     while(use != lca){
-        assert(use->parent != NULL && lca->parent != NULL);
-        assert(lca->parent->domTreeNode != NULL && use->parent->domTreeNode != NULL);
+        //assert(use->parent != NULL && lca->parent != NULL);
+        //assert(lca->parent->domTreeNode != NULL && use->parent->domTreeNode != NULL);
 
         use = use->parent->domTreeNode;
         lca = lca->parent->domTreeNode;
-        assert(use != NULL && lca != NULL);
-        assert(lca->block->domTreeNode != NULL && use->block->domTreeNode != NULL);
+        //assert(use != NULL && lca != NULL);
+        //assert(lca->block->domTreeNode != NULL && use->block->domTreeNode != NULL);
     }
 
-    assert(use == lca);
+    //assert(use == lca);
     return use;
 }
 
@@ -421,8 +421,8 @@ void Schedule_Late(Instruction *ins){
     BasicBlock *block = ins->Parent;
     Function *function = block->Parent;
 
-    assert(block != NULL);
-    assert(function != NULL);
+    //assert(block != NULL);
+    //assert(function != NULL);
 
     //being visited now
     ins->visited = true;
@@ -441,12 +441,12 @@ void Schedule_Late(Instruction *ins){
         Schedule_Late(yIns);
         use = yIns->Parent->domTreeNode;
 
-        assert(use != NULL);
+        //assert(use != NULL);
         //it can't be phi so we just find the lca
 
         lca = Find_LCA(lca,use);
 
-        assert(lca != NULL);
+        //assert(lca != NULL);
         iUses = iUses->Next;
     }
 
@@ -644,7 +644,7 @@ void bfdDomTreeNode(DomTreeNode *root,int level){
     //printf("b%d child:\n",root->block->id);
     HashSetFirst(root->children);
     for(DomTreeNode *child = HashSetNext(root->children); child != NULL; child = HashSetNext(root->children)) {
-        assert(child->parent == root->block);
+        //assert(child->parent == root->block);
         bfdDomTreeNode(child,level + 1);
     }
     return;

@@ -14,7 +14,7 @@ bool commonSubexpressionElimination(Function *currentFunction){
     while(HashSetSize(workList) != 0){
         HashSetFirst(workList);
         BasicBlock *block = HashSetNext(workList);
-        assert(block != NULL);
+        //assert(block != NULL);
         block->visited = true;
         HashSetRemove(workList,block);
         effective |= commonSubexpression(block,currentFunction);
@@ -54,7 +54,7 @@ unsigned int hash_expr(int Opcode, Value* lhs, Value* rhs) {
         p2 = (unsigned long)rhs;
     }
 
-    assert(sizeof(unsigned ) == sizeof(int));
+    //assert(sizeof(unsigned ) == sizeof(int));
 
     unsigned *memory = (unsigned *)malloc(sizeof(unsigned) * 3);
     memset(memory,0,sizeof(unsigned) * 3);

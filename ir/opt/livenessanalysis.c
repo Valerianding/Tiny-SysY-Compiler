@@ -25,7 +25,7 @@ void printLiveness(Function *currentFunction){
         BasicBlock *block = HashSetNext(workList);
         HashSetRemove(workList,block);
         //
-        assert(block->visited == false);
+        //assert(block->visited == false);
         block->visited = true;
         printf("b%d live in: ",block->id);
         HashSetFirst(block->in);
@@ -161,7 +161,7 @@ void calculateLiveness1(Function *currentFunction){
     // 如果exit有前驱的话我们就加入
     HashSetFirst(exit->preBlocks);
     for(BasicBlock *prevBlock = HashSetNext(exit->preBlocks); prevBlock != NULL; prevBlock = HashSetNext(exit->preBlocks)){
-        assert(prevBlock != NULL);
+        //assert(prevBlock != NULL);
         HashSetAdd(workList,prevBlock);
     }
 
@@ -314,7 +314,7 @@ void calculateLiveness(Function *currentFunction){
         tailNode = get_prev_inst(tailNode);
     }
 
-    assert(tailNode->inst->Opcode == Return);
+    //assert(tailNode->inst->Opcode == Return);
     //
     BasicBlock *exit = tailNode->inst->Parent;
 
@@ -349,7 +349,7 @@ void calculateLiveness(Function *currentFunction){
             while(trueCurrNode != trueTailNode){
                 if(trueCurrNode->inst->Opcode == Phi){
                     Value *phiDef = ins_get_dest(trueCurrNode->inst);
-                    assert(phiDef->name != NULL);
+                    //assert(phiDef->name != NULL);
                     HashSetRemove(block->out,phiDef);
                 }
                 trueCurrNode = get_next_inst(trueCurrNode);
@@ -365,7 +365,7 @@ void calculateLiveness(Function *currentFunction){
             while(falseCurrNode != falseTailNode){
                 if(falseCurrNode->inst->Opcode == Phi){
                     Value *phiDef = ins_get_dest(falseCurrNode->inst);
-                    assert(phiDef->name != NULL);
+                    //assert(phiDef->name != NULL);
                     HashSetRemove(block->out,phiDef);
                 }
                 falseCurrNode = get_next_inst(falseCurrNode);

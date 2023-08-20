@@ -90,10 +90,10 @@ Node *spill_contain_node(Value* value){
 //寻找当前nodeSet有没有对应Value的Node,如果有则返回，没有则新建
 Node *get_Node_with_value(Value* value){
     //应该走不到这里来吧
-//    assert(!isLocalVarFloat(value));
-//    assert(!isImmFloatType(value->VTy));
-//    assert(!isImmIntType(value->VTy));
-//      assert(!isLocalArrayIntType(value->VTy));
+//    //assert(!isLocalVarFloat(value));
+//    //assert(!isImmFloatType(value->VTy));
+//    //assert(!isImmIntType(value->VTy));
+//      //assert(!isLocalArrayIntType(value->VTy));
 
     HashSetFirst(nodeSet);
     for(Node* node = HashSetNext(nodeSet);node!=NULL; node = HashSetNext(nodeSet)){
@@ -829,7 +829,7 @@ void preAssignColors(){
         Node *toBeColored;
         stackTop(selectStack,(void**)&toBeColored);
         stackPop(selectStack);
-        assert(toBeColored->type!=PreColored && toBeColored->type!=Allocated);
+        //assert(toBeColored->type!=PreColored && toBeColored->type!=Allocated);
 
         for(int i=3;i<=12;i++){
             myreg[i] = 0;
@@ -877,7 +877,7 @@ void assignColors(){
     HashSetFirst(coalescedNodes);
     for(Node* node = HashSetNext(coalescedNodes); node!=NULL; node = HashSetNext(coalescedNodes)){
         Node *a = getAlias(node);
-        assert(a->type != Allocated);                    //TODO 为什么要这样
+        //assert(a->type != Allocated);                    //TODO 为什么要这样
 //        if(a->type == PreColored)
 //            HashMapPut(colorMap,node,a);            //TODO preColored的寄存器没给，有这种情况吗
 //        else

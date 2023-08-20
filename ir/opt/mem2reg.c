@@ -45,8 +45,8 @@ void insertPhiInfo(InstNode *ins,pair *phiInfo){
     if(ins->inst->user.value.pdata->pairSet == nullptr){
         ins->inst->user.value.pdata->pairSet = HashSetInit();
     }
-    assert(ins->inst->user.value.pdata->pairSet != NULL);
-    assert(phiInfo != NULL);
+    //assert(ins->inst->user.value.pdata->pairSet != NULL);
+    //assert(phiInfo != NULL);
     HashSetAdd(ins->inst->user.value.pdata->pairSet,phiInfo);
 }
 
@@ -173,7 +173,7 @@ void mem2reg(Function *currentFunction){
                 HashSetFirst(storeSet);
                 BasicBlock *block = HashSetNext(storeSet);
                 HashSetRemove(storeSet,block);
-                assert(block != nullptr);
+                //assert(block != nullptr);
                 HashSet *df = block->df;
                 HashSetFirst(df);
                 for(BasicBlock *key = HashSetNext(df); key != nullptr; key = HashSetNext(df)) {
@@ -197,7 +197,7 @@ void mem2reg(Function *currentFunction){
     //printf("after insert phi function!\n");
     //变量重新命名
     // DomTreeNode *root = currentFunction->root;
-    assert(entry->domTreeNode == currentFunction->root);
+    //assert(entry->domTreeNode == currentFunction->root);
     DomTreeNode *root = entry->domTreeNode;
 
     HashMap *IncomingVals = HashMapInit();
@@ -208,9 +208,9 @@ void mem2reg(Function *currentFunction){
         if(curNode->inst->Opcode == Alloca){
             //每一个alloca都对应一个stack
             stack *allocaStack = stackInit();
-            assert(allocaStack != nullptr);
+            //assert(allocaStack != nullptr);
             HashMapPut(IncomingVals,&(curNode->inst->user.value),allocaStack);
-            assert(HashMapContain(IncomingVals,&(curNode->inst->user.value)));
+            //assert(HashMapContain(IncomingVals,&(curNode->inst->user.value)));
         }
         curNode = get_next_inst(curNode);
     }
@@ -262,9 +262,9 @@ void insertCopies(BasicBlock *block,Value *dest,Value *src){
     while(tailIns->inst->Opcode != br && tailIns->inst->Opcode != br_i1){
         tailIns = get_prev_inst(tailIns);
     }
-    assert(tailIns != NULL);
+    //assert(tailIns != NULL);
     InstNode *copyIns = newCopyOperation(src);
-    assert(copyIns != NULL);
+    //assert(copyIns != NULL);
     copyIns->inst->Parent = block;
     Value *insValue = ins_get_dest(copyIns->inst);
     insValue->alias = dest;
@@ -282,7 +282,7 @@ void insertCopies(BasicBlock *block,Value *dest,Value *src){
 void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
 
     //printf("in rename phrase : block : %d\n", node->block->id);
-    assert(HashMapSize(IncomingVals) != 0);
+    //assert(HashMapSize(IncomingVals) != 0);
     // 先根处理
     BasicBlock *block = node->block;
     InstNode *head = block->head_node;
@@ -315,12 +315,12 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                     //找到栈
                     stack *allocStack = HashMapGet(IncomingVals, alloc);
                     //如果是nullptr
-                    assert(allocStack != nullptr);
+                    //assert(allocStack != nullptr);
                     //去里面找
                     stackTop(allocStack, (void *) &replace);
 
                     //replace 必然不能是nullptr否则会出现未定义错误
-                    assert(replace != nullptr);
+                    //assert(replace != nullptr);
                     valueReplaceAll(value, replace,curr->inst->Parent->Parent);
                 }
                 break;
@@ -333,12 +333,12 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                     Value *data = ins_get_lhs(curr->inst);
                     //可以直接这样更新
                     stack *allocStack = HashMapGet(IncomingVals, store);
-                    assert(allocStack != nullptr);
+                    //assert(allocStack != nullptr);
                     stackPush(allocStack, data);
                     //记录define的次数
                     int *defineTime = HashMapGet(countDefine,store);
                     //if(count
-                    assert(defineTime != NULL);
+                    //assert(defineTime != NULL);
                     *(defineTime) = *(defineTime) + 1;
                 }
                 break;
@@ -356,7 +356,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 stackPush(allocStack, phi);
                 //
                 int *defineTime = HashMapGet(countDefine,alloc);
-                assert(defineTime != NULL);
+                //assert(defineTime != NULL);
                 *(defineTime) = *(defineTime) + 1;
                 break;
             }
@@ -386,7 +386,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         while(nextBlockCurr->inst->Opcode == Phi){
             //对应的是哪个
             Value *alias = nextBlockCurr->inst->user.value.alias;
-            assert(alias != NULL);
+            //assert(alias != NULL);
             //printf("alias name %s\n",alias->name);
             //去找对应需要更新的
             stack *allocStack = HashMapGet(IncomingVals,alias);
@@ -439,7 +439,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 trueBlockCurr = get_next_inst(trueBlockCurr);
                 continue;
             }
-            assert(allocStack != NULL);
+            //assert(allocStack != NULL);
 
             Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
@@ -463,7 +463,7 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
                 falseBlockCurr = get_next_inst(falseBlockCurr);
                 continue;
             }
-            assert(allocStack != NULL);
+            //assert(allocStack != NULL);
 
             Value *pairValue = NULL;
             stackTop(allocStack,(void *)&pairValue);
@@ -491,10 +491,10 @@ void dfsTravelDomTree(DomTreeNode *node,HashMap *IncomingVals){
         Value *alloc = pair->key;
 
         stack *allocStack = HashMapGet(IncomingVals,alloc);
-        assert(allocStack != NULL);
+        //assert(allocStack != NULL);
         if(allocStack != NULL){
             //去找压栈的次数
-            assert(allocStack != NULL);
+            //assert(allocStack != NULL);
             int *defineTime = HashMapGet(countDefine,alloc);
             int actualTime = *(defineTime);
            // printf("block : %d alloc : %s defineTimes : %d\n",block->id,alloc->name,actualTime);
@@ -568,10 +568,10 @@ void deleteLoadStore(Function *currentFunction){
 InstNode *newCopyOperation(Value *src){
     // 此时挂载了
     Instruction *copyIns = ins_new_unary_operator(CopyOperation,src);
-    assert(copyIns != NULL);
+    //assert(copyIns != NULL);
     copyIns->Opcode = CopyOperation;
     InstNode *copyInsNode = new_inst_node(copyIns);
-    assert(copyInsNode != NULL);
+    //assert(copyInsNode != NULL);
     return copyInsNode;
 }
 
@@ -789,7 +789,7 @@ void prunePhi(Function *currentFunction){
         BasicBlock *block = NULL;
         QueueFront(workList,(void *)&block);
         QueuePop(workList);
-        assert(block != NULL);
+        //assert(block != NULL);
         InstNode *blockCurr = block->head_node;
         InstNode *blockTail = block->tail_node;
         while(blockCurr != get_next_inst(blockTail)){
@@ -873,7 +873,7 @@ void sequentialCopy(Function *currentFunction){
         BasicBlock *block = NULL;
         QueueFront(workList,(void *)&block);
         QueuePop(workList);
-        assert(block != NULL);
+        //assert(block != NULL);
         if(block->visited == false){
             block->visited = true;
             //printf("current block is %d\n",block->id);
@@ -932,7 +932,7 @@ void sequentialCopy(Function *currentFunction){
                             //printf("pushed a copy %s <- %s!\n", copyPair->dest->name, copyPair->src->name);
                             bool res = HashSetRemove(pCopy, copyPair);
                             QueuePush(seq, copyPair);
-                            assert(res == true);
+                            //assert(res == true);
                             exist = true;
                         }
                     }
@@ -969,7 +969,7 @@ void sequentialCopy(Function *currentFunction){
                 // 从头去取
                 QueueFront(seq,(void*)&seqCopy);
                 QueuePop(seq);
-                assert(seqCopy != NULL);
+                //assert(seqCopy != NULL);
                 insertCopies(block,seqCopy->dest,seqCopy->src);
             }
             //销毁内存

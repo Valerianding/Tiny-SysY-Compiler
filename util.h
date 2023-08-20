@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
-#include <assert.h>
+#include <//assert.h>
 
 /** The key value pair for associative data structures. */
 typedef struct _Pair {

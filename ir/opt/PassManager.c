@@ -36,6 +36,8 @@ void RunOptimizePasses(Function *currentFunction){
 
     Loop2Memcpy(currentFunction);
 
+    memOpt(currentFunction);
+
     GCM(currentFunction);
 
     instruction_combination(currentFunction);
@@ -47,8 +49,6 @@ void RunOptimizePasses(Function *currentFunction){
     }
 
     if(hasSingleExit(currentFunction)){
-        printf("here!\n");
-
         postDominanceAnalysis(currentFunction);
 
         Mark(currentFunction);
@@ -57,6 +57,8 @@ void RunOptimizePasses(Function *currentFunction){
 
         removeUnreachable(currentFunction);
     }
+
+    Clean(currentFunction);
 
     renameVariables(currentFunction);
 }

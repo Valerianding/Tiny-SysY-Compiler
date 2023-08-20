@@ -3,7 +3,7 @@
 
 #include "sc_map.h"
 #include "value.h"
-#include "assert.h"
+#include "//assert.h"
 
 
 struct _mapList{

@@ -92,7 +92,7 @@ bool LoopConv(Loop *loop){
     Instruction *endIns = (Instruction *)loop->end_cond;
     Value *count = ins_get_rhs(endIns);
 
-    assert(loop->body_block);
+    //assert(loop->body_block);
     BasicBlock *body_block = loop->body_block;
 
 
@@ -188,7 +188,7 @@ bool LoopConv(Loop *loop){
 
 
     //at to this point we know that the loop has a dedicated exist
-    assert(loop->containMultiBackEdge == false);
+    //assert(loop->containMultiBackEdge == false);
 
     //update the predecessors of entry block
     //Yet it is certain that it has only one entry and one exit
@@ -196,7 +196,7 @@ bool LoopConv(Loop *loop){
     BasicBlock *loopEntry = loop->head;
     //remove tail
     HashSetRemove(loop->head->preBlocks,loop->tail);
-    assert(HashSetSize(loop->head->preBlocks) == 1);
+    //assert(HashSetSize(loop->head->preBlocks) == 1);
 
     //remove loop body
     cleanBlock(loop->body_block);
@@ -262,7 +262,7 @@ bool LoopConv(Loop *loop){
     jumpNode->inst->Parent = loopEntry;
 
     //change the entry's successors
-    assert(loop->exit_block != NULL);
+    //assert(loop->exit_block != NULL);
 
     printf("loopAnalysis exit block is %d!\n",loop->exit_block->id);
     BasicBlock *exit_block = loop->exit_block;

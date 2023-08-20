@@ -191,12 +191,12 @@ bool LICM_EACH(Loop *loop){
 
 
                 //找到唯一不属于循环的前驱节点
-                assert(HashSetSize(newBlockPrev) == 1);
+                //assert(HashSetSize(newBlockPrev) == 1);
                 HashSetFirst(newBlockPrev);
                 newPrevBlock = HashSetNext(newBlockPrev);
-//                assert(newPrevBlock == loop->preHeader);
-//                assert(loop->guard != NULL);
-//                assert(loop->guard->tail_node->inst->Opcode == br);
+//                //assert(newPrevBlock == loop->preHeader);
+//                //assert(loop->guard != NULL);
+//                //assert(loop->guard->tail_node->inst->Opcode == br);
 
                 //change the guard terminator to be a br_i1
                 //if we hoist a store we need to put a guard

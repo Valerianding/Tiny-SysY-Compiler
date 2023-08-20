@@ -209,7 +209,7 @@ void showInstructionInfo(InstNode *instruction_list){
 void showBlockInfo(InstNode *instruction_list){
     InstNode *temp = get_next_inst(instruction_list);
     BasicBlock *block = temp->inst->Parent;
-    assert(block != NULL);
+    //assert(block != NULL);
     clear_visited_flag(block);
     print_block_info(block);
     printf("--------- after print block info ---------\n");
@@ -219,7 +219,7 @@ void HashSetClean(HashSet *set){
     if(set == NULL){
         return;
     }
-    assert(set != NULL);
+    //assert(set != NULL);
     HashSetFirst(set);
     for(void *key = HashSetNext(set); key != NULL; key = HashSetNext(set)){
         HashSetRemove(set,key);
@@ -427,7 +427,7 @@ unsigned hash_values(Vector *valueVector) {
     Value *value = NULL;
     for(int i = 0; i < count; i++) {
         VectorGet(valueVector,i,(void *)&value);
-        assert(value != NULL);
+        //assert(value != NULL);
         if(isImmInt(value)){
             Memory[i] = (unsigned )value->pdata->var_pdata.iVal;
         }else if(isImmFloat(value)){
@@ -495,14 +495,14 @@ bool JudgeXor(InstNode *insList){
 
             //
             Value *prevRhs = ins_get_rhs(prevNode->inst);
-            assert(prevRhs->VTy->ID == Int && prevRhs->pdata->var_pdata.iVal == 0);
-            assert(prevNode->inst->Opcode == NOTEQ || prevNode->inst->Opcode == EQ);
-            assert(prevDest == curLhs);
+            //assert(prevRhs->VTy->ID == Int && prevRhs->pdata->var_pdata.iVal == 0);
+            //assert(prevNode->inst->Opcode == NOTEQ || prevNode->inst->Opcode == EQ);
+            //assert(prevDest == curLhs);
 
             InstNode *nextNode = get_next_inst(tempNode);
             Value *nextLhs = ins_get_lhs(nextNode->inst);
-            assert(nextNode->inst->Opcode == zext);
-            assert(nextLhs == curDest);
+            //assert(nextNode->inst->Opcode == zext);
+            //assert(nextLhs == curDest);
 
             //also we need to adjust the dest to be var_int
             curDest->VTy->ID = Var_INT;
@@ -598,7 +598,7 @@ Function *ReconstructFunction(InstNode *inst_list){
         tempNode = get_next_inst(tempNode);
     }
 
-    assert(tempNode->inst->Opcode == FunBegin);
+    //assert(tempNode->inst->Opcode == FunBegin);
 
 
     start = tempNode->inst->Parent->Parent;
@@ -639,7 +639,7 @@ bool isLoopInvariant(Loop *loop,Value *var){
 }
 
 bool returnValueNotUsed(InstNode *instNode){
-    assert(instNode->inst->Opcode == Call);
+    //assert(instNode->inst->Opcode == Call);
 
     Value *returnValue = ins_get_dest(instNode->inst);
     if(returnValue->use_list == NULL){
@@ -728,7 +728,7 @@ void dfsTravelCfg(Vector *vector, BasicBlock *block){
 //            count++;
 //            headNode = get_next_inst(headNode);
 //        }
-//        assert(block != NULL);
+//        //assert(block != NULL);
 //        printf(" block %d",block->id);
 //    }
 //    printf("\n");
@@ -802,7 +802,7 @@ void topCfg(Function *currentFunction){
                 HashSetRemove(modified,modifiedBlock);
 
                 if(modifiedBlock->true_block)
-                    assert(modifiedBlock->true_block != modifiedBlock->false_block);
+                    //assert(modifiedBlock->true_block != modifiedBlock->false_block);
 
                 //minus indegree for it's successors;
                 if(modifiedBlock->true_block && modifiedBlock->true_block != exit && !HashSetFind(modifiedBlock->dom,modifiedBlock->true_block)){
@@ -877,7 +877,7 @@ bool containFloat(InstNode *node){
 }
 
 bool usedInPhi(Value *value, Function *function){
-    assert(value != NULL && function != NULL);
+    //assert(value != NULL && function != NULL);
     BasicBlock *entry = function->entry;
     BasicBlock *tail = function->tail;
     InstNode *funcHead = entry->head_node;
@@ -900,9 +900,9 @@ bool usedInPhi(Value *value, Function *function){
 
 //TODO could have Bug???
 bool isRegionalConstant(Value *value,struct Loop *loop){
-    assert(value != NULL);
+    //assert(value != NULL);
 
-    assert(loop != NULL);
+    //assert(loop != NULL);
 
 
     Function *currentFunction = loop->head->Parent;

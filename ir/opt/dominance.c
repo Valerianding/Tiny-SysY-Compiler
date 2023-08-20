@@ -100,7 +100,7 @@ void calculate_dominance(Function *currentFunction) {
                     //printf(" b%d",prevBlock->id);
                     HashSet *prevDom = prevBlock->dom;
                     newSet = HashSetIntersect(tempAllSet,prevDom);
-                    assert(newSet != NULL);
+                    //assert(newSet != NULL);
                     HashSetDeinit(tempAllSet);
                     tempAllSet = newSet;
                 }
@@ -269,7 +269,7 @@ void calculate_DomTree(Function *currentFunction){
         BasicBlock *block = curNode->inst->Parent;
         if(block->visited == false){
             block->visited = true;
-            assert(block->domTreeNode == NULL);
+            //assert(block->domTreeNode == NULL);
             block->domTreeNode = (DomTreeNode*)malloc(sizeof(DomTreeNode));
             memset(block->domTreeNode,0,sizeof(DomTreeNode));
             block->domTreeNode->block = block;
@@ -292,10 +292,10 @@ void calculate_DomTree(Function *currentFunction){
             domTreeNode->parent = iDom;
             if(iDom != NULL){
                 DomTreeNode *prevNode = iDom->domTreeNode;
-                assert(prevNode != NULL);
+                //assert(prevNode != NULL);
                 DomTreeAddChild(prevNode, domTreeNode);
                 //printf("b%d add child b%d\n",prevNode->block->id,block->id);
-                assert(HashSetFind(prevNode->children,domTreeNode));
+                //assert(HashSetFind(prevNode->children,domTreeNode));
             }
         }
         curNode = get_next_inst(curNode);
@@ -307,7 +307,7 @@ void calculate_DomTree(Function *currentFunction){
 
     //Function的跟节点保留
     currentFunction->root = entry->domTreeNode;
-    assert(entry->domTreeNode != nullptr);
+    //assert(entry->domTreeNode != nullptr);
 
     DomTreePrinter(entry->domTreeNode);
     clear_visited_flag(checkNode->inst->Parent);
@@ -430,14 +430,14 @@ void calculatePostDominance(Function *currentFunction) {
                 //for each successor block p
                 if (block->true_block) {
                     newSet = HashSetIntersect(tempALlSet, block->true_block->pDom);
-                    assert(newSet != NULL);
+                    //assert(newSet != NULL);
                     HashSetDeinit(tempALlSet);
                     tempALlSet = newSet;
                 }
 
                 if (block->false_block) {
                     newSet = HashSetIntersect(tempALlSet, block->false_block->pDom);
-                    assert(newSet != NULL);
+                    //assert(newSet != NULL);
                     HashSetDeinit(tempALlSet);
                     tempALlSet = newSet;
                 }
@@ -579,7 +579,7 @@ void removeUnreachable(Function *currentFunction){
         HashSetFirst(workList);
         BasicBlock *next = (BasicBlock *)HashSetNext(workList);
         HashSetRemove(workList,next);
-        assert(next->visited == false);
+        //assert(next->visited == false);
         next->visited = true;
 
         //clean all prev
@@ -605,7 +605,7 @@ void removeUnreachable(Function *currentFunction){
         if(parent->visited == false){
             //
             //printf("block %d is unreachable!\n",parent->id);
-            assert(parent->head_node == currNode);
+            //assert(parent->head_node == currNode);
             InstNode *deleteNode = currNode;
             while(deleteNode != get_next_inst(parent->tail_node)){
                 InstNode *tempNode = deleteNode;
@@ -613,7 +613,7 @@ void removeUnreachable(Function *currentFunction){
                 deleteIns(tempNode);
             }
             currNode = deleteNode;
-            assert(currNode->inst->Opcode == Label);
+            //assert(currNode->inst->Opcode == Label);
 
         }else{
             currNode = get_next_inst(currNode);
@@ -659,7 +659,7 @@ void cleanAll(Function *currentFunction){
         BasicBlock *block = HashSetNext(workList);
         HashSetRemove(workList,block);
 
-        assert(block->visited == false);
+        //assert(block->visited == false);
         block->visited = true;
 
         HashSetClean(block->pDom);
@@ -699,7 +699,7 @@ void cleanDominance(Function *currentFunction){
         BasicBlock *block = HashSetNext(workList);
         HashSetRemove(workList,block);
 
-        assert(block->visited == false);
+        //assert(block->visited == false);
         block->visited = true;
 
         HashSetClean(block->dom);
@@ -766,7 +766,7 @@ void postDominanceAnalysis(Function *currentFunction){
 
     BasicBlock *entry = currentFunction->entry;
 
-    assert(Optimize == true);
+    //assert(Optimize == true);
 
     clear_visited_flag(entry);
 

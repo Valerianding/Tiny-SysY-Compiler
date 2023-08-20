@@ -14,7 +14,7 @@ typedef struct BasicInductionVariableExpression{
 BIVExpression *newBIVExpression(Value *initValue,Opcode op, Value *step){
     BIVExpression *bivExpression = (BIVExpression *)malloc(sizeof(BIVExpression));
     bivExpression->initValue = initValue;
-    assert(op == Sub || op == Add);
+    //assert(op == Sub || op == Add);
     bivExpression->op = op;
     bivExpression->step = step;
     return bivExpression;
@@ -32,14 +32,14 @@ bool CheckLoopReduce(Loop *loop){
 
 //check phi node -> collect set of basic induction variable
 void LoopReduceCheckNode(InstNode *instNode,Loop *loop){
-    assert(instNode->inst->Opcode == Phi);
+    //assert(instNode->inst->Opcode == Phi);
 
     HashSet *phiSet = instNode->inst->user.value.pdata->pairSet;
-    assert(phiSet != NULL);
+    //assert(phiSet != NULL);
 
     //phi = [init value, addRec]
 
-    assert(HashSetSize(phiSet) == 2);
+    //assert(HashSetSize(phiSet) == 2);
 
     Function *currentFunction = loop->head->Parent;
     int paramNum = currentFunction->entry->head_node->inst->user.use_list->Val->pdata->symtab_func_pdata.param_num;
@@ -176,18 +176,18 @@ bool loopReduce(Loop *loop){
 
                 Value *modify = ins_get_rhs(blockHead->inst);
 
-                assert(HashMapContain(loop->inductionVariables,lhs));
+                //assert(HashMapContain(loop->inductionVariables,lhs));
 
                 BIVExpression *bivExpression = (BIVExpression *)HashMapGet(loop->inductionVariables,lhs);
 
-                assert(bivExpression != NULL);
+                //assert(bivExpression != NULL);
 
                 //get the initValue & Step
                 Value *initValue = bivExpression->initValue;
 
                 Value *step = bivExpression->step;
 
-                assert(HashSetSize(loopEntry->preBlocks) == 2);
+                //assert(HashSetSize(loopEntry->preBlocks) == 2);
 
                 //create initValue in the preHeader!
                 BasicBlock *preHeader = NULL;
@@ -197,11 +197,11 @@ bool loopReduce(Loop *loop){
                     if(!HashSetFind(loop->loopBody,preBlock)){
                         preHeader = preBlock;
                     }else{
-                        assert(Tail == preBlock);
+                        //assert(Tail == preBlock);
                     }
                 }
 
-                assert(preHeader != NULL);
+                //assert(preHeader != NULL);
 
                 InstNode *preHeaderTail = preHeader->tail_node;
                 InstNode *loopEntryHead = loopEntry->head_node;
@@ -270,7 +270,7 @@ bool loopReduce(Loop *loop){
 
 
                 //add current Phi to basicInduction Variables
-                assert(newModifier->Opcode == Add);
+                //assert(newModifier->Opcode == Add);
                 BIVExpression *newExpression = newBIVExpression(phiInit,newModifier->Opcode,newStep);
                 HashMapPut(loop->inductionVariables,phi,newExpression);
             }

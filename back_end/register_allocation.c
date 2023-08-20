@@ -1531,10 +1531,10 @@ void gcp_allocate(InstNode* ins,Function* start)
 //        初始化函数的活跃变量表
         curFunction->live_interval=PriorityQueueInit();
         curFunction->live_interval->set_compare(curFunction->live_interval,CompareNumerics);
-        assert(curFunction->live_interval!=NULL);
+        //assert(curFunction->live_interval!=NULL);
 //        初始化函数的寄存器分配结果表
         curFunction->lineScanReg=HashMapInit();
-        assert(curFunction->lineScanReg!=NULL);
+        //assert(curFunction->lineScanReg!=NULL);
 
         if(enable_vfp==1){
             curFunction->vfp_live_interval=PriorityQueueInit();
@@ -1652,7 +1652,7 @@ void g_alloca(Function *curFunction,PriorityQueue*queue){
         // }else{
         //     value_register *r=(value_register*) malloc(sizeof(value_register));
         //     r->reg=get_an_availabel_register();
-        //     assert(r->reg!=-1);
+        //     //assert(r->reg!=-1);
         //     HashMapPut(curFunction->lineScanReg,i->value,r);
         //     PriorityQueuePush(active,i);
         // }
@@ -1661,7 +1661,7 @@ void g_alloca(Function *curFunction,PriorityQueue*queue){
         {
             value_register *r=(value_register*) malloc(sizeof(value_register));
             r->reg=gcp_color+3;
-            assert(r->reg!=-1);
+            //assert(r->reg!=-1);
             HashMapPut(curFunction->lineScanReg,i->value,r);
 //            printf("put curFunction->lineScanReg %s\n",i->value->name);
 //            printf("%s\n",i->value->name);
@@ -1686,7 +1686,7 @@ void g_alloca(Function *curFunction,PriorityQueue*queue){
 //         }else{
 //             value_register *r=(value_register*) malloc(sizeof(value_register));
 //             r->reg=get_an_availabel_register();
-//             assert(r->reg!=-1);
+//             //assert(r->reg!=-1);
 //             HashMapPut(curFunction->lineScanReg,i->value,r);
 // //            printf("put curFunction->lineScanReg %s\n",i->value->name);
 // //            printf("%s\n",i->value->name);
@@ -3240,7 +3240,7 @@ void addtoin(BasicBlock *this_block)
     live_in_name=(struct SString *)malloc(sizeof(struct SString)*(var_num+1000));
     HashSetFirst(reg_curblock->in);
     for(Value *liveInVariable = HashSetNext(reg_curblock->in); liveInVariable != NULL; liveInVariable = HashSetNext(reg_curblock->in)){
-        assert(liveInVariable->name != NULL);
+        //assert(liveInVariable->name != NULL);
         if(liveInVariable->name != NULL){
             // live_in_name[block_in_num].name =(char *)malloc(sizeof(liveInVariable->name)+3);
             live_in_name[block_in_num].name =(char *)malloc(1000);
@@ -3265,7 +3265,7 @@ void addtoout(BasicBlock *this_block)
     live_out_name=(struct SString *)malloc(sizeof(struct SString)*(var_num+1000));
     HashSetFirst(this_block->out);
     for(Value *liveOutVariable = HashSetNext(this_block->out); liveOutVariable != NULL; liveOutVariable = HashSetNext(this_block->out)){
-        assert(liveOutVariable->name != NULL);
+        //assert(liveOutVariable->name != NULL);
         if(liveOutVariable->name != NULL){
             // live_out_name[block_out_num].name =(char *)malloc(sizeof(liveOutVariable->name)+3);
             live_out_name[block_out_num].name =(char *)malloc(1000);

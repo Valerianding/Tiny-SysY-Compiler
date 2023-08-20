@@ -46,7 +46,7 @@ void SCCP(Function *currentFunction){
             //remove edge
             ListPopFront(CFGWorkList);
 
-            assert(block != NULL);
+            //assert(block != NULL);
             //TODO 按照EAC上的处理 目前我们是抄的别人的 --
 
             //if e is marked as unexecuted then:

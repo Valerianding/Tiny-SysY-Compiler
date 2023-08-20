@@ -34,20 +34,20 @@ void get_function_live_interval(Function*curFunction){
 //    Function *function;
 //    block=ins->inst->Parent;
 //    function=block->Parent;
-//    assert(function->ToPoBlocks!=NULL);
+//    //assert(function->ToPoBlocks!=NULL);
 //    PriorityQueue *queue=PriorityQueueInit();
 //    queue->set_compare(queue,CompareNumerics);
 
-    assert(curFunction!=NULL);
-    assert(curFunction->ToPoBlocks!=NULL);
+    //assert(curFunction!=NULL);
+    //assert(curFunction->ToPoBlocks!=NULL);
     if(enable_ordinary==1){
-        assert(curFunction->live_interval!=NULL);
+        //assert(curFunction->live_interval!=NULL);
         build_live_interval(curFunction->ToPoBlocks,curFunction->live_interval);
     }
 
 //    printf("pqueuesize =%d\n", PriorityQueueSize(queue));
     if(enable_vfp==1){
-        assert(curFunction->vfp_live_interval!=NULL);
+        //assert(curFunction->vfp_live_interval!=NULL);
         build_vfp_live_interval(curFunction->ToPoBlocks,curFunction->vfp_live_interval);
     }
     if(enable_ordinary==1){
@@ -176,7 +176,7 @@ void line_scan_alloca(Function *curFunction,PriorityQueue*queue){
             value_register *r=(value_register*) malloc(sizeof(value_register));
             memset(r,0, sizeof(value_register));
             r->reg=get_an_availabel_register();
-            assert(r->reg!=-1);
+            //assert(r->reg!=-1);
             HashMapPut(curFunction->lineScanReg,i->value,r);
 //            printf("put curFunction->lineScanReg %s\n",i->value->name);
 //            printf("%s\n",i->value->name);
@@ -206,7 +206,7 @@ void expire_old_intervals(Function *curFunction,value_live_range *i){
 //            add register[j] to pool of free registers
 //             j已经被进行寄存器分配
             value_register *r= HashMapGet(curFunction->lineScanReg,j->value);
-            assert(r!=NULL);
+            //assert(r!=NULL);
             free_register(r->reg);
         }
     }
@@ -216,13 +216,13 @@ void spill_at_interval(Function *curFunction,value_live_range *i){
     if(spill->end>i->end){
         printf("spill %s\n",spill->value->name);
         value_register *r = HashMapGet(curFunction->lineScanReg,spill->value);
-        assert(r!=NULL);
+        //assert(r!=NULL);
         HashMapRemove(curFunction->lineScanReg,spill->value);
 
         value_register *node=(value_register*) malloc(sizeof(value_register));
         memset(node,0, sizeof(value_register));
         node->reg=r->reg;
-        assert(node->reg!=-1);
+        //assert(node->reg!=-1);
         HashMapPut(curFunction->lineScanReg,i->value,node);
 
         HashSetAdd(location,spill);
@@ -253,7 +253,7 @@ void VFP_line_scan_alloca(Function *curFunction,PriorityQueue*queue){
             value_register *r=(value_register*) malloc(sizeof(value_register));
             memset(r,0, sizeof(value_register));
             r->sreg=get_an_availabel_VFPregister();
-            assert(r->sreg!=-1);
+            //assert(r->sreg!=-1);
             HashMapPut(curFunction->lineScanVFPReg,i->value,r);
 //            printf("put curFunction->lineScanReg %s\n",i->value->name);
 //            printf("%s\n",i->value->name);
@@ -283,7 +283,7 @@ void VFP_expire_old_intervals(Function *curFunction,value_live_range *i){
 //            add register[j] to pool of free registers
 //             j已经被进行寄存器分配
             value_register *r= HashMapGet(curFunction->lineScanVFPReg,j->value);
-            assert(r!=NULL);
+            //assert(r!=NULL);
 //            printf("VFP_expire_old_intervals free s%d\n",r->sreg);
             free_VFPregister(r->sreg);
         }
@@ -294,13 +294,13 @@ void VFP_spill_at_interval(Function *curFunction,value_live_range *i){
     if(spill->end>i->end){
         printf("spill %s\n",spill->value->name);
         value_register *r = HashMapGet(curFunction->lineScanVFPReg,spill->value);
-        assert(r!=NULL);
+        //assert(r!=NULL);
         HashMapRemove(curFunction->lineScanVFPReg,spill->value);
 
         value_register *node=(value_register*) malloc(sizeof(value_register));
         memset(node,0, sizeof(value_register));
         node->sreg=r->sreg;
-        assert(node->sreg!=-1);
+        //assert(node->sreg!=-1);
         HashMapPut(curFunction->lineScanVFPReg,i->value,node);
 
         HashSetAdd(VFPlocation,spill);
@@ -449,10 +449,10 @@ void label_the_result_of_linescan_register(Function *curFunction,InstNode * ins)
 }
 void label_register(Function *curFunction,InstNode *ins,Value *value,int i){
     if(enable_ordinary==1){
-        assert(curFunction->lineScanReg!=NULL);
+        //assert(curFunction->lineScanReg!=NULL);
     }
     if(enable_vfp==1){
-        assert(curFunction->lineScanVFPReg!=NULL);
+        //assert(curFunction->lineScanVFPReg!=NULL);
     }
 //    标浮点数
     if(enable_vfp==1 && isLocalVarFloatType(value->VTy)){

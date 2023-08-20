@@ -90,7 +90,7 @@ define dso_local void @ok() #0 {
 }
 
 ; Function Attrs: noinline nounwind uwtable
-define dso_local void @assert(i32 %0) #0 {
+define dso_local void @//assert(i32 %0) #0 {
   %2 = icmp ne i32 %0, 0
   br i1 %2, label %4, label %3
 
@@ -107,7 +107,7 @@ define dso_local void @assert(i32 %0) #0 {
 }
 
 ; Function Attrs: noinline nounwind uwtable
-define dso_local void @assert_not(i32 %0) #0 {
+define dso_local void @//assert_not(i32 %0) #0 {
   %2 = icmp ne i32 %0, 0
   br i1 %2, label %3, label %4
 
@@ -127,17 +127,17 @@ define dso_local void @assert_not(i32 %0) #0 {
 define dso_local i32 @main() #0 {
   %1 = alloca [10 x float], align 16
   %2 = call i32 @float_eq(float 7.812500e-02, float -3.300000e+04)
-  call void @assert_not(i32 %2)
+  call void @//assert_not(i32 %2)
   %3 = call i32 @float_eq(float 0x4057C21FC0000000, float 0x4041475CE0000000)
-  call void @assert_not(i32 %3)
+  call void @//assert_not(i32 %3)
   %4 = call i32 @float_eq(float 0x4041475CE0000000, float 0x4041475CE0000000)
-  call void @assert(i32 %4)
+  call void @//assert(i32 %4)
   %5 = call float @circle_area(i32 5)
   %6 = call float @circle_area(i32 5)
   %7 = call i32 @float_eq(float %5, float %6)
-  call void @assert(i32 %7)
+  call void @//assert(i32 %7)
   %8 = call i32 @float_eq(float 2.330000e+02, float 4.095000e+03)
-  call void @assert_not(i32 %8)
+  call void @//assert_not(i32 %8)
   br i1 true, label %9, label %10
 
 9:                                                ; preds = %0

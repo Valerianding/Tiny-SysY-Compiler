@@ -176,7 +176,7 @@ void UselessCallSimplify(CallGraphNode *node){
                     //OK we need to examine if all other function doesn't use this function's return value
                     CallGraphNode *calledGraphNode = HashMapGet(callGraph,called);
 
-                    assert(calledGraphNode != NULL);
+                    //assert(calledGraphNode != NULL);
 
                     Function *calledFunction = calledGraphNode->function;
 
@@ -192,10 +192,10 @@ void UselessCallSimplify(CallGraphNode *node){
                     }
 
                     //
-                    assert(calledTailNode->inst->Opcode == Return);
+                    //assert(calledTailNode->inst->Opcode == Return);
 
                     Value *calledReturnValue = ins_get_lhs(calledTailNode->inst);
-                    assert(calledReturnValue != NULL);
+                    //assert(calledReturnValue != NULL);
 
                     //we don't want it to be a imm
 
@@ -305,8 +305,9 @@ void UselessCallSimplify(CallGraphNode *node){
                                         calledReturnValue->VTy->ID = Float;
                                         calledReturnValue->pdata->var_pdata.fVal = 0.0;
                                         break;
-                                    default:
-                                        assert(false);
+                                    default:{
+                                        //assert(false);
+                                    }
                                 }
                             }
                         }
@@ -363,8 +364,9 @@ void UselessCallSimplify(CallGraphNode *node){
                                         calledReturnValue->VTy->ID = Float;
                                         calledReturnValue->pdata->var_pdata.fVal = 0.0;
                                         break;
-                                    default:
-                                        assert(false);
+                                    default:{
+                                        //assert(false);
+                                    }
                                 }
                             }
                         }

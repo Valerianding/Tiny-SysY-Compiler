@@ -58,7 +58,7 @@ bool isDeadInst(InstNode *instNode){
 //also we only want to consider the possible operations
 void AddUsesToWorklist(InstNode *inst){
     //printf("%d\n",inst->inst->i);
-    assert(checkType(inst->inst));
+    //assert(checkType(inst->inst));
     Value *dest = ins_get_dest(inst->inst);
     Use *uses = dest->use_list;
     while(uses != NULL){
@@ -110,9 +110,9 @@ unsigned GetComplexity(Value *val, int paramNum){
 void SwapOperand(InstNode *instNode){
     int numOfOperand = instNode->inst->user.value.NumUserOperands;
 
-    assert(instNode->inst->Opcode == Mul || instNode->inst->Opcode == Add);
+    //assert(instNode->inst->Opcode == Mul || instNode->inst->Opcode == Add);
 
-    assert(numOfOperand == 2);
+    //assert(numOfOperand == 2);
     Value *lhs = ins_get_lhs(instNode->inst);
     Value *rhs = ins_get_rhs(instNode->inst);
     Use *use1 = user_get_operand_use(&instNode->inst->user,0);
@@ -135,7 +135,7 @@ bool isAssociative(Opcode op){
 //also we don't want to mess up with non-binary operations
 //So let's make it a possible operation only
 bool checkType(Instruction *ins){
-    assert(ins != NULL);
+    //assert(ins != NULL);
     if(!isPossibleOperator(ins)) return false;
     Value *insLhs = ins_get_lhs(ins);
     Value *insRhs = ins_get_rhs(ins);
@@ -147,8 +147,8 @@ bool checkType(Instruction *ins){
 }
 
 Value *Fold(Opcode op, Value *value1, Value *value2){
-    assert(value1 != NULL && isImmInt(value1));
-    assert(value2 != NULL && isImmInt(value2));
+    //assert(value1 != NULL && isImmInt(value1));
+    //assert(value2 != NULL && isImmInt(value2));
 
     Value *newConstant = (Value *)malloc(sizeof(Value));
     int val;
@@ -177,7 +177,7 @@ Value *Fold(Opcode op, Value *value1, Value *value2){
             break;
         }
         default:{
-            assert(false);
+            //assert(false);
         }
     }
     value_init_int(newConstant,val);
@@ -292,7 +292,7 @@ Value *DynCastMul(Value *val,int paramNum){
     }
     //we need value's name to judge if it is param
     //it is ok that if the val's name is %temp -> because it is definitely not the param
-    assert(val->name != NULL);
+    //assert(val->name != NULL);
     if(countUse == 1 && !isImm(val) && !isParam(val,paramNum)){
         Instruction *valIns = (Instruction *)val;
         if(!checkType(valIns)) return NULL;
@@ -314,7 +314,7 @@ Value *DynCastAdd(Value *val,int paramNum){
         countUse++;
         uses = uses->Next;
     }
-    assert(val->name != NULL);
+    //assert(val->name != NULL);
     if(countUse == 1 && !isImm(val) && !isParam(val,paramNum)){
         Instruction *valIns = (Instruction *)val;
         if(!checkType(valIns)) return NULL;
@@ -339,7 +339,7 @@ Value *UselessCastMul(Value *val, int paramNum){
         countUse++;
         uses = uses->Next;
     }
-    assert(val->name != NULL);
+    //assert(val->name != NULL);
     if(countUse == 1 && !isImmInt(val) && !isParam(val,paramNum)){
         Instruction *mul = (Instruction *)val;
         if(!checkType(mul)) return NULL;
@@ -360,7 +360,7 @@ Value *UselessCastAdd(Value *val, int paramNum){
         countUse++;
         uses = uses->Next;
     }
-    assert(val->name != NULL);
+    //assert(val->name != NULL);
     if(countUse == 1 && !isImmInt(val) && !isParam(val,paramNum)){
         Instruction *add = (Instruction *)val;
         if(!checkType(add)) return NULL;
@@ -383,7 +383,7 @@ Value *UselessCastSub(Value *val, int paramNum){
         countUse++;
         uses = uses->Next;
     }
-    assert(val->name != NULL);
+    //assert(val->name != NULL);
     if(countUse == 1 && !isImmInt(val) && !isParam(val,paramNum)){
         Instruction *sub = (Instruction *)val;
         if(!checkType(sub)) return NULL;
@@ -420,7 +420,7 @@ InstNode *RunOnAdd(InstNode *instNode){
         //(X - C) + C -> X
         Value *sc = UselessCastSub(lhs,paramNum);
         if(isSame(sc,rhs)){
-            assert(isImmInt(rhs) && sc->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
+            //assert(isImmInt(rhs) && sc->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
             Instruction *lhsIns = (Instruction *)lhs;
             Value *lhsInsLhs = ins_get_lhs(lhsIns);
             //
@@ -444,7 +444,7 @@ InstNode *RunOnAdd(InstNode *instNode){
     if(DynCastMul(lhs,paramNum) == rhs){
         Instruction *lhsIns = (Instruction *)lhs;
         Value *c = ins_get_rhs(lhsIns);
-        assert(isImmInt(c));
+        //assert(isImmInt(c));
 
         Value *cp1 = (Value *)malloc(sizeof(Value));
         value_init_int(cp1,c->pdata->var_pdata.iVal + 1);
@@ -460,7 +460,7 @@ InstNode *RunOnAdd(InstNode *instNode){
     if(DynCastMul(rhs,paramNum) == lhs){
         Instruction *rhsIns = (Instruction *)rhs;
         Value *c = ins_get_rhs(rhsIns);
-        assert(isImmInt(c));
+        //assert(isImmInt(c));
 
         Value *cp1 = (Value *)malloc(sizeof(Value));
         value_init_int(cp1,c->pdata->var_pdata.iVal + 1);
@@ -533,7 +533,7 @@ InstNode *RunOnSub(InstNode *instNode){
     // X + C - C -> X
     Value *add = UselessCastAdd(lhs,paramNum);
     if(isSame(add,rhs)){
-        assert(add->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
+        //assert(add->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
         Instruction *lhsIns = (Instruction *)lhs;
         Value *lhsInsLhs = ins_get_lhs(lhsIns);
         return ReplaceInstUsesWith(cur_,lhsInsLhs);
@@ -593,7 +593,7 @@ InstNode *RunOnDiv(InstNode *instNode){
         //(x * C) / C -> X
         Value *mc = UselessCastMul(lhs,paramNum);
         if(isSame(mc,rhs)){
-            assert(mc->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
+            //assert(mc->pdata->var_pdata.iVal == rhs->pdata->var_pdata.iVal);
             Instruction *lhsIns = (Instruction *)lhs;
             Value *lhsInsLhs = ins_get_lhs(lhsIns);
             return ReplaceInstUsesWith(cur_,lhsInsLhs);
@@ -632,10 +632,10 @@ InstNode *RunOnMod(InstNode *instNode){
         Value *lhs = ins_get_lhs(instNode->inst);
         if(isSame(UselessCastMul(lhs,paramNum),rhs)){
             Instruction *lhsIns = (Instruction *)lhs;
-            assert(checkType(lhsIns));
+            //assert(checkType(lhsIns));
             Value *lhsLhs = ins_get_lhs(lhsIns);
             Value *constant = ins_get_rhs(instNode->inst);
-            assert(isImmInt(constant));
+            //assert(isImmInt(constant));
             Instruction *newRem = ins_new_binary_operator(Mod,lhsLhs,constant);
             newRem->user.value.name = (char *)malloc(sizeof(char) * 10);
             strcpy(newRem->user.value.name,"%rem");

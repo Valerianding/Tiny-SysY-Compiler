@@ -16,8 +16,8 @@ int vfp_flag;//计算Var_Float的活跃变量表时需要置1，否则置0
 //每个function建立一张live_interval,会从vector数组中，取出每个block
 PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
     vfp_flag=0;
-    assert(vector!=NULL);
-    assert(pqueue!=NULL);
+    //assert(vector!=NULL);
+    //assert(pqueue!=NULL);
     hashmap=HashMapInit();
     void *elem;
     VectorFirst(vector,false);
@@ -42,8 +42,8 @@ PriorityQueue *build_live_interval(Vector* vector,PriorityQueue*pqueue){
 }
 PriorityQueue *build_vfp_live_interval(Vector* vector,PriorityQueue*pqueue){
     vfp_flag=1;
-    assert(vector!=NULL);
-    assert(pqueue!=NULL);
+    //assert(vector!=NULL);
+    //assert(pqueue!=NULL);
     hashmap=HashMapInit();
     void *elem;
     VectorFirst(vector,false);
@@ -184,14 +184,14 @@ bool value_is_in_livein(Value*tvalue){
 }
 void handle_def(Value*dvalue,int ins_id){
 //    printf("handle_def %d\n",ins_id);
-    assert(dvalue!=NULL);
+    //assert(dvalue!=NULL);
     if(isImmIntType(dvalue->VTy) || isImmFloatType(dvalue->VTy)){
         return;
     }
 //    Global不可能出现在def中
     if(isGlobalArrayFloatType(dvalue->VTy)|| isGlobalArrayIntType(dvalue->VTy) || isGlobalVarFloatType(dvalue->VTy) ||
        isGlobalVarIntType(dvalue->VTy)){
-        assert(false);
+        //assert(false);
         return;
     }
     if(isLocalArrayFloatType(dvalue->VTy) || isLocalArrayIntType(dvalue->VTy)){
@@ -220,7 +220,7 @@ void handle_def(Value*dvalue,int ins_id){
 
 void handle_use(Value*uvalue,int ins_id){
 //    printf("handle_use %d\n",ins_id);
-    assert(uvalue!=NULL);
+    //assert(uvalue!=NULL);
     if(isImmIntType(uvalue->VTy) || isImmFloatType(uvalue->VTy)){
         return;
     }

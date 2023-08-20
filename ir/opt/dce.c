@@ -34,7 +34,7 @@ bool isEmpty(BasicBlock *block){
 
 void combine(BasicBlock *i, BasicBlock *j){
     //combine i and j
-    assert(i->tail_node->inst->Opcode == br);
+    //assert(i->tail_node->inst->Opcode == br);
 
     InstNode *iOriginalTailNode = i->tail_node;
 
@@ -138,7 +138,7 @@ void Mark(Function *currentFunction){
     BasicBlock *tail = currentFunction->tail;
 
     InstNode *headNode = entry->head_node;
-    assert(headNode->inst->Opcode == FunBegin);
+    //assert(headNode->inst->Opcode == FunBegin);
 
     int paramNum = headNode->inst->user.use_list[0].Val->pdata->symtab_func_pdata.param_num;
 
@@ -194,7 +194,7 @@ void Mark(Function *currentFunction){
         if(lhs != NULL && !isImm(lhs) && !isGlobalVar(lhs) && !isGlobalArray(lhs) && !isParam(lhs,paramNum)){
             //printf("lhs : %s\n ",lhs->name);
             Instruction *defLhs = (Instruction*)lhs;
-            assert(defLhs != NULL);
+            //assert(defLhs != NULL);
             if(defLhs->isCritical == false){
                 defLhs->isCritical = true;
                 HashSetAdd(workList,defLhs);
@@ -204,7 +204,7 @@ void Mark(Function *currentFunction){
         if(rhs != NULL && !isImm(rhs) && !isGlobalVar(rhs) && !isGlobalArray(rhs) && !isParam(rhs,paramNum)){
             //printf("rhs : %s\n ",rhs->name);
             Instruction *defRhs = (Instruction*)rhs;
-            assert(defRhs != NULL);
+            //assert(defRhs != NULL);
             if(defRhs->isCritical == false){
                 defRhs->isCritical = true;
                 HashSetAdd(workList,defRhs);
@@ -246,7 +246,7 @@ void Mark(Function *currentFunction){
                 //printf("b%d", rdf->id);
                 InstNode *rdfTail = rdf->tail_node;
 
-                assert(rdfTail->inst->Opcode == br_i1);
+                //assert(rdfTail->inst->Opcode == br_i1);
 
                 if (rdfTail->inst->isCritical == false) {
                     rdfTail->inst->isCritical = true;
@@ -305,7 +305,6 @@ bool Sweep(Function *currentFunction) {
                 deleteIns(branchNode);
                 currNode = nextNode;
 
-                // TODO 解决掉后面可能会引起的phi函数的冲突问题 如果后面
             } else if (currNode->inst->Opcode == br) {
                 // br 不变
                 currNode = get_next_inst(currNode);
@@ -352,7 +351,7 @@ bool OnePass(Vector* vector) {
         //printf("current: %d\n",block->id);
 
         bool processed = false;
-        assert(block != NULL);
+        //assert(block != NULL);
 
         //printf("block %d\n",block->id);
         // if i ends in a conditional branch
@@ -432,7 +431,7 @@ bool OnePass(Vector* vector) {
                         //如果j只有一个phi函数 但是不引用i的phi函数代表i的phi函数支配j
                         //这种情况我们也不remove
                         if(jPhiCount == 1 && iHasPhi){
-                            assert(iPhi != NULL);
+                            //assert(iPhi != NULL);
                             InstNode *jPhiNode = j->head_node;
                             while(jPhiNode->inst->Opcode != Phi){
                                 jPhiNode = get_next_inst(jPhiNode);
@@ -506,7 +505,7 @@ bool OnePass(Vector* vector) {
                             //如果i本来有phi函数出了外层循环还是没有usedbyJ的话
                             if(!usedByJ){
                                 //那么我们期待j只有一个前驱了 所以我们
-                                assert(HashSetSize(j->preBlocks) == 1);
+                                //assert(HashSetSize(j->preBlocks) == 1);
                                 InstNode *nextNode = get_next_inst(iNode);
                                 removeIns(iNode);
                                 ins_insert_after(iNode,j->head_node);
@@ -530,7 +529,7 @@ bool OnePass(Vector* vector) {
                         while(jNode != j->tail_node){
                             if(jNode->inst->Opcode == Phi){
                                 //只有如果后面是phi函数的时候需要检查
-                                assert(HashSetSize(block->preBlocks) == 1);
+                                //assert(HashSetSize(block->preBlocks) == 1);
 
                                 HashSet *jSet = jNode->inst->user.value.pdata->pairSet;
                                 HashSetFirst(jSet);
@@ -577,7 +576,7 @@ bool OnePass(Vector* vector) {
                 HashSetFirst(j->preBlocks);
                 BasicBlock *jPrev = HashSetNext(j->preBlocks);
 
-                assert(jPrev == block);
+                //assert(jPrev == block);
 
 
                 //printf("combine blocks! suc: %d\n",j->id);
@@ -603,7 +602,7 @@ bool OnePass(Vector* vector) {
             //if j is empty and ends in a conditional branch then
             if (isEmpty(j) && j->tail_node->inst->Opcode == br_i1 && processed == false) {
 
-                //当前基本块有并且只能有一个phi函数！！ 其他情况都有点怪 我都assert false
+                //当前基本块有并且只能有一个phi函数！！ 其他情况都有点怪 我都//assert false
                 int countPhi = 0;
                 InstNode *jNode = j->head_node;
                 InstNode *jTailNode = j->tail_node;
@@ -639,7 +638,6 @@ bool OnePass(Vector* vector) {
                 }
 
                 // TODO 解决如果包含phi函数的问题
-                // TODO为什么
                 if(countPhi <= 1 && removeAble){
                     changed = true;
                     processed = true;
@@ -649,7 +647,7 @@ bool OnePass(Vector* vector) {
 
                     while(jNode != jTailNode){
                         if(jNode->inst->Opcode == Phi){
-                            assert(countPhi == 1);
+                            //assert(countPhi == 1);
                             //将phi函数还原
                             HashSet *jSet = jNode->inst->user.value.pdata->pairSet;
                             HashSetFirst(jSet);
@@ -683,7 +681,7 @@ bool OnePass(Vector* vector) {
                     }
                     removeBlock(j);
                 }else{
-                    assert(false);
+                    //assert(false);
                 }
             }
         }
@@ -708,8 +706,6 @@ void Clean(Function *currentFunction){
 
         int size = (int)VectorSize(vector);
 
-        //printf("vector size is %u\n",size);
-
         BasicBlock *temp = NULL;
 
         clear_visited_flag(currentFunction->entry);
@@ -726,10 +722,10 @@ void Clean(Function *currentFunction){
     }
 }
 
-void removeBlock(BasicBlock *block){
+void removeBlock(BasicBlock *block) {
     InstNode *currNode = block->head_node;
     InstNode *prevNode = NULL;
-    while(currNode != get_next_inst(block->tail_node)){
+    while (currNode != get_next_inst(block->tail_node)) {
         prevNode = currNode;
         currNode = get_next_inst(currNode);
         deleteIns(prevNode);

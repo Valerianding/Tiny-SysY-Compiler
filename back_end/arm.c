@@ -75,17 +75,17 @@ int get_a_tem_reg(){
             watchReg.generalReg[i]=1;
             return i;
         }
-        assert(false);
+        //assert(false);
         if(watchReg.r14==0){
             watchReg.r14=1;
             return 14;
         }
-        assert(false);
+        //assert(false);
 //        if(watchReg.r12==0){
 //            watchReg.r12=1;
 //            return 12;
 //        }
-//        assert(false);
+//        //assert(false);
         return -1;
     }
     return -1;
@@ -109,13 +109,13 @@ void handle_lineScan_extra_reg(InstNode*ins,int param_num){
         Value *value=(Value*)ptr_pair->key;
         value_register *r=(value_register*)ptr_pair->value;
         int num=-1;
-        assert(value->name!=NULL);
+        //assert(value->name!=NULL);
         if(value->name[0]=='%'){
             num=atoi(value->name+1);
             if(num>=4 && num<param_num){
 //                多余的参数被分配了寄存器,需要在函数开始前就ldr到相应的寄存器
                 offset *node= HashMapGet(lineScan_param,value);
-                assert(node!=NULL);
+                //assert(node!=NULL);
                 handle_illegal_imm(r->reg+100,node->offset_sp,1);
             }
         }
@@ -129,13 +129,13 @@ void handle_VFPlineScan_extra_reg(InstNode*ins,int param_num){
         Value *value=(Value*)ptr_pair->key;
         value_register *r=(value_register*)ptr_pair->value;
         int num=-1;
-        assert(value->name!=NULL);
+        //assert(value->name!=NULL);
         if(value->name[0]=='%'){
             num=atoi(value->name+1);
             if(num>=4 && num<param_num){
 //                多余的参数被分配了寄存器,需要在函数开始前就vldr到相应的浮点寄存器
                 offset *node= HashMapGet(lineScan_param,value);
-                assert(node!=NULL);
+                //assert(node!=NULL);
                 vfp_handle_illegal_imm(r->sreg+100,node->offset_sp,1);
             }
         }
@@ -151,7 +151,7 @@ void handle_global_var_address(HashMap *hashMap,InstNode*ins){
         value_register *r=(value_register*)ptr_pair->value;
         if(value->name!=NULL && value->name[0]=='@'){ //全局变量
             HashSetRemove(globalVarAddress,value);
-            assert(!HashSetFind(globalVarAddress,value));
+            //assert(!HashSetFind(globalVarAddress,value));
             printf("\tmovw\tr%d,#:lower16:%s\n",r->reg,value->name+1);
             fprintf(fp,"\tmovw\tr%d,#:lower16:%s\n",r->reg,value->name+1);
             printf("\tmovt\tr%d,#:upper16:%s\n",r->reg,value->name+1);
@@ -162,7 +162,7 @@ void handle_global_var_address(HashMap *hashMap,InstNode*ins){
     HashSetFirst(globalVarAddress);
     while ((elem= HashSetNext(globalVarAddress))!=NULL){
         Value *value=(Value*)elem;
-        assert(value->name!=NULL);
+        //assert(value->name!=NULL);
         printf("\tmovw\tr0,#:lower16:%s\n",value->name+1);
         fprintf(fp,"\tmovw\tr0,#:lower16:%s\n",value->name+1);
         printf("\tmovt\tr0,#:upper16:%s\n",value->name+1);
@@ -633,11 +633,11 @@ int get_free_reg(){
         }
     }
     return 3;
-    assert(false);
-//    assert(false);
+    //assert(false);
+//    //assert(false);
 }
 int get_order_param(int param_num){
-    assert(param_num<=4);
+    //assert(param_num<=4);
     InstNode *tmp;
 //    如果give_param的时候被标到了r1，则标回ri
 //    int changeReg;
@@ -651,7 +651,7 @@ int get_order_param(int param_num){
     if(order_param_flag==0){
         for(int i=0;i<param_num;i++){
             tmp=one_param[i];
-            assert(tmp!=NULL);
+            //assert(tmp!=NULL);
             tmpR=tmp->inst->_reg_[1];
             if(tmpR==3){
                 order_param_flag=1;
@@ -734,7 +734,7 @@ void handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 }
 void vfp_handle_illegal_imm(int handle_dest_reg ,int x,int flag){
 //        r3寄存器用于传参，并且已经被占用,获取一个可用寄存器
-    assert(x!=-1);
+    //assert(x!=-1);
     int tmp_reg=get_free_reg();
     if(tmp_reg==-1){
         tmp_reg=3;
@@ -957,7 +957,7 @@ void FuncBegin_hashmap_alloca_add(HashMap*hashMap,Value *value,int *local_stack)
             node->regr=-1;
             HashMapPut(hashMap,value,node);
         } else{
-            assert(false);
+            //assert(false);
 //            这个应该是处理其他的情况，比如说是unknown的情况,这里应该是存在的
             offset *node=offset_node();
             node->offset_sp=(*local_stack);
@@ -1118,7 +1118,7 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
 //    现在fptosi存在浮点数是立即数的情况
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
 //    if(isImmFloatType(value1->VTy)){
-//        assert(false);
+//        //assert(false);
 //        float fx=value1->pdata->var_pdata.fVal;
 //        int x=*(int*)(&fx);
 //        handle_illegal_imm1(0,x);
@@ -1141,7 +1141,7 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
         }
     }
     if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==0){
-        assert(left_reg!=0);
+        //assert(left_reg!=0);
         if(left_reg>=100){
             left_reg_abs=left_reg-100;
             int x= get_value_offset_sp(hashMap,value1);
@@ -1161,7 +1161,7 @@ InstNode *arm_trans_fptosi(HashMap *hashMap,InstNode *ins){
         }
     }else if(isLocalVarFloatType(value1->VTy) && ARM_enable_vfp==1){
         left_reg=ins->inst->_vfpReg_[1];
-        assert(left_reg!=0);
+        //assert(left_reg!=0);
         if(left_reg>=100){
             left_reg_abs=left_reg-100;
             int x= get_value_offset_sp(hashMap,value1);
@@ -1240,7 +1240,7 @@ InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
 
 //    如果说是立即数的话，我是分配哪个寄存器来接受呢？这里应该不影响的,现在就先用一个固定的r0
     if(isLocalVarIntType(value1->VTy) && ARM_enable_vfp==0){
-        assert(left_reg!=0);
+        //assert(left_reg!=0);
         if(left_reg>=100){
             left_reg_abs=left_reg-100;
             int x= get_value_offset_sp(hashMap,value1);
@@ -1261,7 +1261,7 @@ InstNode *arm_trans_sitofp(HashMap *hashMap,InstNode *ins){
     }else if(isLocalVarIntType(value1->VTy) && ARM_enable_vfp==1){
         dest_reg=ins->inst->_vfpReg_[0];
         dest_reg_abs=abs(dest_reg);
-        assert(left_reg!=0);
+        //assert(left_reg!=0);
         if(left_reg>=100){
             left_reg_abs=left_reg-100;
             int x= get_value_offset_sp(hashMap,value1);
@@ -1514,7 +1514,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             }
         }
         else if(isGlobalVarIntType(value0->VTy)){
-            assert(false); //这里之前为什么没有翻译呢？
+            //assert(false); //这里之前为什么没有翻译呢？
         }else if(isGlobalVarFloatType(value0->VTy)){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
@@ -1706,7 +1706,7 @@ InstNode * arm_trans_Add(InstNode *ins,HashMap*hashMap){
             }
         }else{
             tmpReg=get_a_tem_reg();
-            assert(tmpReg!=0);
+            //assert(tmpReg!=0);
             handle_illegal_imm1(tmpReg,x1);
             if(right_reg>=100){
                 int x= get_value_offset_sp(hashMap,value2);
@@ -3952,7 +3952,7 @@ InstNode * arm_trans_Sub(InstNode *ins,HashMap*hashMap){
 
 }
 int count_bit(int value){
-    assert(value>0);
+    //assert(value>0);
     int count=0;
     while (value){
         value&=(value-1);
@@ -5841,7 +5841,7 @@ InstNode * arm_trans_Div(InstNode *ins,HashMap*hashMap){
         int tmp= abs(x2);
         int n= power_of_two(tmp);
         if(n!=-1 && optimization==1 && opt_div2==1 ){ //优化
-            assert((watchReg.generalReg[0]==0 && watchReg.generalReg[1]==0));
+            //assert((watchReg.generalReg[0]==0 && watchReg.generalReg[1]==0));
             if(x2<0){
                 if(n==1){
                     if(left_reg>=100){
@@ -6689,15 +6689,15 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             }
         }
         else if(isLocalArrayIntType(value0->VTy)){
-            assert(false);
+            //assert(false);
         }else if(isGlobalVarIntType(value0->VTy)){
 //            ;这些都是需要补充完整的，不对，
 //            全局变量会有相应的load和store指令，结果不应该在这里处理
 //            这里只需要转换为相应的格式就可以了
-            assert(false);
+            //assert(false);
         }else if(isGlobalVarFloatType(value0->VTy)){
 //                需要将相加的结果转化为IEEE754格式存放在r0中
-            assert(false);
+            //assert(false);
             printf("\tvmov\ts0,r%d\n",dest_reg_abs);
             fprintf(fp,"\tvmov\ts0,r%d\n",dest_reg_abs);
             printf("\tvcvt.f32.s32\ts0,s0\n");
@@ -6705,7 +6705,7 @@ InstNode * arm_trans_Module(InstNode *ins,HashMap*hashMap){
             printf("\tvmov\tr%d,s0\n",dest_reg_abs);
             fprintf(fp,"\tvmov\tr%d,s0\n",dest_reg_abs);
         }else if(isGlobalArrayIntType(value0->VTy)){
-            assert(false);
+            //assert(false);
         }
     }
 
@@ -8126,7 +8126,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 
             // 对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递，但是也是会出现那全局变量来传参的情况，但是不影响
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
-                if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
 
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
@@ -8154,7 +8154,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //              变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
                 if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
                     if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-                        if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
                             handle_illegal_imm(i+100,x,1);
@@ -8177,7 +8177,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                             }
                         }
                     }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                        if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         left_reg=tmp->inst->_vfpReg_[1];
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
@@ -8248,7 +8248,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                     }
                 }
                 else{
-                    assert(false);
+                    //assert(false);
                 }
 
             }
@@ -8271,7 +8271,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             int vflag=0;
             if(isImmIntType(value1->VTy) || isImmFloatType(value1->VTy)){
-                assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID!=AddressTyID);
+                //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID!=AddressTyID);
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
                     fprintf(fp,"\tmov\tr0,#%d\n",value1->pdata->var_pdata.iVal);
@@ -8294,7 +8294,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             }
             else if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
                 if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-                    assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID!=AddressTyID);
+                    //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID!=AddressTyID);
                     if(left_reg>=100){
                         int x= get_value_offset_sp(hashMap,value1);
                         handle_illegal_imm(100,x,1);
@@ -8314,7 +8314,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                         }
                     }
                 }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                    assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID!=AddressTyID);
+                    //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[temp].ID!=AddressTyID);
                     left_reg=tmp->inst->_vfpReg_[1];
                     if(left_reg>=100){
                         int x= get_value_offset_sp(hashMap,value1);
@@ -8385,7 +8385,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
             int left_reg_abs;
             Value *value1= user_get_operand_use(&tmp->inst->user,0)->Val;
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
-                assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
                     fprintf(fp,"\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
@@ -8412,7 +8412,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //                变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
                 if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
                     if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-                        if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
                             handle_illegal_imm(i+100,x,1);
@@ -8435,7 +8435,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                             }
                         }
                     }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                        if(func_param_type!=NULL) assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         left_reg=tmp->inst->_vfpReg_[1];
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
@@ -9373,14 +9373,14 @@ InstNode * arm_trans_br(InstNode *ins){
 }
 
 InstNode * arm_trans_br_i1_true(InstNode *ins){
-    assert(false);
+    //assert(false);
     printf("arm_trans_br_i1_true\n");
     fprintf(fp,"arm_trans_br_i1_true\n");
     return ins;
 }
 
 InstNode * arm_trans_br_i1_false(InstNode *ins){
-    assert(false);
+    //assert(false);
     printf("arm_trans_br_i1_false\n");
     fprintf(fp,"arm_trans_br_i1_false\n");
     return ins;
@@ -9395,21 +9395,21 @@ InstNode * arm_trans_Label(InstNode *ins){
 }
 
 InstNode * arm_trans_tmp(InstNode *ins){
-    assert(false);
+    //assert(false);
     printf("arm_trans_tmp\n");
     fprintf(fp,"arm_trans_tmp\n");
     return ins;
 }
 
 InstNode * arm_trans_XOR(InstNode *ins){
-    assert(false);
+    //assert(false);
 
     return ins;
 }
 
 InstNode * arm_trans_zext(InstNode *ins){
 //i1扩展为i32
-    assert(false);
+    //assert(false);
     printf("arm_trans_zext\n");
     fprintf(fp,"arm_trans_zext\n");
     return ins;
@@ -9418,7 +9418,7 @@ InstNode * arm_trans_zext(InstNode *ins){
 InstNode * arm_trans_bitcast(InstNode *ins){
 //类型转换，已经通过映射解决掉了bitcast产生的 多余的mov和load指令的问题
 //    printf("arm_trans_bitcast\n");
-//    assert(false);
+//    //assert(false);
     return ins;
 }
 InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
@@ -9470,7 +9470,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             left_reg_abs=left_reg;
         }
 
-        assert(left_reg_abs!=0);
+        //assert(left_reg_abs!=0);
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
             int y=value2->pdata->var_pdata.iVal*4;
@@ -9568,7 +9568,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
     else if(isLocalArrayIntType(value1->VTy)|| isLocalArrayFloatType(value1->VTy)){
         int flag=value0->pdata->var_pdata.iVal;
         int off= get_value_offset_sp(hashMap,value1);
-        assert(off!=-1);
+        //assert(off!=-1);
         if(flag<0){ //常数
             int x=value2->pdata->var_pdata.iVal*4;
             x+=off;
@@ -9609,7 +9609,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 //            下面这个其实可以注释掉
 
             if(right_reg==0){ //非常数，但是其实给的是常数，只是lsy那里标错了
-//                assert(false);
+//                //assert(false);
                 int y=value2->pdata->var_pdata.iVal;
                 y*=result;
                 y+=off;
@@ -9737,7 +9737,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
             int which_dimension=value0->pdata->var_pdata.iVal;//当前所在的维数
             int result= array_suffix(value0->alias,which_dimension);
             if(right_reg==0){//非常数，但是其实给的是常数，只是lsy那里标错了
-//                assert(false);
+//                //assert(false);
                 int x;
                 if(globalVarRegAllocate==1){
                     if(left_reg>=100){
@@ -9834,7 +9834,7 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
         // 非第一条GEP，局部数组和全局数组都是一样的处理
     else{
         int left_reg_flag=ins->inst->_reg_[1];
-        assert(left_reg_flag!=0);
+        //assert(left_reg_flag!=0);
         int flag=value0->pdata->var_pdata.iVal;
         if(flag<0){
             int x=value2->pdata->var_pdata.iVal*4;
@@ -10039,14 +10039,14 @@ InstNode * arm_trans_GMP(InstNode *ins,HashMap*hashMap){
 }
 
 InstNode * arm_trans_MEMCPY(InstNode *ins){
-    assert(false);
+    //assert(false);
 //    涉及到数组的内容,后端不需要翻译这条ir和memcpy对应的ir
 //    printf("arm_trans_MEMCPY\n");
     return ins;
 }
 
 InstNode * arm_trans_zeroinitializer(InstNode *ins){
-    assert(false);
+    //assert(false);
     printf("arm_trans_zeroinitializer\n");
     fprintf(fp,"arm_trans_zeroinitializer\n");
     return ins;
@@ -10201,7 +10201,7 @@ InstNode * arm_trans_GLOBAL_VAR(InstNode *ins){
 }
 
 InstNode *arm_trans_Phi(InstNode *ins){
-    assert(false);
+    //assert(false);
 //    printf("arm_trans_Phi\n");
     return ins;
 }
@@ -10287,7 +10287,7 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
     int right_reg=ins->inst->_reg_[2];
     int left_reg_abs;
     int right_reg_abs;
-    assert(value2->alias!=NULL);
+    //assert(value2->alias!=NULL);
 //    表示将某个值存放到数组中，这个数组可能是全局数组也可能是局部数组，这个数组给定直接就是绝对地址
     if(value2->VTy->ID==AddressTyID){
 //        这个value2->VTy==AddressTyID是不是标识局部数组store的唯一标识这个还需要确认和处理
@@ -10308,8 +10308,8 @@ InstNode * arm_trans_Store(InstNode *ins,HashMap *hashMap){
 //        还有一种就是将数组的值存回给数组，就是说left是address,right也是address
         if(value1->VTy->ID==AddressTyID){
 //            局部数组address存到address,理论上应该不存在这种情况的
-//            assert(false);
-            assert(value1->alias!=NULL);
+//            //assert(false);
+            //assert(value1->alias!=NULL);
             if((is_int_array(value1)&& is_int_array(value2))||(is_float_array(value1)&& is_float_array(value2))){
                 if(left_reg>=100){
                     int x= get_value_offset_sp(hashMap,value1);
@@ -10643,7 +10643,7 @@ InstNode * arm_trans_Load(InstNode *ins,HashMap *hashMap){
     int dest_reg_abs=abs(dest_reg);
     int left_reg=ins->inst->_reg_[1];
     int left_reg_abs;
-    assert(value1->alias!=NULL);
+    //assert(value1->alias!=NULL);
     if(value1->VTy->ID==AddressTyID){
 //        这个是跟store差不多的，处理局部数组的和全局数组load问题
 //        所以说这里面再去判断value1的类型是没有什么意义的

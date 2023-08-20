@@ -78,8 +78,9 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             case Float:
                                 currDefineValueNumber = (unsigned int)define->pdata->var_pdata.fVal;
                                 break;
-                            default:
-                                assert(false);
+                            default:{
+                                //assert(false);
+                            }
                         }
                         //
                     }else{
@@ -250,11 +251,11 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                     value_number_seed++;
                                     HashMapPut(var2num,lhs,(void *)pValueNumber);
                                 }else{
-                                    assert(false);
+                                    //assert(false);
                                 }
                             }
                             pLhsNumber = HashMapGet(var2num,lhs);
-                            assert(pLhsNumber != NULL);
+                            //assert(pLhsNumber != NULL);
                             LhsNumber = *pLhsNumber;
                         }else{
                             if(isImmInt(lhs)){
@@ -262,7 +263,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                             }else if(isImmFloat(lhs)){
                                 LhsNumber = -(unsigned int)lhs->pdata->var_pdata.fVal;
                             }else{
-                                assert(false);
+                                //assert(false);
                             }
                         }
                     }
@@ -277,12 +278,12 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                     value_number_seed++;
                                     HashMapPut(var2num,rhs,(void *)pValueNumber);
                                 }else{
-                                    assert(false);
+                                    //assert(false);
                                 }
                             }
                             //还有可能是global array
                             pRhsNumber = HashMapGet(var2num, rhs);
-                            assert(pRhsNumber != NULL);
+                            //assert(pRhsNumber != NULL);
                             RhsNumber = *pRhsNumber;
                         }else{
                             if(isImmInt(rhs)){
@@ -379,7 +380,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                                 break;
                             }
                             default:{
-                                assert(false);
+                                //assert(false);
                             }
                         }
                     }
@@ -395,7 +396,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
 
                         //一定不能是一个常数
                         unsigned int  *pReplaceValueNumber = HashMapGet(var2num,replace);
-                        assert(pReplaceValueNumber != NULL);
+                        //assert(pReplaceValueNumber != NULL);
                         unsigned int replaceValueNumber = *pReplaceValueNumber;
 
                         unsigned int *pDestValueNumber = (unsigned int*) malloc(sizeof(unsigned int));

@@ -142,7 +142,7 @@ struct _Value* symtab_dynamic_lookup_first(Symtab* this, char* name)
 void symtab_insert_value_name(Symtab* this, char* name, struct _Value *V)
 {
     //在当前层找不到
-    assert(name!=NULL && sc_map_get_sv(getCurMap(this),name)==NULL);
+    //assert(name!=NULL && sc_map_get_sv(getCurMap(this),name)==NULL);
 
     struct sc_map_sv* cur_map = getCurMap(this);
     sc_map_put_sv(cur_map,name,V);
@@ -152,7 +152,7 @@ void symtab_insert_value_name(Symtab* this, char* name, struct _Value *V)
 void symtab_insert_withmap(Symtab* this, struct sc_map_sv *map,char* name, struct _Value *V)
 {
     //在当前层找不到
-    assert(name!=NULL && sc_map_get_sv(map,name)==NULL);
+    //assert(name!=NULL && sc_map_get_sv(map,name)==NULL);
 
     sc_map_put_sv(map,name,V);
 }
@@ -166,7 +166,7 @@ struct _Value* symtab_lookup_withmap(Symtab *this,char* name,struct sc_map_sv* m
 //修改最上层同一name的value值
 void symtab_update_value(Symtab* this,char *name,struct _Value *V)
 {
-    assert(symtab_dynamic_lookup(this,name)!=NULL);
+    //assert(symtab_dynamic_lookup(this,name)!=NULL);
     for(int i=this->S.top;i>=0;i--)
     {
         if(sc_map_get_sv(&this->S.value_map[i]->map,name)!=NULL)

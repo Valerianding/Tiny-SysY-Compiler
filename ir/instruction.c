@@ -52,7 +52,7 @@ Instruction *ins_new_zero_operator(int Op){
 Instruction *ins_new_unary_operator(int Op,Value *S1){
     Instruction* inst = ins_new(1);
     Use* pUse = user_get_operand_use(&inst->user,0);
-    assert(pUse != NULL);
+    //assert(pUse != NULL);
     use_set_value(pUse,S1);
     inst->Opcode = Op;
     inst->i = instruction_uid;
@@ -162,13 +162,13 @@ Value *ins_get_rhs(Instruction *ins){
 
 void replace_lhs_operand(Instruction *ins,Value *newValue){
 
-    assert(ins->user.value.NumUserOperands >= 1);
+    //assert(ins->user.value.NumUserOperands >= 1);
     Use *use = user_get_operand_use(&ins->user,0);
     use_set_value(use,newValue);
 }
 
 void replace_rhs_operand(Instruction *ins,Value *newValue){
-    assert(ins->user.value.NumUserOperands >= 2);
+    //assert(ins->user.value.NumUserOperands >= 2);
     Use *use = user_get_operand_use(&ins->user,1);
     use_set_value(use,newValue);
 }

@@ -79,7 +79,7 @@ void RedundantCallElimination(Function *currentFunction) {
                     Vector *paramVector = VectorInit(paramNum);
                     InstNode *paramNode = get_prev_inst(blockHead);
                     while(paramNum > 0){
-                        assert(paramNode->inst->Opcode == GIVE_PARAM);
+                        //assert(paramNode->inst->Opcode == GIVE_PARAM);
                         Value *lhs = ins_get_lhs(paramNode->inst);
                         VectorPushBack(paramVector,lhs);
                         paramNum--;

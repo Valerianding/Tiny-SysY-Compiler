@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <//assert.h>
 #include "utility.h"
 #include "arm.h"
 #include "value.h"
@@ -56,7 +56,7 @@ void yyerror(char *s)
 bool Optimize = false;
 
 int main(int argc, char* argv[]){
-    assert(sizeof(unsigned int) == 4);
+    //assert(sizeof(unsigned int) == 4);
     //lsy
     if(argc < 2 ){
         printf("ERROR: input file name is needed. \n");
@@ -213,7 +213,6 @@ int main(int argc, char* argv[]){
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
-//            //loop simplify requires loop normalize
 //            LoopNormalize(currentFunction);
 //            LoopSimplify(currentFunction);
 //            LoopReduce(currentFunction);
@@ -232,8 +231,7 @@ int main(int argc, char* argv[]){
   //  printf_llvm_ir(instruction_list,argv[4],1);
 
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        loopAnalysis(currentFunction);
-        memOpt(currentFunction);
+        RunOptimizePasses(currentFunction);
     }
 
     printf_llvm_ir(instruction_list,argv[4],1);

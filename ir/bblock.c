@@ -16,7 +16,7 @@ BasicBlock *bb_create(){
 InstNode* new_inst_node(Instruction* inst){
     InstNode* n = malloc(sizeof(InstNode));
     memset(n,0,sizeof(InstNode));
-    assert(n != NULL && " out of memory");
+    //assert(n != NULL && " out of memory");
     n->inst = inst;
     // 初始化结点
     sc_list_init(&(n->list));

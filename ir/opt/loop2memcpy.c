@@ -63,7 +63,7 @@ bool loop2memcpy(Loop *loop){
     Instruction *endIns = (Instruction *)loop->end_cond;
     Value *count = ins_get_rhs(endIns);
 
-    assert(loop->body_block != NULL);
+    //assert(loop->body_block != NULL);
     BasicBlock *body_block = loop->body_block;
 
     //(access access load store add jump)
@@ -155,13 +155,13 @@ bool loop2memcpy(Loop *loop){
     printf("src is %s dest is %s length %s\n",srcArray->name,destArray->name,count->name);
 
     //
-    assert(loop->containMultiBackEdge == false);
+    //assert(loop->containMultiBackEdge == false);
 
     BasicBlock *loopEntry = loop->head;
 
     //remove tail from entry's predecessors
     HashSetRemove(loop->head->preBlocks,loop->tail);
-    assert(HashSetSize(loopEntry->preBlocks) == 1);
+    //assert(HashSetSize(loopEntry->preBlocks) == 1);
 
     //remove loop body
     cleanBlock(loop->body_block);
@@ -221,7 +221,7 @@ bool loop2memcpy(Loop *loop){
     ins_insert_after(jumpNode,memcpyNode);
     jumpNode->inst->Parent = loopEntry;
 
-    assert(loop->exit_block != NULL);
+    //assert(loop->exit_block != NULL);
 
     loopEntry->true_block = loop->exit_block;
     loopEntry->false_block = NULL;

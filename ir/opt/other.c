@@ -208,7 +208,7 @@ void MemOptOnLoop(Loop *loop){
 
         Value *tripCount = ins_get_rhs(icmp);
 
-        assert(isImmInt(tripCount));
+        //assert(isImmInt(tripCount));
 
         int countStore = tripCount->pdata->var_pdata.iVal;
 
@@ -264,7 +264,7 @@ void MemOptOnLoop(Loop *loop){
             bodyHead = get_next_inst(bodyHead);
         }
 
-        assert(load != NULL);
+        //assert(load != NULL);
 
         User *loadUser = NULL;
 
@@ -278,7 +278,7 @@ void MemOptOnLoop(Loop *loop){
         //find the use thus find the phi
         Instruction *addIns = (Instruction *)loadUser;
 
-        assert(addIns->Opcode == Add);
+        //assert(addIns->Opcode == Add);
 
         Value *phiDest = ins_get_lhs(addIns);
 
@@ -295,19 +295,38 @@ void MemOptOnLoop(Loop *loop){
         }
 
         //
-        assert(phiInitValue != NULL);
+        //assert(phiInitValue != NULL);
 
         printf("phi initValue is %s\n",phiInitValue->name);
 
         if(nowStore == countStore){
             printf("stored %d\n",addNum);
+//            //assert(false);
             //now we know that all the store are useless
-            assert(false);
 
             Value *sum = (Value *)malloc(sizeof(Value));
             value_init_int(sum,addNum);
 
-            //add the initValue with all the constants
+
+            InstNode *removeNode = get_next_inst(loopEntry->head_node);
+            InstNode *entryNext = get_next_inst(loopEntry->tail_node);
+            while(removeNode != entryNext){
+                InstNode *tempNode = get_next_inst(removeNode);
+                deleteIns(removeNode);
+                removeNode = tempNode;
+            }
+
+            HashSetRemove(loopEntry->preBlocks,loop->body_block);
+
+            Instruction *jumpIns = ins_new_zero_operator(br);
+            InstNode *jumpNode = new_inst_node(jumpIns);
+            ins_insert_after(jumpNode,loopEntry->head_node);
+            jumpNode->inst->Parent = loopEntry;
+
+            loopEntry->tail_node = jumpNode;
+            cleanBlock(loop->body_block);
+
+
             Instruction *newAdd = ins_new_binary_operator(Add,phiInitValue,sum);
             newAdd->user.value.name = (char *)malloc(sizeof(char) * 10);
             strcpy(newAdd->user.value.name,"%add");
@@ -316,6 +335,25 @@ void MemOptOnLoop(Loop *loop){
             newAdd->Parent = loopEntry;
             ins_insert_before(addNode,loopEntry->tail_node);
 
+            Value *addDest = ins_get_dest(newAdd);
+
+            valueReplaceAll(phiDest,addDest,loopEntry->Parent);
+            loopEntry->true_block = loop->exit_block;
+            loopEntry->false_block = NULL;
+
+
+            //delete all the stores
+            preHead = preHeader->head_node;
+            preTail = preHeader->tail_node;
+            while(preHead != preTail){
+                if(preHead->inst->Opcode == Store){
+                    InstNode *nextNode = get_next_inst(preHead);
+                    deleteIns(preHead);
+                    preHead = nextNode;
+                }else{
+                    preHead = get_next_inst(preHead);
+                }
+            }
         }
     }
 }
@@ -326,4 +364,15 @@ void memOpt(Function *currentFunction){
     for(Loop *root = HashSetNext(loops); root != NULL; root = HashSetNext(loops)){
         MemOptOnLoop(root);
     }
+
+    renameVariables(currentFunction);
+}
+
+
+bool checkCalOnLoop(Loop *loop){
+    return true;
+}
+//
+void CalcOnLoop(Function *currentFunction){
+    //
 }

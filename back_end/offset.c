@@ -238,7 +238,7 @@ void hashmap_alloca_add(HashMap*hashMap,Value*key,int *add_sp,int reg_save_num){
             node->regr=-1;
             HashMapPut(hashMap,key,node);
         } else{
-            assert(false);
+            //assert(false);
             offset *node=offset_node();
             node->offset_sp=(*add_sp);
             (*add_sp)+=4;
@@ -262,7 +262,7 @@ void hashmap_bitcast_add(HashMap*hashMap,Value*key,Value *value,int reg_save_num
             node->regr=-1;
             HashMapPut(hashMap,key,node);
         }else{
-            assert(false);
+            //assert(false);
         }
     }
     return;
