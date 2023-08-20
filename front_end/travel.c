@@ -5382,7 +5382,7 @@ void printf_llvm_ir(struct _InstNode *instruction_node,char *file_name,int befor
 //            printf("value1:%s,\t",type_str[vl->VTy->ID]);
 //        if(vr!=NULL)
 //            printf("value2:%s,\t",type_str[vr->VTy->ID]);
-//        printf("\n");
+//        printf("\n\n");
 //
 //        if(instruction->isCritical){
 //            printf("isCritical\n\n");
@@ -5745,10 +5745,12 @@ void fix_wrong_ret(char* cur_func,HashMap* func_begin_node,InstNode* br_node){
 void test_wrong_ret(InstNode* instNode){
     instNode = get_next_inst(instNode);
 
+    HashMap *last_labelMap = HashMapInit();
     HashMap* labelMap = HashMapInit();
     char* cur_func = NULL;
     HashSet *cur_label_set = NULL;
     InstNode *instNode1 = instNode;
+    int *last_label = malloc(4);
     while(instNode1!=NULL && instNode->inst->Opcode!=ALLBEGIN){
         if(instNode1->inst->Opcode == FunBegin){
             HashSet *label_set = HashSetInit();
@@ -5758,10 +5760,12 @@ void test_wrong_ret(InstNode* instNode){
         else if(instNode1->inst->Opcode == Label){
             int *label = malloc(4);
             *label = instNode1->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            *last_label = *label;
             HashSetAdd(cur_label_set,label);
         }
         else if(instNode1->inst->Opcode == FunEnd){
             HashMapPut(labelMap,cur_func,cur_label_set);
+            HashMapPut(last_labelMap,cur_func,last_label);
         }
         instNode1 = get_next_inst(instNode1);
     }
@@ -5803,7 +5807,23 @@ void test_wrong_ret(InstNode* instNode){
                 deleteIns(now);
             }
             instNode1 = next_node;
-        } else
+        } else if(instNode1->inst->Opcode == FunBegin){
+            cur_func = ins_get_lhs(instNode1->inst)->name;
+            instNode1 = get_next_inst(instNode1);
+        }
+        else if(instNode1->inst->Opcode == Label){
+            InstNode *prev_node = get_prev_inst(instNode1);
+            if(prev_node->inst->Opcode != FunBegin && prev_node->inst->Opcode!=br && prev_node->inst->Opcode!=br_i1){
+                //说明其实已经结束了,补一条跳转到最后
+                Instruction *ins_b = ins_new_zero_operator(br);
+                int *last = HashMapGet(last_labelMap,cur_func);
+                ins_b->user.value.pdata->instruction_pdata.true_goto_location = *last;
+                InstNode *node_b = new_inst_node(ins_b);
+                ins_insert_before(node_b,instNode1);
+            }
+            instNode1 = get_next_inst(instNode1);
+        }
+        else
             instNode1 = get_next_inst(instNode1);
     }
 }
