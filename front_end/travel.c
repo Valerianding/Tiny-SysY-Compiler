@@ -5819,7 +5819,8 @@ void test_wrong_ret(InstNode* instNode){
                 //直达下一个func
                 while(instNode1 && instNode1->inst->Opcode!=FunBegin)
                     instNode1 = get_next_inst(instNode1);
-            }
+            } else
+                instNode1 = get_next_inst(instNode1);
         }
         else
             instNode1 = get_next_inst(instNode1);
