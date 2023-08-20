@@ -103,7 +103,8 @@ int main(int argc, char* argv[]){
     create_instruction_list(TRoot,NULL,0);
     travel_finish_type(instruction_list);
     move_give_param(instruction_list);
-  printf_llvm_ir(instruction_list,argv[4],1);
+    test_wrong_ret(instruction_list);
+//  printf_llvm_ir(instruction_list,argv[4],1);
 //  print_array(instruction_list);
 //  showAst(TRoot,0);
 
@@ -223,7 +224,7 @@ int main(int argc, char* argv[]){
         Clean(currentFunction);
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+  //  printf_llvm_ir(instruction_list,argv[4],1);
 
 //    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
 //        loopAnalysis(currentFunction);
