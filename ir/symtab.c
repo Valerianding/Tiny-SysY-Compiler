@@ -194,6 +194,13 @@ struct _mapList *symtab_get_latest_func_maplist(Symtab *this)
 {
     //全局表的第一个child，即第一个函数
     MapList *func=this->value_maps->next->child;
+
+    if(func == NULL){
+        scope_start(this);
+        func=this->value_maps->next->child;
+        scope_end(this);
+    }
+
     while(func->next!=NULL)
         func=func->next;
 
