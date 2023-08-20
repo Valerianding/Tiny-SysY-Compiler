@@ -2936,10 +2936,6 @@ void create_func_def(past root) {
         ins_node_add(instruction_list,node);
     }
 
-
-    //清空index
-    t_index=0;
-
     if(return_stmt_num[return_index]>1 || (return_stmt_num[return_index]==1 && v->pdata->symtab_func_pdata.return_type.ID==VoidTyID))
         reduce_return();
     insnode_stack_new(&S_break);
@@ -2952,6 +2948,24 @@ void create_func_def(past root) {
         deleteIns(get_last_inst(instruction_list));
     }
 
+    //直接生成一个label,生成一条ret void
+//    Instruction *ins_l = ins_new_zero_operator(Label);
+//    InstNode *tmp_ = get_last_inst(instruction_list);
+//    //不是ret不看
+//    if(tmp_->inst->Opcode == Return && ins_get_lhs(tmp_->inst)->name && get_name_index(ins_get_lhs(tmp_->inst)) == t_index-1)
+//        ins_l->user.value.pdata->instruction_pdata.true_goto_location = t_index;
+//    else
+//        ins_l->user.value.pdata->instruction_pdata.true_goto_location = t_index-1;
+//    InstNode *node_l = new_inst_node(ins_l);
+//    ins_node_add(instruction_list,node_l);
+//    //生成一条ret void
+//    Instruction *ins_void = ins_new_zero_operator(Return);
+//    InstNode *node_void = new_inst_node(ins_void);
+//    ins_node_add(instruction_list,node_void);
+
+    //清空index
+    t_index=0;
+
     //FuncEnd
     Instruction *ins_end= ins_new_unary_operator(FunEnd,v);
     //将这个instruction加入总list
@@ -2961,22 +2975,6 @@ void create_func_def(past root) {
     if (root->next != NULL)
         create_instruction_list(root->next,v_return,0);
 }
-
-//处理!
-//void travel_expr(past* str,int length)
-//{
-//    bool need_xor=false;
-//    for(int i=length-1;i>=0;i--)
-//    {
-//        if(str[i]->iVal=='!')
-//        {
-//            if(need_xor)
-//                str[i]->sVal= bfromcstr("special_!");
-//        }
-//        if(str[i]->iVal=='+' || str[i]->iVal=='-')
-//            need_xor=true;
-//    }
-//}
 
 //先后序遍历树，得到后缀表达式并存入数组，再通过后缀表达式得到表达式的值
 //目前做的有点复杂，其实应该可以直接后序遍历树就ok的，但目前感觉这样做也蛮清晰的，有时间再改吧
@@ -5672,4 +5670,140 @@ void create_line_param(Value* v_func,bool start_stop)
     //将这个instruction加入总list
     InstNode *node = new_inst_node(instruction);
     ins_node_add(instruction_list,node);
+}
+
+bool have_label(int label,HashSet* label_set){
+    HashSetFirst(label_set);
+    for(int *lb = HashSetNext(label_set); lb!=NULL; lb = HashSetNext(label_set)){
+        if(*lb == label)
+            return true;
+    }
+    return false;
+}
+
+void fix_wrong_ret(char* cur_func,HashMap* func_begin_node,InstNode* br_node){
+    //br_node应该是最后一个空的基本块
+    int num = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location+1;
+    //加一条alloca在最前面
+    InstNode *begin = HashMapGet(func_begin_node,cur_func);
+    Value *v_func = ins_get_lhs(begin->inst);
+    Instruction *ins_alloca = ins_new_zero_operator(Alloca);
+    Value *v_ret = ins_get_value_with_name_and_index(ins_alloca,num);
+    if(v_func->pdata->symtab_func_pdata.return_type.ID == Var_INT)
+        v_ret->VTy->ID = Var_INT;
+    else if(v_func->pdata->symtab_func_pdata.return_type.ID == Var_FLOAT)
+        v_ret->VTy->ID = Var_FLOAT;
+
+    InstNode *node_alloca = new_inst_node(ins_alloca);
+    ins_insert_after(node_alloca,begin);
+    while (begin!=NULL && begin->inst->Opcode!=FunEnd){
+        if(begin->inst->Opcode == Return){
+            //store
+            Instruction *ins_store = ins_new_binary_operator(Store, ins_get_lhs(begin->inst),v_ret);
+            InstNode *node_store = new_inst_node(ins_store);
+            ins_insert_after(node_store,begin);
+            deleteIns(begin);
+            //br
+            Instruction *ins_br = ins_new_zero_operator(br);
+            ins_br->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            InstNode *node_br = new_inst_node(ins_br);
+            ins_insert_after(node_br,node_store);
+            begin = get_next_inst(node_br);
+        }
+        else
+            begin = get_next_inst(begin);
+    }
+    //在函数最后加label和load和ret
+    Instruction *ins_label = ins_new_zero_operator(Label);
+    InstNode *node_label = new_inst_node(ins_label);
+    ins_label->user.value.pdata->instruction_pdata.true_goto_location = br_node->inst->user.value.pdata->instruction_pdata.true_goto_location;
+    ins_insert_before(node_label,begin);
+    //load
+    Instruction *ins_load = ins_new_unary_operator(Load,v_ret);
+    InstNode *node_load = new_inst_node(ins_load);
+    ins_insert_before(node_load,begin);
+    if(v_func->pdata->symtab_func_pdata.return_type.ID == Var_INT)
+        ins_get_lhs(ins_load)->VTy->ID = Var_INT;
+    else if(v_func->pdata->symtab_func_pdata.return_type.ID == Var_FLOAT)
+        ins_get_lhs(ins_load)->VTy->ID = Var_FLOAT;
+    //ret
+    Instruction *ins_re = ins_new_unary_operator(Return,ins_get_value_with_name_and_index(ins_load,br_node->inst->user.value.pdata->instruction_pdata.true_goto_location+2));
+    InstNode *node_re = new_inst_node(ins_re);
+    ins_insert_before(node_re,begin);
+
+    //在br_node前面随便store一个0
+    Value *v_zero = (Value*) malloc(sizeof (Value));
+    if(v_func->pdata->symtab_func_pdata.return_type.ID == Var_INT)
+        value_init_int(v_zero,0);
+    else if(v_func->pdata->symtab_func_pdata.return_type.ID == Var_FLOAT)
+        value_init_float(v_zero,0);
+    Instruction *ins_store = ins_new_binary_operator(Store, v_zero,v_ret);
+    InstNode *node_store = new_inst_node(ins_store);
+    ins_insert_before(node_store,br_node);
+}
+
+void test_wrong_ret(InstNode* instNode){
+    instNode = get_next_inst(instNode);
+
+    HashMap* labelMap = HashMapInit();
+    char* cur_func = NULL;
+    HashSet *cur_label_set = NULL;
+    InstNode *instNode1 = instNode;
+    while(instNode1!=NULL && instNode->inst->Opcode!=ALLBEGIN){
+        if(instNode1->inst->Opcode == FunBegin){
+            HashSet *label_set = HashSetInit();
+            cur_label_set = label_set;
+            cur_func = ins_get_lhs(instNode1->inst)->name;
+        }
+        else if(instNode1->inst->Opcode == Label){
+            int *label = malloc(4);
+            *label = instNode1->inst->user.value.pdata->instruction_pdata.true_goto_location;
+            HashSetAdd(cur_label_set,label);
+        }
+        else if(instNode1->inst->Opcode == FunEnd){
+            HashMapPut(labelMap,cur_func,cur_label_set);
+        }
+        instNode1 = get_next_inst(instNode1);
+    }
+
+    //第二遍读br判断是不是错误情况.
+    instNode1 = instNode;
+    HashMap* func_begin_node = HashMapInit();
+    while(instNode1!=NULL && instNode->inst->Opcode!=ALLBEGIN){
+        if(instNode1->inst->Opcode == FunBegin){
+            cur_func = ins_get_lhs(instNode1->inst)->name;
+            cur_label_set = HashMapGet(labelMap,cur_func);
+            HashMapPut(func_begin_node,cur_func,instNode1);
+            instNode1 = get_next_inst(instNode1);
+        }
+        else if(instNode1->inst->Opcode == br) {
+            if(!have_label(instNode1->inst->user.value.pdata->instruction_pdata.true_goto_location,cur_label_set)){
+                //fix
+                fix_wrong_ret(cur_func,func_begin_node,instNode1);
+                //直达下一个func
+                while(instNode1 && instNode1->inst->Opcode!=FunBegin)
+                    instNode1 = get_next_inst(instNode1);
+            }
+            else
+                instNode1 = get_next_inst(instNode1);
+        }
+        else
+            instNode1 = get_next_inst(instNode1);
+    }
+
+    //第三遍, 删掉一个基本块内br后的东西
+    instNode1 = instNode;
+    while(instNode1!=NULL && instNode->inst->Opcode!=ALLBEGIN){
+        if(instNode1->inst->Opcode == br || instNode1->inst->Opcode == br_i1){
+            InstNode *next_node = get_next_inst(instNode1);
+            while(next_node->inst->Opcode != Label && next_node->inst->Opcode != FunEnd){
+                //删掉多余的ir
+                InstNode *now = next_node;
+                next_node = get_next_inst(next_node);
+                deleteIns(now);
+            }
+            instNode1 = next_node;
+        } else
+            instNode1 = get_next_inst(instNode1);
+    }
 }

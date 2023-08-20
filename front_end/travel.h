@@ -10,12 +10,14 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "tree_balancing.h"
+#include "inliner.h"
 
 //void test_travel_type(struct _InstNode *instruction_node);
 void travel_finish_type(struct _InstNode *instruction_node);
 
 //处理参数需要float-int间转换的情况
 Value *float_int_convert(Value* callee, Value* value, int param_index);
+void test_wrong_ret(InstNode* instNode);
 
 void create_blockItemList(past root,Value* v_return,int flag,int block);
 void create_instruction_list(past root,Value* v_return,int block);
