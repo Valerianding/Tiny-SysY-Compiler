@@ -1,3 +1,26 @@
+//int w;
+//
+//int func(int a,int b)
+//{
+//    if(a<b)
+//    {
+//        w=a;
+//    }
+//    else
+//    {
+//        w=b;
+//        return 1;//注释这一行可以跑
+//    }
+//}
+//
+//int main()
+//{
+//    int a=getint();
+//    int b=getint();
+//    func(a,b);
+//    return w;
+//}
+
 int func(int n) {
     int sum = 0;
     int i = 200;

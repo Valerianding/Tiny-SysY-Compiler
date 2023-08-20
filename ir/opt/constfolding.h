@@ -6,6 +6,7 @@
 #define C22V1_CONSTFOLDING_H
 #include "function.h"
 #include "utility.h"
+#include "dominance.h"
 bool ConstFolding(Function *currentFunction);
 bool BranchOptimizing(Function *currentFunction);
 #endif //C22V1_CONSTFOLDING_H

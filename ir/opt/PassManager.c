@@ -18,6 +18,8 @@ void RunBasicPasses(Function *currentFunction){
 
 void RunOptimizePasses(Function *currentFunction){
 
+    BranchOptimizing(currentFunction);
+
     dominanceAnalysis(currentFunction);
 
     DVNT(currentFunction); // 浮点情况还有可能有错

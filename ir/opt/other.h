@@ -9,5 +9,5 @@
 #include "loopinfo.h"
 #include "sideeffect.h"
 #include "utility.h"
-extern InstNode *instruction_list;
+void memOpt(Function *currentFunction);
 #endif //C22V1_OTHER_H
