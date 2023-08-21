@@ -608,15 +608,17 @@ void simplifyCalLoop(Loop *loop){
 
         Value *firstAdd = NULL;
         Value *secondMod = NULL;
-        int index = 0;
         while(bodyHead != bodyTail){
-            if(bodyHead->inst->Opcode == Add && index == 1){
-                firstAdd = ins_get_rhs(bodyHead->inst);
+            if(bodyHead->inst->Opcode == Add){
+                Value *rhs = ins_get_rhs(bodyHead->inst);
+                Value *lhs = ins_get_lhs(bodyHead->inst);
+                if(lhs != loop->inductionVariable){
+                    firstAdd = ins_get_rhs(bodyHead->inst);
+                }
             }
-            if(bodyHead->inst->Opcode == Mod && index == 2){
+            if(bodyHead->inst->Opcode == Mod){
                 secondMod = ins_get_rhs(bodyHead->inst);
             }
-            index++;
             bodyHead = get_next_inst(bodyHead);
         }
 
