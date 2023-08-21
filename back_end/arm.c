@@ -8155,7 +8155,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //              变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
                 if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
                     if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+//                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
                             handle_illegal_imm(i+100,x,1);
@@ -8178,7 +8178,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                             }
                         }
                     }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+//                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         left_reg=tmp->inst->_vfpReg_[1];
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
@@ -8413,7 +8413,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 //                变量的情况，全局变量应该不用传参，需要传参的只是局部变量和立即数
                 if(isLocalVarIntType(value1->VTy)|| isLocalVarFloatType(value1->VTy)){
                     if(ARM_enable_vfp==0 || isLocalVarIntType(value1->VTy)){
-                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+//                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
                             handle_illegal_imm(i+100,x,1);
@@ -8436,7 +8436,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
                             }
                         }
                     }else if(ARM_enable_vfp==1 && isLocalVarFloatType(value1->VTy)){
-                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+//                        if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
                         left_reg=tmp->inst->_vfpReg_[1];
                         if(left_reg>=100){
                             int x= get_value_offset_sp(hashMap,value1);
