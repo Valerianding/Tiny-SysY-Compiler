@@ -8113,6 +8113,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
     if(num<=4){
         int i= get_order_param(num);
         while (i!=-1){
+//            printf("give r%d\n",i);
             tmp=one_param[i];
             int left_reg= tmp->inst->_reg_[1];
             if(give_param_flag[1]==1){
@@ -8126,7 +8127,7 @@ InstNode * arm_trans_GIVE_PARAM(HashMap*hashMap,int param_num){
 
             // 对于全局变量来说是可以直接调用的，并不需要通过give_param来进行传递，但是也是会出现那全局变量来传参的情况，但是不影响
             if(isImmIntType(value1->VTy)|| isImmFloatType(value1->VTy)){
-                if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
+//                if(func_param_type!=NULL) //assert(func_param_type->pdata->symtab_func_pdata.param_type_lists[i].ID!=AddressTyID);
 
                 if(isImmIntType(value1->VTy)&& imm_is_valid(value1->pdata->var_pdata.iVal)){
                     printf("\tmov\tr%d,#%d\n",i,value1->pdata->var_pdata.iVal);
