@@ -423,7 +423,7 @@ void HashSetCopy(HashSet *dest,HashSet *src){
 //TODO
 unsigned hash_values(Vector *valueVector) {
     unsigned count = VectorSize(valueVector);
-    unsigned volatile *Memory = (unsigned *)malloc(sizeof(unsigned ) * count);
+    unsigned volatile *Memory = (unsigned *)malloc(sizeof(void *) * count);
     Value *value = NULL;
     for(int i = 0; i < count; i++) {
         VectorGet(valueVector,i,(void *)&value);
@@ -433,10 +433,17 @@ unsigned hash_values(Vector *valueVector) {
         }else if(isImmFloat(value)){
             Memory[i] = (unsigned )value->pdata->var_pdata.fVal;
         }else{
-            Memory[i] = (unsigned )value;
+            Memory[i] = (unsigned)value;
+        }
+        if(!isImm(value)){
+            printf("value %s\n",value->name);
+        }else if(isImmInt(value)){
+            printf("value %d\n",value->pdata->var_pdata.iVal);
+        }else if(isImmFloat(value)){
+            printf("value %f\n",value->pdata->var_pdata.fVal);
         }
     }
-    return HashMurMur32((void *)Memory,count);
+    return HashMurMur32((void *)Memory,sizeof(void *) * count);
 }
 
 bool isSySYFunction(Value *function){
