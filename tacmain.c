@@ -177,9 +177,33 @@ int main(int argc, char* argv[]){
             // issimple(currentFunction);
             sideEffectAnalysis(currentFunction);
             RunOptimizePasses(currentFunction);
-
             RedundantCallElimination(currentFunction);
             renameVariables(currentFunction);
+        }
+    }
+    //简单递归的消除
+    if(Optimize && !NOTOK) {
+        for (Function *currentFunction = start;
+             currentFunction != NULL; currentFunction = currentFunction->Next) {
+            // issimple(currentFunction);
+            renameVariables(currentFunction);
+        }
+
+        //重新构建Function
+        start = ReconstructFunction(instruction_list);
+
+        global2local(instruction_list);
+
+        for (Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
+
+            dominanceAnalysis(currentFunction);
+
+            calculateNonLocals(currentFunction);
+
+            mem2reg(currentFunction);
+
+            //Loop invariant code motion 需要使用live-out信息
+            calculateLiveness(currentFunction);
         }
     }
 
