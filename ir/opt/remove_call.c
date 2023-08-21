@@ -71,11 +71,18 @@ int issimple(Function * tempFunction)
     if(call_self==1&&call_else==0&&phi_num==2&&have_imm==1)
     {
         tempFunction->issimplerecursive=1;
+        return 1;
     }
     else
     {
         tempFunction->issimplerecursive=0;
+        return 0;
     }
-    printf("func:%s is simple :%d\n",tempFunction->name,tempFunction->issimplerecursive);
+    // printf("func:%s is simple :%d\n",tempFunction->name,tempFunction->issimplerecursive);
     return 0;
 }
+
+// void remake_func(Function * tempFunction)
+// {
+
+// }
