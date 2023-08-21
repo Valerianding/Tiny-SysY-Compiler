@@ -4,6 +4,220 @@ int call_else;
 int phi_num;
 int have_imm;
 extern Symtab * this;
+
+/**
+ *  1. 特定的常量/递归调用双分支函数可以在编译阶段进行展开然后常量传播进行计算寻找规律
+ *  从临界条件开始计算简单递归，change_ir对计算数进行规律变化, 将简单递归的结果进行总结放入队列, 如果判断出从临界条件开始递归结果开始出现循环，说明可优化掉递归
+ */
+
+bool is_icmp_ir(InstNode* instNode){
+    Opcode op = instNode->inst->Opcode;
+    if(op == LESS || op == LESSEQ || op == GREATEQ || op == GREAT || op == EQ || op ==NOTEQ)
+        return true;
+    return false;
+}
+
+
+bool is_change_edge(InstNode* node,Value* v_edge){
+    if(node->inst->Opcode == Add || node->inst->Opcode == Sub || node->inst->Opcode == Mul || node->inst->Opcode == Div){
+        if(v_edge == ins_get_lhs(node->inst))
+            return true;
+        if(v_edge == ins_get_rhs(node->inst))
+            return true;
+        return false;
+    }
+    return false;
+}
+
+int get_init_num(InstNode* change_ir,Value* v_edge,Value* v_const){
+    //1.拿到退出num,v_const是结果
+    //先只做个sub看看情况
+    if(change_ir->inst->Opcode == Sub && ins_get_lhs(change_ir->inst) == v_edge){
+        int init = v_const->pdata->var_pdata.iVal - ins_get_rhs(change_ir->inst)->pdata->var_pdata.iVal ;
+        return init;
+    }
+    return 0;
+}
+
+int get_next_int(InstNode* change_ir,Value* v_edge,int now_int){
+    if(change_ir->inst->Opcode == Sub && ins_get_lhs(change_ir->inst) == v_edge){
+        int init = now_int+ ins_get_rhs(change_ir->inst)->pdata->var_pdata.iVal;
+        return init;
+    }
+    return 0;
+}
+
+bool check_be_while(Value* v_const,InstNode* change_ir,BasicBlock* block,InstNode* end_node,Value* v_edge,Function* function){
+    //判断是否能循环上的队列
+    Queue *results = QueueInit();
+    //先将常数值(结果)和它对应的num入队列
+    //1.拿到退出num,v_const是结果
+    int init = get_init_num(change_ir,v_edge,v_const);
+    r_node *rNode = (r_node*) malloc(sizeof(r_node));
+    rNode->num = init;rNode->result = v_const->pdata->var_pdata.iVal;
+    QueuePush(results,rNode);
+
+    //遍历block,除去give param和change_ir 计算一次改变后的value
+    int new_int = get_next_int(change_ir,v_edge,init);
+    InstNode *cur_node = block->head_node;
+    int i = 0;
+    while (cur_node != block->tail_node && i<5){
+        if(cur_node!=change_ir && cur_node->inst->Opcode!=GIVE_PARAM){
+            if(cur_node->inst->Opcode == Call){
+                //拿出上一次放进去的值
+                r_node *n = (r_node*) malloc(sizeof (r_node));
+                QueueBack(results,(void**)&n);
+                int res = n->result;
+                Value *v_res = (Value*) malloc(sizeof (Value));
+                value_init_int(v_res,res);
+                //常量传播
+                ConstFolding(function);
+                // instcomb
+                instruction_combination(function);
+
+                //将res值放入队列
+                r_node *node = (r_node*) malloc(sizeof (r_node));
+                node->result = v_res->pdata->var_pdata.iVal;
+                node->num = new_int;
+                QueuePush(results,node);
+            }
+        }
+        i++;
+        cur_node = get_next_inst(cur_node);
+    }
+
+    //遍历队列，检测是否出现循环
+    while (QueueSize(results)!=0){
+        r_node *n  = (r_node*) malloc(sizeof (r_node));
+        QueueBack(results,(void**)&n);
+        QueuePop(results);
+        int times = 0;
+        if(n->result == 0)
+            times++;
+        if(times == 2)
+            return true;
+    }
+    return false;
+}
+
+bool check_call_func(Function* function){
+    //临界value
+    Value *v_edge = NULL;
+    Value *v_const = NULL;
+    InstNode *icmp_node =NULL;
+    InstNode *end_node = NULL;
+
+    //直达最后一个基本块找phi
+    BasicBlock *end = function->tail;
+    InstNode *phi_node = end->head_node;
+    HashSetFirst(phi_node->inst->user.value.pdata->pairSet);
+    //找到是常数的情况，往前驱块找变化条件
+    for(pair* pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet); pp!=NULL; pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet)){
+        if(isImm(pp->define)){
+            v_const = pp->define;
+            //找前驱块
+            HashSet* preBlocks = pp->from->preBlocks;
+            assert(HashSetSize(preBlocks)==1);
+            HashSetFirst(preBlocks);
+            BasicBlock *prev = HashSetNext(preBlocks);
+            //找到一条icmp
+            end_node = prev->tail_node;
+            while(end_node != prev->head_node){
+                if(is_icmp_ir(end_node)){
+                    icmp_node = end_node;
+                    //TODO 可能有点草率
+                    if(!isImm(ins_get_lhs(end_node->inst))){
+                        v_edge = ins_get_lhs(end_node->inst);
+                    }
+                    else{
+                        v_edge = ins_get_rhs(end_node->inst);
+                    }
+                    break;
+                }
+                end_node = get_prev_inst(end_node);
+            }
+            break;
+        }
+    }
+    for(pair* pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet); pp!=NULL; pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet)){
+        if(!isImm(pp->define)){
+            //是另一个需要check的基本块
+            //找到对边界条件进行修改的ir
+            InstNode *change_ir = pp->from->head_node;
+            //TODO 先草率地默认就在give param前面
+            while(!is_change_edge(change_ir,v_edge) && change_ir->inst->Opcode !=GIVE_PARAM){
+                change_ir = get_next_inst(change_ir);
+            }
+            if(change_ir->inst->Opcode ==GIVE_PARAM)
+                return false;
+
+            //计算是否能循环
+            bool flag = check_be_while(v_const,change_ir,pp->from,end_node,v_edge,function);
+            if(!flag)
+                break;
+            break;
+        }
+    }
+}
+
+int issimple(Function * tempFunction)
+{
+    call_self=0;
+    call_else=0;
+    phi_num=0;
+    BasicBlock *entry = tempFunction->entry;
+    BasicBlock *end = tempFunction->tail;
+
+    InstNode *currNode = entry->head_node;
+    InstNode *endNode = get_next_inst(end->tail_node);
+    currNode = get_next_inst(currNode);  // skip for FuncBegin
+    while(currNode != endNode){
+        switch (currNode->inst->Opcode)
+        {
+            case Call:
+            {
+                if(strcmp(currNode->inst->user.use_list->Val->name,tempFunction->name)==0){
+                    call_self=1;
+                }
+                else{
+                    call_else=1;
+                }
+                break;
+
+            }
+            case Phi:
+            {
+                have_imm=0;
+                HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
+                HashSetFirst(phiSet);
+                unsigned int size=HashSetSize(phiSet);
+                phi_num=size;
+                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                    Value *incomingVal = phiInfo->define;
+                    if(incomingVal != NULL && isImm(incomingVal)){
+                        have_imm++;
+                    }
+                }
+                break;
+            }
+        }
+        currNode = get_next_inst(currNode);
+    }
+    if(call_self==1&&call_else==0&&phi_num==2&&have_imm==1)
+    {
+        tempFunction->issimplerecursive=1;
+        remake_func(tempFunction);
+        return 1;
+    }
+    else
+    {
+        tempFunction->issimplerecursive=0;
+        return 0;
+    }
+    // printf("func:%s is simple :%d\n",tempFunction->name,tempFunction->issimplerecursive);
+    return 0;
+}
+
 void remake_func(Function * function)
 {
     //先删去当前所有ir,除了funcend和funbegin
@@ -123,210 +337,3 @@ void remake_func(Function * function)
     function->tail->tail_node->inst->Parent = new_bb3;
     function->tail = new_bb3;
 }
-
-bool is_icmp_ir(InstNode* instNode){
-    Opcode op = instNode->inst->Opcode;
-    if(op == LESS || op == LESSEQ || op == GREATEQ || op == GREAT || op == EQ || op ==NOTEQ)
-        return true;
-    return false;
-}
-
-
-bool is_change_edge(InstNode* node,Value* v_edge){
-    if(node->inst->Opcode == Add || node->inst->Opcode == Sub || node->inst->Opcode == Mul || node->inst->Opcode == Div){
-        if(v_edge == ins_get_lhs(node->inst))
-            return true;
-        if(v_edge == ins_get_rhs(node->inst))
-            return true;
-        return false;
-    }
-    return false;
-}
-
-int get_init_num(InstNode* change_ir,Value* v_edge,Value* v_const){
-    //1.拿到退出num,v_const是结果
-    //TODO 先只做个sub看看情况
-    if(change_ir->inst->Opcode == Sub && ins_get_lhs(change_ir->inst) == v_edge){
-        int init = v_const->pdata->var_pdata.iVal - ins_get_rhs(change_ir->inst)->pdata->var_pdata.iVal ;
-        return init;
-    }
-}
-
-int get_next_int(InstNode* change_ir,Value* v_edge,int now_int){
-    if(change_ir->inst->Opcode == Sub && ins_get_lhs(change_ir->inst) == v_edge){
-        int init = now_int+ ins_get_rhs(change_ir->inst)->pdata->var_pdata.iVal;
-        return init;
-    }
-}
-
-bool check_be_while(Value* v_const,InstNode* change_ir,BasicBlock* block,InstNode* end_node,Value* v_edge,Function* function){
-    //判断是否能循环上的队列
-    Queue *results = QueueInit();
-    //先将常数值(结果)和它对应的num入队列
-    //1.拿到退出num,v_const是结果
-    int init = get_init_num(change_ir,v_edge,v_const);
-    r_node *rNode = (r_node*) malloc(sizeof(r_node));
-    rNode->num = init;rNode->result = v_const->pdata->var_pdata.iVal;
-    QueuePush(results,rNode);
-
-    //遍历block,除去give param和change_ir 计算一次改变后的value
-    int new_int = get_next_int(change_ir,v_edge,init);
-    InstNode *cur_node = block->head_node;
-    while (cur_node != block->tail_node){
-        if(cur_node!=change_ir && cur_node->inst->Opcode!=GIVE_PARAM){
-            if(cur_node->inst->Opcode == Call){
-                //拿出上一次放进去的值
-                r_node *n = (r_node*) malloc(sizeof (r_node));
-                QueueBack(results,(void**)&n);
-                int res = n->result;
-                Value *v_res = (Value*) malloc(sizeof (Value));
-                value_init_int(v_res,res);
-                //TODO 常量传播， instcomb
-            }
-        }
-
-        cur_node = get_next_inst(cur_node);
-    }
-}
-
-bool check_call_func(Function* function){
-    //临界value
-    Value *v_edge = NULL;
-    Value *v_const = NULL;
-    InstNode *icmp_node =NULL;
-
-    //直达最后一个基本块找phi
-    BasicBlock *end = function->tail;
-    InstNode *phi_node = end->head_node;
-    HashSetFirst(phi_node->inst->user.value.pdata->pairSet);
-    //找到是常数的情况，往前驱块找变化条件
-    for(pair* pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet); pp!=NULL; pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet)){
-        if(isImm(pp->define)){
-            v_const = pp->define;
-            //找前驱块
-            HashSet* preBlocks = pp->from->preBlocks;
-            assert(HashSetSize(preBlocks)==1);
-            HashSetFirst(preBlocks);
-            BasicBlock *prev = HashSetNext(preBlocks);
-            //找到一条icmp
-            InstNode *end_node = prev->tail_node;
-            while(end_node != prev->head_node){
-                if(is_icmp_ir(end_node)){
-                    icmp_node = end_node;
-                    //TODO 可能有点草率
-                    if(!isImm(ins_get_lhs(end_node->inst))){
-                        v_edge = ins_get_lhs(end_node->inst);
-                    }
-                    else{
-                        v_edge = ins_get_rhs(end_node->inst);
-                    }
-                    break;
-                }
-                end_node = get_prev_inst(end_node);
-            }
-            break;
-        }
-    }
-    for(pair* pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet); pp!=NULL; pp = HashSetNext(phi_node->inst->user.value.pdata->pairSet)){
-        if(!isImm(pp->define)){
-            //是另一个需要check的基本块
-            //找到对边界条件进行修改的ir
-            InstNode *change_ir = pp->from->head_node;
-            //TODO 先草率地默认就在give param前面
-            while(!is_change_edge(change_ir,v_edge) && change_ir->inst->Opcode !=GIVE_PARAM){
-                change_ir = get_next_inst(change_ir);
-            }
-            if(change_ir->inst->Opcode ==GIVE_PARAM)
-                return false;
-
-            //计算是否能循环
-
-            break;
-        }
-    }
-}
-
-int issimple(Function * tempFunction)
-{
-    call_self=0;
-    call_else=0;
-    phi_num=0;
-    BasicBlock *entry = tempFunction->entry;
-    BasicBlock *end = tempFunction->tail;
-
-    InstNode *currNode = entry->head_node;
-    InstNode *endNode = get_next_inst(end->tail_node);
-    currNode = get_next_inst(currNode);  // skip for FuncBegin
-    while(currNode != endNode){
-        switch (currNode->inst->Opcode)
-        {
-            case Call:
-            {
-                if(strcmp(currNode->inst->user.use_list->Val->name,tempFunction->name)==0)
-                {
-                    call_self=1;
-                }
-                else
-                {
-                    call_else=1;
-                }
-                break;
-
-            }
-            case Phi:
-            {
-                int i=0;
-                have_imm=0;
-                HashSet *phiSet = currNode->inst->user.value.pdata->pairSet;
-                HashSetFirst(phiSet);
-                unsigned int size=HashSetSize(phiSet);
-                phi_num=size;
-                for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
-                    BasicBlock *from = phiInfo->from;
-                    Value *incomingVal = phiInfo->define;
-                    if(i + 1 == size)      //最后一次
-                    {
-                        if(incomingVal != NULL && isImm(incomingVal)){
-                            have_imm++;
-                        }else if(incomingVal != NULL){
-                            
-                        }else{
-                            
-                        }
-                    }
-                    else
-                    {
-                        if(incomingVal != NULL && isImm(incomingVal)){
-                           have_imm++;
-                        }else if(incomingVal != NULL){
-                           
-                        }else{
-                            
-                        }
-                    }
-                    i++;
-                }
-                break;
-            }
-        }
-        currNode = get_next_inst(currNode);
-    }
-    if(call_self==1&&call_else==0&&phi_num==2&&have_imm==1)
-    {
-        tempFunction->issimplerecursive=1;
-        remake_func(tempFunction);
-        return 1;
-    }
-    else
-    {
-        tempFunction->issimplerecursive=0;
-        return 0;
-    }
-    // printf("func:%s is simple :%d\n",tempFunction->name,tempFunction->issimplerecursive);
-    return 0;
-}
-
-// void remake_func(Function * tempFunction)
-// {
-
-// }
