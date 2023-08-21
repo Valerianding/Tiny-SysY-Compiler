@@ -368,11 +368,46 @@ void memOpt(Function *currentFunction){
     renameVariables(currentFunction);
 }
 
+bool isCalc(InstNode *instNode){
+    switch (instNode->inst->Opcode) {
+    case Add:case Sub:case Mul:case Div:
+    case Mod: return true;
+    default:return false;
+    }
+    return false;
+}
 
 bool checkCalOnLoop(Loop *loop){
     if(HashSetSize(loop->loopBody) != 2) return false;
 
     if(HashSetSize(loop->head->preBlocks) != 2) return false;
+
+    if(!loop->inductionVariable) return false;
+
+    //check loop Body must be all cal instructions
+    if(!loop->body_block) return false;
+
+
+    //the body block must be all calc instruction
+    InstNode *bodyHead = loop->body_block->head_node;
+    InstNode *bodyTail = loop->body_block->tail_node;
+    bodyHead = get_next_inst(bodyHead);
+
+    while(bodyHead != bodyTail){
+        if(!isCalc(bodyHead)){
+            return false;
+        }
+
+        //also we want the rhs to be imm
+        Value *rhs = ins_get_rhs(bodyHead->inst);
+        if(!isImmInt(rhs)){
+            return false;
+
+        }
+        bodyHead = get_next_inst(bodyHead);
+    }
+
+    //if calc instructions are all
 
     return true;
 }

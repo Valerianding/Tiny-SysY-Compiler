@@ -76,17 +76,21 @@ void RedundantCallElimination(Function *currentFunction) {
 
                 //OK see if we have the same param with same function
                 if(!containAddress && isTargetFunction(calledFunction)){
+
                     Vector *paramVector = VectorInit(paramNum);
                     InstNode *paramNode = get_prev_inst(blockHead);
                     while(paramNum > 0){
                         //assert(paramNode->inst->Opcode == GIVE_PARAM);
                         Value *lhs = ins_get_lhs(paramNode->inst);
                         VectorPushBack(paramVector,lhs);
+                        paramNode = get_prev_inst(paramNode);
                         paramNum--;
                     }
 
                     unsigned paramValues = hash_values(paramVector);
+                    //printf("paramValues %d size %d\n",paramValues, VectorSize(paramVector));
 
+                    VectorDeinit(paramVector);
                     //
                     HashMap *num2Node = NULL;
                     InstNode *preCall = NULL;

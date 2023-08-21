@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "graph_color.h"
-#define ALL 1
+#define ALL 0
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-//    Optimize=true;
+
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -156,6 +156,7 @@ int main(int argc, char* argv[]){
     combineZext(instruction_list);
 
     bool NOTOK = containFloat(instruction_list);
+    NOTOK = false;
 
     NOTOK=false;
     //构建Function
@@ -175,14 +176,14 @@ int main(int argc, char* argv[]){
              currentFunction != NULL; currentFunction = currentFunction->Next) {
             // issimple(currentFunction);
             sideEffectAnalysis(currentFunction);
+            RunOptimizePasses(currentFunction);
+
             RedundantCallElimination(currentFunction);
             renameVariables(currentFunction);
-            RunOptimizePasses(currentFunction);
         }
     }
 
     printf_llvm_ir(instruction_list,argv[4],1);
-
 
     if(Optimize) {
         func_inline(instruction_list, 124);
@@ -211,6 +212,8 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
         }
     }
+
+    printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化
@@ -245,7 +248,7 @@ int main(int argc, char* argv[]){
     reg_alloca_(start);
 //    线性扫描
     line_scan(instruction_list,start);
-    reg_control(instruction_list,start);
+//    reg_control(instruction_list,start);
 //    gcp_allocate(instruction_list,start);
     //修改all_in_memory开启/关闭寄存器分配
 
