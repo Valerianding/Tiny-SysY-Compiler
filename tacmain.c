@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "graph_color.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-    Optimize=true;
+//    Optimize=true;
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -209,6 +209,7 @@ int main(int argc, char* argv[]){
             RunOptimizePasses(currentFunction);
         }
     }
+
 #if ALL
     //phi上的优化
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
