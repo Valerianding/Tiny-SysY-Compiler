@@ -20,6 +20,16 @@ void RunOptimizePasses(Function *currentFunction){
 
     BranchOptimizing(currentFunction);
 
+    if(hasSingleExit(currentFunction)){
+        postDominanceAnalysis(currentFunction);
+
+        Mark(currentFunction);
+
+        Sweep(currentFunction);
+
+        removeUnreachable(currentFunction);
+    }
+
     dominanceAnalysis(currentFunction);
 
     DVNT(currentFunction); // 浮点情况还有可能有错
@@ -29,7 +39,7 @@ void RunOptimizePasses(Function *currentFunction){
 
     //for loopAnalysis
     loopAnalysis(currentFunction);
-//
+
     LICM(currentFunction);
 //
     Loop2Memset(currentFunction);
