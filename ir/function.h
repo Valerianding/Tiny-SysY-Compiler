@@ -22,6 +22,7 @@ struct _Function{
     HashMap *lineScanVFPReg; //存放浮点寄存器分配的结果
     PriorityQueue *vfp_live_interval;//浮点数的活跃周期表
     char *name;
+    int issimplerecursive;
 };
 
 Function *function_create();
