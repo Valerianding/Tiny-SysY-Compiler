@@ -15,9 +15,17 @@ void remake_func(Function * function)
     }
 
     // 拿到参数
-    Value *v_func = symtab_dynamic_lookup(this,function->name);
-    Value *v_param0 = symtab_dynamic_lookup(this,"%0");
-    Value *v_param1 = symtab_dynamic_lookup(this,"%1");
+    Value *v_func = symtab_lookup_withmap(this,function->name,&this->value_maps->next->map);
+    Value *v_param0 = (Value*) malloc(sizeof (Value));
+    value_init(v_param0);
+    v_param0->VTy->ID = v_func->pdata->symtab_func_pdata.param_type_lists[0].ID;
+    v_param0->name=(char *) malloc(3);
+    strcpy(v_param0->name,"%0");
+    Value *v_param1 = (Value*) malloc(sizeof (Value));
+    value_init(v_param1);
+    v_param1->VTy->ID = v_func->pdata->symtab_func_pdata.param_type_lists[1].ID;
+    v_param1->name=(char *) malloc(3);
+    strcpy(v_param1->name,"%1");
 
     //需要的常数value先构造出来
     Value *v_0 = (Value*) malloc(sizeof (Value));
@@ -32,8 +40,10 @@ void remake_func(Function * function)
     ins_mod->Parent = new_block;
     InstNode *node_mod = new_inst_node(ins_mod);
     node_mod->inst->user.value.VTy->ID = Var_INT;
-    new_block->head_node = node_mod;
+    new_block->head_node = function->entry->head_node;
     ins_insert_after(node_mod,function->entry->head_node);
+    function->entry->head_node->inst->Parent = new_block;
+    function->entry = new_block;
 
     //icmp
     Instruction *ins_icmp = ins_new_binary_operator(NOTEQ, ins_get_value_with_name_and_index(ins_mod,++t_index),v_0);
@@ -59,6 +69,9 @@ void remake_func(Function * function)
     new_bb2->Parent = function;
     new_bb3->Parent = function;
     new_block->Parent = function;
+    new_block->dom = HashSetInit();
+    new_bb2->dom = HashSetInit();
+    new_bb3->dom = HashSetInit();
 
     //label5
     Instruction *ins_l5 = ins_new_zero_operator(Label);
@@ -86,6 +99,7 @@ void remake_func(Function * function)
     ins_phi->Parent = new_bb3;
     Value *v_phi = ins_get_value_with_name_and_index(ins_phi,++t_index);
     v_phi->IsPhi = true;
+    v_phi->VTy->ID = v_func->pdata->symtab_func_pdata.return_type.ID;
     v_phi->pdata->pairSet = HashSetInit();
     pair *p1 = (pair*) malloc(sizeof (pair));
     Value *v_zero = (Value*) malloc(sizeof (Value));
@@ -104,8 +118,10 @@ void remake_func(Function * function)
     Instruction *ins_ret = ins_new_unary_operator(Return,v_phi);
     ins_ret->Parent = new_bb3;
     InstNode *node_ret = new_inst_node(ins_ret);
-    new_bb3->tail_node = node_ret;
+    new_bb3->tail_node = function->tail->tail_node;
     ins_insert_after(node_ret,node_phi);
+    function->tail->tail_node->inst->Parent = new_bb3;
+    function->tail = new_bb3;
 }
 
 bool is_icmp_ir(InstNode* instNode){
