@@ -43,6 +43,7 @@ void remake_func(Function * function)
     new_block->head_node = function->entry->head_node;
     ins_insert_after(node_mod,function->entry->head_node);
     function->entry->head_node->inst->Parent = new_block;
+    function->entry = new_block;
 
     //icmp
     Instruction *ins_icmp = ins_new_binary_operator(NOTEQ, ins_get_value_with_name_and_index(ins_mod,++t_index),v_0);
@@ -68,6 +69,9 @@ void remake_func(Function * function)
     new_bb2->Parent = function;
     new_bb3->Parent = function;
     new_block->Parent = function;
+    new_block->dom = HashSetInit();
+    new_bb2->dom = HashSetInit();
+    new_bb3->dom = HashSetInit();
 
     //label5
     Instruction *ins_l5 = ins_new_zero_operator(Label);
@@ -114,8 +118,10 @@ void remake_func(Function * function)
     Instruction *ins_ret = ins_new_unary_operator(Return,v_phi);
     ins_ret->Parent = new_bb3;
     InstNode *node_ret = new_inst_node(ins_ret);
-    new_bb3->tail_node = node_ret;
+    new_bb3->tail_node = function->tail->tail_node;
     ins_insert_after(node_ret,node_phi);
+    function->tail->tail_node->inst->Parent = new_bb3;
+    function->tail = new_bb3;
 }
 
 bool is_icmp_ir(InstNode* instNode){
