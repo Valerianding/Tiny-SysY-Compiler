@@ -172,6 +172,7 @@ int main(int argc, char* argv[]){
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
+            issimple(currentFunction);
             sideEffectAnalysis(currentFunction);
             RedundantCallElimination(currentFunction);
             renameVariables(currentFunction);
