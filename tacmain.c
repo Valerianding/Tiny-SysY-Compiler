@@ -157,6 +157,7 @@ int main(int argc, char* argv[]){
 
     bool NOTOK = containFloat(instruction_list);
 
+    NOTOK=false;
     //构建Function
     Function *start = ReconstructFunction(instruction_list);
 
