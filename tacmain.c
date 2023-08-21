@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
     if(argc == 6){
         Optimize = true;
     }
-    Optimize=true;
+//    Optimize=true;
     yyin=fopen(argv[4], "r");
 
     tokenMap = HashMapInit();
@@ -207,7 +207,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
 #if ALL
     //phi上的优化
