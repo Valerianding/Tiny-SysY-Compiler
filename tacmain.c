@@ -17,7 +17,7 @@
 #include "fix_array.h"
 #include "line_scan.h"
 #include "graph_color.h"
-#define ALL 0
+#define ALL 1
 extern FILE *yyin;
 extern HashMap *callGraph;
 extern HashSet *visitedCall;
@@ -230,10 +230,20 @@ int main(int argc, char* argv[]){
         }
     }
 
+    printf_llvm_ir(instruction_list,argv[4],1);
+
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
             RunOptimizePasses(currentFunction);
+        }
+
+        printf_llvm_ir(instruction_list,argv[4],1);
+
+        for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
+            loopAnalysis(currentFunction);
+            CalcOnLoop(currentFunction);
+            removeUselessLocalArray(currentFunction);
         }
     }
 

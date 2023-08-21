@@ -10,4 +10,6 @@
 #include "sideeffect.h"
 #include "utility.h"
 void memOpt(Function *currentFunction);
+void CalcOnLoop(Function *currentFunction);
+void removeUselessLocalArray(Function *currenFunction);
 #endif //C22V1_OTHER_H
