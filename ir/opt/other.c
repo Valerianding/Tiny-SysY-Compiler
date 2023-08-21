@@ -370,9 +370,15 @@ void memOpt(Function *currentFunction){
 
 
 bool checkCalOnLoop(Loop *loop){
+    if(HashSetSize(loop->loopBody) != 2) return false;
+
+    if(HashSetSize(loop->head->preBlocks) != 2) return false;
+
     return true;
 }
+
 //
 void CalcOnLoop(Function *currentFunction){
     //
+
 }

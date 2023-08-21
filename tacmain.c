@@ -168,7 +168,6 @@ int main(int argc, char* argv[]){
         }
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
@@ -179,10 +178,8 @@ int main(int argc, char* argv[]){
         }
     }
 
-
     if(Optimize) {
         func_inline(instruction_list, 124);
-
 
         //重新构建Function
         start = ReconstructFunction(instruction_list);
@@ -202,33 +199,12 @@ int main(int argc, char* argv[]){
         }
     }
 
-    //重新构建Function
-    start = ReconstructFunction(instruction_list);
-
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
-        if(!NOTOK){
-            RunBasicPasses(currentFunction);
-        }
-    }
-
     if(!NOTOK && Optimize){
         for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next) {
             RunOptimizePasses(currentFunction);
-//            LoopNormalize(currentFunction);
-//            LoopSimplify(currentFunction);
-//            LoopReduce(currentFunction);
-//            renameVariables(currentFunction);
             RunOptimizePasses(currentFunction);
         }
     }
-
-//    printf_llvm_ir(instruction_list,argv[4],1);
-
-    //OK 现在开始我们不会对
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        Clean(currentFunction);
-    }
-
 
     printf_llvm_ir(instruction_list,argv[4],1);
 
@@ -258,7 +234,7 @@ int main(int argc, char* argv[]){
 
 
     fix_array(instruction_list);
-    //printf_llvm_ir(instruction_list,argv[4],0);
+    printf_llvm_ir(instruction_list,argv[4],0);
 
 
 
