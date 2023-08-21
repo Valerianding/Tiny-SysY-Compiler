@@ -98,6 +98,28 @@ bool ConstFolding(Function *currentFunction){
     return effective;
 }
 
+bool NoUseInFunc(Function *currentFunction, Value *value){
+    Use *uses = value->use_list;
+    if(uses != NULL){
+        return false;
+    }
+    InstNode *funcHead = currentFunction->entry->head_node;
+    InstNode *funcTail = currentFunction->tail->tail_node;
+    while(funcHead != funcTail){
+        if(funcHead->inst->Opcode == Phi){
+            HashSet *phiSet = ins_get_dest(funcHead->inst)->pdata->pairSet;
+            HashSetFirst(phiSet);
+            for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+                if(phiInfo->define == value){
+                    return false;
+                }
+            }
+        }
+        funcHead = get_next_inst(funcHead);
+    }
+    return true;
+}
+
 void adjustPhi(Function *currentFunction){
     HashSet *workList = HashSetInit();
 
@@ -133,6 +155,7 @@ void adjustPhi(Function *currentFunction){
                             Value *newValue = phiInfo->define;
                             valueReplaceAll(phiDest,newValue,currentFunction);
                             //TODO is there is a need to delete the phi
+                            blockHead = get_next_inst(blockHead);
                         }
                     }
                 }else{
@@ -143,9 +166,11 @@ void adjustPhi(Function *currentFunction){
                             HashSetRemove(phiSet,phiInfo);
                         }
                     }
+                    blockHead = get_next_inst(blockHead);
                 }
+            }else{
+                blockHead = get_next_inst(blockHead);
             }
-            blockHead = get_next_inst(blockHead);
         }
 
         if(block->true_block && block->true_block->visited == false){
@@ -338,6 +363,24 @@ bool BranchOptimizing(Function *currentFunction) {
     //adjust phi information
     adjustPhi(currentFunction);
 
+    InstNode *funcHead = currentFunction->entry->head_node;
+    InstNode *funcTail = currentFunction->tail->tail_node;
+
+    while(funcHead != funcTail){
+        if(funcHead->inst->Opcode == Phi){
+            Value *phiDest = ins_get_dest(funcHead->inst);
+            if(NoUseInFunc(currentFunction,phiDest)){
+                InstNode *nextNode = get_next_inst(funcHead);
+                deleteIns(funcHead);
+                funcHead = nextNode;
+            }else{
+                funcHead = get_next_inst(funcHead);
+            }
+        }else{
+            funcHead = get_next_inst(funcHead);
+        }
+    }
+    //delete the remain phi
     HashSetDeinit(workList);
 
     renameVariables(currentFunction);
