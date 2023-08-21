@@ -1,4 +1,4 @@
-#include <//assert.h>
+#include <assert.h>
 #include "utility.h"
 #include "arm.h"
 #include "value.h"
@@ -168,6 +168,7 @@ int main(int argc, char* argv[]){
         }
     }
 
+    printf_llvm_ir(instruction_list,argv[4],1);
     if(Optimize && !NOTOK) {
         for (Function *currentFunction = start;
              currentFunction != NULL; currentFunction = currentFunction->Next) {
@@ -221,18 +222,13 @@ int main(int argc, char* argv[]){
         }
     }
 
-    printf_llvm_ir(instruction_list,argv[4],1);
+//    printf_llvm_ir(instruction_list,argv[4],1);
 
-//    //OK 现在开始我们不会对
+    //OK 现在开始我们不会对
     for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
         Clean(currentFunction);
     }
 
-  //  printf_llvm_ir(instruction_list,argv[4],1);
-
-    for(Function *currentFunction = start; currentFunction != NULL; currentFunction = currentFunction->Next){
-        RunOptimizePasses(currentFunction);
-    }
 
     printf_llvm_ir(instruction_list,argv[4],1);
 

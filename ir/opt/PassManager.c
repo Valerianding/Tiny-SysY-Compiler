@@ -22,7 +22,7 @@ void RunOptimizePasses(Function *currentFunction){
 
     dominanceAnalysis(currentFunction);
 
-    DVNT(currentFunction); // 浮点情况还有可能有错
+    //DVNT(currentFunction); // 浮点情况还有可能有错
 
     //TODO BUG & NOT Simplified
     //memlvn(currentFunction);
@@ -58,7 +58,6 @@ void RunOptimizePasses(Function *currentFunction){
         removeUnreachable(currentFunction);
     }
 
-//    Clean(currentFunction);
 
     renameVariables(currentFunction);
 }

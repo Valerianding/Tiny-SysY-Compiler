@@ -672,7 +672,7 @@ void GCM(Function *currentFunction){
 
     ScheduleEarly(currentFunction);
 
-    DVNT(currentFunction);
+   // DVNT(currentFunction);
 
     clearInsVisited(currentFunction);
 

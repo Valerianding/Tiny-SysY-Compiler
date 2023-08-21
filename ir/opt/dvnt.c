@@ -227,6 +227,7 @@ bool DVNT_EACH(BasicBlock *block, HashMap *table, HashMap *var2num, Function *cu
                     break;
                 }
                 default: {
+                    printf("currNode %d\n",currNode->inst->i);
                     // 进入这里面就只有几个了
                     //其余的情况
                     Value *lhs = ins_get_lhs(currNode->inst);
