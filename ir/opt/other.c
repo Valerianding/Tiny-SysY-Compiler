@@ -358,6 +358,78 @@ void MemOptOnLoop(Loop *loop){
     }
 }
 
+bool isRecursiveCalc(Loop *loop){
+    BasicBlock *bodyBlock = loop->body_block;
+
+    InstNode *headNode = bodyBlock->head_node;
+    InstNode *tailNode = bodyBlock->tail_node;
+
+    //contain only one phi (besides the induction variable)
+    InstNode *entryHead = loop->head->head_node;
+    InstNode *entryTail = loop->head->tail_node;
+
+    Value *lastPhi = NULL;
+
+    int countPhi = 0;
+    while(entryHead != entryTail){
+        if(entryHead->inst->Opcode == Phi){
+            Value *phiDest = ins_get_dest(entryHead->inst);
+            if(phiDest != loop->inductionVariable){
+                lastPhi = phiDest;
+                countPhi++;
+                if(countPhi > 1){
+                    return false;
+                }
+            }
+        }
+        entryHead = get_next_inst(entryHead);
+    }
+
+    Value *other = NULL;
+    HashSet *phiSet = lastPhi->pdata->pairSet;
+    HashSetFirst(phiSet);
+    for(pair *phiInfo = HashSetNext(phiSet); phiInfo != NULL; phiInfo = HashSetNext(phiSet)){
+        BasicBlock *from = phiInfo->from;
+        if(HashSetFind(loop->loopBody,from)){
+            other = phiInfo->define;
+        }
+    }
+
+    assert(lastPhi != NULL);
+    assert(other != NULL);
+
+    //search the chain of def
+    //to see if this phi is not used in any use/critical operation
+    //and see if this phi is RecursiveCalculation which can be simplified
+    HashSet *workList = HashSetInit();
+    HashSetAdd(workList,lastPhi);
+    while(HashSetSize(workList) != 0){
+        HashSetFirst(workList);
+        Value *value = HashSetNext(workList);
+        Use *uses = value->use_list;
+
+        int count = 0;
+        while(uses != NULL){
+            count++;
+            uses = uses->Next;
+        }
+
+        if(count > 1){
+            HashSetDeinit(workList);
+            return false;
+        }else if(count == 0){
+            //need this to be the phi's other
+            if(other != value){
+                return false;
+            }
+        }else{
+            //need to see if this use if body Block
+            //add this user value to workList
+        }
+    }
+    return true;
+}
+
 void memOpt(Function *currentFunction){
     HashSet *loops = currentFunction->loops;
     HashSetFirst(loops);
@@ -408,6 +480,10 @@ bool checkCalOnLoop(Loop *loop){
     }
 
     //if calc instructions are all
+    if(isRecursiveCalc(loop)){
+
+    }
+    //dirty pattern recognize
 
     return true;
 }
